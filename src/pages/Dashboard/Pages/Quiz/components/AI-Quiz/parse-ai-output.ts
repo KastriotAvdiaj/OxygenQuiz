@@ -65,6 +65,9 @@ const aiQuestionSchema = z
     // The "why" a player reads after answering (docs/quiz/question-explanations.md). Optional:
     // replies from older prompts have none, and a question without one is still a question.
     explanation: z.string().optional().nullable(),
+    // "Add images" only: a phrase to search Wikimedia Commons / Pexels for. Read as text and
+    // checked by `cleanImageQuery` — never fetched as a link (docs/media/media-pipeline.md).
+    imageQuery: z.unknown().optional(),
     // `allowPartialMatch` is intentionally absent: the prompt no longer asks for it and the parser
     // never reads it. `.passthrough()` means a model that emits it anyway is not an error — the
     // value is simply ignored. See the assignment in the TypeTheAnswer branch below.
@@ -78,7 +81,30 @@ const aiPayloadSchema = z.object({
 export interface ParsedQuestion {
   question: NewAnyQuestion;
   settings: QuestionSettings;
+  /**
+   * With "Add images" on: what to search for, if the model thought a picture helps. Our code runs
+   * the search and imports the image (`useAutoImages`); the model never supplies a URL.
+   */
+  imageQuery?: string;
 }
+
+/** Mirrors `AiPromptBuilder.MaxImageQueries` / `ImageQueryMaxLength`. */
+export const MAX_IMAGE_QUERIES = 10;
+export const IMAGE_QUERY_MAX_LENGTH = 80;
+
+/**
+ * A model's image search phrase, or undefined. Text to search for and nothing else: anything that
+ * looks like a link or a file name is dropped rather than searched, since a model that answers the
+ * question with a URL has ignored the rule that makes this safe. Too long means it described a
+ * picture instead of naming a subject.
+ */
+export const cleanImageQuery = (value: unknown): string | undefined => {
+  if (typeof value !== "string") return undefined;
+  const q = value.replace(/\s+/g, " ").trim();
+  if (q.length < 2 || q.length > IMAGE_QUERY_MAX_LENGTH) return undefined;
+  if (/(:\/\/|^www\.|\.(jpe?g|png|gif|webp|svg)\b)/i.test(q)) return undefined;
+  return q;
+};
 
 export interface DroppedQuestion {
   index: number;
@@ -463,6 +489,11 @@ export const parseAiOutput = (raw: string, ctx: ParseContext): ParseResult => {
 
     if (!matched) difficultyFallbacks.push(questions.length + 1);
 
+    const imageQuery =
+      questions.filter((q) => q.imageQuery).length < MAX_IMAGE_QUERIES
+        ? cleanImageQuery(rawQuestion.imageQuery)
+        : undefined;
+
     questions.push({
       question: built.question,
       settings: resolveSettings(
@@ -470,6 +501,7 @@ export const parseAiOutput = (raw: string, ctx: ParseContext): ParseResult => {
         rawQuestion.timeLimitInSeconds,
         questions.length
       ),
+      ...(imageQuery ? { imageQuery } : {}),
     });
   });
 

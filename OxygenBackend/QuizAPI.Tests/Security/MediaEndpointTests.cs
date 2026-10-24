@@ -37,14 +37,21 @@ public class MediaEndpointTests
         // An import stores a file, so it spends the same hourly allowance as an upload.
         Assert.Equal(RateLimitingExtensions.MediaUploadPolicy,
             typeof(StockImagesController).GetMethod(nameof(StockImagesController.Import))!.GetCustomAttribute<EnableRateLimitingAttribute>()?.PolicyName);
+        Assert.Equal(RateLimitingExtensions.MediaUploadPolicy,
+            typeof(StockImagesController).GetMethod(nameof(StockImagesController.Auto))!.GetCustomAttribute<EnableRateLimitingAttribute>()?.PolicyName);
     }
 
     /// <summary>The import is named by provider and id; a URL or a credit in its body would be the
     /// client choosing what the server fetches or what licence an image claims.</summary>
     [Fact]
-    public void The_import_body_carries_no_url_or_credit() =>
+    public void The_import_body_carries_no_url_or_credit()
+    {
         Assert.Equal(new[] { "Id", "Provider" },
             typeof(QuizAPI.Services.Media.Stock.StockImportCM).GetProperties().Select(p => p.Name).OrderBy(n => n));
+        // An AI-written question hands over a phrase to search for — not a link to fetch.
+        Assert.Equal(new[] { "Query" },
+            typeof(QuizAPI.Services.Media.Stock.StockAutoCM).GetProperties().Select(p => p.Name));
+    }
 
     [Fact]
     public void The_upload_is_rate_limited_and_size_capped()

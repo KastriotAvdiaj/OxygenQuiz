@@ -144,6 +144,8 @@ export interface AiQuizDraft {
   questionCount: number;
   allowedTypes: QuestionType[];
   extraInstructions: string;
+  /** "Add images". Optional so drafts saved before the switch existed still restore. */
+  addImages?: boolean;
   /** The bring-your-own-AI paste box, before it has been handed to the parser. */
   pastedReply: string;
   /** The model's reply, raw. Held by both paths once it exists. */
@@ -161,6 +163,7 @@ const aiQuizDraftSchema = z.object({
   questionCount: z.number(),
   allowedTypes: z.array(z.nativeEnum(QuestionType)),
   extraInstructions: z.string(),
+  addImages: z.boolean().optional(),
   pastedReply: z.string(),
   payload: z.string().nullable(),
 });

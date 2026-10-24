@@ -67,6 +67,8 @@ export interface OwnAiQuizViewProps {
   onToggleType: (type: QuestionType) => void;
   extraInstructions: string;
   onExtraInstructionsChange: (value: string) => void;
+  addImages?: boolean;
+  onAddImagesChange?: (value: boolean) => void;
 
   // ── The round trip ───────────────────────────────────────────────────────────
   onCopyPrompt: () => void;
@@ -130,6 +132,8 @@ export const OwnAiQuizView = ({
   onToggleType,
   extraInstructions,
   onExtraInstructionsChange,
+  addImages,
+  onAddImagesChange,
   onCopyPrompt,
   copied,
   isCopying,
@@ -304,6 +308,8 @@ export const OwnAiQuizView = ({
                 typesError={showValidation ? (typesMessage ?? undefined) : undefined}
                 extraInstructions={extraInstructions}
                 onExtraInstructionsChange={onExtraInstructionsChange}
+                addImages={addImages}
+                onAddImagesChange={onAddImagesChange}
               />
             </div>
 

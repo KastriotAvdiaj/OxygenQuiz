@@ -52,6 +52,20 @@ namespace QuizAPI.Services.Ai
         public const string ExplanationField = "explanation";
 
         /// <summary>
+        /// With "Add images" on: a short search phrase for the questions a picture helps, which the
+        /// browser runs against Wikimedia Commons (then Pexels) through our import — the model
+        /// never supplies a URL or a file (ADR 0003 for media; docs/media/media-pipeline.md).
+        /// </summary>
+        public const string ImageQueryField = "imageQuery";
+
+        /// <summary>How many questions may ask for an image, at most. Each one is an import and
+        /// counts towards the hourly upload limit; a quiz of pictures isn't what the switch is for.</summary>
+        public const int MaxImageQueries = 10;
+
+        /// <summary>The longest query we ask for; <c>parse-ai-output.ts</c> drops longer ones.</summary>
+        public const int ImageQueryMaxLength = 80;
+
+        /// <summary>
         /// What we ask for, well under the stored cap (<c>QuestionExplanation.MaxLength</c>): a
         /// player reads it in the seconds before the next question, and every character is an
         /// output token on a 15-question reply.
@@ -163,7 +177,7 @@ namespace QuizAPI.Services.Ai
                 "Respond with a SINGLE json object and NOTHING else. No explanation, no commentary, no markdown code fences.",
                 "The object must have exactly this shape:\n\n" + ShapeBlock(
                     typeList, difficultyList, pointSystems, categoryList, languageList,
-                    askForCategory, askForLanguage, askForQuote: !isTopic),
+                    askForCategory, askForLanguage, askForQuote: !isTopic, askForImages: r.AddImages),
                 $"\"title\": a short, specific title for the quiz — at most {MaxTitleLength} characters. Name the subject; don't pad it with the word \"Quiz\".",
             };
 
@@ -252,6 +266,19 @@ namespace QuizAPI.Services.Ai
                 + "Write mathematics and science with real Unicode characters, the way a textbook prints it: √(b² − 4ac), x², H₂O, ½, ×, ÷, ±, ≤, ≥, ≠, π, °. "
                 + "Use a slash with brackets for a fraction that has no single character: (a + b)/(2c).");
 
+            if (r.AddImages)
+            {
+                // The model proposes, the code decides: a phrase to search for, which our code runs
+                // against licensed sources and checks like an upload. Never a link — a model's URL
+                // is unverified, often invented, and nothing we could store or credit.
+                rules.Add(
+                    $"\"{ImageQueryField}\": ONLY on questions where a picture genuinely helps — a flag, a landmark, a famous painting or building, an animal or plant, a well-known person, a map. "
+                    + $"Leave it out everywhere else; at most {MaxImageQueries} questions may have one. "
+                    + $"It is a short English search phrase (at most {ImageQueryMaxLength} characters) naming the exact subject as it would be titled on Wikimedia Commons, e.g. \"Flag of Kosovo\", \"Mona Lisa\", \"Eiffel Tower\". "
+                    + "Never a URL, a file name or a description of a picture. "
+                    + "The picture must not give the answer away, unless the question asks the player to identify what the picture shows.");
+            }
+
             if (!string.IsNullOrWhiteSpace(r.ExtraInstructions))
                 rules.Add($"Additional instructions from the user: {r.ExtraInstructions.Trim()}");
 
@@ -261,7 +288,7 @@ namespace QuizAPI.Services.Ai
         private static string ShapeBlock(
             string typeList, string difficultyList, string pointSystems,
             string categoryList, string languageList, bool askForCategory, bool askForLanguage,
-            bool askForQuote)
+            bool askForQuote, bool askForImages = false)
         {
             var sb = new StringBuilder();
             sb.AppendLine("{");
@@ -270,13 +297,18 @@ namespace QuizAPI.Services.Ai
             if (askForLanguage) sb.AppendLine($"  \"language\": {languageList} | null,");
             sb.AppendLine("  \"questions\": [");
             sb.AppendLine("    {");
-            sb.AppendLine($"      \"type\": {typeList},");
-            sb.AppendLine("      \"text\": string,");
-            sb.AppendLine($"      \"difficulty\": {difficultyList},");
-            sb.AppendLine($"      \"pointSystem\": {pointSystems},");
-            sb.AppendLine($"      \"timeLimitInSeconds\": {string.Join(" | ", AllowedTimeLimits)},");
-            sb.AppendLine($"      \"{ExplanationField}\": string{(askForQuote ? "," : string.Empty)}");
-            if (askForQuote) sb.AppendLine($"      \"{SourceQuoteField}\": string");
+            var fields = new List<string>
+            {
+                $"\"type\": {typeList}",
+                "\"text\": string",
+                $"\"difficulty\": {difficultyList}",
+                $"\"pointSystem\": {pointSystems}",
+                $"\"timeLimitInSeconds\": {string.Join(" | ", AllowedTimeLimits)}",
+                $"\"{ExplanationField}\": string",
+            };
+            if (askForQuote) fields.Add($"\"{SourceQuoteField}\": string");
+            if (askForImages) fields.Add($"\"{ImageQueryField}\": string (optional — see the rule below)");
+            sb.AppendLine(string.Join(",\n", fields.Select(f => "      " + f)));
             sb.AppendLine("    }");
             sb.AppendLine("  ]");
             sb.Append('}');

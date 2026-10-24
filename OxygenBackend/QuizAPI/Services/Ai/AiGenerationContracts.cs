@@ -118,6 +118,13 @@ namespace QuizAPI.Services.Ai
         public IReadOnlyList<string> AllowedTypes { get; init; } = Array.Empty<string>();
 
         public string? ExtraInstructions { get; init; }
+
+        /// <summary>
+        /// The wizard's "Add images" switch, off by default (docs/media/media-pipeline.md, "AI-added
+        /// images"). On, the model may give a question an image <b>search query</b> — never a URL;
+        /// the browser resolves it through our own Commons/Pexels import.
+        /// </summary>
+        public bool AddImages { get; init; }
     }
 
     /// <summary>Token counts as reported by the provider, for cost accounting.</summary>

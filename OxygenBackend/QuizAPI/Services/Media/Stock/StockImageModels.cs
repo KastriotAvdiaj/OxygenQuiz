@@ -64,6 +64,12 @@ namespace QuizAPI.Services.Media.Stock
         public bool Enabled { get; set; }
     }
 
+    /// <summary>A search phrase from an AI-written question — text to search for, never a URL.</summary>
+    public sealed class StockAutoCM
+    {
+        public string Query { get; set; } = string.Empty;
+    }
+
     public sealed class StockImportCM
     {
         public string Provider { get; set; } = string.Empty;

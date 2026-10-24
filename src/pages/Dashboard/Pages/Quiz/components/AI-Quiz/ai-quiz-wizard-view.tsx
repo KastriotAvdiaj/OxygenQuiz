@@ -78,6 +78,8 @@ export interface AiQuizWizardViewProps {
   onToggleType: (type: QuestionType) => void;
   extraInstructions: string;
   onExtraInstructionsChange: (value: string) => void;
+  addImages?: boolean;
+  onAddImagesChange?: (value: boolean) => void;
 
   // ── Generation ───────────────────────────────────────────────────────────────
   onGenerate: () => void;
@@ -167,6 +169,8 @@ export const AiQuizWizardView = ({
   onToggleType,
   extraInstructions,
   onExtraInstructionsChange,
+  addImages,
+  onAddImagesChange,
   onGenerate,
   isGenerating,
   generateError,
@@ -460,6 +464,8 @@ export const AiQuizWizardView = ({
                 typesError={showValidation ? (typesMessage ?? undefined) : undefined}
                 extraInstructions={extraInstructions}
                 onExtraInstructionsChange={onExtraInstructionsChange}
+                addImages={addImages}
+                onAddImagesChange={onAddImagesChange}
               />
             </div>
 

@@ -362,4 +362,86 @@ public class StockImageTests
         Assert.Equal(uploaded, imported.Id);
         Assert.NotNull(imported.Credit);
     }
+
+    // ── AI-added images: a search phrase in, the code picks and imports ─────────────────────
+
+    [Fact]
+    public async Task An_ai_search_phrase_imports_the_best_commons_result()
+    {
+        var w = new World();
+        w.Http.On(WikimediaProvider.ApiUrl, CommonsResult(false, CommonsPage(7, 1, "CC BY-SA 4.0")))
+              .OnBytes("https://upload.wikimedia.org/thumb/7.png", MediaWorld.Image(7));
+
+        var asset = await w.With(s => s.AutoImportAsync(Author, "Flag of Kosovo"));
+
+        Assert.Equal("Jane & Co · CC BY-SA 4.0 · Wikimedia Commons", asset.Credit!.Line);
+        Assert.DoesNotContain(w.Http.Requests, u => u.Host == "api.pexels.com");
+    }
+
+    [Fact]
+    public async Task Nothing_on_commons_falls_back_to_pexels()
+    {
+        var w = new World();
+        w.Http.On(WikimediaProvider.ApiUrl, CommonsResult(false))
+              .On(PexelsProvider.ApiBase + "search", """
+                {"page":1,"photos":[{"id":42,"width":10,"height":10,"photographer":"Ana Lopez","src":{"medium":"https://images.pexels.com/m.jpeg"}}]}
+                """)
+              .On(PexelsProvider.ApiBase + "photos/42", """
+                {"id":42,"url":"https://www.pexels.com/photo/42/","photographer":"Ana Lopez","src":{"original":"https://images.pexels.com/photos/42/o.jpeg"}}
+                """)
+              .OnBytes("https://images.pexels.com/photos/42/", MediaWorld.Image(8));
+
+        var asset = await w.With(s => s.AutoImportAsync(Author, "golden retriever"));
+
+        Assert.Equal("Photo: Ana Lopez / Pexels", asset.Credit!.Line);
+    }
+
+    [Fact]
+    public async Task A_result_that_fails_at_import_gives_way_to_the_next()
+    {
+        var w = new World();
+        // The search lists two; looked up by id, the first is now non-commercial.
+        w.Http.On(WikimediaProvider.ApiUrl + "?action=query&format=json&formatversion=2&pageids=1&",
+                  CommonsResult(false, CommonsPage(1, 1, "CC BY-NC 4.0")))
+              .On(WikimediaProvider.ApiUrl + "?action=query&format=json&formatversion=2&pageids=2&",
+                  CommonsResult(false, CommonsPage(2, 2, "CC0")))
+              .On(WikimediaProvider.ApiUrl, CommonsResult(false, CommonsPage(1, 1, "CC0"), CommonsPage(2, 2, "CC0")))
+              .OnBytes("https://upload.wikimedia.org/thumb/2.png", MediaWorld.Image(9));
+
+        var asset = await w.With(s => s.AutoImportAsync(Author, "Mona Lisa"));
+
+        Assert.Equal("Image", asset.Kind);
+        Assert.DoesNotContain(w.Http.Requests, u => u.AbsoluteUri.EndsWith("/thumb/1.png"));
+    }
+
+    [Fact]
+    public async Task Nothing_anywhere_is_not_found_and_stores_nothing()
+    {
+        var w = new World();
+        w.Http.On(WikimediaProvider.ApiUrl, CommonsResult(false))
+              .On(PexelsProvider.ApiBase + "search", """{"page":1,"photos":[]}""");
+
+        await Assert.ThrowsAsync<NotFoundException>(() => w.With(s => s.AutoImportAsync(Author, "xyzzy")));
+        await using var ctx = w.Media.Context();
+        Assert.Empty(await ctx.MediaAssets.ToListAsync());
+    }
+
+    [Fact]
+    public async Task Commons_down_still_tries_pexels_and_only_both_down_is_unavailable()
+    {
+        var w = new World();
+        w.Http.On(WikimediaProvider.ApiUrl, "busy", HttpStatusCode.TooManyRequests)
+              .On(PexelsProvider.ApiBase, "down", HttpStatusCode.ServiceUnavailable);
+
+        await Assert.ThrowsAsync<ServiceUnavailableException>(() => w.With(s => s.AutoImportAsync(Author, "Eiffel Tower")));
+        Assert.Contains(w.Http.Requests, u => u.Host == "api.pexels.com");
+    }
+
+    [Fact]
+    public async Task An_ai_phrase_is_validated_like_a_search()
+    {
+        var w = new World();
+        await Assert.ThrowsAsync<AppValidationException>(() => w.With(s => s.AutoImportAsync(Author, new string('a', 101))));
+        Assert.Empty(w.Http.Requests);
+    }
 }

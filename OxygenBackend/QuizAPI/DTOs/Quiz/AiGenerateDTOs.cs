@@ -65,6 +65,9 @@ namespace QuizAPI.DTOs.Quiz
         [MaxLength(500)]
         public string? ExtraInstructions { get; set; }
 
+        /// <summary>Ask for image search queries on the questions an image helps. Off by default.</summary>
+        public bool AddImages { get; set; }
+
         /// <summary>
         /// Maps to the service contract. Returns null when <see cref="Mode"/> is not a known mode,
         /// which the controller turns into a 400.
@@ -86,6 +89,7 @@ namespace QuizAPI.DTOs.Quiz
                 QuestionCount = QuestionCount,
                 AllowedTypes = AllowedTypes,
                 ExtraInstructions = ExtraInstructions,
+                AddImages = AddImages,
             };
         }
     }

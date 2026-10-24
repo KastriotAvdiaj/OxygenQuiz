@@ -299,7 +299,8 @@ namespace QuizAPI.Services.Ai
                 string.Join(',', r.DifficultyNames),
                 r.QuestionCount,
                 string.Join(',', r.AllowedTypes),
-                r.ExtraInstructions ?? string.Empty);
+                r.ExtraInstructions ?? string.Empty,
+                r.AddImages);
 
             return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(material))).ToLowerInvariant();
         }

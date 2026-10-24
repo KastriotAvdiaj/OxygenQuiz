@@ -44,5 +44,20 @@ namespace QuizAPI.Controllers.Media
             var asset = await stock.ImportAsync(userId, cm, ct);
             return StatusCode(StatusCodes.Status201Created, asset);
         }
+
+        /// <summary>
+        /// The image for a search phrase an AI-written question came with (docs/media/media-pipeline.md,
+        /// "AI-added images"): the code — not the model — searches, checks the licence and imports.
+        /// 404 when nothing usable was found. Counts as an upload.
+        /// </summary>
+        [HttpPost("auto")]
+        [EnableRateLimiting(RateLimitingExtensions.MediaUploadPolicy)]
+        [ProducesResponseType(typeof(MediaAssetDTO), StatusCodes.Status201Created)]
+        public async Task<ActionResult<MediaAssetDTO>> Auto([FromBody] StockAutoCM cm, CancellationToken ct)
+        {
+            var userId = current.UserId ?? throw new UnauthorizedException("Sign in to add images.");
+            var asset = await stock.AutoImportAsync(userId, cm.Query, ct);
+            return StatusCode(StatusCodes.Status201Created, asset);
+        }
     }
 }

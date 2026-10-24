@@ -124,6 +124,8 @@ export const OwnAiQuiz = () => {
       onToggleType={draft.toggleType}
       extraInstructions={draft.extraInstructions}
       onExtraInstructionsChange={draft.setExtraInstructions}
+      addImages={draft.addImages}
+      onAddImagesChange={draft.setAddImages}
       onCopyPrompt={handleCopyPrompt}
       copied={copied}
       promptToCopyByHand={promptToCopyByHand}

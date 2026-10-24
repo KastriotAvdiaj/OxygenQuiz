@@ -242,7 +242,8 @@ None open in code. The fix below is live only once the backend is rebuilt on the
 - **Proposal — one media pipeline for quizzes and questions.** Phase 1 (pipeline, R2, uploads,
   quotas, sweep) is built — [`../media/media-pipeline.md`](../media/media-pipeline.md) — and phase 2
   (reports, moderation, picked catalogue) — [`../media/moderation.md`](../media/moderation.md) — and
-  phase 3 (the Wikimedia/Pexels picker) — media-pipeline.md §7. AI-added images remain. See
+  phase 3 (the Wikimedia/Pexels picker) and phase 4 (AI-added images) — media-pipeline.md §7–8. Video
+  is the one part left for later. See
   [`../proposals/media-pipeline.md`](../proposals/media-pipeline.md).
 - ~~**P3 — Image upload allow-list drifted from `FileService`'s.**~~ **Fixed 2026-10-24** — there is
   one pipeline now; `ImageUploadController` is gone and question/quiz media is decided from the bytes

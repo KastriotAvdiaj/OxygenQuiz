@@ -32,6 +32,8 @@ import {
 } from "./parse-ai-output";
 import { AI_QUESTION_LIMITS, DEFAULT_QUESTION_COUNT } from "./prompt";
 import { ImportNotices } from "./components/import-notices";
+import { AutoImageNotice, AutoImagesProgress } from "./components/auto-images";
+import { useAutoImages } from "./use-auto-images";
 import { describeDraftAge } from "../draft-notices";
 
 /**
@@ -163,6 +165,8 @@ export const useAiQuizDraft = () => {
   const [extraInstructions, setExtraInstructions] = useState(
     draft?.extraInstructions ?? "",
   );
+  /** "Add images" — off unless the author turns it on (docs/media/media-pipeline.md, "AI-added images"). */
+  const [addImages, setAddImages] = useState(draft?.addImages ?? false);
 
   /**
    * The bring-your-own-AI paste box.
@@ -381,6 +385,7 @@ export const useAiQuizDraft = () => {
     questionCount,
     allowedTypes,
     extraInstructions: extraInstructions.trim() || undefined,
+    addImages,
   });
 
   /**
@@ -408,6 +413,7 @@ export const useAiQuizDraft = () => {
         questionCount,
         allowedTypes,
         extraInstructions,
+        addImages,
         pastedReply,
         payload,
       };
@@ -434,10 +440,15 @@ export const useAiQuizDraft = () => {
     setQuestionCount(DEFAULT_QUESTION_COUNT);
     setAllowedTypes([...DEFAULT_AI_QUESTION_TYPES]);
     setExtraInstructions("");
+    setAddImages(false);
     setPastedReply("");
     setPayload(null);
     setRestoredAt(null);
   };
+
+  // Pictures the model asked for, found and imported by our code before the review opens — so
+  // the builder starts with them in place (it reads its questions once, on mount).
+  const autoImages = useAutoImages(parseResult);
 
   // ── Handoff: questions parsed, so hand the builder everything prefilled.
   // `aiImportMode` makes it submit through the atomic /quiz/ai-import endpoint
@@ -447,7 +458,15 @@ export const useAiQuizDraft = () => {
     effectiveCategoryId !== null &&
     effectiveLanguageId !== null &&
     effectiveDifficultyId !== null ? (
-      <QuizQuestionProvider initialQuestions={parseResult.questions}>
+      autoImages.pending ? (
+        <AutoImagesProgress
+          found={autoImages.settled - autoImages.notFound.length}
+          settled={autoImages.settled}
+          requested={autoImages.requested}
+          onSkip={autoImages.skip}
+        />
+      ) : (
+      <QuizQuestionProvider initialQuestions={autoImages.questions}>
         <CreateQuizForm
           initialValues={
             {
@@ -470,13 +489,19 @@ export const useAiQuizDraft = () => {
             onDiscard: () => setPayload(null),
             costsAGeneration: draftSlot !== QUIZ_DRAFT_SLOTS.aiOwn,
           }}
-          reviewNotices={<ImportNotices result={parseResult} />}
+          reviewNotices={
+            <>
+              <ImportNotices result={parseResult} />
+              <AutoImageNotice requested={autoImages.requested} notFound={autoImages.notFound} />
+            </>
+          }
           // The quiz exists on the server now, so the reply that produced it is no longer
           // unfinished work. Without this the wizard unmounts on the redirect, flushes its
           // pending write, and offers to restore the quiz the user just created.
           onSaved={discardDraft}
         />
       </QuizQuestionProvider>
+      )
     ) : undefined;
 
   return {
@@ -521,6 +546,8 @@ export const useAiQuizDraft = () => {
     toggleType,
     extraInstructions,
     setExtraInstructions,
+    addImages,
+    setAddImages,
 
     // Bring-your-own-AI: the reply the user pasted, before it reaches the parser.
     pastedReply,

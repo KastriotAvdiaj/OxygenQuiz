@@ -10,6 +10,12 @@ namespace QuizAPI.Services.Media.Stock
         IReadOnlyList<StockProviderDTO> Providers();
         Task<StockSearchResultDTO> SearchAsync(string provider, string? query, int page, CancellationToken ct = default);
         Task<MediaAssetDTO> ImportAsync(Guid userId, StockImportCM cm, CancellationToken ct = default);
+
+        /// <summary>
+        /// The image for an AI-written question's search phrase: the best Commons result, else the
+        /// best Pexels one, imported exactly as a pick would be. NotFound when neither has a usable one.
+        /// </summary>
+        Task<MediaAssetDTO> AutoImportAsync(Guid userId, string? query, CancellationToken ct = default);
     }
 
     /// <summary>
@@ -72,6 +78,34 @@ namespace QuizAPI.Services.Media.Stock
 
             var bytes = await DownloadAsync(url, ct);
             return await media.UploadAsync(bytes, userId, detail.Credit, ct);
+        }
+
+        /// <summary>Commons first: AI images are for factual subjects (flags, landmarks, artworks),
+        /// which is what Commons holds; Pexels is the fallback for everyday ones.</summary>
+        public static readonly string[] AutoOrder = { "wikimedia", "pexels" };
+
+        public async Task<MediaAssetDTO> AutoImportAsync(Guid userId, string? query, CancellationToken ct = default)
+        {
+            ServiceUnavailableException? unavailable = null;
+            foreach (var id in AutoOrder)
+            {
+                if (!_providers.TryGetValue(id, out var source) || !source.Enabled) continue;
+                try
+                {
+                    var page = await SearchAsync(id, query, 1, ct);
+                    // A result can still fail at import (its licence changed, its file is too big
+                    // or not an image we take): try the next few before giving up on this source.
+                    foreach (var candidate in page.Items.Take(3))
+                    {
+                        try { return await ImportAsync(userId, new StockImportCM { Provider = id, Id = candidate.Id }, ct); }
+                        catch (NotFoundException) { }
+                        catch (AppValidationException) when (!ct.IsCancellationRequested) { }
+                    }
+                }
+                catch (ServiceUnavailableException e) { unavailable = e; }
+            }
+            if (unavailable is not null) throw unavailable;
+            throw new NotFoundException("No free image was found for that.");
         }
 
         private IStockImageProvider Resolve(string? provider)

@@ -4,12 +4,11 @@ How a question gets its optional image or audio clip, and a quiz its cover image
 store, attach on save, charge the quota, sweep what nothing uses. The design was settled in rounds
 in [`../proposals/media-pipeline.md`](../proposals/media-pipeline.md); this doc is what is built.
 
-> **Status: phases 1 and 3 implemented (2026-10-24)** — the pipeline, uploads from the device (images
-> and audio), quotas, the sweep, R2 storage, and free images from Wikimedia Commons and Pexels
-> (§7). It replaces the image-only `ImageAsset` pipeline (`ImageUploadController`, `ImageService`,
-> the nightly `image-cleanup-daily` job) and the unwired `/api/files` route for question media.
-> Phase 2, reporting and moderation, is in [`moderation.md`](moderation.md); AI-added images are
-> the proposal's last phase.
+> **Status: implemented (2026-10-24)** — the pipeline, uploads from the device (images and audio),
+> quotas, the sweep, R2 storage, free images from Wikimedia Commons and Pexels (§7) and pictures
+> the AI wizard adds (§8). It replaces the image-only `ImageAsset` pipeline (`ImageUploadController`,
+> `ImageService`, the nightly `image-cleanup-daily` job) and the unwired `/api/files` route for
+> question media. Reporting and moderation are in [`moderation.md`](moderation.md).
 
 ---
 
@@ -191,7 +190,33 @@ URL. Removing or replacing the image clears the credit; moderation's Remove medi
 could store, re-encode or scan, which could vanish, and which would send every player's address to
 Unsplash. It would add overlap, not coverage (proposal §3.8).
 
-## 8. Frontend
+## 8. AI-added images
+
+The AI wizard (both paths — generated here, or the prompt copied to your own AI) has an **Add
+pictures** switch under its options, **off by default**. On, the prompt asks the model to give an
+`imageQuery` — a short search phrase such as "Flag of Kosovo" — to **only** the questions a picture
+helps (a flag, a landmark, a painting, an animal, a person, a map), at most 10, never a URL, and
+never one that gives the answer away unless the question is about identifying the picture
+(`AiPromptBuilder`, rule and shape field). This is ADR 0003 applied to media: **the model proposes a
+phrase, our code decides the image.**
+
+1. **The parser keeps a phrase, nothing else** (`cleanImageQuery` in `parse-ai-output.ts`): 2–80
+   characters, and anything that looks like a link or a file name is dropped rather than searched.
+   Only the first 10 questions with one keep it.
+2. **Our server finds the picture.** `useAutoImages` sends each phrase to
+   `POST /api/media/stock/auto { query }`, which searches Commons, then Pexels, and imports the best
+   result whose licence and file pass — trying the next two if one fails at import — exactly as a
+   pick from the picker would (§7): re-encoded, deduplicated, credited, rate-limited with uploads.
+   404 when nothing usable turns up; a source that's down is skipped for the other.
+3. **The review opens with the pictures in place.** Between the reply and the review a short
+   "Finding pictures…" panel counts them in, with *Skip to the review*. The builder then shows each
+   picture with its credit; swapping (*Or find a free image*) or removing it is the ordinary picker.
+   A note on the review says how many were added and which questions asked and got none.
+
+Nothing is charged until the quiz is saved, like any upload; a picture removed in the review is
+swept with the other unsaved uploads.
+
+## 9. Frontend
 
 - **`MediaPicker`** ([`src/features/media/components/media-picker.tsx`](../../src/features/media/components/media-picker.tsx))
   is the one control: drag or click, client-side precheck (mirrors the API), inline error with the
@@ -211,14 +236,14 @@ Unsplash. It would add overlap, not coverage (proposal §3.8).
   review, the play screens and multiplayer, which until this change sent only the legacy image
   column, so audio never reached a lobby.
 
-## 9. Existing images were dropped
+## 10. Existing images were dropped
 
 The `AddMediaPipeline` migration clears every pre-pipeline media URL (`Questions.MediaUrl`/`MediaType`,
 `Quizzes.ImageUrl`), drops `Questions.ImageUrl` and the `ImageAssets` table. Production held a
 question or two with an image, all on the VPS disk; a URL with no asset behind it could not be
 swept, moderated or moved. The old files stay on the uploads volume until removed by hand (runbook).
 
-## 10. Tests
+## 11. Tests
 
 | Suite | File | Proves |
 |---|---|---|
@@ -226,8 +251,10 @@ swept, moderated or moved. The old files stay on the uploads volume until remove
 | xUnit | `Media/MediaPipelineTests.cs` | Dedup; unsaved cap and its exemptions; removed hash can't return; URL copied on save; unknown/removed asset refused; cover must be an image; charged on save not upload; daily limit and its UTC reset; reuse is free; same asset on edit isn't recharged; storage counts distinct files; a multi-question save is tallied; the sweep's 24 h, 7 d, in-use, copy-survives, undo, tombstone and unreachable-bucket cases |
 | xUnit | `Security/MediaEndpointTests.cs` | Upload needs sign-in, is rate-limited and size-capped; **no write model has a URL or media-type field** |
 | xUnit | `Editing/QuizNoOpSaveTests.cs` | A quiz edit attaches the cover by id and the server writes its URL |
-| xUnit | `Media/StockImageTests.cs` | Commons licence filter (PD, CC0, CC BY, CC BY-SA in; NC, ND, fair use, GFDL-only, non-free out); the Artist HTML made plain; search order, GIFs dropped, `hasMore`; one source request for a repeated search; blank query and page range refused; unknown source refused, Pexels without a key unavailable; a Commons and a Pexels import store the image with the source's credit and download from the source's own host; a licence changed since the search refused at import; a protocol-relative or http Commons URL made https; a download URL off the declared host or not https never fetched; the size cap with and without a Content-Length; the credit copied onto a question and cleared with the image; only https credit links stored; hand-uploaded bytes gain the credit when imported |
+| xUnit | `Media/StockImageTests.cs` | Commons licence filter (PD, CC0, CC BY, CC BY-SA in; NC, ND, fair use, GFDL-only, non-free out); the Artist HTML made plain; search order, GIFs dropped, `hasMore`; one source request for a repeated search; blank query and page range refused; unknown source refused, Pexels without a key unavailable; a Commons and a Pexels import store the image with the source's credit and download from the source's own host; a licence changed since the search refused at import; a protocol-relative or http Commons URL made https; a download URL off the declared host or not https never fetched; the size cap with and without a Content-Length; the credit copied onto a question and cleared with the image; only https credit links stored; hand-uploaded bytes gain the credit when imported; an AI phrase imports the best Commons result, falls back to Pexels, moves past a result that fails at import, is 404 with nothing stored when nothing is found, tries Pexels when Commons is down and is 503 only when both are, and is validated like a search |
 | Vitest | `src/features/media/__tests__/media-picker.test.tsx` | Precheck mirrors the API; upload hands the form an id; server reason shown inline; covers refuse audio; preview and Remove; the credit line, linked to the source page |
+| xUnit | `Ai/AiPromptBuilderTests.cs` | Without the switch no image is asked for; with it, a search phrase on only the questions it helps, never a URL, at most 10, not giving the answer away; the shape's field list stays comma-correct with every optional field on |
+| Vitest | `…/AI-Quiz/__tests__/auto-images.test.tsx` | The parser keeps a plain phrase and drops links, file names, descriptions; only 10 questions keep one; nothing is attached by the parser; `useAutoImages` asks the server per phrase, puts each found picture (with its credit) on its question, lists the ones not found, is never pending with nothing to find, and Skip goes on at once |
 | Vitest | `src/features/media/__tests__/stock-image-dialog.test.tsx` | Search sends source and query; an import sends provider and id only; Pexels offered only with a key; a refused import explained in place; the ⓘ reveals an outside image's credit, and the author's own image has none |
 | Vitest | `…/overview/__tests__/review-model.test.ts` | The review shows a builder question's media and a saved one's alike |
 

@@ -1,4 +1,5 @@
 import { Label, Textarea } from "@/components/ui/form";
+import { Switch } from "@/components/ui/switch";
 import type { QuestionType } from "@/types/question-types";
 
 import { QuestionCountStepper } from "./question-count-stepper";
@@ -13,6 +14,10 @@ export interface AdvancedOptionsProps {
   typesError?: string;
   extraInstructions: string;
   onExtraInstructionsChange: (value: string) => void;
+  /** "Add images" (docs/media/media-pipeline.md, "AI-added images"). The switch shows when a
+   *  handler is passed; off by default. */
+  addImages?: boolean;
+  onAddImagesChange?: (value: boolean) => void;
 }
 
 /**
@@ -54,6 +59,8 @@ export const AdvancedOptions = ({
   typesError,
   extraInstructions,
   onExtraInstructionsChange,
+  addImages = false,
+  onAddImagesChange,
 }: AdvancedOptionsProps) => (
   <section aria-label="Quiz details">
     {/* One column. The `md:grid-cols-2` split existed to keep two columns' worth of fields
@@ -105,6 +112,27 @@ export const AdvancedOptions = ({
           onChange={(e) => onExtraInstructionsChange(e.target.value)}
         />
       </div>
+
+      {onAddImagesChange && (
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <Label htmlFor="ai-add-images" className="text-sm font-medium">
+              Add pictures
+            </Label>
+            <p id="ai-add-images-hint" className="mt-1 text-xs text-muted-foreground">
+              Questions a picture helps — a flag, a landmark, a painting — get one, found on Wikimedia
+              Commons or Pexels and credited. You check each one in the review.
+            </p>
+          </div>
+          <Switch
+            id="ai-add-images"
+            aria-describedby="ai-add-images-hint"
+            checked={addImages}
+            onCheckedChange={onAddImagesChange}
+            className="mt-0.5 shrink-0"
+          />
+        </div>
+      )}
     </div>
   </section>
 );

@@ -103,6 +103,8 @@ export const AiQuizWizard = () => {
       onToggleType={draft.toggleType}
       extraInstructions={draft.extraInstructions}
       onExtraInstructionsChange={draft.setExtraInstructions}
+      addImages={draft.addImages}
+      onAddImagesChange={draft.setAddImages}
       onGenerate={handleGenerate}
       isGenerating={generateMutation.isPending}
       generateError={generateError}
