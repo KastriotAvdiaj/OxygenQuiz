@@ -1,6 +1,6 @@
 import { EditPencil } from "@/components/icons/edit-pencil";
 import { PlayTriangle } from "@/components/icons/play-triangle";
-import { Copy, Eye, EyeOff, MoreHorizontal, Trash2 } from "lucide-react";
+import { Copy, Eye, EyeOff, MoreHorizontal, Sparkles, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +22,9 @@ export interface QuizActionsMenuProps {
   isStatusPending: boolean;
   onEdit: () => void;
   onDelete: () => void;
+  /** Staff with `quiz:pick`, on a Public quiz that isn't held — docs/media/moderation.md. */
+  onTogglePick?: () => void;
+  isPickPending?: boolean;
 }
 
 /**
@@ -57,6 +60,8 @@ export const QuizActionsMenu = ({
   isStatusPending,
   onEdit,
   onDelete,
+  onTogglePick,
+  isPickPending,
 }: QuizActionsMenuProps) => (
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
@@ -107,6 +112,13 @@ export const QuizActionsMenu = ({
         {isDraft ? <Eye size={16} /> : <EyeOff size={16} />}
         {isDraft ? "Publish" : "Unpublish"}
       </DropdownMenuItem>
+
+      {onTogglePick && (
+        <DropdownMenuItem className="hover:bg-background" disabled={isPickPending} onClick={onTogglePick}>
+          <Sparkles size={16} />
+          {quiz.isPicked ? "Remove from picked" : "Pick for the catalogue"}
+        </DropdownMenuItem>
+      )}
 
       {/* `onSelect` + a frame's delay, not `onClick`: the confirm dialog is owned by the page
           and rendered outside this menu, and opening it while Radix is still closing the menu

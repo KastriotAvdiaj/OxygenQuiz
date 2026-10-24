@@ -92,6 +92,8 @@ export interface QuestionBase {
   mediaAssetId?: string | null;
   /** Written by the API from the asset; null when there's no media. */
   mediaUrl?: string | null;
+  /** Under a moderation cover pending review (docs/media/moderation.md). */
+  mediaHidden?: boolean;
   mediaType?: QuestionMediaType;
   /** Optional "why", shown to players after they answer. Null when the author wrote none. */
   explanation?: string | null;

@@ -139,7 +139,15 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
     header: "Status",
     meta: { priority: 1 },
     cell: ({ row }) => {
-      const { status, deletedAt } = row.original;
+      const { status, deletedAt, moderationHeld } = row.original;
+      if (moderationHeld && !deletedAt) {
+        // Held by a moderator (docs/media/moderation.md): whatever the status, nobody else sees it.
+        return (
+          <span className="inline-flex items-center rounded-full border border-amber-500/40 bg-amber-500/15 px-2.5 py-0.5 text-xs font-medium text-foreground">
+            Under review
+          </span>
+        );
+      }
       if (deletedAt) {
         return (
           <span className="inline-flex items-center rounded-full border border-destructive/30 bg-destructive/15 px-2.5 py-0.5 text-xs font-medium text-destructive">
@@ -206,8 +214,9 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
   // Play mirrors `QuizPlayAccess.IsPlayAuthorized` (Public, or yours). Copy link: a Public quiz's
   // listing URL is public, so anyone may copy it; an Unlisted quiz's share link mirrors
   // `GenerateShareTokenAsync` (yours); a Draft has no link (docs/quiz/quiz-listing.md).
-  const canPlay = !quiz.deletedAt && (quiz.status === "Public" || isOwn);
-  const canShare = !quiz.deletedAt && (quiz.status === "Public" || (isOwn && quiz.status === "Unlisted"));
+  const canPlay = !quiz.deletedAt && ((quiz.status === "Public" && !quiz.moderationHeld) || isOwn);
+  const canShare =
+    !quiz.deletedAt && !quiz.moderationHeld && (quiz.status === "Public" || (isOwn && quiz.status === "Unlisted"));
   const shareLink = useCopyQuizLink();
   // Publish / Unpublish from the row, without opening the quiz first. Same target rule as the
   // quiz page's menu (Quiz.tsx `handleSetStatus`): a Draft goes Public, anything else back to

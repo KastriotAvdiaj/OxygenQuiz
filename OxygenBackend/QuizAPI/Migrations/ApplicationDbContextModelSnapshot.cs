@@ -162,6 +162,16 @@ namespace QuizAPI.Migrations
                         },
                         new
                         {
+                            RoleId = 3,
+                            PermissionId = 17
+                        },
+                        new
+                        {
+                            RoleId = 3,
+                            PermissionId = 18
+                        },
+                        new
+                        {
                             RoleId = 1,
                             PermissionId = 1
                         },
@@ -234,6 +244,16 @@ namespace QuizAPI.Migrations
                         {
                             RoleId = 1,
                             PermissionId = 16
+                        },
+                        new
+                        {
+                            RoleId = 1,
+                            PermissionId = 17
+                        },
+                        new
+                        {
+                            RoleId = 1,
+                            PermissionId = 18
                         },
                         new
                         {
@@ -1126,6 +1146,68 @@ namespace QuizAPI.Migrations
                     b.ToTable("MediaAssets");
                 });
 
+            modelBuilder.Entity("QuizAPI.Models.Moderation.ContentReport", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Details")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<int?>("Outcome")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("QuestionId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("QuizId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Reason")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ReporterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ResolutionNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ResolvedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuestionId");
+
+                    b.HasIndex("QuizId");
+
+                    b.HasIndex("ReporterId", "QuestionId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_ContentReports_OneOpenPerQuestion")
+                        .HasFilter("\"QuestionId\" IS NOT NULL AND \"Status\" = 0");
+
+                    b.HasIndex("ReporterId", "QuizId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_ContentReports_OneOpenPerQuiz")
+                        .HasFilter("\"QuestionId\" IS NULL AND \"Status\" = 0");
+
+                    b.HasIndex("Status", "CreatedAt");
+
+                    b.ToTable("ContentReports");
+                });
+
             modelBuilder.Entity("QuizAPI.Models.Notification", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1331,6 +1413,20 @@ namespace QuizAPI.Migrations
                             Description = "Update any user details",
                             Name = "user:update:any",
                             isActive = false
+                        },
+                        new
+                        {
+                            Id = 17,
+                            Description = "Review reports, hide media, hold quizzes",
+                            Name = "moderation:manage",
+                            isActive = false
+                        },
+                        new
+                        {
+                            Id = 18,
+                            Description = "Pick a quiz for the main catalogue",
+                            Name = "quiz:pick",
+                            isActive = false
                         });
                 });
 
@@ -1362,6 +1458,9 @@ namespace QuizAPI.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("MediaCountedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("MediaHiddenAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("MediaType")
@@ -1574,8 +1673,20 @@ namespace QuizAPI.Migrations
                     b.Property<string>("ImageUrl")
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsHouse")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPicked")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("LanguageId")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ModerationHeldAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("PickedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("ShareToken")
                         .HasMaxLength(64)
@@ -2252,6 +2363,23 @@ namespace QuizAPI.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("GrantedRole");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.Moderation.ContentReport", b =>
+                {
+                    b.HasOne("QuizAPI.Models.QuestionBase", "Question")
+                        .WithMany()
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("QuizAPI.Models.Quiz.Quiz", "Quiz")
+                        .WithMany()
+                        .HasForeignKey("QuizId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Question");
+
+                    b.Navigation("Quiz");
                 });
 
             modelBuilder.Entity("QuizAPI.Models.Notification", b =>

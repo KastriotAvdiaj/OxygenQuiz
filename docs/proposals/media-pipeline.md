@@ -2,9 +2,10 @@
 
 **Status: accepted, being built (settled 2026-10-24).** Phase 1 — the pipeline, R2, uploads, quotas,
 the sweep (§3.1–3.5, 3.8–3.12, 3.15, 3.23) — is built and described in
-[`../media/media-pipeline.md`](../media/media-pipeline.md). Phases 2–4 (moderation and the picked
-catalogue, the Pexels/Wikimedia picker, AI-added images) are next; this file is deleted once they are
-folded in too.
+[`../media/media-pipeline.md`](../media/media-pipeline.md). Phase 2 — reports, moderation and the
+picked catalogue (§3.6–3.7, 3.16–3.19, 3.21–3.22) — is built and described in
+[`../media/moderation.md`](../media/moderation.md). Phases 3–4 (the Pexels/Wikimedia picker,
+AI-added images) are next; this file is deleted once they are folded in too.
 
 An author is building a geography quiz. Question 7 is "Which country's flag is this?" — they
 want a flag image, and they don't have one on disk. Question 12 is "Name this anthem" and needs
@@ -234,9 +235,10 @@ inappropriate image, offence — is a **report**: the button says *Report*, the 
 `ContentReport`. It doubles as the fact-checker: most reports on a quiz app will be "the answer
 is wrong".
 
-`docs/quiz/reports.md` already uses "Reports" for something else: the owner's statistics
+`docs/quiz/reports.md` used "Reports" for something else: the owner's statistics
 (attempts, completion, per-question correct %) with CSV/Excel export, built but never shipped.
-It is renamed **Statistics export** before either ships, so the codebase has one meaning per
+It is renamed **Statistics export** ([`../quiz/statistics-export.md`](../quiz/statistics-export.md), done
+in phase 2) before either ships, so the codebase has one meaning per
 word. The two are not merged: they share no data and answer different people.
 
 ### 3.17 Signed-in users report a question or a quiz, once each

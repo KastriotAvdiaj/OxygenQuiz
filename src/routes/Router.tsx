@@ -479,14 +479,12 @@ const createAppRouter = (queryClient: QueryClient) =>
           loader: dashboardListLoader(queryClient, prefetchQuestionsPageData),
         },
         {
-          // Placeholder while the reporting screen is finished. The real UI is still in
-          // the tree (UserDashboard/MyReports.tsx) — swap the import back when it's ready.
-          // See docs/quiz/reports.md.
+          // The moderators' queue of viewer reports (docs/media/moderation.md). The API checks
+          // moderation:manage; the nav offers it to Admin and SuperAdmin.
           path: "reports",
           lazy: async () => {
-            const { ReportsComingSoon } =
-              await import("../pages/Dashboard/Pages/Reports/ReportsComingSoon");
-            return { Component: ReportsComingSoon };
+            const { ModerationReports } = await import("../pages/Dashboard/Pages/Reports/ModerationReports");
+            return { Component: ModerationReports };
           },
         },
         {
@@ -760,11 +758,12 @@ const createAppRouter = (queryClient: QueryClient) =>
           },
         },
         {
-          // Reports left the player dashboard — it's an operator concern and it isn't
-          // finished (docs/quiz/reports.md). Redirected rather than 404'd so existing
-          // links and bookmarks land somewhere real.
+          // Wrong-answer reports on the author's own content (docs/media/moderation.md).
           path: "reports",
-          element: <Navigate to="/my-dashboard/quizzes" replace />,
+          lazy: async () => {
+            const { ReceivedReports } = await import("../pages/UserDashboard/ReceivedReports");
+            return { Component: ReceivedReports };
+          },
         },
         {
           // Same as the admin dashboard's create route — see the note there.

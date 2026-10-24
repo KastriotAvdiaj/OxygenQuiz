@@ -72,6 +72,30 @@ namespace QuizAPI.Models.Quiz
         /// cost nothing (the asset was already in use in their content).</summary>
         public DateTime? CoverCountedAt { get; set; }
 
+        /// <summary>
+        /// A moderation hold: the quiz leaves the catalogue and can't be played by anyone but its
+        /// owner, who sees an "Under review" banner. Separate from <see cref="Status"/> on purpose —
+        /// a hold the owner could lift by republishing would be no hold. Enforced at each entry point
+        /// like visibility (ADR 0019; docs/media/moderation.md, "Hiding").
+        /// </summary>
+        public DateTime? ModerationHeldAt { get; set; }
+
+        /// <summary>
+        /// In the main catalogue. House quizzes are picked when created; a community quiz is picked
+        /// by an admin (<c>quiz:pick</c>). Only picked quizzes are in the sitemap; a community quiz's
+        /// listing page is <c>noindex</c>. docs/media/moderation.md, "Picked and community quizzes".
+        /// </summary>
+        public bool IsPicked { get; set; }
+
+        public DateTime? PickedAt { get; set; }
+
+        /// <summary>
+        /// Made by staff (an Admin or SuperAdmin at creation). A picked house quiz carries no badge;
+        /// a picked community quiz shows "Oxygen Pick". Stamped once — a later role change doesn't
+        /// turn someone's old quizzes into house quizzes.
+        /// </summary>
+        public bool IsHouse { get; set; }
+
 
         [JsonIgnore]
         [ForeignKey(nameof(LanguageId))]

@@ -283,6 +283,13 @@ builder.Services.AddScoped<QuizAPI.Services.Media.IMediaService, QuizAPI.Service
 builder.Services.AddScoped<QuizAPI.Services.Media.IMediaAttachmentService, QuizAPI.Services.Media.MediaAttachmentService>();
 builder.Services.AddScoped<QuizAPI.Services.Media.MediaSweeper>();
 
+// Reports and moderation (docs/media/moderation.md).
+builder.Services.Configure<QuizAPI.Services.Moderation.ModerationOptions>(
+    builder.Configuration.GetSection(QuizAPI.Services.Moderation.ModerationOptions.Section));
+builder.Services.AddScoped<QuizAPI.Repositories.Interfaces.IModerationRepository, QuizAPI.Repositories.ModerationRepository>();
+builder.Services.AddScoped<QuizAPI.Services.Moderation.IContentReportService, QuizAPI.Services.Moderation.ContentReportService>();
+builder.Services.AddScoped<QuizAPI.Services.Moderation.IModerationService, QuizAPI.Services.Moderation.ModerationService>();
+
 // Generic file upload service
 builder.Services.AddScoped<QuizAPI.Controllers.Files.Services.IFileService, QuizAPI.Controllers.Files.Services.FileService>();
 
@@ -295,7 +302,7 @@ builder.Services.AddSingleton<QuizAPI.Services.DataTransfer.IDataExportService, 
 builder.Services.AddSingleton<QuizAPI.Services.DataTransfer.IDataImportService, QuizAPI.Services.DataTransfer.DataImportService>();
 
 // Dynamic reports (quiz performance, question analytics) — scoped, reads the DbContext.
-builder.Services.AddScoped<QuizAPI.Services.Reports.IReportService, QuizAPI.Services.Reports.ReportService>();
+builder.Services.AddScoped<QuizAPI.Services.StatisticsExport.IStatisticsService, QuizAPI.Services.StatisticsExport.StatisticsService>();
 
 // --- In-app AI quiz generation (docs/quiz/ai-quiz-generation-plan.md) ---
 // Bind the section, resolve the vendor, and decide whether AI can work at all — once, eagerly,

@@ -141,9 +141,10 @@ namespace QuizAPI.Controllers.Quizzes
         [HttpGet("search")]
         [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> SearchPublicQuizzes([FromQuery] FilterQuery query, CancellationToken ct)
+        public async Task<IActionResult> SearchPublicQuizzes([FromQuery] FilterQuery query, CancellationToken ct, [FromQuery] string? scope = null)
         {
-            var result = await _quizService.SearchQuizzesAsync(query, publicOnly: true, ct: ct);
+            // scope = picked | community | (all): docs/media/moderation.md, "Picked and community quizzes".
+            var result = await _quizService.SearchQuizzesAsync(query, publicOnly: true, ct: ct, scope: scope);
             return Ok(result);
         }
 

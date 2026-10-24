@@ -7,8 +7,9 @@ in [`../proposals/media-pipeline.md`](../proposals/media-pipeline.md); this doc 
 > **Status: phase 1 implemented (2026-10-24)** — the pipeline, uploads from the device (images and
 > audio), quotas, the sweep, R2 storage. It replaces the image-only `ImageAsset` pipeline
 > (`ImageUploadController`, `ImageService`, the nightly `image-cleanup-daily` job) and the
-> unwired `/api/files` route for question media. Reporting and moderation, the Pexels/Wikimedia
-> picker and AI-added images are later phases of the same proposal.
+> unwired `/api/files` route for question media. Phase 2, reporting and moderation, is in
+> [`moderation.md`](moderation.md); the Pexels/Wikimedia picker and AI-added images are later phases
+> of the same proposal.
 
 ---
 

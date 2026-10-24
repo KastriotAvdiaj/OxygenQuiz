@@ -22,7 +22,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             Guid? restrictToUserId = null,
             bool publicOnly = false,
             bool includeDeleted = false,
-            CancellationToken ct = default);
+            CancellationToken ct = default,
+            string? scope = null);
 
         /// <summary>
         /// Get quizzes created by a specific user

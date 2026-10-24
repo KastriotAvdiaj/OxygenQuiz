@@ -164,7 +164,13 @@ export function MultiplayerQuestionView({ match, username, participants }: Multi
 
         <QuestionCard text={question.text} />
 
-        <QuestionMedia mediaUrl={currentQuestion.mediaUrl} mediaType={currentQuestion.mediaType} alt="Question image" />
+        <QuestionMedia
+          mediaUrl={currentQuestion.mediaUrl}
+          mediaType={currentQuestion.mediaType}
+          hidden={currentQuestion.mediaHidden}
+          questionId={currentQuestion.questionId}
+          alt="Question image"
+        />
 
         {hasSubmitted ? (
           <motion.div
@@ -205,6 +211,8 @@ function toCurrentQuestion(q: RoundQuestionView, secondsLeft: number): CurrentQu
     questionText: q.text,
     mediaUrl: q.mediaUrl ?? null,
     mediaType: q.mediaType ?? "None",
+    mediaHidden: q.mediaHidden ?? false,
+    questionId: q.questionId,
     options,
     timeLimitInSeconds: q.timeLimitSeconds,
     timeRemainingInSeconds: secondsLeft,

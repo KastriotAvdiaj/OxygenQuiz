@@ -24,8 +24,8 @@ _Avoid_: Asocijacije, association quiz, connections
 
 **Picked quiz**:
 A `Public` quiz an admin has picked for the main catalogue — house quizzes automatically, and
-community quizzes chosen for quality. Proposed in
-[`media-pipeline.md`](../proposals/media-pipeline.md) §3.6; not built yet.
+community quizzes chosen for quality (`Quiz.IsPicked`). See
+[`moderation.md`](../media/moderation.md) §5.
 _Avoid_: official quiz (the first name for it; excludes good user quizzes), featured (suggests a
 temporary highlight), approved or verified (imply fact-checking), Oxygen Pick (that is the badge's
 display text, and the brand may change)
@@ -34,6 +34,28 @@ display text, and the brand may change)
 A `Public` quiz that isn't picked — written by a user and not reviewed.
 _Avoid_: user quiz (a picked quiz can be a user's too), public quiz (a picked quiz is Public too),
 unofficial quiz
+
+**House quiz**:
+A quiz made by staff (an Admin or SuperAdmin; `Quiz.IsHouse`), picked automatically at creation and
+shown without a badge.
+_Avoid_: official quiz
+
+**Held quiz**:
+A quiz a moderator (or 10 reporters) took out of sight pending review (`Quiz.ModerationHeldAt`):
+out of the catalogue, playable by its owner only. Not a `Status` — the owner can't undo it.
+_Avoid_: hidden quiz, banned quiz, unpublished (that is the owner's Draft)
+
+## Reports
+
+**Report**:
+A signed-in player's complaint about a question or quiz (`ContentReport`) — a wrong answer, an
+inappropriate image, offence, spam, copyright. See [`moderation.md`](../media/moderation.md).
+_Avoid_: flag, complaint; and never for the owner's statistics, which are the **Statistics export**
+
+**Hidden media**:
+A question's image or clip under a moderation cover (`Question.MediaHiddenAt`); the question still
+plays, and signed-in players can choose *Show anyway*.
+_Avoid_: hidden question (a question is never hidden)
 
 ## Pages about one quiz
 

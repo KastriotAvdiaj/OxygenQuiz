@@ -38,10 +38,13 @@ export interface AnswerOption {
 export interface CurrentQuestion {
   quizQuestionId: number;
   questionText: string;
-  // Optional media attachment shown with the question (absolute URL from the API). For legacy
-  // image-only questions the backend falls back to the old ImageUrl, with mediaType "Image".
+  /** The question itself — what a report and "Show anyway" name (not the quiz-question row). */
+  questionId?: number;
+  // Optional image or clip (docs/media/media-pipeline.md). Null when the media is hidden by
+  // moderation — the server never sends a hidden file's URL to a player.
   mediaUrl?: string | null;
   mediaType?: QuestionMediaType;
+  mediaHidden?: boolean;
   options: AnswerOption[];
   timeLimitInSeconds: number;
   timeRemainingInSeconds: number;
@@ -83,8 +86,10 @@ export interface UserAnswer {
   selectedOptionId: number | null; // For MC/T-F questions
   submittedAnswer: string | null;
   questionText: string;
+  questionId?: number;
   mediaUrl?: string | null;
   mediaType?: QuestionMediaType;
+  mediaHidden?: boolean;
   questionType: QuestionType; // matches backend enum
   timeLimitInSeconds: number;
   timeSpentInSeconds: number | null; // Calculated field

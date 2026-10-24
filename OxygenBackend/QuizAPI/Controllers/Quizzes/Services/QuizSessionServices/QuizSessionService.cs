@@ -335,7 +335,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 // authorize Unlisted/Draft access.
                 var quiz = await _context.Quizzes
                     .AsNoTracking()
-                    .FirstOrDefaultAsync(q => q.Id == quizId && q.Status == QuizStatus.Public);
+                    .FirstOrDefaultAsync(q => q.Id == quizId && q.Status == QuizStatus.Public
+                        && q.ModerationHeldAt == null); // a held quiz can't be played (moderation.md)
 
                 if (quiz == null)
                     return Result<QuizSessionDto>.ValidationFailure("Quiz not found or not available.");

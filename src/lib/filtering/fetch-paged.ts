@@ -16,8 +16,10 @@ import type { FilterQuery, PagedResponse } from "./types";
  */
 export async function fetchPaged<T>(
   url: string,
-  query: FilterQuery
+  query: FilterQuery,
+  /** Endpoint-specific parameters beside the filter query (e.g. the catalogue's `scope`). */
+  params?: Record<string, string | undefined>
 ): Promise<PagedResponse<T>> {
-  const result = await api.get(`${url}${buildFilterQueryString(query)}`);
+  const result = await api.get(`${url}${buildFilterQueryString(query)}`, params ? { params } : undefined);
   return result.data as PagedResponse<T>;
 }

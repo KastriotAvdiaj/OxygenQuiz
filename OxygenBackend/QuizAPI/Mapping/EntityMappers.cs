@@ -127,6 +127,7 @@ namespace QuizAPI.Mapping
                 CreatedAt = q.CreatedAt,
                 MediaAssetId = q.MediaAssetId,
                 MediaUrl = q.MediaUrl,
+                MediaHidden = q.MediaHiddenAt != null,
                 Explanation = q.Explanation,
                 MediaType =
                     q.MediaType == QuestionMediaType.Image ? "Image" :
@@ -172,6 +173,7 @@ namespace QuizAPI.Mapping
                 CreatedAt = q.CreatedAt,
                 MediaAssetId = q.MediaAssetId,
                 MediaUrl = q.MediaUrl,
+                MediaHidden = q.MediaHiddenAt != null,
                 Explanation = q.Explanation,
                 MediaType =
                     q.MediaType == QuestionMediaType.Image ? "Image" :
@@ -221,6 +223,7 @@ namespace QuizAPI.Mapping
                 CreatedAt = q.CreatedAt,
                 MediaAssetId = q.MediaAssetId,
                 MediaUrl = q.MediaUrl,
+                MediaHidden = q.MediaHiddenAt != null,
                 Explanation = q.Explanation,
                 MediaType =
                     q.MediaType == QuestionMediaType.Image ? "Image" :
@@ -267,6 +270,7 @@ namespace QuizAPI.Mapping
                 CreatedAt = q.CreatedAt,
                 MediaAssetId = q.MediaAssetId,
                 MediaUrl = q.MediaUrl,
+                MediaHidden = q.MediaHiddenAt != null,
                 Explanation = q.Explanation,
                 MediaType =
                     q.MediaType == QuestionMediaType.Image ? "Image" :
@@ -437,7 +441,10 @@ namespace QuizAPI.Mapping
                 UserProfileImageUrl = q.User == null ? null : q.User.ProfileImageUrl,
                 Status = q.Status.ToString(),
                 Format = q.Format == QuizFormat.Associations ? FormatNames.Associations : FormatNames.Classic,
-                DeletedAt = q.DeletedAt
+                DeletedAt = q.DeletedAt,
+                IsPicked = q.IsPicked,
+                IsHouse = q.IsHouse,
+                ModerationHeld = q.ModerationHeldAt != null,
             };
 
         /// <summary>
@@ -462,6 +469,8 @@ namespace QuizAPI.Mapping
                 Format = q.Format == QuizFormat.Associations ? FormatNames.Associations : FormatNames.Classic,
                 CreatedAt = q.CreatedAt,
                 UpdatedAt = q.UpdatedAt,
+                IsPicked = q.IsPicked,
+                IsHouse = q.IsHouse,
             };
 
         /// <summary>One sitemap row: enough for the URL (id + slugged title) and its lastmod.</summary>
@@ -481,6 +490,9 @@ namespace QuizAPI.Mapping
                 Version = q.Version,
                 ImageUrl = q.ImageUrl,
                 CoverAssetId = q.CoverAssetId,
+                IsPicked = q.IsPicked,
+                IsHouse = q.IsHouse,
+                ModerationHeld = q.ModerationHeldAt != null,
                 // Live rows only — retired rows belong to past versions (docs/quiz/quiz-editing.md).
                 QuestionCount = q.QuizQuestions.Count(qq => qq.RemovedInVersion == null),
                 Status = q.Status.ToString(),
@@ -610,7 +622,10 @@ namespace QuizAPI.Mapping
                 SelectedOptionId = ua.SelectedOptionId,
                 SubmittedAnswer = ua.SubmittedAnswer,
                 QuestionText = ua.QuizQuestion.Question.Text,
-                MediaUrl = ua.QuizQuestion.Question.MediaUrl,
+                // A hidden file's URL never goes to a player (docs/media/moderation.md, "Hiding").
+                MediaUrl = ua.QuizQuestion.Question.MediaHiddenAt == null ? ua.QuizQuestion.Question.MediaUrl : null,
+                MediaHidden = ua.QuizQuestion.Question.MediaHiddenAt != null,
+                QuestionId = ua.QuizQuestion.QuestionId,
                 MediaType =
                     ua.QuizQuestion.Question.MediaType == QuestionMediaType.Image ? "Image" :
                     ua.QuizQuestion.Question.MediaType == QuestionMediaType.Audio ? "Audio" :
@@ -709,7 +724,10 @@ namespace QuizAPI.Mapping
                         SelectedOptionId = ua.SelectedOptionId,
                         SubmittedAnswer = ua.SubmittedAnswer,
                         QuestionText = ua.QuizQuestion.Question.Text,
-                        MediaUrl = ua.QuizQuestion.Question.MediaUrl,
+                        // A hidden file's URL never goes to a player (docs/media/moderation.md, "Hiding").
+                MediaUrl = ua.QuizQuestion.Question.MediaHiddenAt == null ? ua.QuizQuestion.Question.MediaUrl : null,
+                MediaHidden = ua.QuizQuestion.Question.MediaHiddenAt != null,
+                QuestionId = ua.QuizQuestion.QuestionId,
                         MediaType =
                             ua.QuizQuestion.Question.MediaType == QuestionMediaType.Image ? "Image" :
                             ua.QuizQuestion.Question.MediaType == QuestionMediaType.Audio ? "Audio" :
@@ -835,8 +853,12 @@ namespace QuizAPI.Mapping
             {
                 QuizQuestionId = qq.Id,
                 QuestionText = qq.Question.Text,
-                MediaUrl = qq.Question.MediaUrl,
+                // A hidden file's URL never goes to a player; "Show anyway" asks for it signed in
+                // (GET /api/media/hidden/question/{id}). docs/media/moderation.md, "Hiding".
+                MediaUrl = qq.Question.MediaHiddenAt == null ? qq.Question.MediaUrl : null,
                 MediaType = qq.Question.MediaType.ToString(),
+                MediaHidden = qq.Question.MediaHiddenAt != null,
+                QuestionId = qq.QuestionId,
                 TimeLimitInSeconds = qq.TimeLimitInSeconds,
                 QuestionType = qq.Question.Type.ToString(),
                 Options = options,

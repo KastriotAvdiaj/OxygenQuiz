@@ -1,14 +1,12 @@
 /**
  * PARKED — not currently routed. Kept deliberately, not dead by accident.
  *
- * Reporting was removed from the player dashboard: it's an operator concern, and this
- * screen isn't finished. `/dashboard/reports` renders `ReportsComingSoon` in its place, and
- * `/my-dashboard/reports` redirects away. The backend endpoints, `ReportService` and the
- * export framework this calls are all still live — see docs/quiz/reports.md.
+ * Statistics export: quiz performance and question analytics, downloadable as CSV, Excel or
+ * JSON. Unfinished, so it has no route; the backend endpoints (`/api/statistics/*`) and the
+ * export framework are live — see docs/quiz/statistics-export.md. It was called "Reports"
+ * until viewer reports of questions took that word (docs/media/moderation.md).
  *
- * To ship it: point the `reports` route in `src/routes/Router.tsx` at this component.
- * The file name is a leftover from when it lived under `/my-dashboard`; rename it if it
- * comes back as an admin page.
+ * To ship it: add a route in `src/routes/Router.tsx` (an admin page) pointing here.
  */
 import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,7 +28,7 @@ import {
   type ReportExportFormat,
   type QuizPerformanceRow,
   type QuestionAnalyticsRow,
-} from "./api/reports";
+} from "./api/statistics";
 import { LiftedButton } from "@/common/LiftedButton";
 import { BookPlus } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -62,7 +60,7 @@ const REPORTS: { id: ReportType; label: string; columns: Column[] }[] = [
   { id: "question-analytics", label: "Question Analytics", columns: QUESTION_COLUMNS },
 ];
 
-export const MyReports = () => {
+export const StatisticsExport = () => {
   const addNotification = useNotifications((s) => s.addNotification);
 
   const [type, setType] = useState<ReportType>("quiz-performance");
@@ -338,4 +336,4 @@ export const MyReports = () => {
   );
 };
 
-export default MyReports;
+export default StatisticsExport;

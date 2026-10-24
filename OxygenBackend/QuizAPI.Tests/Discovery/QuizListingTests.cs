@@ -68,6 +68,9 @@ public class QuizListingTests
                 ShareToken = Guid.NewGuid().ToString("N"), CreatedAt = Created, UpdatedAt = Edited,
             };
             var pub = Q("Kërrë gjeneral për makina", QuizStatus.Public);
+            // Picked: since 2026-10-24 only picked quizzes are in the sitemap (a community quiz still
+            // has a listing page, served noindex). HoldAndPickedEntryPointTests covers the split.
+            pub.IsPicked = true;
             var draft = Q("Draft", QuizStatus.Draft);
             var unlisted = Q("Unlisted", QuizStatus.Unlisted);
             var deleted = Q("Deleted", QuizStatus.Public);

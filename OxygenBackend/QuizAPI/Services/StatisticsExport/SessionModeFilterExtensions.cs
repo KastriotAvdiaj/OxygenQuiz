@@ -1,7 +1,7 @@
-using QuizAPI.DTOs.Reports;
+using QuizAPI.DTOs.Statistics;
 using QuizAPI.Models.Quiz;
 
-namespace QuizAPI.Services.Reports
+namespace QuizAPI.Services.StatisticsExport
 {
     /// <summary>
     /// Turns a <see cref="SessionModeFilter"/> into a session predicate, in one place.

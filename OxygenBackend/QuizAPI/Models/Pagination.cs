@@ -38,6 +38,10 @@ namespace QuizAPI.Models
         public string? Status { get; set; }
         public Guid? UserId { get; set; }
 
+        /// <summary>Public catalogue only: <c>picked</c>, <c>community</c>, or all (default). See
+        /// <see cref="QuizAPI.Common.CatalogueScope"/>.</summary>
+        public string? Scope { get; set; }
+
     }
 
     public class PagedList<T>

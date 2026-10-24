@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using QuizAPI.DTOs.Reports;
+using QuizAPI.DTOs.Statistics;
 using QuizAPI.Services.CurrentUserService;
 using QuizAPI.Services.DataTransfer;
-using QuizAPI.Services.Reports;
+using QuizAPI.Services.StatisticsExport;
 
-namespace QuizAPI.Controllers.Reports
+namespace QuizAPI.Controllers.Statistics
 {
     /// <summary>
     /// Dynamic, criteria-driven reports over the signed-in user's own content. Each report has a
@@ -19,16 +19,18 @@ namespace QuizAPI.Controllers.Reports
     /// scoped to the current user (export only formats data the caller already fetched as themself).
     /// </summary>
     [ApiController]
-    [Route("api/[controller]")]
+    // Was ReportsController at /api/reports until 2026-10-24: "report" now means a viewer's
+    // ContentReport (docs/media/moderation.md), so the owner's statistics took their own name.
+    [Route("api/statistics")]
     [Authorize]
-    public class ReportsController : ControllerBase
+    public class StatisticsController : ControllerBase
     {
-        private readonly IReportService _reports;
+        private readonly IStatisticsService _reports;
         private readonly IDataExportService _exporter;
         private readonly ICurrentUserService _currentUser;
 
-        public ReportsController(
-            IReportService reports,
+        public StatisticsController(
+            IStatisticsService reports,
             IDataExportService exporter,
             ICurrentUserService currentUser)
         {
@@ -39,7 +41,7 @@ namespace QuizAPI.Controllers.Reports
 
         // ── Quiz performance ──────────────────────────────────────────────────────
         [HttpGet("quiz-performance")]
-        public async Task<IActionResult> QuizPerformance([FromQuery] ReportCriteria criteria, CancellationToken ct)
+        public async Task<IActionResult> QuizPerformance([FromQuery] StatisticsCriteria criteria, CancellationToken ct)
         {
             if (_currentUser.UserId is not Guid userId) return Unauthorized();
             return Ok(await _reports.GetQuizPerformanceAsync(userId, criteria, ct));
@@ -62,10 +64,10 @@ namespace QuizAPI.Controllers.Reports
         //
         // `criteria.timeZone` / `criteria.offsetMinutes` decide which calendar day each attempt
         // is counted under. They are the caller's own clock, not a permission, so there is
-        // nothing to validate beyond what ReportService already does — an unrecognised zone
+        // nothing to validate beyond what StatisticsService already does — an unrecognised zone
         // degrades to the offset and then to UTC rather than failing the request.
         [HttpGet("quiz/{quizId:int}/analytics")]
-        public async Task<IActionResult> QuizAnalytics(int quizId, [FromQuery] ReportCriteria criteria, CancellationToken ct)
+        public async Task<IActionResult> QuizAnalytics(int quizId, [FromQuery] StatisticsCriteria criteria, CancellationToken ct)
         {
             if (_currentUser.UserId is not Guid userId) return Unauthorized();
 
@@ -79,7 +81,7 @@ namespace QuizAPI.Controllers.Reports
 
         // ── Question analytics ────────────────────────────────────────────────────
         [HttpGet("question-analytics")]
-        public async Task<IActionResult> QuestionAnalytics([FromQuery] ReportCriteria criteria, CancellationToken ct)
+        public async Task<IActionResult> QuestionAnalytics([FromQuery] StatisticsCriteria criteria, CancellationToken ct)
         {
             if (_currentUser.UserId is not Guid userId) return Unauthorized();
             return Ok(await _reports.GetQuestionAnalyticsAsync(userId, criteria, ct));

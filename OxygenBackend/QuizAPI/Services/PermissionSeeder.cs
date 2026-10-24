@@ -33,7 +33,12 @@ namespace QuizAPI.Services
                 new() { Id = 9,  Name = "user:view",       Description = "View users" },
                 new() { Id = 10, Name = "user:update:own", Description = "Update own profile settings" },
                 new() { Id = 11, Name = "user:delete:any", Description = "Delete any user account" },
-                new() { Id = 16, Name = "user:update:any", Description = "Update any user details" }
+                new() { Id = 16, Name = "user:update:any", Description = "Update any user details" },
+
+                // Moderation (docs/media/moderation.md). Admin and SuperAdmin get both through the
+                // "everything" rules below; no other role does.
+                new() { Id = 17, Name = "moderation:manage", Description = "Review reports, hide media, hold quizzes" },
+                new() { Id = 18, Name = "quiz:pick", Description = "Pick a quiz for the main catalogue" }
             };
 
             modelBuilder.Entity<Permission>().HasData(permissions);

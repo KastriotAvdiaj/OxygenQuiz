@@ -39,12 +39,12 @@ const toParams = (criteria: ReportCriteria): Record<string, string> => {
 };
 
 export async function fetchQuizPerformance(criteria: ReportCriteria): Promise<QuizPerformanceRow[]> {
-  const response = await api.get("/reports/quiz-performance", { params: toParams(criteria) });
+  const response = await api.get("/statistics/quiz-performance", { params: toParams(criteria) });
   return response.data as QuizPerformanceRow[];
 }
 
 export async function fetchQuestionAnalytics(criteria: ReportCriteria): Promise<QuestionAnalyticsRow[]> {
-  const response = await api.get("/reports/question-analytics", { params: toParams(criteria) });
+  const response = await api.get("/statistics/question-analytics", { params: toParams(criteria) });
   return response.data as QuestionAnalyticsRow[];
 }
 
@@ -60,7 +60,7 @@ export async function exportReport(
   format: ReportExportFormat,
   rows: QuizPerformanceRow[] | QuestionAnalyticsRow[]
 ): Promise<void> {
-  const response = await api.post(`/reports/${type}/export`, rows, {
+  const response = await api.post(`/statistics/${type}/export`, rows, {
     params: { format },
     responseType: "blob",
   });

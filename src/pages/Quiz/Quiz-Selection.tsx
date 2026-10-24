@@ -44,6 +44,7 @@ import { scrollAppToTop } from "@/lib/app-scroll";
 import { quizPlayPath } from "./quiz-play-path";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useFormatAvailable } from "../Dashboard/Pages/Quiz/format-access";
+import { CatalogueScopeSwitch, type CatalogueChoice } from "./components/catalogue-scope-switch";
 import { useCanSelectUnspecifiedLookup } from "@/pages/Dashboard/Pages/Question/Entities/lookup-visibility";
 
 /** The catalogue's format filter. "all" sends no rule; the others filter server-side (QuizFilterFields: format). */
@@ -162,6 +163,16 @@ export function QuizSelection() {
   // while the format is in preview that is admins (format-access.ts); for anyone else the server
   // returns no boards anyway, so the control would have nothing to separate.
   const boardsAvailable = useFormatAvailable("Associations");
+
+  // Picked (the main catalogue) or community quizzes — docs/media/moderation.md.
+  const [catalogue, setCatalogue] = useState<CatalogueChoice>("picked");
+  const handleCatalogueChange = useCallback(
+    (next: CatalogueChoice) => {
+      setCatalogue(next);
+      resetPage();
+    },
+    [resetPage]
+  );
   const [formatFilter, setFormatFilter] = useState<FormatFilter>("all");
   const handleFormatChange = useCallback(
     (next: FormatFilter) => {
@@ -182,7 +193,7 @@ export function QuizSelection() {
       boardsAvailable && formatFilter !== "all" ? [...filters, rule.eq("format", formatFilter)] : filters,
   };
 
-  const { data: quizData, isLoading } = useSearchQuizzes({ scope: "public", query });
+  const { data: quizData, isLoading } = useSearchQuizzes({ scope: "public", catalogue, query });
 
   /**
    * The arrival's category exists but has no public quizzes: drop the filter and say so,
@@ -411,16 +422,17 @@ export function QuizSelection() {
           </aside>
 
           <div className="min-w-0 flex-1">
-            {boardsAvailable && (
-              <div className="mb-3">
+            <div className="mb-3 flex flex-wrap items-center gap-3">
+              <CatalogueScopeSwitch value={catalogue} onValueChange={handleCatalogueChange} />
+              {boardsAvailable && (
                 <SegmentedControl
                   aria-label="Format"
                   value={formatFilter}
                   onValueChange={handleFormatChange}
                   options={FORMAT_OPTIONS}
                 />
-              </div>
-            )}
+              )}
+            </div>
             {/* Toolbar — search + sort; facets live in the sidebar/drawer */}
             <div className="mb-4 sm:mb-5">
               <QuizToolbar
@@ -506,7 +518,7 @@ export function QuizSelection() {
                 // the container (re)mounts. Without this, swapping in cached results (e.g.
                 // rapidly toggling filters) mounts the new cards in the "hidden" variant and
                 // leaves them permanently invisible.
-                key={`${debouncedSearch}|${selectionKey}|${sortBy}|${pageNumber}`}
+                key={`${catalogue}|${debouncedSearch}|${selectionKey}|${sortBy}|${pageNumber}`}
                 // auto-rows-fr + h-full wrappers stretch every card to its
                 // row's height, so cards with short titles/descriptions don't
                 // end up shorter than their neighbours.

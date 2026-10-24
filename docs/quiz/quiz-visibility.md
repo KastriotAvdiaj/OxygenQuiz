@@ -10,7 +10,7 @@ enforced inconsistently.
 |---|---|---|---|
 | **Draft** | No | Owner only | Work in progress. Share links don't work. Admins can view and edit it, not play it. |
 | **Unlisted** | No | Anyone with the **share link** or invited into a **lobby** hosting it | Not listed anywhere; the token/lobby is the access grant. |
-| **Public** | Yes | Everyone (including anonymous guests) | Listed in the public catalogue and search, and has a public [listing](quiz-listing.md) at `/q/:id/:slug` in the sitemap. |
+| **Public** | Yes | Everyone (including anonymous guests) | Listed in the public catalogue and search — under *Picked* or *Community* ([moderation.md](../media/moderation.md) §5) — and has a public [listing](quiz-listing.md) at `/q/:id/:slug`, in the sitemap when picked. |
 
 The owner — or anyone with `quiz:update:any` (Admin and SuperAdmin), on any quiz — sets the status when creating/editing a quiz, or via
 `PATCH /api/quiz/{id}/status`: the **Publish / Unpublish** item in the quiz row's ⋯ menu (both
@@ -184,6 +184,14 @@ session serves one question at a time, without the answers). Both endpoints answ
 Draft until 2026-10-18, which made every Public quiz's answer key one anonymous request away and
 every Unlisted quiz readable by counting ids. Pinned by `QuizAPI.Tests/Security/QuizReadAccessTests.cs`.
 404 rather than 403, so a stranger can't tell an existing id from a missing one.
+
+### A moderation hold overrides all of this
+
+A quiz a moderator (or 10 reporters) has **held** (`ModerationHeldAt`) is the owner's alone whatever
+its status: out of the catalogue, listing and sitemap, refused by id (owner and admins excepted), by
+share link, for play and for hosting. A separate column, not a status, so the owner can't republish
+it — [ADR 0034](../adr/0034-moderation-hides-media-or-holds-a-quiz-never-one-question.md), with the
+entry-point table in [`moderation.md`](../media/moderation.md) §3.
 
 ## Authorization summary
 

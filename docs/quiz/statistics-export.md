@@ -1,21 +1,21 @@
-# Dynamic Reports
+# Statistics export
 
-> **Status: not shipped.** The reporting screen is unfinished, so it is not reachable by users.
-> `/dashboard/reports` renders a coming-soon placeholder
-> (`src/pages/Dashboard/Pages/Reports/ReportsComingSoon.tsx`) and the entry was removed from the
-> player dashboard, where reporting didn't belong anyway — it's an operator concern.
+> **Status: not shipped.** The screen is unfinished, so no route reaches it. Its UI is parked as
+> `src/pages/UserDashboard/StatisticsExport.tsx` with its API client in
+> `src/pages/UserDashboard/api/statistics.ts`; the backend endpoints, `StatisticsService` and the
+> export framework are live, and the rest of this document describes them. To ship it, add an
+> admin route in `src/routes/Router.tsx` pointing at `StatisticsExport`.
 >
-> **Nothing was deleted.** The UI (`src/pages/UserDashboard/MyReports.tsx`), its API client
-> (`src/pages/UserDashboard/api/reports.ts`), the backend endpoints, `ReportService` and the
-> export framework are all intact, and the rest of this document still describes them accurately.
-> To ship it, point the `reports` route in `src/routes/Router.tsx` at `MyReports` instead of the
-> placeholder. `/my-dashboard/reports` redirects to `/my-dashboard/quizzes` so old links resolve.
+> **Renamed from "Reports"** (2026-10-24). "Report" now means one thing in this codebase: a
+> viewer's report of a question or quiz ([`../media/moderation.md`](../media/moderation.md)), and
+> `/dashboard/reports` and `/my-dashboard/reports` are those reports' pages. The endpoints moved
+> from `api/reports/*` to `api/statistics/*`, and the classes from `Report*` to `Statistics*`.
 
-Criteria-driven reports over the signed-in user's **own** content (the quizzes and questions they
+Criteria-driven statistics over the signed-in user's **own** content (the quizzes and questions they
 created). Each report can be previewed on screen and **exported** to CSV / Excel / JSON, reusing
 the existing export framework (`IDataExportService`).
 
-## Reports
+## The two exports
 
 - **Quiz Performance** — per quiz you own: attempts, completed, abandoned, completion %, average
   score (over completed attempts), average duration. Built from `QuizSessions`. A *completion*
@@ -29,7 +29,7 @@ Both list **all** of your owned items (so an item with no activity still shows w
 date criteria filter only the activity counted within each row.
 
 **Classic quizzes only.** Quiz Performance lists your Classic quizzes and counts their sessions; an
-Associations board is left out, explicitly (`Format == Classic` in `ReportService`), because its
+Associations board is left out, explicitly (`Format == Classic` in `StatisticsService`), because its
 scores and durations are on another scale. The single-quiz analytics count Classic sessions only
 for the same reason — the analytics page already shows "not available" for a board. Board analytics
 are planned ([`associations.md`](./associations.md) §9.7).
@@ -51,14 +51,14 @@ the currently-visible (filtered) rows in the request body and run them straight 
 and avoids the filter logic drifting between the preview and the export. (Previously export
 re-queried with only the dates, so any on-screen filtering was silently ignored.)
 
-## API (`api/reports`, `[Authorize]`, scoped to the current user)
+## API (`api/statistics`, `[Authorize]`, scoped to the current user)
 
 | Method | Route | Purpose |
 |---|---|---|
-| GET | `/api/reports/quiz-performance?from=&to=` | Quiz-performance rows (JSON, for the preview table) |
-| POST | `/api/reports/quiz-performance/export?format=csv\|excel\|json` | Format the posted rows into a download |
-| GET | `/api/reports/question-analytics?from=&to=` | Question-analytics rows (JSON) |
-| POST | `/api/reports/question-analytics/export?format=...` | Format the posted rows into a download |
+| GET | `/api/statistics/quiz-performance?from=&to=` | Quiz-performance rows (JSON, for the preview table) |
+| POST | `/api/statistics/quiz-performance/export?format=csv\|excel\|json` | Format the posted rows into a download |
+| GET | `/api/statistics/question-analytics?from=&to=` | Question-analytics rows (JSON) |
+| POST | `/api/statistics/question-analytics/export?format=...` | Format the posted rows into a download |
 
 The `/export` endpoints take the row list as the JSON body (the rows the client is displaying) and
 return the file. `format` stays a query-string param.
@@ -66,25 +66,25 @@ return the file. `format` stays a query-string param.
 ## Files
 
 **Backend**
-- `DTOs/Reports/ReportDtos.cs` — `ReportCriteria`, `QuizPerformanceRow`, `QuestionAnalyticsRow`.
-- `Services/Reports/IReportService.cs` + `ReportService.cs` — the cross-aggregate analytical
+- `DTOs/Statistics/StatisticsDtos.cs` — the criteria and the `QuizPerformanceRow` / `QuestionAnalyticsRow` rows.
+- `Services/StatisticsExport/IStatisticsService.cs` + `StatisticsService.cs` — the cross-aggregate analytical
   queries (sessions × quizzes, answers × questions). Reporting is a read-model that legitimately
   spans aggregates, so it lives in one service rather than the per-entity repositories.
-- `Controllers/Reports/ReportsController.cs` — preview + export endpoints; export delegates to
-  `IDataExportService`.
-- `Program.cs` — `IReportService` registered (scoped).
+- `Controllers/Statistics/StatisticsController.cs` — preview + export endpoints, plus the single
+  quiz's analytics (`GET /api/statistics/quiz/{id}/analytics`, used by the quiz page); export
+  delegates to `IDataExportService`.
+- `Program.cs` — `IStatisticsService` registered (scoped).
 
-**Frontend** (under `/my-dashboard/reports`)
-- `src/pages/UserDashboard/api/reports.ts` — fetch rows (GET) + POST the visible rows to download.
-- `src/pages/UserDashboard/MyReports.tsx` — report-type tabs, date criteria, Generate → table,
+**Frontend** (parked — no route)
+- `src/pages/UserDashboard/api/statistics.ts` — fetch rows (GET) + POST the visible rows to download.
+- `src/pages/UserDashboard/StatisticsExport.tsx` — export-type tabs, date criteria, Generate → table,
   on-screen filters (search + Type/Category), Export dropdown (CSV/Excel/JSON) over the filtered rows.
-- Wired into the router (`reports` child) and the user-dashboard nav.
 
 ## Extending
 
-A new report = a row DTO + a `ReportService` method + two controller endpoints (preview + export)
-+ a column set in `MyReports.tsx`. The export half is free — any flat row list works with
+A new export = a row DTO + a `StatisticsService` method + two controller endpoints (preview + export)
++ a column set in `StatisticsExport.tsx`. The export half is free — any flat row list works with
 `IDataExportService`. Natural next reports: User Activity, Quiz Attempts log (both noted earlier).
 
-> Scope: reports are **per-user (own data)**. To offer org-wide analytics later, add admin-scoped
+> Scope: statistics are **per-user (own data)**. To offer org-wide analytics later, add admin-scoped
 > variants (drop the `userId` filter) behind an `[Authorize(Roles = "Admin,SuperAdmin")]` gate.

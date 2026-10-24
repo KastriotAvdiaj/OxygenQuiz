@@ -19,12 +19,18 @@ link. Not to be confused with the **single-quiz page** — the owner's and admin
 
 ## Which quizzes have one
 
-**Exactly the catalogue's quizzes:** `Status == Public` **and** a released format —
+**Exactly the catalogue's quizzes:** `Status == Public`, not held by a moderator
+([`../media/moderation.md`](../media/moderation.md)), **and** a released format —
 `QuizFormatAccess.IsAvailableTo(format, canSeePreview: false)`, the rule for an anonymous caller.
 Associations is a preview format today, so no board has a listing; releasing the format
 (removing it from `PreviewFormats`) gives every Public board one with no further change.
 
-**Everything else is the same 404**: Draft, Unlisted, soft-deleted, a preview format, and an id
+**Only picked quizzes are indexed.** A community quiz (not picked) has a page — links and previews
+work — but the Worker serves it with `X-Robots-Tag: noindex` (`isIndexable` in `worker/listing.js`)
+and the sitemap leaves it out: search engines judge a site by what it submits, and community quizzes
+aren't reviewed. The listing carries `isPicked` for this.
+
+**Everything else is the same 404**: Draft, Unlisted, held, soft-deleted, a preview format, and an id
 that never existed all answer `404` with `noindex`, byte-for-byte alike. Ids are sequential, so a
 404 that differed by cause would let anyone map which ids are Unlisted
 ([`quiz-visibility.md`](quiz-visibility.md), "Reading a quiz by id").
@@ -153,7 +159,7 @@ Two anonymous endpoints on `QuizController`, copying `GetSharedQuizPreview`: a s
 | Endpoint | Returns | Notes |
 |---|---|---|
 | `GET /api/quiz/{id}/listing` | `QuizListingDTO` — the fields in "What the page shows", plus `updatedAt` | 404 on the eligibility rule above, for every reason alike |
-| `GET /api/quiz/listings` | `[{ id, title, updatedAt }]` for every eligible quiz | The sitemap's source. Unpaged — see "Sitemap" for when that changes |
+| `GET /api/quiz/listings` | `[{ id, title, updatedAt }]` for every eligible **picked** quiz | The sitemap's source. Unpaged — see "Sitemap" for when that changes |
 
 - **Not `GET /api/quiz/{id}`.** That shape serves the app: it carries `status`, `version` and the
   user object, and its access depends on the caller. The listing's must not.
@@ -169,7 +175,7 @@ Two anonymous endpoints on `QuizController`, copying `GetSharedQuizPreview`: a s
 for an hour:
 
 - `https://oxygenquiz.com/` and `https://oxygenquiz.com/choose-quiz`;
-- one `https://oxygenquiz.com/q/:id/:slug` per eligible quiz, with `<lastmod>` from `UpdatedAt`.
+- one `https://oxygenquiz.com/q/:id/:slug` per eligible picked quiz, with `<lastmod>` from `UpdatedAt`.
 
 Slugs are `a–z0–9-` by construction, but URLs are XML-escaped anyway. If the API is unreachable the
 Worker answers 503 rather than an empty sitemap, which a crawler would read as "every page is gone".

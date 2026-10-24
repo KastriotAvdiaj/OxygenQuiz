@@ -11,6 +11,7 @@ import { MultipleChoiceQuestion } from "./question-display-type-files/multiple-c
 import { FeedbackDisplay } from "./feedback-display";
 import { QuestionCard } from "./question-card";
 import { QuestionMedia } from "@/common/QuestionMedia";
+import { ReportButton } from "@/features/reports/components/report-dialog";
 import { useState, useRef, useCallback } from "react";
 import { useNotifications } from "@/common/Notifications";
 import { Clock } from "lucide-react";
@@ -140,9 +141,19 @@ export function QuestionDisplay({
         <QuestionMedia
           mediaUrl={question.mediaUrl}
           mediaType={question.mediaType}
+          hidden={question.mediaHidden}
+          questionId={question.questionId}
           alt="Question image"
           className="mt-4"
         />
+
+        {/* Report a wrong answer, an image, anything (docs/media/moderation.md). Quiet on purpose:
+            it's there when needed and never competes with the answers. */}
+        {question.questionId != null && (
+          <div className="mt-2 flex justify-end">
+            <ReportButton questionId={question.questionId} />
+          </div>
+        )}
 
         {/* Time's Up Banner — shown instead of feedback when timed out */}
         <AnimatePresence>

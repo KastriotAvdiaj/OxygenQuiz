@@ -60,6 +60,8 @@ namespace QuizAPI.Data
 
         public DbSet<QuizAPI.Models.Media.MediaAsset> MediaAssets { get; set; }
 
+        public DbSet<QuizAPI.Models.Moderation.ContentReport> ContentReports { get; set; }
+
         public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         public DbSet<EmailVerificationToken> EmailVerificationTokens { get; set; }
@@ -335,6 +337,25 @@ namespace QuizAPI.Data
                 .OnDelete(DeleteBehavior.Restrict);
             modelBuilder.Entity<Quiz>()
                 .HasIndex(q => new { q.UserId, q.CoverCountedAt });
+
+            // Reports (docs/media/moderation.md). One OPEN report per person per item: a question
+            // report is keyed by question, a quiz report by quiz. Deleting the target deletes its
+            // reports — a report on nothing has nothing left to decide.
+            modelBuilder.Entity<QuizAPI.Models.Moderation.ContentReport>(e =>
+            {
+                e.Property(r => r.Reason).HasConversion<int>();
+                e.Property(r => r.Status).HasConversion<int>();
+                e.Property(r => r.Outcome).HasConversion<int?>();
+                e.HasOne(r => r.Question).WithMany().HasForeignKey(r => r.QuestionId).OnDelete(DeleteBehavior.Cascade);
+                e.HasOne(r => r.Quiz).WithMany().HasForeignKey(r => r.QuizId).OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(r => new { r.ReporterId, r.QuestionId }).IsUnique()
+                    .HasFilter("\"QuestionId\" IS NOT NULL AND \"Status\" = 0")
+                    .HasDatabaseName("IX_ContentReports_OneOpenPerQuestion");
+                e.HasIndex(r => new { r.ReporterId, r.QuizId }).IsUnique()
+                    .HasFilter("\"QuestionId\" IS NULL AND \"Status\" = 0")
+                    .HasDatabaseName("IX_ContentReports_OneOpenPerQuiz");
+                e.HasIndex(r => new { r.Status, r.CreatedAt });
+            });
 
             // Generic file records: index the polymorphic owner for fast lookups.
             modelBuilder.Entity<FileRecord>()

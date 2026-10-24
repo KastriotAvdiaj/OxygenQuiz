@@ -42,6 +42,22 @@ namespace QuizAPI.Controllers.Media
             return StatusCode(StatusCodes.Status201Created, asset);
         }
 
+        /// <summary>
+        /// The image or clip behind a moderation cover, for a signed-in player who pressed
+        /// "Show anyway" (docs/media/moderation.md, "Hiding"). Play responses never carry a hidden
+        /// file's URL, so a guest — who may be a minor — can't reveal it; this endpoint is the only
+        /// way to, and it needs an account and a question the caller could already read.
+        /// </summary>
+        [HttpGet("hidden/question/{questionId:int}")]
+        public async Task<ActionResult<QuizAPI.DTOs.Moderation.HiddenMediaDTO>> HiddenQuestionMedia(
+            int questionId, [FromServices] QuizAPI.Repositories.Interfaces.IModerationRepository moderation, CancellationToken ct)
+        {
+            if (current.UserId is null) throw new UnauthorizedException("Sign in to see hidden media.");
+            var q = await moderation.GetQuestionVisibleToCallerAsync(questionId, ct);
+            if (q is null || q.MediaHiddenAt is null || q.MediaUrl is null) throw new NotFoundException("Nothing hidden here.");
+            return Ok(new QuizAPI.DTOs.Moderation.HiddenMediaDTO { MediaUrl = q.MediaUrl, MediaType = q.MediaType.ToString() });
+        }
+
         /// <summary>The caller's allowance: new media today and storage used, with their limits.</summary>
         [HttpGet("quota")]
         public async Task<ActionResult<MediaQuotaStatusDTO>> Quota(CancellationToken ct)

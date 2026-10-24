@@ -67,6 +67,18 @@ export async function resolveListing(pathname, search, fetchListing) {
  * (src/pages/Quiz/quiz-play-path.ts); robots.txt disallows both, so crawlers don't follow it.
  * @param {{ id: number, format?: string }} quiz
  */
+/**
+ * May search engines index this resolution? Only a listing page of a **picked** quiz — the main
+ * catalogue. A community quiz still gets its page (links and previews work) but is served
+ * `noindex`, the same rule that keeps it out of the sitemap (docs/media/moderation.md, "Picked
+ * and community quizzes"). An API that predates the flag sends none, which reads as not picked.
+ *
+ * @param {{ kind: string, listing?: { isPicked?: boolean } }} resolution
+ */
+export function isIndexable(resolution) {
+  return resolution.kind === "page" && resolution.listing?.isPicked === true;
+}
+
 export function playPath(quiz) {
   return quiz.format === "Associations" ? `/associations/${quiz.id}/play` : `/quiz/${quiz.id}/play`;
 }

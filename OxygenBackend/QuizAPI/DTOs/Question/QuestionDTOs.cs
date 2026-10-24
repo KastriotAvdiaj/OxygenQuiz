@@ -24,6 +24,8 @@ namespace QuizAPI.DTOs.Question
         public Guid? MediaAssetId { get; set; }
         public string? MediaUrl { get; set; }
         public string MediaType { get; set; } = "None";
+        /// <summary>Hidden behind a moderation cover pending review (docs/media/moderation.md).</summary>
+        public bool MediaHidden { get; set; }
         public string? Explanation { get; set; }
         public string Visibility { get; set; }
         public string Type { get; set; }

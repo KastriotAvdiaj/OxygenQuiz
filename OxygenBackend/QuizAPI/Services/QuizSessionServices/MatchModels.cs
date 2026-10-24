@@ -17,6 +17,7 @@ namespace QuizAPI.Services.QuizSessionServices
         public string Text { get; init; } = string.Empty;
         public string? MediaUrl { get; init; }
         public string MediaType { get; init; } = "None";   // None / Image / Audio — as CurrentQuestionDto
+        public bool MediaHidden { get; init; }
         public int TimeLimitSeconds { get; init; }
         public IReadOnlyList<RoundOption> Options { get; init; } = new List<RoundOption>();
         public bool AllowMultipleSelections { get; init; }   // MC questions with >1 correct option
@@ -41,6 +42,8 @@ namespace QuizAPI.Services.QuizSessionServices
         /// legacy image column, so audio and every newer image never reached a lobby.</summary>
         public string? MediaUrl { get; init; }
         public string MediaType { get; init; } = "None";
+        /// <summary>Under a moderation cover; <see cref="MediaUrl"/> is null.</summary>
+        public bool MediaHidden { get; init; }
         public int TimeLimitSeconds { get; init; }
         public IReadOnlyList<RoundOption> Options { get; init; } = new List<RoundOption>();
         public bool AllowMultipleSelections { get; init; }   // lets the client render checkboxes

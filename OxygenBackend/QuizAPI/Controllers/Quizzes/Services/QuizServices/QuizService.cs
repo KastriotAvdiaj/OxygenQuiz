@@ -41,6 +41,13 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             _media = media ?? throw new ArgumentNullException(nameof(media));
         }
 
+        /// <summary>
+        /// A quiz staff create is a house quiz, and house quizzes are picked — they make up the main
+        /// catalogue (docs/media/moderation.md, "Picked and community quizzes"). Read from the
+        /// creating request's roles; stamped once, so a later role change rewrites nothing.
+        /// </summary>
+        private void StampHouse(Quiz quiz) => QuizHouse.Stamp(quiz, _current.IsAdmin, DateTime.UtcNow);
+
         // The name and the match live in QuizAPI.Common.LookupDefaults — one definition for the
         // three services that need it, rather than this copy and QuestionService's being "kept in
         // sync" by hand.
@@ -127,7 +134,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             Guid? restrictToUserId = null,
             bool publicOnly = false,
             bool includeDeleted = false,
-            CancellationToken ct = default)
+            CancellationToken ct = default,
+            string? scope = null)
         {
             IQueryable<Quiz> q = _quizzes.Query(includeDeleted).VisibleTo(_current.CanSeePreviewFormats);
 
@@ -135,7 +143,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 q = q.Where(x => x.UserId == uid);
 
             if (publicOnly)
-                q = q.Where(x => x.Status == QuizStatus.Public);
+                q = q.Where(x => x.Status == QuizStatus.Public && x.ModerationHeldAt == null)
+                    .InCatalogueScope(scope);
 
             q = FilterEngine.Apply(q, query, QuizFilterFields.Fields);
 
@@ -156,7 +165,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         {
             try
             {
-                var quizQuery = _quizzes.Query().VisibleTo(_current.CanSeePreviewFormats).Where(q => q.Status == QuizStatus.Public);
+                var quizQuery = _quizzes.Query().VisibleTo(_current.CanSeePreviewFormats)
+                    .Where(q => q.Status == QuizStatus.Public && q.ModerationHeldAt == null)
+                    .InCatalogueScope(filterParams.Scope);
                 quizQuery = ApplyQuizFilters(quizQuery, filterParams);
                 return await ToSummaryPageAsync(quizQuery, filterParams);
             }
@@ -189,6 +200,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 var quiz = await _quizzes.GetByIdAsync(id);
                 if (quiz == null || !QuizFormatAccess.IsAvailableTo(quiz.Format, _current.CanSeePreviewFormats))
                     return null;
+                // Held: only the owner (to see the banner) and admins (to review it) can open it.
+                if (quiz.ModerationHeldAt != null && !_current.IsAdmin && currentUserId != quiz.UserId)
+                    return null;
 
                 var dto = quiz.ToDto();
 
@@ -217,7 +231,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 // discovery, and the token IS the access grant. A Draft quiz is never reachable by
                 // link even if a token somehow exists.
                 var quiz = await _quizzes.GetByShareTokenAsync(shareToken);
-                if (quiz == null || quiz.Status == QuizStatus.Draft
+                if (quiz == null || quiz.Status == QuizStatus.Draft || quiz.ModerationHeldAt != null
                     || !QuizFormatAccess.IsAvailableTo(quiz.Format, _current.CanSeePreviewFormats))
                     return null;
 
@@ -235,13 +249,17 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         // caller's: the page is one cached document for everyone, so an admin or a Teacher must get
         // the same answer as anyone else. Soft delete is the query filter's job.
         private IQueryable<Quiz> Listable() =>
-            _quizzes.Query().VisibleTo(canSeePreview: false).Where(q => q.Status == QuizStatus.Public);
+            _quizzes.Query().VisibleTo(canSeePreview: false)
+                .Where(q => q.Status == QuizStatus.Public && q.ModerationHeldAt == null);
 
+        // Every Public quiz has a listing page — a community one is served `noindex` by the Worker
+        // (it reads IsPicked) — but only picked quizzes are in the sitemap: search engines judge a
+        // site by what it submits. docs/media/moderation.md, "Picked and community quizzes".
         public async Task<QuizListingDTO?> GetQuizListingAsync(int id) =>
             await Listable().Where(q => q.Id == id).Select(QuizMappers.ProjectListing).FirstOrDefaultAsync();
 
         public async Task<List<QuizListingEntryDTO>> GetQuizListingsAsync() =>
-            await Listable().OrderBy(q => q.Id).Select(QuizMappers.ProjectListingEntry).ToListAsync();
+            await Listable().Where(q => q.IsPicked).OrderBy(q => q.Id).Select(QuizMappers.ProjectListingEntry).ToListAsync();
 
         public async Task<List<QuizQuestionDTO>?> GetQuizQuestionsAsync(int id)
         {
@@ -286,6 +304,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 quiz.CreatedAt = DateTime.UtcNow;
                 quiz.Version = 1;
                 quiz.TimeLimitInSeconds = quizCM.Questions.Sum(q => q.TimeLimitInSeconds);
+                StampHouse(quiz);
                 await _media.ApplyToQuizCoverAsync(quiz, quizCM.CoverAssetId, userId);
 
                 await _quizzes.AddAsync(quiz);
@@ -386,6 +405,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                     TimeLimitInSeconds = importCM.Questions.Sum(q => q.TimeLimitInSeconds),
                 };
 
+                StampHouse(quiz);
                 await _media.ApplyToQuizCoverAsync(quiz, importCM.CoverAssetId, userId);
                 await _quizzes.AddAsync(quiz);
 
@@ -685,7 +705,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
             // A host may run a Public quiz or any quiz they own (Draft/Unlisted included — the lobby
             // membership becomes the access grant for invited participants).
-            return quiz.Status == QuizStatus.Public || quiz.UserId == hostUserId;
+            // A held quiz is the owner's alone (docs/media/moderation.md, "Hiding").
+            return quiz.UserId == hostUserId || (quiz.Status == QuizStatus.Public && quiz.ModerationHeldAt == null);
         }
 
         public async Task<QuizFormat?> GetFormatAsync(int quizId)

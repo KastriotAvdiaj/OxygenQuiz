@@ -22,7 +22,7 @@
  * docs/deployment/frontend-worker.md
  */
 import { SHARED_PATH, escapeAttribute, previewFor } from "./preview.js";
-import { listingBody, resolveListing, sitemapXml } from "./listing.js";
+import { isIndexable, listingBody, resolveListing, sitemapXml } from "./listing.js";
 
 /** How long a preview card is reused at the edge before the API is asked again. */
 const CARD_TTL_SECONDS = 300;
@@ -101,14 +101,13 @@ async function listingPage(request, url, env) {
   /** @type {Response} */
   let response = shell;
   let status = 200;
-  let indexable = false;
+  const indexable = isIndexable(resolution);
   if (resolution.kind === "page") {
     const { listing, canonical } = resolution;
     response = rewrite(shell, previewFor(listing, canonical, env.API_ORIGIN), {
       canonical,
       body: listingBody(listing),
     });
-    indexable = true;
   } else if (resolution.kind === "notFound") {
     status = 404; // the SPA boots on its not-found screen; crawlers get a real 404
   }

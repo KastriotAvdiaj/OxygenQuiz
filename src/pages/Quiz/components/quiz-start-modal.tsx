@@ -1,4 +1,5 @@
 import { useMemo, type CSSProperties } from "react";
+import { ReportButton } from "@/features/reports/components/report-dialog";
 import {
   Dialog,
   DialogContent,
@@ -241,6 +242,10 @@ export function QuizStartModal({
                 <Link2 className="h-4 w-4" aria-hidden="true" /> Copy link
               </LiftedButton>
             )}
+          </div>
+          {/* Wrong information, an inappropriate image, spam — docs/media/moderation.md. */}
+          <div className="flex justify-center">
+            <ReportButton quizId={quiz.id} label="Report this quiz" />
           </div>
         </div>
       </DialogContent>

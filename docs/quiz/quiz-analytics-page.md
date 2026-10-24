@@ -25,7 +25,7 @@ what the code does.
 |---|---|---|
 | Hero, footer | `useQuizData` | `GET /quiz/{id}` |
 | Question list (content) | `useQuizQuestionsData` | `GET /quiz/{id}/questions` |
-| Stat strip, attempts, per-question numbers | `useQuizAnalytics` | `GET /reports/quiz/{id}/analytics?mode=` |
+| Stat strip, attempts, per-question numbers | `useQuizAnalytics` | `GET /statistics/quiz/{id}/analytics?mode=` |
 
 Analytics is the only one that may legitimately be absent — it is owner-scoped with an admin
 bypass, and the query can still fail. Every consumer treats absence as "not available" and renders
@@ -267,12 +267,12 @@ player's.
   are the ones most likely to regress and the ones that matter most.
 
 **Backend**
-- `Services/Reports/ReportService.GetQuizAnalyticsAsync` — every number on the page;
+- `Services/StatisticsExport/StatisticsService.GetQuizAnalyticsAsync` — every number on the page;
   `BuildAttemptsOverTime` / `ResolveViewerZone` / `StartOfDayUtc` are the day-bucketing above.
   The per-day `Completed` counts genuine completions only, matching the headline figure —
   sessions the abandonment sweep flagged `IsCompleted` are excluded from both.
 - `DTOs/Reports/ReportDtos.cs` — `QuizAnalyticsDto`, `QuizQuestionAnalyticsRow`.
-- `Controllers/Reports/ReportsController.QuizAnalytics` — owner-scoped, admin bypass.
+- `Controllers/Statistics/StatisticsController.QuizAnalytics` — owner-scoped, admin bypass.
 
 ## Actions
 

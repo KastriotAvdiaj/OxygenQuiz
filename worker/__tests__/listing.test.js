@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { LISTING_PATH, listingPath, slugify } from "../listing-url.js";
-import { describeListing, listingBody, playPath, resolveListing, sitemapXml } from "../listing.js";
+import { describeListing, isIndexable, listingBody, playPath, resolveListing, sitemapXml } from "../listing.js";
 
 const API = "https://api.oxygenquiz.com";
 
@@ -106,6 +106,17 @@ describe("resolveListing", () => {
     const r = await resolveListing("/q/abc", "", async () => ((asked = true), { status: 200, listing: LISTING }));
     expect(r).toEqual({ kind: "notFound" });
     expect(asked).toBe(false);
+  });
+});
+
+describe("isIndexable", () => {
+  it("indexes a picked quiz's page and nothing else", () => {
+    expect(isIndexable({ kind: "page", listing: { ...LISTING, isPicked: true } })).toBe(true);
+    // A community quiz has a page — links and previews work — but it isn't submitted to search.
+    expect(isIndexable({ kind: "page", listing: { ...LISTING, isPicked: false } })).toBe(false);
+    expect(isIndexable({ kind: "page", listing: LISTING })).toBe(false); // an API without the flag
+    expect(isIndexable({ kind: "notFound" })).toBe(false);
+    expect(isIndexable({ kind: "failOpen" })).toBe(false);
   });
 });
 

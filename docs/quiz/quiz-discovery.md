@@ -27,6 +27,12 @@ same defaults:
   (`src/pages/Quiz/Multiplayer/components/lobby/quiz-selection-dialog.tsx`);
   the panel sits behind a "Filters" toggle in its compact variant
 
+**Picked or community.** Above the grid on `/choose-quiz` a switch picks the half of the catalogue:
+*Picked* (the default — house quizzes and community quizzes the team chose) or *Community*, the
+first switch behind a one-time notice (`catalogue-scope-switch.tsx`, sent as `scope=` to
+`/quiz/search`). The lobby's picker shows both halves: a host chooses for people they know. See
+[`../media/moderation.md`](../media/moderation.md) §5.
+
 ### Getting to the pickers
 
 - The header's **Play** link (`/choose-mode`, added 2026-09-20) — one item, from anywhere, for

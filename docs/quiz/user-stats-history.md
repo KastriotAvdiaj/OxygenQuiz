@@ -19,7 +19,7 @@ Two rules apply to every query in this feature:
   deleted as soon as the guest views their results, and are nobody's history — see
   [guest-play.md](../auth/guest-play.md).
 - **Abandoned ≠ completed.** A session with an `AbandonmentReason` is reported separately and kept
-  out of score/accuracy averages, matching the analytics convention in [reports.md](reports.md).
+  out of score/accuracy averages, matching the analytics convention in [statistics-export.md](statistics-export.md).
   A half-finished quiz's `TotalScore` would otherwise drag every average down.
 
 One rule is **not** shared, on purpose: sessions on a **soft-deleted quiz** are hidden from the

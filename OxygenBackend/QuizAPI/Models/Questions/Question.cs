@@ -65,6 +65,14 @@ namespace QuizAPI.Models
         public DateTime? MediaCountedAt { get; set; }
 
         /// <summary>
+        /// Set when the media is hidden behind a cover pending review — automatically at 10
+        /// distinct "inappropriate image or audio" reports, or by a moderator. Play DTOs then carry
+        /// no URL; a signed-in player can still choose Show anyway. Cleared when a moderator rejects
+        /// the reports. docs/media/moderation.md, "Hiding".
+        /// </summary>
+        public DateTime? MediaHiddenAt { get; set; }
+
+        /// <summary>
         /// Optional "why" shown to a player after they answer. Null for every question written
         /// before it existed, and for any the author leaves blank. It reveals the answer, so it
         /// follows the answer key's serving rules — see <see cref="QuestionExplanation"/>.

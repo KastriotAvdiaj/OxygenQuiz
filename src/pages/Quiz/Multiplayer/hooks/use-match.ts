@@ -22,6 +22,8 @@ export interface RoundQuestionView {
   /** The question's image or clip — RoundQuestionView.MediaUrl/MediaType. */
   mediaUrl?: string | null;
   mediaType?: QuestionMediaType;
+  /** Under a moderation cover; `mediaUrl` is null. */
+  mediaHidden?: boolean;
   timeLimitSeconds: number;
   options: RoundOption[];
   allowMultipleSelections?: boolean;

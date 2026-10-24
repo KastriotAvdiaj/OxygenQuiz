@@ -81,10 +81,11 @@ Teachers only, while it is tested. **Not shipped** = built in part, not reachabl
 | Feature | Status | What it is | Detail |
 |---|---|---|---|
 | Catalogue | Live | Search, faceted filters (category, difficulty, language) and a default "Mixed categories" order that shows the newest quiz of every category before the second of any. | [quiz-discovery.md](quiz/quiz-discovery.md), [filtering.md](quiz/filtering.md) |
+| Picked and community quizzes | Live | The catalogue opens on picked quizzes — the house's own and community quizzes the team chose, badged "Oxygen Pick". Everyone else's are one switch away, behind a one-time notice that they aren't checked. Only picked quizzes are indexed by search engines. | [moderation.md](media/moderation.md) §5 |
 | Quiz cards | Live | Each card in its category's colour palette; admins set palettes, optionally with AI-proposed options. | [quiz-card.md](quiz/quiz-card.md), [category-palettes.md](entities/category-palettes.md) |
 | Share links | Live | An Unlisted quiz is reached only by an unguessable link (sign-in required to play). | [quiz-visibility.md](quiz/quiz-visibility.md) |
 | Link previews | Live | A shared link previews in WhatsApp, Discord, Slack and X with the quiz's own title and description, filled in by a Cloudflare Worker; never indexed by search engines. | [frontend-worker.md](deployment/frontend-worker.md) |
-| Quiz page per quiz for search | Live | A public, indexable page per Public quiz at `/q/:id/:slug` — rendered by the Cloudflare Worker for crawlers, taken over by the app in the browser — plus `/sitemap.xml`. Copy link gives a Public quiz this URL. | [quiz-listing.md](quiz/quiz-listing.md), [ADR 0028](adr/0028-the-worker-renders-the-quiz-listing-for-crawlers.md), [known-issues.md](deployment/known-issues.md) |
+| Quiz page per quiz for search | Live | A public page per Public quiz at `/q/:id/:slug` (indexable when the quiz is picked) — rendered by the Cloudflare Worker for crawlers, taken over by the app in the browser — plus `/sitemap.xml`. Copy link gives a Public quiz this URL. | [quiz-listing.md](quiz/quiz-listing.md), [ADR 0028](adr/0028-the-worker-renders-the-quiz-listing-for-crawlers.md), [known-issues.md](deployment/known-issues.md) |
 
 ## Accounts
 
@@ -107,7 +108,8 @@ Teachers only, while it is tested. **Not shipped** = built in part, not reachabl
 | Roles and permissions | Live | Role-based access with `resource:action` permissions, cached per user; only a SuperAdmin can grant SuperAdmin. | [user-role-management.md](auth/user-role-management.md) |
 | Audit log | Live (admins) | Append-only record of who did what, to which record, from where. | [audit-logging.md](development/audit-logging.md) |
 | Teacher requests and invite codes | Live (admins) | Approve Teachers; issue invite codes. | [teacher-role.md](auth/teacher-role.md), [invite-code-system.md](auth/invite-code-system.md) |
-| Reports | Not shipped | A reporting screen; placeholder only. | [reports.md](quiz/reports.md) |
+| Reports and moderation | Live | Signed-in players report a question or quiz (wrong answer, inappropriate image, offensive, spam, copyright). Wrong answers go to the author first; harmful reports go to moderators at once and hide the media — or hold the quiz — after 10 reporters. Moderators work from one queue in four lanes; reporters hear the outcome. | [moderation.md](media/moderation.md), [ADR 0034](adr/0034-moderation-hides-media-or-holds-a-quiz-never-one-question.md) |
+| Statistics export | Not shipped | Quiz performance and question analytics as CSV, Excel or JSON; built, no route yet. | [statistics-export.md](quiz/statistics-export.md) |
 
 ## Platform and engineering
 

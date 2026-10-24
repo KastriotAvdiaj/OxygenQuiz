@@ -1,10 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
-using QuizAPI.DTOs.Reports;
+using QuizAPI.DTOs.Statistics;
 using QuizAPI.Models.Quiz;
 using QuizAPI.Services.Scoring;
 
-namespace QuizAPI.Services.Reports
+namespace QuizAPI.Services.StatisticsExport
 {
     /// <summary>
     /// Reporting read-model. These are cross-aggregate analytical queries (sessions × quizzes,
@@ -15,19 +15,19 @@ namespace QuizAPI.Services.Reports
     /// Each report lists ALL of the user's owned items (so a quiz/question with zero activity still
     /// shows up with zeros), and the date criteria filters only the activity counted within them.
     /// </summary>
-    public class ReportService : IReportService
+    public class StatisticsService : IStatisticsService
     {
         private readonly ApplicationDbContext _context;
-        private readonly ILogger<ReportService> _logger;
+        private readonly ILogger<StatisticsService> _logger;
 
-        public ReportService(ApplicationDbContext context, ILogger<ReportService> logger)
+        public StatisticsService(ApplicationDbContext context, ILogger<StatisticsService> logger)
         {
             _context = context;
             _logger = logger;
         }
 
         public async Task<List<QuizPerformanceRow>> GetQuizPerformanceAsync(
-            Guid userId, ReportCriteria criteria, CancellationToken ct = default)
+            Guid userId, StatisticsCriteria criteria, CancellationToken ct = default)
         {
             var zone = ResolveViewerZone(criteria);
             var (from, toExclusive) = NormalizeRange(criteria, zone);
@@ -86,7 +86,7 @@ namespace QuizAPI.Services.Reports
         }
 
         public async Task<List<QuestionAnalyticsRow>> GetQuestionAnalyticsAsync(
-            Guid userId, ReportCriteria criteria, CancellationToken ct = default)
+            Guid userId, StatisticsCriteria criteria, CancellationToken ct = default)
         {
             var zone = ResolveViewerZone(criteria);
             var (from, toExclusive) = NormalizeRange(criteria, zone);
@@ -151,7 +151,7 @@ namespace QuizAPI.Services.Reports
         }
 
         public async Task<QuizAnalyticsDto?> GetQuizAnalyticsAsync(
-            Guid? ownerId, int quizId, ReportCriteria criteria, CancellationToken ct = default)
+            Guid? ownerId, int quizId, StatisticsCriteria criteria, CancellationToken ct = default)
         {
             var zone = ResolveViewerZone(criteria);
             var (from, toExclusive) = NormalizeRange(criteria, zone);
@@ -339,9 +339,9 @@ namespace QuizAPI.Services.Reports
         /// The offset fallback exists because <c>FindSystemTimeZoneById</c> needs tzdata, and
         /// whether the runtime image ships it is a deployment property rather than something this
         /// code can assert. If the name ever fails to resolve, an offset is still far closer than
-        /// UTC — see <see cref="ReportCriteria.OffsetMinutes"/> for what it gives up.
+        /// UTC — see <see cref="StatisticsCriteria.OffsetMinutes"/> for what it gives up.
         /// </summary>
-        private TimeZoneInfo ResolveViewerZone(ReportCriteria criteria)
+        private TimeZoneInfo ResolveViewerZone(StatisticsCriteria criteria)
         {
             if (!string.IsNullOrWhiteSpace(criteria.TimeZone))
             {
@@ -404,7 +404,7 @@ namespace QuizAPI.Services.Reports
         // zone supplied the zone resolves to UTC and this behaves exactly as it did — which is
         // the case for both other reports, neither of which sends one.
         private static (DateTime? From, DateTime? ToExclusive) NormalizeRange(
-            ReportCriteria criteria, TimeZoneInfo zone)
+            StatisticsCriteria criteria, TimeZoneInfo zone)
         {
             return (
                 criteria.From.HasValue ? StartOfDayUtc(criteria.From.Value, zone) : null,

@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from "react";
+import { PickBadge, showsPickBadge } from "@/features/reports/components/pick-badge";
 import { ArrowRight } from "lucide-react";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
 import { CreatorAvatar, DifficultyMeter, QuizCardFrame } from "./card-parts";
@@ -99,6 +100,7 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
           {/* Top-right corner: who made it — initials or their photo, the full name on hover —
               with a board's "Board" label beside it. */}
           <span className="ml-auto flex items-center gap-2">
+            {showsPickBadge(quiz) && <PickBadge />}
             {isBoard && <BoardMark accent={accent} />}
             <CreatorAvatar
               name={quiz.user}

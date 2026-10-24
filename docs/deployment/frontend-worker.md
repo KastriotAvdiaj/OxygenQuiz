@@ -54,17 +54,19 @@ engines not to index.
 
 ## Quiz listings (`/q/:id/:slug`)
 
-The public, indexable page for each Public quiz. The full behaviour is
+The public page for each Public quiz — indexable when the quiz is picked, `noindex` otherwise. The full behaviour is
 [`quiz-listing.md`](../quiz/quiz-listing.md) and the decision
 [ADR 0028](../adr/0028-the-worker-renders-the-quiz-listing-for-crawlers.md); in short, the Worker:
 
 1. reads `GET {API_ORIGIN}/api/quiz/{id}/listing` (edge-cached 5 minutes, a 404 for 1);
 2. answers **404** + `X-Robots-Tag: noindex` (the SPA shell, which boots on its not-found screen) for
-   an ineligible id — Draft, Unlisted, deleted, preview format, unknown, all alike;
+   an ineligible id — Draft, Unlisted, held, deleted, preview format, unknown, all alike;
 3. answers **301** to `https://oxygenquiz.com/q/:id/:slug` for a wrong, old or missing slug;
 4. otherwise rewrites the shell: the same head tags as a shared link plus
    `<link rel="canonical">`, and real HTML in `#root` (`<h1>`, description, facts, a plain Play link)
-   that the SPA's `/q/:quizId/:slug?` route replaces when it boots — the same facts either way;
+   that the SPA's `/q/:quizId/:slug?` route replaces when it boots — the same facts either way —
+   and `X-Robots-Tag: noindex` unless the listing says `isPicked` (community quizzes aren't
+   submitted to search; [`moderation.md`](../media/moderation.md) §5);
 5. **fails open** past 1.5 s or on any other status: the plain shell, 200, `noindex`.
 
 The pure part — slug, path resolution, the `#root` HTML, escaping — is `worker/listing.js` and
@@ -75,7 +77,7 @@ files, so a deploy must reach it. Only the API call behind it is cached.
 ## Sitemap (`/sitemap.xml`)
 
 Built from `GET {API_ORIGIN}/api/quiz/listings` (edge-cached an hour): `/`, `/choose-quiz`, and one
-listing URL per quiz with `<lastmod>` from `Quiz.UpdatedAt`. If the API can't answer it is a **503**
+listing URL per picked quiz with `<lastmod>` from `Quiz.UpdatedAt`. If the API can't answer it is a **503**
 with `Retry-After`, never an empty sitemap. One file holds 50,000 URLs; see
 [`quiz-listing.md`](../quiz/quiz-listing.md), "Sitemap", for when to switch to an index.
 

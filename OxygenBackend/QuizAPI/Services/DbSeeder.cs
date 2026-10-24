@@ -275,6 +275,10 @@ namespace QuizAPI.Services
                 TimeLimitInSeconds = 240,
                 CreatedAt = DateTime.UtcNow,
                 Version = 1,
+                // Seeded by the admin: a house quiz, so it's in the main catalogue (moderation.md).
+                IsHouse = true,
+                IsPicked = true,
+                PickedAt = DateTime.UtcNow,
             };
 
             static QuizAPI.Models.Associations.AssociationColumn Column(int position, string solution, params string[] tiles) => new()

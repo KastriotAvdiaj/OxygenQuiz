@@ -1,11 +1,11 @@
-namespace QuizAPI.DTOs.Reports
+namespace QuizAPI.DTOs.Statistics
 {
     /// <summary>
     /// Criteria a report is generated against. Bound from the query string
     /// (<c>?from=2026-01-01&amp;to=2026-02-01</c>). Both bounds are optional; a date-only value is
     /// treated inclusively (the whole "to" day is included).
     /// </summary>
-    public sealed class ReportCriteria
+    public sealed class StatisticsCriteria
     {
         public DateTime? From { get; set; }
         public DateTime? To { get; set; }
@@ -14,7 +14,7 @@ namespace QuizAPI.DTOs.Reports
         /// The viewer's IANA time zone (<c>Europe/Belgrade</c>), from the browser's
         /// <c>Intl.DateTimeFormat().resolvedOptions().timeZone</c>. Decides which calendar day an
         /// attempt is counted under — see <see cref="OffsetMinutes"/> and
-        /// <c>ReportService.ResolveViewerZone</c>. Omitted or unrecognised ⇒ UTC.
+        /// <c>StatisticsService.ResolveViewerZone</c>. Omitted or unrecognised ⇒ UTC.
         /// </summary>
         public string? TimeZone { get; set; }
 

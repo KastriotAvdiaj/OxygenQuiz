@@ -124,7 +124,7 @@ None open in code. The fix below is live only once the backend is rebuilt on the
   global `X-Content-Type-Options: nosniff` response header, so a browser can't
   MIME-sniff an export into something executable.
   → `OxygenBackend/QuizAPI/Program.cs` (nosniff middleware),
-  `OxygenBackend/QuizAPI/Controllers/Reports/ReportsController.cs`,
+  `OxygenBackend/QuizAPI/Controllers/Statistics/StatisticsController.cs`,
   `OxygenBackend/QuizAPI/Controllers/DataTransfer/DataTransferController.cs`
 - ~~**P2 — Signup password policy has no complexity requirement.**~~
   **Fixed (2026-06-23).** Minimum length raised to 12 (from 8), and signup now
@@ -240,7 +240,8 @@ None open in code. The fix below is live only once the backend is rebuilt on the
   `DTOs/Question/QuestionDTOs.cs` (`AnswerOptionDTO.IsCorrect`),
   `src/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/components/question-select/`
 - **Proposal — one media pipeline for quizzes and questions.** Phase 1 (pipeline, R2, uploads,
-  quotas, sweep) is built — [`../media/media-pipeline.md`](../media/media-pipeline.md). Moderation, the
+  quotas, sweep) is built — [`../media/media-pipeline.md`](../media/media-pipeline.md) — and phase 2
+  (reports, moderation, picked catalogue) — [`../media/moderation.md`](../media/moderation.md). The
   Pexels/Wikimedia picker and AI-added images remain. See
   [`../proposals/media-pipeline.md`](../proposals/media-pipeline.md).
 - ~~**P3 — Image upload allow-list drifted from `FileService`'s.**~~ **Fixed 2026-10-24** — there is
@@ -249,7 +250,8 @@ None open in code. The fix below is live only once the backend is rebuilt on the
 - **P3 — Avatars still use the old file store, on the VPS disk** (2026-10-24). `AvatarService` writes
   through `FileService` to `wwwroot/uploads/files`, not through the media pipeline to R2, so avatars
   stay on one machine and aren't swept. Folding them in needs a `User.AvatarAssetId` reference (the
-  sweep only sees question and quiz references) — deliberately left for after phase 2.
+  sweep only sees question and quiz references) and a moderation path for an avatar (there is no
+  report on a user yet) — deliberately left out of the media proposal's phases.
   → `OxygenBackend/QuizAPI/Controllers/Users/Services/AvatarService.cs`
 - **P3 — Pre-pipeline image files are still on the uploads volume** (2026-10-24). The
   `AddMediaPipeline` migration cleared every URL pointing at them; the files in
@@ -1191,7 +1193,7 @@ redesign means a scroll regression could have come from either.
   offset fallback takes over — correct except across a DST boundary. Worth grepping for once
   after the first deploy. The decision, and the three clocks it chose between, are in
   [`../adr/0017-attempts-are-bucketed-in-the-viewers-timezone.md`](../adr/0017-attempts-are-bucketed-in-the-viewers-timezone.md).
-  → `OxygenBackend/QuizAPI/Services/Reports/ReportService.cs`,
+  → `OxygenBackend/QuizAPI/Services/StatisticsExport/StatisticsService.cs`,
     `src/pages/Dashboard/Pages/Quiz/api/get-quiz-analytics.ts`
 
 - **P3 — An answer can sit `Pending` forever, and nothing surfaces it to an operator.**
@@ -1224,17 +1226,17 @@ redesign means a scroll regression could have come from either.
 
 - **P3 — `GetQuestionAnalyticsAsync` still counts `Pending` answers in its correct-rate
   denominator.** The same bug that was fixed in `GetQuizAnalyticsAsync` above, in the sibling
-  report. Left alone on purpose: the reports screen is not shipped
-  ([`../quiz/reports.md`](../quiz/reports.md)), `QuestionAnalyticsRow` has no `GradedCount` field
+  report. Left alone on purpose: the statistics-export screen is not shipped
+  ([`../quiz/statistics-export.md`](../quiz/statistics-export.md)), `QuestionAnalyticsRow` has no `GradedCount` field
   to expose, and the fix belongs with whatever work makes that screen reachable. Two lines when
   someone is next in that file.
-  → `OxygenBackend/QuizAPI/Services/Reports/ReportService.cs`
+  → `OxygenBackend/QuizAPI/Services/StatisticsExport/StatisticsService.cs`
 
 - ~~**P3 — `AttemptsByDayPoint.Completed` counts abandoned sessions; the headline `Completed`
   does not.**~~ **Fixed (2026-09-12)**, alongside the timezone bucketing in the same method —
   the per-day count is now `IsCompleted && !Abandoned`, matching the headline figure. It had only
   ever been visible on quizzes past the trend threshold, where the chart is drawn.
-  → `OxygenBackend/QuizAPI/Services/Reports/ReportService.cs`
+  → `OxygenBackend/QuizAPI/Services/StatisticsExport/StatisticsService.cs`
 
 - **P3 — `User/Components/stats-cards.tsx` is fake and has no call sites.** Four hard-coded
   literals with invented deltas ("+2.5% from last month") and its data hook commented out. It looks

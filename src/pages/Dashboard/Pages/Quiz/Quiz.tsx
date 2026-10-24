@@ -26,6 +26,8 @@ import { AssociationBoardPreview } from "./components/quiz-view/association-boar
 import { dashboardBaseOf, quizEditPath } from "./quiz-paths";
 import { quizPlayPath } from "@/pages/Quiz/quiz-play-path";
 import { useUser } from "@/lib/Auth";
+import { useModerationAction } from "@/features/reports/api/reports";
+import { ShieldAlert } from "lucide-react";
 import {
   SIGNED_IN_ONLY_NOTE,
   showsTrend,
@@ -65,6 +67,7 @@ export const QuizRoute = () => {
   // it was opened from.
   const base = dashboardBaseOf(useLocation().pathname);
   const { addNotification } = useNotifications();
+  const pickAction = useModerationAction();
 
   const quizQuery = useQuizData({ quizId });
   // An Associations quiz has a board instead of questions, and no analytics yet
@@ -163,7 +166,22 @@ export const QuizRoute = () => {
   // Mirrors the API's play rule, `QuizPlayAccess.IsPlayAuthorized`: Public, or the caller owns
   // it. An admin viewing someone else's Unlisted or Draft quiz gets no Play — the session would
   // be refused. No share token is passed: the owner is authorised without one.
-  const canPlay = quiz.status === "Public" || quiz.user.id === currentUser?.id;
+  // A held quiz plays for its owner alone (docs/media/moderation.md, "Hiding").
+  const canPlay = (quiz.status === "Public" && !quiz.moderationHeld) || quiz.user.id === currentUser?.id;
+  // Mirrors ModerationPermissions.PickQuiz on POST /api/moderation/quizzes/{id}/pick.
+  const canPick =
+    !!currentUser &&
+    (currentUser.roles?.includes("SuperAdmin") || currentUser.permissions?.includes("quiz:pick")) &&
+    quiz.status === "Public" &&
+    !quiz.moderationHeld;
+  const togglePick = () =>
+    pickAction.mutate(
+      { kind: quiz.isPicked ? "unpick" : "pick", quizId: quiz.id },
+      {
+        onSuccess: () =>
+          addNotification({ type: "success", title: quiz.isPicked ? "Removed from picked" : "Picked for the catalogue" }),
+      },
+    );
 
   return (
     // <b>The card is the width of what is in it.</b> Constraining the inner content box was
@@ -267,8 +285,23 @@ export const QuizRoute = () => {
                 isStatusPending={setStatus.isPending}
                 onEdit={() => navigate(quizEditPath(quiz, base))}
                 onDelete={() => setDeleteOpen(true)}
+                onTogglePick={canPick ? togglePick : undefined}
+                isPickPending={pickAction.isPending}
               />
             </div>
+
+            {quiz.moderationHeld && (
+              <div
+                role="status"
+                className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm"
+              >
+                <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden="true" />
+                <span>
+                  <strong>Under review.</strong> This quiz was reported and is hidden from everyone
+                  else while a moderator looks at it. You'll get a notification when it's decided.
+                </span>
+              </div>
+            )}
 
             {quiz.description && (
               <p className="max-w-3xl leading-relaxed text-muted-foreground">

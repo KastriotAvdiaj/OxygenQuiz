@@ -45,19 +45,22 @@ namespace QuizAPI.Services.Associations
         private readonly IQuizService _quizService;
         private readonly IAssociationRulesProvider _rules;
         private readonly QuizAPI.Services.Media.IMediaAttachmentService _media;
+        private readonly QuizAPI.Services.CurrentUserService.ICurrentUserService? _current;
 
         public AssociationBoardService(
             IQuizRepository quizzes,
             IAssociationBoardRepository boards,
             IQuizService quizService,
             IAssociationRulesProvider rules,
-            QuizAPI.Services.Media.IMediaAttachmentService media)
+            QuizAPI.Services.Media.IMediaAttachmentService media,
+            QuizAPI.Services.CurrentUserService.ICurrentUserService? current = null)
         {
             _quizzes = quizzes;
             _boards = boards;
             _quizService = quizService;
             _rules = rules;
             _media = media;
+            _current = current;
         }
 
         public async Task<QuizDTO> CreateAsync(Guid userId, AssociationQuizCM cm)
@@ -89,6 +92,7 @@ namespace QuizAPI.Services.Associations
             var board = AssociationBoardMapping.ToEntity(clean, quizId: 0, createdInVersion: 1);
             board.Quiz = quiz;
 
+            QuizAPI.Common.QuizHouse.Stamp(quiz, _current?.IsAdmin == true, DateTime.UtcNow);
             await _media.ApplyToQuizCoverAsync(quiz, cm.CoverAssetId, userId);
             await _quizzes.AddAsync(quiz);
             await _boards.AddAsync(board);

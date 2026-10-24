@@ -147,7 +147,8 @@ Full version, including the two failure modes this project has actually hit:
   decides *may this caller act*, the repository decides *on which rows* — passing
   `canUpdateAny ? null : userId` down keeps a caller from probing ids they can't touch.
 - **`Quiz` has no visibility query filter — only soft delete.** An endpoint that returns a quiz
-  checks Draft / Unlisted / ownership itself. Don't add a second `HasQueryFilter` to an entity: in
+  checks Draft / Unlisted / ownership itself — **and the moderation hold** (`ModerationHeldAt`: the
+  owner's alone, ADR 0034). Don't add a second `HasQueryFilter` to an entity: in
   EF Core 8 it replaces the first. See `docs/adr/0019-quiz-visibility-is-enforced-at-each-entry-point.md`.
 - **A new read of quizzes applies `VisibleTo(_current.IsAdmin)` / `QuizFormatAccess.IsAvailableTo`.**
   Formats in preview (Associations) are admin-only, and a read that skips it leaks them to players.
