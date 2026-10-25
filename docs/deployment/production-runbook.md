@@ -198,7 +198,9 @@ Question and quiz media live in a Cloudflare R2 bucket, served from `media.oxyge
 The picker's *Or find a free image* ([`../media/media-pipeline.md`](../media/media-pipeline.md) §7).
 Wikimedia works with no setup. For Pexels:
 
-1. **Key.** pexels.com/api → request a key (free). Set `Media__Stock__PexelsApiKey` in the backend
+1. **Key.** pexels.com/api → request a key (free). *As of 2026-10-25 Pexels has paused new keys
+   ("New API key issuance is currently paused"); until it reopens, run without one — the picker and
+   the AI pictures use Wikimedia Commons only, and nothing else changes.* Set `Media__Stock__PexelsApiKey` in the backend
    `.env` and restart. Without it the picker shows Wikimedia only.
 2. **Raise the limit.** The free key allows 200 requests an hour and 20,000 a month for the whole
    site. Pexels lifts it on request once they've seen the credit: send them a screenshot of an
