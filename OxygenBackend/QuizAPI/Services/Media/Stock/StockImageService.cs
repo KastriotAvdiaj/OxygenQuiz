@@ -58,7 +58,7 @@ namespace QuizAPI.Services.Media.Stock
             var key = $"stock:{source.Id}:{q.ToLowerInvariant()}:{page}";
             if (cache.TryGetValue(key, out StockSearchResultDTO? hit) && hit is not null) return hit;
 
-            var result = await source.SearchAsync(q, page, ct);
+            var result = await Reach(source, () => source.SearchAsync(q, page, ct), ct);
             // The grid loads these in the author's browser: only https previews from the source's
             // own image host, so a strange answer can't turn the picker into a tracker or a
             // mixed-content page.
@@ -73,14 +73,14 @@ namespace QuizAPI.Services.Media.Stock
             if (string.IsNullOrWhiteSpace(cm.Id) || cm.Id.Length > 40)
                 throw new AppValidationException("Choose an image to import.");
 
-            var detail = await source.GetAsync(cm.Id.Trim(), ct)
+            var detail = await Reach(source, () => source.GetAsync(cm.Id.Trim(), ct), ct)
                 ?? throw new NotFoundException("That image isn't available any more, or its licence doesn't allow reuse.");
 
             var url = detail.DownloadUrl;
             if (!IsOnHost(url.AbsoluteUri, source.DownloadHosts))
                 throw new AppValidationException("That image can't be imported.");
 
-            var bytes = await DownloadAsync(url, ct);
+            var bytes = await Reach(source, () => DownloadAsync(url, ct), ct);
             return await media.UploadAsync(bytes, userId, detail.Credit, ct);
         }
 
@@ -143,6 +143,22 @@ namespace QuizAPI.Services.Media.Stock
             var chars = s.ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : ' ').ToArray();
             return string.Join(' ', new string(chars).Split(' ', StringSplitOptions.RemoveEmptyEntries));
         }
+
+        /// <summary>
+        /// A source that can't be reached at all — DNS, TLS, a dropped connection, its timeout — is
+        /// the same "try again later" as one that answers 429, not a 500 with no explanation.
+        /// The caller giving up (their own cancellation) is left alone.
+        /// </summary>
+        private static async Task<T> Reach<T>(IStockImageProvider source, Func<Task<T>> call, CancellationToken ct)
+        {
+            try { return await call(); }
+            catch (HttpRequestException) { throw Unreachable(source); }
+            catch (TaskCanceledException) when (!ct.IsCancellationRequested) { throw Unreachable(source); }
+            catch (System.Text.Json.JsonException) { throw Unreachable(source); }
+        }
+
+        private static ServiceUnavailableException Unreachable(IStockImageProvider source) =>
+            new($"{source.Name} couldn't be reached. Try again in a moment.");
 
         private static bool IsOnHost(string? url, IReadOnlySet<string> hosts) =>
             Uri.TryCreate(url, UriKind.Absolute, out var uri)

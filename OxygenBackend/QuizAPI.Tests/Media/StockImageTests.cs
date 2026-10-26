@@ -27,6 +27,12 @@ public class StockImageTests
         public readonly List<string?> Authorizations = new();
         public readonly List<(string Prefix, Func<HttpResponseMessage> Respond)> Routes = new();
 
+        public FakeHttp Throws(string prefix, Exception e)
+        {
+            Routes.Add((prefix, () => throw e));
+            return this;
+        }
+
         public FakeHttp On(string prefix, string json, HttpStatusCode status = HttpStatusCode.OK)
         {
             Routes.Add((prefix, () => new HttpResponseMessage(status) { Content = new StringContent(json, Encoding.UTF8, "application/json") }));
@@ -189,6 +195,21 @@ public class StockImageTests
         var w = new World();
         await Assert.ThrowsAsync<AppValidationException>(() => w.With(s => s.SearchAsync("wikimedia", q, page)));
         Assert.Empty(w.Http.Requests);
+    }
+
+    [Theory]
+    [InlineData("network")]
+    [InlineData("timeout")]
+    [InlineData("not json")]
+    public async Task A_source_that_cant_be_reached_is_unavailable_not_a_server_error(string failure)
+    {
+        var w = new World();
+        if (failure == "network") w.Http.Throws(WikimediaProvider.ApiUrl, new HttpRequestException("TLS handshake failed"));
+        else if (failure == "timeout") w.Http.Throws(WikimediaProvider.ApiUrl, new TaskCanceledException("timed out"));
+        else w.Http.On(WikimediaProvider.ApiUrl, "<html>maintenance</html>");
+
+        var e = await Assert.ThrowsAsync<ServiceUnavailableException>(() => w.With(s => s.SearchAsync("wikimedia", "flag", 1)));
+        Assert.Contains("couldn't be reached", e.Message);
     }
 
     [Fact]

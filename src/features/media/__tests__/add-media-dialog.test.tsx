@@ -12,7 +12,7 @@ vi.mock("@/lib/Api-client", () => ({
 }));
 vi.mock("@/lib/Auth", () => ({ useUser: () => ({ data: { id: "u1" } }) }));
 
-import { StockImageDialog } from "../components/stock-image-dialog";
+import { AddMediaDialog } from "../components/add-media-dialog";
 import { queryConfig } from "@/lib/React-query";
 import { QuestionMedia } from "@/common/QuestionMedia";
 
@@ -54,10 +54,14 @@ const renderDialog = (pexels = true, searchFails?: unknown) => {
   render(
     // The app's own defaults — queries throw to the error boundary unless they opt out.
     <QueryClientProvider client={new QueryClient({ defaultOptions: { ...queryConfig, mutations: { retry: false } } })}>
-      <StockImageDialog open onOpenChange={onOpenChange} onPicked={onPicked} />
+      <AddMediaDialog open allowAudio onOpenChange={onOpenChange} onPicked={onPicked} />
     </QueryClientProvider>,
   );
-  return { onPicked, onOpenChange, user: userEvent.setup() };
+  const user = userEvent.setup();
+  return { onPicked, onOpenChange, user, openSearch: async () => {
+    await user.click(screen.getByRole("radio", { name: /search images/i }));
+    await screen.findByLabelText("Search free images"); // the panels cross-fade
+  } };
 };
 
 beforeEach(() => {
@@ -65,12 +69,37 @@ beforeEach(() => {
   post.mockReset();
 });
 
-describe("StockImageDialog", () => {
-  it("searches the chosen source and imports a result by provider and id only", async () => {
+describe("AddMediaDialog — the two sources", () => {
+  it("opens on Upload, and only asks for the image sources once Search is chosen", async () => {
+    const { user, openSearch } = renderDialog();
+    expect(screen.getByRole("radio", { name: /upload/i })).toBeChecked();
+    expect(screen.getByLabelText("Choose an image or audio clip")).toBeInTheDocument();
+    expect(get).not.toHaveBeenCalled();
+
+    await openSearch();
+    expect(await screen.findByLabelText("Search free images")).toBeInTheDocument();
+    void user;
+  });
+
+  it("uploads a file from the device and hands back the asset", async () => {
     post.mockResolvedValue({ data: ASSET });
     const { onPicked, onOpenChange, user } = renderDialog();
 
-    await user.type(screen.getByLabelText("Search Wikimedia Commons"), "flag of kosovo");
+    await user.upload(screen.getByLabelText("Choose an image or audio clip"), new File(["x"], "flag.png", { type: "image/png" }));
+
+    await waitFor(() => expect(onPicked).toHaveBeenCalledWith(ASSET));
+    expect(post).toHaveBeenCalledWith("/media", expect.any(FormData), expect.objectContaining({ skipErrorToast: true }));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+});
+
+describe("AddMediaDialog — Search images", () => {
+  it("searches the chosen source and imports a result by provider and id only", async () => {
+    post.mockResolvedValue({ data: ASSET });
+    const { onPicked, onOpenChange, user, openSearch } = renderDialog();
+
+    await openSearch();
+    await user.type(screen.getByLabelText("Search free images"), "flag of kosovo");
     await user.click(screen.getByRole("button", { name: "Search" }));
     await user.click(await screen.findByRole("button", { name: /Flag of Kosovo/ }));
 
@@ -94,12 +123,13 @@ describe("StockImageDialog", () => {
       <QueryClientProvider client={new QueryClient({ defaultOptions: { ...queryConfig } })}>
         {/* The quiz builder: the picker, and so this dialog, live inside its <form>. */}
         <form onSubmit={outerSubmit}>
-          <StockImageDialog open onOpenChange={vi.fn()} onPicked={vi.fn()} />
+          <AddMediaDialog open allowAudio onOpenChange={vi.fn()} onPicked={vi.fn()} />
         </form>
       </QueryClientProvider>,
     );
 
-    await user.type(screen.getByLabelText("Search Wikimedia Commons"), "flag");
+    await user.click(screen.getByRole("radio", { name: /search images/i }));
+    await user.type(await screen.findByLabelText("Search free images"), "flag");
     await user.click(screen.getByRole("button", { name: "Search" }));
     await screen.findByRole("button", { name: /Flag of Kosovo/ });
     await user.click(screen.getByRole("button", { name: "Cancel" }));
@@ -107,30 +137,33 @@ describe("StockImageDialog", () => {
     expect(outerSubmit).not.toHaveBeenCalled();
   });
 
-  it("offers Pexels only when the site has a key for it", async () => {
-    renderDialog(false);
-    expect(await screen.findByLabelText("Search Wikimedia Commons")).toBeInTheDocument();
+  it("offers the photo source only when the site has a key for it, and names no source", async () => {
+    const { openSearch } = renderDialog(false);
+    await openSearch();
+    expect(await screen.findByLabelText("Search free images")).toBeInTheDocument();
     await waitFor(() => expect(get).toHaveBeenCalledWith("/media/stock/providers"));
-    expect(screen.queryByRole("radio", { name: "Pexels" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("radio", { name: "Photos" })).not.toBeInTheDocument();
   });
 
   it("explains a busy source in place instead of crashing the editor", async () => {
-    const { user } = renderDialog(true, {
+    const { user, openSearch } = renderDialog(true, {
       response: { status: 503, data: { title: "Wikimedia Commons is busy right now — try again later, or search Pexels." } },
     });
 
-    await user.type(screen.getByLabelText("Search Wikimedia Commons"), "eiffel tower");
+    await openSearch();
+    await user.type(screen.getByLabelText("Search free images"), "eiffel tower");
     await user.click(screen.getByRole("button", { name: "Search" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/busy right now/);
-    expect(screen.getByLabelText("Search Wikimedia Commons")).toBeInTheDocument();
+    expect(screen.getByLabelText("Search free images")).toBeInTheDocument();
   });
 
   it("shows why an import was refused, and keeps the dialog open", async () => {
     post.mockRejectedValue({ response: { data: { title: "That image isn't available any more, or its licence doesn't allow reuse." } } });
-    const { onPicked, onOpenChange, user } = renderDialog();
+    const { onPicked, onOpenChange, user, openSearch } = renderDialog();
 
-    await user.type(screen.getByLabelText("Search Wikimedia Commons"), "flag");
+    await openSearch();
+    await user.type(screen.getByLabelText("Search free images"), "flag");
     await user.click(screen.getByRole("button", { name: "Search" }));
     await user.click(await screen.findByRole("button", { name: /Flag of Kosovo/ }));
 

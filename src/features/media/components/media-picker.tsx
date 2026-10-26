@@ -1,16 +1,11 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { AlertCircle, Globe, Image as ImageIcon, Music, Upload, X } from "lucide-react";
-import { apiErrorMessage } from "@/lib/Api-client";
+import { AlertCircle, Image as ImageIcon, Music, Upload, X } from "lucide-react";
 import { cn } from "@/utils/cn";
-import {
-  precheckFile,
-  toSelection,
-  useUploadMedia,
-  type MediaSelection,
-} from "../api/upload-media";
+import { toSelection, type MediaAsset, type MediaSelection } from "../api/upload-media";
 import { MediaCreditLine } from "./media-credit";
-import { StockImageDialog } from "./stock-image-dialog";
+import { AddMediaDialog } from "./add-media-dialog";
+import { useMediaUpload } from "./use-media-upload";
 
 interface MediaPickerProps {
   /** What's attached now — from the form's state. Null for nothing. */
@@ -28,6 +23,8 @@ interface MediaPickerProps {
 
 /**
  * The one control for attaching media to a question or a quiz (docs/media/media-pipeline.md).
+ * One button: pressing it opens `AddMediaDialog` (upload from the device, or search free images);
+ * dropping a file straight onto it uploads it without the detour.
  * Uploading only stores the file; nothing is attached — and nothing counts against the author's
  * daily allowance — until the form is saved with the returned asset id.
  *
@@ -42,39 +39,15 @@ export function MediaPicker({
   frameClassName = "border-primary/30 bg-primary/[0.04]",
   className,
 }: MediaPickerProps) {
-  const upload = useUploadMedia();
   const reduceMotion = useReducedMotion();
-  const inputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [stockOpen, setStockOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
-  const accept = allowAudio
-    ? "image/jpeg,image/png,image/webp,audio/mpeg,audio/mp4,audio/x-m4a,audio/ogg,.mp3,.m4a,.ogg"
-    : "image/jpeg,image/png,image/webp";
-
-  const pick = (file: File | undefined) => {
-    if (!file || disabled) return;
-    setError(null);
-    const problem = precheckFile(file, allowAudio);
-    if (problem) {
-      setError(problem);
-      return;
-    }
-    upload.mutate(file, {
-      onSuccess: (asset) => {
-        if (!allowAudio && asset.kind !== "Image") {
-          setError("Use an image here.");
-          return;
-        }
-        onChange(toSelection(asset));
-      },
-      onError: (err) => setError(apiErrorMessage(err)),
-    });
-  };
+  const attach = (asset: MediaAsset) => onChange(toSelection(asset));
+  const direct = useMediaUpload({ allowAudio, onUploaded: attach });
 
   const remove = () => {
-    setError(null);
+    direct.clearError();
     onChange(null);
   };
 
@@ -87,6 +60,8 @@ export function MediaPicker({
   const fade = reduceMotion
     ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
     : { initial: { opacity: 0, y: 4 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -4 } };
+
+  const busy = disabled || direct.isPending;
 
   return (
     <div className={cn("w-full max-w-xs sm:max-w-sm mx-auto", className)}>
@@ -120,37 +95,28 @@ export function MediaPicker({
         ) : (
           // A slim row, not a big dropzone: optional media shouldn't out-shout the question.
           <motion.div key="empty" {...fade} transition={{ duration: 0.18 }} className="space-y-1.5">
-            <label
-              title={allowAudio ? "JPEG, PNG or WebP up to 10 MB, or an MP3/M4A/OGG clip up to 60 s" : "JPEG, PNG or WebP, up to 10 MB"}
+            <button
+              type="button"
+              onClick={() => setDialogOpen(true)}
+              disabled={busy}
+              title={allowAudio ? "Upload an image or audio clip, or search free images" : "Upload an image, or search free images"}
               onDragEnter={onDrag}
               onDragLeave={onDrag}
               onDragOver={onDrag}
               onDrop={(e) => {
                 onDrag(e);
                 setDragActive(false);
-                pick(e.dataTransfer.files?.[0]);
+                if (!busy) direct.pick(e.dataTransfer.files?.[0]);
               }}
               className={cn(
-                "relative flex items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-2 text-sm transition-colors duration-200",
+                "relative flex w-full items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-2 text-sm transition-colors duration-200",
                 dragActive
                   ? "border-primary/60 bg-primary/5 text-primary"
                   : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground",
-                disabled || upload.isPending ? "cursor-not-allowed opacity-60" : "cursor-pointer",
+                busy ? "cursor-not-allowed opacity-60" : "cursor-pointer",
               )}
             >
-              <input
-                ref={inputRef}
-                type="file"
-                accept={accept}
-                disabled={disabled || upload.isPending}
-                onChange={(e) => {
-                  pick(e.target.files?.[0]);
-                  e.target.value = ""; // re-picking the same file must fire again
-                }}
-                className="sr-only"
-                aria-label={allowAudio ? "Add an image or audio clip" : "Add an image"}
-              />
-              {upload.isPending ? (
+              {direct.isPending ? (
                 <>
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-hidden="true" />
                   <span>Uploading…</span>
@@ -169,18 +135,9 @@ export function MediaPicker({
                   <span className="text-xs text-muted-foreground">· optional</span>
                 </>
               )}
-            </label>
-            <button
-              type="button"
-              onClick={() => setStockOpen(true)}
-              disabled={disabled || upload.isPending}
-              className="flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Globe className="h-3.5 w-3.5" aria-hidden="true" />
-              Or find a free image
             </button>
             <AnimatePresence>
-              {error && (
+              {direct.error && (
                 <motion.p
                   role="alert"
                   {...fade}
@@ -188,19 +145,20 @@ export function MediaPicker({
                   className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400"
                 >
                   <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                  {error}
+                  {direct.error}
                 </motion.p>
               )}
             </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>
-      <StockImageDialog
-        open={stockOpen}
-        onOpenChange={setStockOpen}
+      <AddMediaDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        allowAudio={allowAudio}
         onPicked={(asset) => {
-          setError(null);
-          onChange(toSelection(asset));
+          direct.clearError();
+          attach(asset);
         }}
       />
     </div>

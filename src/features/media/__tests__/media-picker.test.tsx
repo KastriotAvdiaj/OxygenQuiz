@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -29,6 +29,12 @@ const renderPicker = (props: Partial<React.ComponentProps<typeof MediaPicker>> =
 
 const input = () => document.querySelector('input[type="file"]') as HTMLInputElement;
 
+/** The picker is one button; the device upload is the dialog's first tab. */
+const openUpload = async (user: ReturnType<typeof userEvent.setup>, label = /add an image or clip/i) => {
+  await user.click(screen.getByRole("button", { name: label }));
+  await screen.findByRole("radio", { name: /upload/i });
+};
+
 // Braced: a function *returned* from beforeEach is a teardown hook, and mockReset returns the mock
 // — Vitest would call post() after each test.
 beforeEach(() => {
@@ -52,12 +58,25 @@ describe("MediaPicker", () => {
     post.mockResolvedValue({ data: { id: ASSET, kind: "Image", url: "https://media.test/i.webp", byteSize: 10 } });
     const { onChange, user } = renderPicker();
 
+    await openUpload(user);
     await user.upload(input(), new File(["x"], "flag.png", { type: "image/png" }));
 
     await waitFor(() =>
       expect(onChange).toHaveBeenCalledWith({ assetId: ASSET, url: "https://media.test/i.webp", kind: "Image", credit: null }),
     );
     expect(post).toHaveBeenCalledWith("/media", expect.any(FormData), expect.objectContaining({ skipErrorToast: true }));
+  });
+
+  it("uploads a file dropped straight on the button, without opening the dialog", async () => {
+    post.mockResolvedValue({ data: { id: ASSET, kind: "Image", url: "https://media.test/d.webp", byteSize: 10 } });
+    const { onChange } = renderPicker();
+
+    fireEvent.drop(screen.getByRole("button", { name: /add an image or clip/i }), {
+      dataTransfer: { files: [new File(["x"], "dropped.png", { type: "image/png" })] },
+    });
+
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ assetId: ASSET })));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("shows the server's reason beside itself when the upload is refused", async () => {
@@ -68,6 +87,7 @@ describe("MediaPicker", () => {
     );
     const { onChange, user } = renderPicker();
 
+    await openUpload(user);
     await user.upload(input(), new File(["x"], "huge.png", { type: "image/png" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("That image is too large in pixels.");
@@ -76,6 +96,7 @@ describe("MediaPicker", () => {
 
   it("refuses a file type up front without a request", async () => {
     const { onChange, user } = renderPicker();
+    await openUpload(user);
     await user.upload(input(), new File(["x"], "doc.pdf", { type: "application/pdf" }));
 
     expect(await screen.findByRole("alert")).toBeInTheDocument();
@@ -85,6 +106,7 @@ describe("MediaPicker", () => {
 
   it("a cover picker takes images only", async () => {
     const { user } = renderPicker({ allowAudio: false });
+    await openUpload(user, /add an image/i);
     await user.upload(input(), new File(["x"], "clip.mp3", { type: "audio/mpeg" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/image/i);

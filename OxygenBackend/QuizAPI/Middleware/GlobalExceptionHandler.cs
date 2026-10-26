@@ -30,8 +30,12 @@ namespace QuizAPI.Middleware
                 _logger.LogError(ex, "Unhandled exception");
 
             ctx.Response.StatusCode = status;
-            await ctx.Response.WriteAsJsonAsync(
-                new ProblemDetails { Status = status, Title = title }, ct);
+            var problem = new ProblemDetails { Status = status, Title = title };
+            // A 503 from here is a sentence we wrote ("Wikimedia Commons is busy…"), not the server
+            // falling over. The client hides every other 5xx behind a generic line, so this one says
+            // it's meant to be read — the existing explicit override (docs/development/error-handling.md).
+            if (ex is ServiceUnavailableException) problem.Extensions["isCustomMessage"] = true;
+            await ctx.Response.WriteAsJsonAsync(problem, ct);
 
             return true; // handled
         }

@@ -139,9 +139,10 @@ development and an early launch; past it, storage is $0.015 per GB-month.
 
 ## 7. Outside sources — Wikimedia Commons and Pexels
 
-An author who has no image on disk presses **Or find a free image** under the picker and searches
-**Wikimedia Commons** (flags, landmarks, people, artworks — the default tab) or **Pexels** (general
-photos). Choosing a result imports it: from then on it is one of our assets like any upload. Decided
+An author who has no image on disk opens the picker's **Search images** tab and searches **Wikimedia
+Commons** (flags, landmarks, people, artworks — the default) or **Pexels** (general photos). The
+picker doesn't name the sources — when both are on, the switch reads *Reference* / *Photos* — but each
+image's credit does, because the licences require it. Choosing a result imports it: from then on it is one of our assets like any upload. Decided
 in the proposal §3.8; the import model is [ADR 0035](../adr/0035-outside-images-are-imported-by-id-never-hotlinked.md).
 
 **Searched through our API** (`GET /api/media/stock/search?provider=&q=&page=`), so the Pexels key
@@ -214,7 +215,7 @@ phrase, our code decides the image.**
    404 when nothing usable turns up; a source that's down is skipped for the other.
 3. **The review opens with the pictures in place.** Between the reply and the review a short
    "Finding pictures…" panel counts them in, with *Skip to the review*. The builder then shows each
-   picture with its credit; swapping (*Or find a free image*) or removing it is the ordinary picker.
+   picture with its credit; swapping (the picker's *Search images*) or removing it is the ordinary picker.
    A note on the review says how many were added and which questions asked and got none.
 
 Nothing is charged until the quiz is saved, like any upload; a picture removed in the review is
@@ -223,16 +224,23 @@ swept with the other unsaved uploads.
 ## 9. Frontend
 
 - **`MediaPicker`** ([`src/features/media/components/media-picker.tsx`](../../src/features/media/components/media-picker.tsx))
-  is the one control: drag or click, client-side precheck (mirrors the API), inline error with the
-  server's own message, preview (`object-contain` image, or an audio player), Remove. `allowAudio`
-  is off for covers. It replaced `utils/Image-Upload.tsx`.
+  is the one control: a single *Add an image or clip* button. Pressing it opens **`AddMediaDialog`**
+  with two sources, **Upload** (first — drop zone and browse) and **Search images** (§7); a file
+  dropped straight on the button uploads without the dialog. The shape follows Kahoot's media window
+  and Google Forms' *Insert image* — one window, the sources side by side, the device first (decided
+  2026-10-26; it replaced a separate "Or find a free image" link). Client-side precheck (mirrors the
+  API), inline error with the server's own message, preview (`object-contain` image, or an audio
+  player), Remove. `allowAudio` is off for covers. It replaced `utils/Image-Upload.tsx`.
 - Forms hold a `MediaSelection` (`assetId` + preview URL + kind) and send **`mediaAssetId` /
   `coverAssetId` only** (`toQuestionRequest`, `toQuizRequest`). The six dashboard question forms,
   the three builder question cards and the quiz cover all use it; the quiz cover is back in the
   builder's details panel.
-- **`StockImageDialog`** ([`src/features/media/components/stock-image-dialog.tsx`](../../src/features/media/components/stock-image-dialog.tsx))
-  is the outside-source search (§7): a source switch (Pexels only when the site has a key), a
-  search, a grid, *More results*; choosing imports and hands the picker an asset like an upload.
+- **`StockSearchPanel`** ([`src/features/media/components/stock-search-panel.tsx`](../../src/features/media/components/stock-search-panel.tsx))
+  is the dialog's search tab (§7): a *Reference* / *Photos* switch (only when Pexels has a key), a
+  search, a grid that drops previews the source fails to serve, *More results*; choosing imports
+  and hands the picker an asset like an upload. A source that is down or busy is explained in
+  place: its 503 carries `isCustomMessage` so the client shows the sentence instead of the generic
+  error line.
 - A selection's credit is a `CreditLine` — `{ line, url }` — the same shape a saved question's
   `mediaCredit` / `mediaCreditUrl` make (`creditFrom`), so a fresh pick and a saved one render alike
   through `MediaCreditLine`.
@@ -259,7 +267,7 @@ swept, moderated or moved. The old files stay on the uploads volume until remove
 | Vitest | `src/features/media/__tests__/media-picker.test.tsx` | Precheck mirrors the API; upload hands the form an id; server reason shown inline; covers refuse audio; preview and Remove; the credit line, linked to the source page |
 | xUnit | `Ai/AiPromptBuilderTests.cs` | Without the switch no image is asked for; with it, a search phrase on only the questions it helps, never a URL, at most 10, not giving the answer away; the shape's field list stays comma-correct with every optional field on |
 | Vitest | `…/AI-Quiz/__tests__/auto-images.test.tsx` | The parser keeps a plain phrase and drops links, file names, descriptions; only 10 questions keep one; nothing is attached by the parser; `useAutoImages` asks the server per phrase, puts each found picture (with its credit) on its question, lists the ones not found, is never pending with nothing to find, and Skip goes on at once |
-| Vitest | `src/features/media/__tests__/stock-image-dialog.test.tsx` | Search sends source and query; an import sends provider and id only; Pexels offered only with a key; a refused import explained in place; the ⓘ reveals an outside image's credit, and the author's own image has none |
+| Vitest | `src/features/media/__tests__/add-media-dialog.test.tsx` | Opens on Upload and asks for the sources only once Search is chosen; a device upload hands back the asset; search sends source and query; searching inside the builder's form doesn't submit it; an import sends provider and id only; Pexels offered only with a key; a refused import explained in place; the ⓘ reveals an outside image's credit, and the author's own image has none |
 | Vitest | `…/overview/__tests__/review-model.test.ts` | The review shows a builder question's media and a saved one's alike |
 
 Verified by hand against a real PostgreSQL 16 and the running API (2026-10-24): the full migration
