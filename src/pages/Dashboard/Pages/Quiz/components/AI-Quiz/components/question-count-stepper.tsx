@@ -45,14 +45,17 @@ export const QuestionCountStepper = ({
   };
 
   return (
-    <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border bg-card/40 px-3 py-2 short:mt-1.5 short:py-1.5">
+    // The frame matches a selected question-type card below (`border-foreground/40`), not the
+    // bright default border, so the row sits in the form instead of boxing itself off.
+    <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-foreground/40 bg-card/40 px-4 py-2 short:mt-1.5 short:py-1">
       {/* aria-live: pressing − / + changes text elsewhere in the row, which a screen reader
           would otherwise never hear. The buttons' own labels stay static. */}
-      <p aria-live="polite" className="flex items-baseline gap-1.5">
+      <p aria-live="polite" className="flex items-baseline gap-2">
         {/* The count carries the primary colour, the unit doesn't: this row's one piece of
             information is the number, and tinting the word next to it would flatten that
             back out (docs/quiz/question-type-color-schema.md — colour encodes meaning). */}
-        <span className="text-lg font-semibold tabular-nums text-primary">
+        {/* text-4xl: twice the old text-lg — the number is what this row is for (2026-10-26). */}
+        <span className="text-4xl font-bold leading-none tabular-nums text-primary short:text-3xl">
           {value}
         </span>
         <span className="text-xs text-muted-foreground">

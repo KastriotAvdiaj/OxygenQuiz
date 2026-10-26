@@ -120,8 +120,8 @@ export const AdvancedOptions = ({
               Add pictures
             </Label>
             <p id="ai-add-images-hint" className="mt-1 text-xs text-muted-foreground">
-              Questions a picture helps — a flag, a landmark, a painting — get one, found on Wikimedia
-              Commons or Pexels and credited. You check each one in the review.
+              Questions a picture helps — a flag, a landmark, a painting — get one from free image
+              libraries, with its credit. You check each one in the review.
             </p>
           </div>
           <Switch

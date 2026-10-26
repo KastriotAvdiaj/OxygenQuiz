@@ -76,12 +76,15 @@ const HistoryPage = ({ userId }: { userId: string }) => {
   const history = useQuizHistory(userId, { singlePlayerOnly: true });
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const filterPanel = (
+  // Two surfaces: beside the history card the panel wears the card's own colour and border, so the
+  // two read as one workspace (a dashboard card is `bg-card`, CLAUDE.md); in the drawer it sits on
+  // the sheet's background.
+  const filterPanel = (surface: "card" | "sheet") => (
     <QuizHistoryFilterPanel
       lookups={history.lookups}
       state={history.filters}
       showSearch
-      className="bg-background"
+      className={surface === "card" ? "bg-card dark:border-foreground/30" : "bg-background"}
     />
   );
 
@@ -128,7 +131,7 @@ const HistoryPage = ({ userId }: { userId: string }) => {
 
               {/* Same sticky sidebar as My Quizzes. */}
               <aside className="hidden lg:block w-80 xl:w-[350px] shrink-0 sticky top-6 self-start max-h-[calc(100vh-3rem)] overflow-y-auto pl-1">
-                {filterPanel}
+                {filterPanel("card")}
               </aside>
             </div>
           )}
@@ -146,7 +149,7 @@ const HistoryPage = ({ userId }: { userId: string }) => {
           <SheetHeader className="mb-4">
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>
-          {filterPanel}
+          {filterPanel("sheet")}
         </SheetContent>
       </Sheet>
     </>

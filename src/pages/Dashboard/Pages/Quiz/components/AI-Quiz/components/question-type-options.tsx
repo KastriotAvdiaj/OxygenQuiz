@@ -1,4 +1,4 @@
-import { AlertTriangle, Check, PenLine, X } from "lucide-react";
+import { AlertTriangle, Check, Pencil, X } from "lucide-react";
 
 import { QuestionType } from "@/types/question-types";
 import { cn } from "@/utils/cn";
@@ -28,58 +28,68 @@ const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
   [QuestionType.TypeTheAnswer]: "Type The Answer",
 };
 
-/** One answer slot in a glyph: an outlined chip in the type's colour, `filled` for the right one. */
-const Slot = ({
+/**
+ * One solid tile of a glyph, drawn like the app's lifted buttons: a filled face sitting on a darker
+ * edge (`--primary-edge`, the LiftedButton blue), so the glyphs read as small 3D objects rather
+ * than outlines. `strong` is the full-colour tile — the right answer, a True/False card; the rest
+ * are a lighter face of the same colour.
+ */
+const Tile = ({
   className,
-  filled,
+  strong,
+  children,
 }: {
   className: string;
-  filled?: boolean;
+  strong?: boolean;
+  children?: React.ReactNode;
 }) => (
   <span
     className={cn(
-      "rounded-[3px] border-[1.5px] border-current",
-      filled && "bg-current",
+      "flex items-center justify-center rounded-[4px] shadow-[0_2px_0_0_var(--primary-edge)]",
+      strong ? "bg-primary text-primary-foreground" : "bg-primary/35 text-primary-foreground",
       className,
     )}
-  />
+  >
+    {children}
+  </span>
 );
 
 /**
  * A small picture of what answering each type looks like — four options, two cards, a field
- * you write in — so the cards read at a glance. Drawn in `currentColor`, all three in the primary
- * colour: here they are one family of choices, so they share a colour rather than wearing the
- * builder's per-type hues (question-type-theme.ts).
+ * you write in — so the cards read at a glance. Solid, lifted tiles (2026-10-26; outlines before),
+ * all three in the primary colour: here they are one family of choices, so they share a colour
+ * rather than wearing the builder's per-type hues (question-type-theme.ts).
  */
 const TypeGlyph = ({ type }: { type: QuestionType }) => {
   switch (type) {
     case QuestionType.MultipleChoice:
       return (
-        <span className="grid grid-cols-2 gap-1">
-          <Slot className="h-2.5 w-6" />
-          <Slot className="h-2.5 w-6" filled />
-          <Slot className="h-2.5 w-6" />
-          <Slot className="h-2.5 w-6" />
+        <span className="grid grid-cols-2 gap-x-1 gap-y-1.5">
+          <Tile className="h-3 w-7" />
+          <Tile className="h-3 w-7" strong />
+          <Tile className="h-3 w-7" />
+          <Tile className="h-3 w-7" />
         </span>
       );
     case QuestionType.TrueFalse:
       return (
         <span className="flex gap-1.5">
-          <span className="flex h-7 w-6 items-center justify-center rounded-[4px] border-[1.5px] border-current">
-            <Check className="h-3.5 w-3.5" strokeWidth={3} />
-          </span>
-          <span className="flex h-7 w-6 items-center justify-center rounded-[4px] border-[1.5px] border-current">
-            <X className="h-3.5 w-3.5" strokeWidth={3} />
-          </span>
+          <Tile className="h-7 w-6" strong>
+            <Check className="h-3.5 w-3.5" strokeWidth={3.5} />
+          </Tile>
+          <Tile className="h-7 w-6">
+            <X className="h-3.5 w-3.5" strokeWidth={3.5} />
+          </Tile>
         </span>
       );
     case QuestionType.TypeTheAnswer:
       return (
-        <span className="relative flex items-end pr-2.5 pt-2.5">
-          <Slot className="h-3.5 w-11" />
-          <PenLine
-            className="absolute right-0 top-0 h-4 w-4"
-            strokeWidth={2.25}
+        <span className="relative flex items-end pr-3 pt-3">
+          <Tile className="h-4 w-12" />
+          {/* Solid pencil, its own edge as a drop shadow, writing into the field. */}
+          <Pencil
+            className="absolute right-0 top-0 h-5 w-5 fill-primary text-[var(--primary-edge)] drop-shadow-[0_2px_0_var(--primary-edge)]"
+            strokeWidth={1.5}
           />
         </span>
       );
