@@ -99,7 +99,7 @@ namespace QuizAPI.Services.Media.Stock
                     var page = await SearchAsync(id, query, 1, ct);
                     // A result can still fail at import (its licence changed, its file is too big
                     // or not an image we take): try the next few before giving up on this source.
-                    foreach (var candidate in page.Items.Take(3))
+                    foreach (var candidate in RankByTitle(page.Items, query!).Take(3))
                     {
                         try { return await ImportAsync(userId, new StockImportCM { Provider = id, Id = candidate.Id }, ct); }
                         catch (NotFoundException) { }
@@ -110,6 +110,38 @@ namespace QuizAPI.Services.Media.Stock
             }
             if (unavailable is not null) throw unavailable;
             throw new NotFoundException("No free image was found for that.");
+        }
+
+        private static readonly HashSet<string> StopWords =
+            new(StringComparer.Ordinal) { "of", "the", "a", "an", "and", "in", "on", "de", "la", "le" };
+
+        /// <summary>
+        /// Nobody looks at the picture on the AI path, so the search's own order decides — and for
+        /// "Flag of Kosovo" that can put a map or a protest photo first. Results whose title holds
+        /// the whole phrase go first, then those holding every word of it, then the rest; within
+        /// each, the source's order. A title that matches nothing still beats no picture at all.
+        /// </summary>
+        public static IEnumerable<StockImageDTO> RankByTitle(IEnumerable<StockImageDTO> items, string query)
+        {
+            var phrase = Normalise(query);
+            var words = phrase.Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(w => !StopWords.Contains(w)).ToArray();
+            int Score(StockImageDTO i)
+            {
+                var title = Normalise(i.Title ?? string.Empty);
+                if (phrase.Length > 0 && $" {title} ".Contains($" {phrase} ", StringComparison.Ordinal)) return 2;
+                var titleWords = title.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToHashSet(StringComparer.Ordinal);
+                return words.Length > 0 && words.All(titleWords.Contains) ? 1 : 0;
+            }
+            return items.Select((item, rank) => (item, rank, score: Score(item)))
+                .OrderByDescending(x => x.score).ThenBy(x => x.rank).Select(x => x.item);
+        }
+
+        /// <summary>Lower case, letters and digits only, single spaces: "Flag_of_Kosovo (2008)" →
+        /// "flag of kosovo 2008".</summary>
+        private static string Normalise(string s)
+        {
+            var chars = s.ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : ' ').ToArray();
+            return string.Join(' ', new string(chars).Split(' ', StringSplitOptions.RemoveEmptyEntries));
         }
 
         private static bool IsOnHost(string? url, IReadOnlySet<string> hosts) =>

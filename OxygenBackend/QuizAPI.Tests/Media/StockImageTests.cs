@@ -412,6 +412,39 @@ public class StockImageTests
     }
 
     [Fact]
+    public async Task An_ai_phrase_prefers_the_result_whose_title_names_it_over_the_first_result()
+    {
+        var w = new World();
+        // Commons' own order: a map first, then the flag. Nobody sees the picture on this path.
+        w.Http.On(WikimediaProvider.ApiUrl + "?action=query&format=json&formatversion=2&pageids=", CommonsResult(false,
+                CommonsPage(2, 1, "CC0").Replace("Flag of Kosovo 2.svg", "Flag of Kosovo.svg")))
+              .On(WikimediaProvider.ApiUrl, CommonsResult(false,
+                CommonsPage(1, 1, "CC0").Replace("Flag of Kosovo 1.svg", "Kosovo location map.svg"),
+                CommonsPage(2, 2, "CC0").Replace("Flag of Kosovo 2.svg", "Flag of Kosovo.svg")))
+              .OnBytes("https://upload.wikimedia.org/thumb/2.png", MediaWorld.Image(11));
+
+        await w.With(s => s.AutoImportAsync(Author, "Flag of Kosovo"));
+
+        Assert.Contains(w.Http.Requests, u => u.Query.Contains("pageids=2"));
+        Assert.DoesNotContain(w.Http.Requests, u => u.Query.Contains("pageids=1"));
+    }
+
+    [Fact]
+    public void Ranking_by_title_puts_the_whole_phrase_first_then_every_word_then_the_rest_in_source_order()
+    {
+        StockImageDTO R(string id, string title) => new() { Id = id, Title = title };
+        var ranked = StockImageService.RankByTitle(new[]
+        {
+            R("1", "Kosovo location map"),
+            R("2", "Kosovo, flag on a pole"),     // every word, not the phrase
+            R("3", "Flag_of_Kosovo"),              // the phrase, written as a file name
+            R("4", "Pristina skyline"),
+        }, "Flag of Kosovo").Select(i => i.Id);
+
+        Assert.Equal(new[] { "3", "2", "1", "4" }, ranked);
+    }
+
+    [Fact]
     public async Task Nothing_on_commons_falls_back_to_pexels()
     {
         var w = new World();
