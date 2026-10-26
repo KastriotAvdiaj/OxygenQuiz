@@ -85,6 +85,12 @@ ln -s .env.prod ~/OxygenQuiz/.env
 Every compose command then resolves the secrets with or without the flag, and the warnings stop.
 `.env` is in `.gitignore`, so the link is never committed.
 
+**This link is in place** (checked on the server 2026-10-26: `.env -> .env.prod`, created
+2026-09-03), so `.env` and `.env.prod` are one file — edit either name. The `--env-file .env.prod`
+in the commands here is kept as a belt-and-braces habit, not a requirement. The `.env.development`
+and `.env.production` beside them are the **frontend's** Vite files, tracked in git; Compose never
+reads them.
+
 ### What is tracked, and what is not
 
 As of `64f399e8` (2026-08-31) the live compose file **is in version control**, at the repo root as
