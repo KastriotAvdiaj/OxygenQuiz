@@ -132,7 +132,7 @@ the site: a file the checks missed, rendered from the API's origin, could call t
 viewer's cookie. From a domain with no session and no API it can do nothing. An incomplete `Media:R2`
 section with `Storage=R2` **fails startup** — a misconfigured bucket is not something to discover on
 the first upload. Settings: [`../deployment/configuration.md`](../deployment/configuration.md);
-setting up the bucket: [`../deployment/production-runbook.md`](../deployment/production-runbook.md).
+setting up the bucket: [`../deployment/production-topology.md`](../deployment/production-topology.md), "Media — R2 and free images".
 
 R2's free tier (10 GB stored, 1M writes and 10M reads a month, egress always free) covers
 development and an early launch; past it, storage is $0.015 per GB-month.

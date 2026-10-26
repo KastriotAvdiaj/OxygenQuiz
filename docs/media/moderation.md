@@ -185,6 +185,6 @@ house and picked).
 
 - **No automated classifier.** Nudity/gore detection (SafeSearch, Rekognition, Sightengine) is paid
   and waits for revenue (proposal §3.7). The legal floor at launch is Cloudflare's CSAM Scanning
-  Tool on the media domain — a dashboard setting, in [`production-runbook.md`](../deployment/production-runbook.md).
+  Tool on the media domain — a dashboard setting, in [`production-topology.md`](../deployment/production-topology.md), "Media — R2 and free images".
 - **A quiz's cover can't be hidden on its own** — an inappropriate cover holds the quiz (or is
   removed). Covers are on catalogue cards everywhere; a covered card would still advertise it.

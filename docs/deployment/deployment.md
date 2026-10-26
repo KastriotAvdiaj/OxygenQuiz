@@ -104,7 +104,7 @@ preference — it's baked into the current architecture:
 > launch gate once your real domain is wired up. → `OxygenBackend/QuizAPI/Program.cs`
 
 **Data & assets:**
-- [ ] Question/quiz media on R2 (`Media__Storage=R2`, see [`production-runbook.md`](production-runbook.md), "Media on R2"). Avatars still use the `backend-uploads` volume (known-issues.md).
+- [ ] Question/quiz media on R2 (`Media__Storage=R2`, `MEDIA_STORAGE=R2` and the `R2_*` secrets in `.env.prod`, see [`production-topology.md`](production-topology.md), "Media — R2 and free images"). Avatars still use the `backend-uploads` volume (known-issues.md).
 - [x] A real email sender. **Done 2026-09-03:** Brevo, via `BrevoEmailSender`, selected whenever `Email:Brevo:ApiKey` is set; `LoggingEmailSender` remains the development default. See [`../auth/password-reset.md`](../auth/password-reset.md) §7.
 
 **Build sanity:**

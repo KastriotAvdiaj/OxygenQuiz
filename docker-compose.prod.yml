@@ -33,6 +33,18 @@ services:
       # the first CORS origin, which was right by luck; once mail actually sends, a wrong link
       # is a broken feature rather than a wrong log line.
       - App__FrontendBaseUrl=https://oxygenquiz.com
+      #  Question and quiz media (docs/deployment/production-topology.md, "Media"). Every value has a
+      #  default, so a deploy before .env.prod holds them still starts: media on the uploads volume,
+      #  Commons without a token, no Pexels. MEDIA_STORAGE=R2 needs all four R2_* secrets, or the API
+      #  refuses to start.
+      - Media__Storage=${MEDIA_STORAGE:-Disk}
+      - Media__R2__AccountId=${R2_ACCOUNT_ID:-}
+      - Media__R2__AccessKeyId=${R2_ACCESS_KEY_ID:-}
+      - Media__R2__SecretAccessKey=${R2_SECRET_ACCESS_KEY:-}
+      - Media__R2__Bucket=${R2_BUCKET:-oxygenquiz-media-prod}
+      - Media__R2__PublicBaseUrl=https://media.oxygenquiz.com
+      - Media__Stock__WikimediaAccessToken=${WIKIMEDIA_ACCESS_TOKEN:-}
+      - Media__Stock__PexelsApiKey=${PEXELS_API_KEY:-}
       # - Security__EnforceProductionConfig=true   # turn ON after domain+TLS are wired and tested
   postgres:
     image: postgres:15

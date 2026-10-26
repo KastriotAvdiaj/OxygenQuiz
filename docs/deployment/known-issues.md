@@ -264,7 +264,7 @@ None open in code. The fix below is live only once the backend is rebuilt on the
   `thumb.wikimedia.org` — which the first version didn't allow, so the picker showed one result in
   twenty-four and imports were refused until the host was added. Pexels is tested against recorded
   responses only; there's no key on the build machine. First thing after adding the key: one search
-  and one import (runbook, "Free images").
+  and one import (production-topology.md, "Free images").
 - **P3 — AI pictures share the hourly upload limit** (2026-10-24). Each picture the wizard finds is an
   import, and imports count towards the 30-an-hour upload limit (`media-upload`). Two or three
   picture-heavy generations in an hour can reach it; the rest of that quiz's pictures then come back
@@ -273,7 +273,7 @@ None open in code. The fix below is live only once the backend is rebuilt on the
 - **P3 — Pre-pipeline image files are still on the uploads volume** (2026-10-24). The
   `AddMediaPipeline` migration cleared every URL pointing at them; the files in
   `wwwroot/uploads/*.{png,jpg,gif}` (not `uploads/files/`, which holds avatars) are dead weight.
-  Remove by hand once — [`production-runbook.md`](production-runbook.md), "Media on R2".
+  Remove by hand once — [`production-topology.md`](production-topology.md), "Old image files".
 - **P3 — Speed-bonus latency credit is a fixed 2s a client can under-report into.**
   Scoring trusts a client-reported think time (`ClientElapsedMs`) when it's within
   `MaxLatencyCreditSeconds` of the server's own window — see

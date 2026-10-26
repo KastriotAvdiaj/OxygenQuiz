@@ -161,53 +161,11 @@ backups with it.
 
 ---
 
-## Media on R2
+## Media on R2, and free images
 
-Question and quiz media live in a Cloudflare R2 bucket, served from `media.oxygenquiz.com`
-([`../media/media-pipeline.md`](../media/media-pipeline.md) §6). Once:
-
-1. **Buckets.** Cloudflare dashboard → R2 → create `oxygenquiz-media-prod` (and
-   `oxygenquiz-media-dev` for development). Location hint: Europe.
-2. **Public domain.** Prod bucket → Settings → Custom Domains → `media.oxygenquiz.com`. It must be a
-   different host from the API: that separation is the point (a file served from the API's origin
-   could act as the API). The dev bucket can use its `r2.dev` URL instead.
-3. **CSAM scanning.** Cloudflare dashboard → the zone → Caching → Configuration → CSAM Scanning
-   Tool → enable, with an email for notifications. Free on every plan; it blocks a match with a 451
-   and tells you. This is the legal floor for hosting user images — do it before opening uploads.
-4. **API token.** R2 → Manage API tokens → *Object Read & Write*, scoped to the bucket(s). Note the
-   Access Key ID, Secret Access Key and the account id.
-5. **Backend `.env`:**
-   ```
-   Media__Storage=R2
-   Media__R2__AccountId=<account id>
-   Media__R2__AccessKeyId=<access key id>
-   Media__R2__SecretAccessKey=<secret>
-   Media__R2__Bucket=oxygenquiz-media-prod
-   Media__R2__PublicBaseUrl=https://media.oxygenquiz.com
-   ```
-   Restart the backend. **An incomplete R2 section stops the API at startup** — read the boot log.
-   For development, the same keys go in user-secrets with the dev bucket.
-6. **Smoke test.** In the builder, add an image to a question and save: the image URL must start
-   with `https://media.oxygenquiz.com/images/` and load.
-7. **Old files.** The `AddMediaPipeline` migration cleared every pre-pipeline media URL. Remove the
-   dead files from the uploads volume — not `files/`, which holds avatars:
-   `docker compose -f docker-compose.prod.yml exec backend sh -c 'find /app/wwwroot/uploads -maxdepth 1 -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.gif" \) -print -delete'`
-
-### Free images (Wikimedia Commons, Pexels)
-
-The picker's *Or find a free image* ([`../media/media-pipeline.md`](../media/media-pipeline.md) §7).
-Wikimedia works with no setup. For Pexels:
-
-1. **Key.** pexels.com/api → request a key (free). *As of 2026-10-25 Pexels has paused new keys
-   ("New API key issuance is currently paused"); until it reopens, run without one — the picker and
-   the AI pictures use Wikimedia Commons only, and nothing else changes.* Set `Media__Stock__PexelsApiKey` in the backend
-   `.env` and restart. Without it the picker shows Wikimedia only.
-2. **Raise the limit.** The free key allows 200 requests an hour and 20,000 a month for the whole
-   site. Pexels lifts it on request once they've seen the credit: send them a screenshot of an
-   imported image with its credit under it in the editor, and one of the ⓘ open at play time.
-3. **Wikimedia, if searches say "busy".** Anonymous Commons requests share a per-IP limit. If the
-   server's address is throttled (a 429 in the log, "Wikimedia Commons is busy" in the picker),
-   create a personal API token at api.wikimedia.org and set `Media__Stock__WikimediaAccessToken`.
+Moved to [`production-topology.md`](production-topology.md), "Media — R2 and free images": the
+live stack is configured through `.env.prod` and the root compose file, which this runbook's
+design B does not use (2026-10-26).
 
 ---
 
