@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Check, Flag, LogIn, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -195,19 +195,31 @@ export function ReportDialog({ open, onOpenChange, questionId, quizId }: ReportD
   );
 }
 
-/** A small "Report" link that opens the dialog — for play and results screens. */
+/**
+ * A small "Report" link that opens the dialog — for play and results screens. Pass `trigger` to
+ * draw your own control instead (the quiz start card's icon button); it gets the opener.
+ */
 export function ReportButton({
   questionId,
   quizId,
   label = "Report",
   className,
+  trigger,
 }: {
   questionId?: number;
   quizId?: number;
   label?: string;
   className?: string;
+  trigger?: (open: () => void) => ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  if (trigger)
+    return (
+      <>
+        {trigger(() => setOpen(true))}
+        <ReportDialog open={open} onOpenChange={setOpen} questionId={questionId} quizId={quizId} />
+      </>
+    );
   return (
     <>
       <button

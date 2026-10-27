@@ -210,9 +210,10 @@ One hook, `useCopyQuizLink`, picks the link by status:
   quiz's link is public, so the row menu offers it on anyone's Public quiz, not only the viewer's.
 - **Unlisted quiz:** *Copy share link* copies the share link, minting the token as before — owner
   only.
-- **The start modal** gains a *Copy link* button for Public quizzes only — a muted secondary
-  `LiftedButton` with a link icon, after *Start Quiz*. The modal also opens for an Unlisted quiz
-  reached through a share link (`/choose-quiz?shared=…`); it has no Copy link there.
+- **The start modal** offers *Copy link* for Public quizzes only — a link icon in the card's
+  top-right corner beside *Report this quiz* (a flag) and the ✕, each with a tooltip (since
+  2026-10-27; a muted button beside *Start Quiz* before). The modal also opens for an Unlisted
+  quiz reached through a share link (`/choose-quiz?shared=…`); it has no Copy link there.
 
 ## Files
 

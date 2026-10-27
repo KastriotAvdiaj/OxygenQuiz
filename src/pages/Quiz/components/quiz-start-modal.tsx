@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties } from "react";
+import { forwardRef, useMemo, useRef, type ComponentPropsWithoutRef, type CSSProperties } from "react";
 import { ReportButton } from "@/features/reports/components/report-dialog";
 import {
   Dialog,
@@ -8,7 +8,9 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { HelpCircle, Clock, User, Calendar, Play, Presentation, Link2 } from "lucide-react";
+import { User, Calendar, Play, Presentation, Link2, Flag } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/utils/cn";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "@/lib/Auth";
 import { canHost as hasHostRole } from "@/lib/authorization";
@@ -56,6 +58,11 @@ export function QuizStartModal({
   const canCopyLink = quiz.status === "Public";
   const quizLink = useCopyQuizLink();
 
+  // The dialog focuses its first focusable element on open — now the copy-link icon, which then
+  // shows a focus ring and its tooltip. Start Quiz is what this dialog is for, so it gets focus:
+  // Enter starts the quiz.
+  const startRef = useRef<HTMLButtonElement>(null);
+
   const handleStartQuiz = () => {
     onStartQuiz(quiz.id);
     onClose();
@@ -88,12 +95,40 @@ export function QuizStartModal({
       <DialogContent
         className="sm:max-w-lg mx-auto rounded-2xl border-2 border-border dark:border-2 dark:border-border bg-card font-quiz p-0 overflow-hidden gap-0 shadow-[0_4px_0_0_var(--edge)] max-h-[85vh] supports-[height:1dvh]:max-h-[85dvh] flex flex-col"
         style={{ "--edge": edgeColor } as CSSProperties}
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          startRef.current?.focus();
+        }}
       >
         {/* Sized up (sm:max-w-lg, roomier padding, bigger title) since 2026-09-24: the cards no
             longer show the description, so this is where a quiz is read before it is played. */}
+        {/* Copy link and Report, as icons beside the close button (2026-10-27). As buttons they
+            sat next to Start Quiz at nearly its weight; up here they're there when wanted and
+            Start is the one thing to press. Tooltips say what each does; aria-labels say it to a
+            screen reader. Placed to line up with the dialog's own ✕ (right-4 top-4, 16px). */}
+        <TooltipProvider>
+          <div className="absolute right-10 top-2 z-10 flex items-center gap-1">
+            {canCopyLink && (
+              <CardAction label="Copy link" onClick={() => quizLink.copy(quiz)} disabled={quizLink.isPending}>
+                <Link2 className="h-4 w-4" aria-hidden="true" />
+              </CardAction>
+            )}
+            {/* Wrong information, an inappropriate image, spam — docs/media/moderation.md. */}
+            <ReportButton
+              quizId={quiz.id}
+              trigger={(open) => (
+                <CardAction label="Report this quiz" onClick={open} className="hover:text-red-600">
+                  <Flag className="h-4 w-4" aria-hidden="true" />
+                </CardAction>
+              )}
+            />
+          </div>
+        </TooltipProvider>
+
         <div className="p-5 sm:p-7 space-y-5 overflow-y-auto">
           <DialogHeader className="space-y-3">
-            <div className="flex items-center gap-2 flex-wrap">
+            {/* pr-24 keeps the badges clear of the icons and ✕ in the corner. */}
+            <div className="flex items-center gap-2 flex-wrap pr-24">
               <Badge
                 variant="secondary"
                 className="text-[10px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full border tracking-wider uppercase"
@@ -126,43 +161,29 @@ export function QuizStartModal({
 
           {/* Stats grid */}
           <div className="rounded-xl border border-border p-4 space-y-3">
+            {/* The two numbers are the point, so they're big and nothing sits beside them: the
+                icon tiles that used to (a ? and a clock) only repeated the labels (2026-10-27). */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="flex items-center gap-2.5 text-sm sm:text-base">
-                <div
-                  className="p-2 rounded-lg"
-                  style={{ backgroundColor: `${primaryColor}15` }}
-                >
-                  <HelpCircle className="h-4 w-4" style={{ color: primaryColor }} />
-                </div>
-                <div>
-                  {/* A board has no questions — "0" here would be a wrong answer, not a missing one. */}
-                  {quiz.format === "Associations" ? (
-                    <>
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Format</p>
-                      <p className="font-bold text-foreground">Associations board</p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Questions</p>
-                      <p className="font-bold text-foreground">{quiz.questionCount}</p>
-                    </>
-                  )}
-                </div>
+              <div>
+                {/* A board has no questions — "0" here would be a wrong answer, not a missing one. */}
+                {quiz.format === "Associations" ? (
+                  <>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Format</p>
+                    <p className="text-lg sm:text-xl font-bold leading-tight text-foreground">Associations board</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Questions</p>
+                    <p className="text-2xl sm:text-3xl font-bold leading-tight text-foreground tabular-nums">{quiz.questionCount}</p>
+                  </>
+                )}
               </div>
 
-              <div className="flex items-center gap-2.5 text-sm sm:text-base">
-                <div
-                  className="p-2 rounded-lg"
-                  style={{ backgroundColor: `${primaryColor}15` }}
-                >
-                  <Clock className="h-4 w-4" style={{ color: primaryColor }} />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Time Limit</p>
-                  <p className="font-bold text-foreground">
-                    {quiz.timeLimitInSeconds > 0 ? secondsToMinutes(quiz.timeLimitInSeconds) : "None"}
-                  </p>
-                </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Time Limit</p>
+                <p className="text-2xl sm:text-3xl font-bold leading-tight text-foreground tabular-nums">
+                  {quiz.timeLimitInSeconds > 0 ? secondsToMinutes(quiz.timeLimitInSeconds) : "None"}
+                </p>
               </div>
             </div>
 
@@ -186,9 +207,9 @@ export function QuizStartModal({
             </div>
           </div>
 
-          {/* Action row. Centred and content-width rather than full-bleed: this is the
-              one thing to do here, and a button stretched edge to edge reads as a form
-              footer.
+          {/* Action row. Start Quiz is the home page's Play button (hero-actions.tsx): a square
+              face inside a frame of its own edge, sized for a dialog — the same button for the
+              same act, so playing looks the same wherever you start it (2026-10-27).
 
               `liftColor` is the face colour, so LiftedButton derives its edge and shadow
               from the category instead of falling back to the theme blue — the same
@@ -200,12 +221,14 @@ export function QuizStartModal({
               down to it, and `bg-[var(…)]` is a real Tailwind class, so tailwind-merge
               drops the component's own `bg-primary` / `text-white` instead of leaving two
               background rules to fight over source order. */}
-          <div className="flex flex-wrap justify-center gap-3 pt-1">
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
             <LiftedButton
+              ref={startRef}
               type="button"
               onClick={handleStartQuiz}
               liftColor={primaryColor}
-              className="h-11 gap-2 px-8 text-base sm:text-lg font-bold font-quiz tracking-wider bg-[var(--face)] text-[color:var(--face-text)]"
+              outerClassName="rounded-none p-1.5"
+              className="gap-2 rounded-none px-10 py-3 text-xl sm:gap-3 sm:px-12 sm:text-2xl font-bold font-quiz tracking-wider bg-[var(--face)] text-[color:var(--face-text)]"
               style={
                 {
                   "--face": primaryColor,
@@ -213,42 +236,56 @@ export function QuizStartModal({
                 } as CSSProperties
               }
             >
-              <Play className="h-4 w-4 fill-current" />
+              <Play className="h-5 w-5 sm:h-6 sm:w-6 fill-current" aria-hidden="true" />
               Start Quiz
             </LiftedButton>
             {canHost && (
-              // Secondary action beside the CTA: same lifted shape, muted so Start Quiz stays
-              // the one coloured button (CLAUDE.md, "User-facing buttons are LiftedButtons").
+              // Secondary action beside the CTA: the same square frame a size down, muted so
+              // Start Quiz stays the one coloured button (CLAUDE.md, "User-facing buttons").
               <LiftedButton
                 type="button"
-                className="h-11 gap-2 bg-muted text-foreground"
+                outerClassName="rounded-none p-1"
+                className="gap-2 rounded-none px-4 py-2.5 bg-muted text-foreground"
                 liftColor="muted-foreground"
                 onClick={() => {
                   onClose();
                   navigate(`/my-dashboard/host?quizId=${quiz.id}`);
                 }}
               >
-                <Presentation className="h-4 w-4" /> Host for a class
+                <Presentation className="h-4 w-4" aria-hidden="true" /> Host for a class
               </LiftedButton>
             )}
-            {canCopyLink && (
-              // Secondary, muted like Host for a class, so Start Quiz stays the one coloured button.
-              <LiftedButton
-                type="button"
-                className="h-11 flex items-center gap-2 bg-muted text-foreground"
-                liftColor="muted-foreground"
-                onClick={() => quizLink.copy(quiz)}
-              >
-                <Link2 className="h-4 w-4" aria-hidden="true" /> Copy link
-              </LiftedButton>
-            )}
-          </div>
-          {/* Wrong information, an inappropriate image, spam — docs/media/moderation.md. */}
-          <div className="flex justify-center">
-            <ReportButton quizId={quiz.id} label="Report this quiz" />
           </div>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
+
+/**
+ * A quiet icon button in the card's corner, with a tooltip naming it. Forwards its ref and props
+ * because Radix's `TooltipTrigger asChild` hands it both.
+ */
+const CardAction = forwardRef<HTMLButtonElement, ComponentPropsWithoutRef<"button"> & { label: string }>(
+  ({ label, className, children, ...props }, ref) => (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          ref={ref}
+          type="button"
+          aria-label={label}
+          className={cn(
+            "inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
+            className,
+          )}
+          {...props}
+        >
+          {children}
+        </button>
+      </TooltipTrigger>
+      {/* Below and end-aligned: above, it opened past the card's top edge; centred, past its right. */}
+      <TooltipContent side="bottom" align="end">{label}</TooltipContent>
+    </Tooltip>
+  ),
+);
+CardAction.displayName = "CardAction";
