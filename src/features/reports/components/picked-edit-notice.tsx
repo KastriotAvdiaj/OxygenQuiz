@@ -1,4 +1,4 @@
-import { PickSparkle } from "@/components/icons/solid-icons";
+import { PickHand } from "@/components/icons/solid-icons";
 import { useUser } from "@/lib/Auth";
 import { useQuestionEditability } from "@/pages/Dashboard/Pages/Question/api/get-question-editability";
 import { cn } from "@/utils/cn";
@@ -27,7 +27,7 @@ const Notice = ({ children, className }: { children: React.ReactNode; className?
       className,
     )}
   >
-    <PickSparkle size={16} className="mt-0.5 shrink-0 text-primary" />
+    <PickHand size={16} className="mt-0.5 shrink-0 text-primary" />
     <span>{children}</span>
   </div>
 );

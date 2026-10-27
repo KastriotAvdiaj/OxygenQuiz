@@ -119,11 +119,28 @@ export const TrashBin = forwardRef<SVGSVGElement, Props>((props, ref) => {
 });
 TrashBin.displayName = "TrashBin";
 
-/** Pick for the catalogue: a four-pointed sparkle, with a small one beside it. */
-export const PickSparkle = forwardRef<SVGSVGElement, Props>((props, ref) => (
-  <Solid ref={ref} {...props} strokeWidth={1.5}>
-    <path d="M10 2.75c.75 5 2.4 6.6 7 7.25-4.6.65-6.25 2.25-7 7.25-.75-5-2.4-6.6-7-7.25 4.6-.65 6.25-2.25 7-7.25Z" />
-    <path d="M18.25 14.5c.4 2 1 2.65 2.75 3-1.75.35-2.35 1-2.75 3-.4-2-1-2.65-2.75-3 1.75-.35 2.35-1 2.75-3Z" />
-  </Solid>
-));
-PickSparkle.displayName = "PickSparkle";
+/**
+ * Picked: a pointing hand — the index finger up, three folded fingers, the thumb across. It was a
+ * sparkle until 2026-10-27, but a sparkle now reads as "AI" in most apps; the hand says "chosen".
+ * Used for the pick action, the picked notices and the "Oxygen Pick" badge. Mask lines separate
+ * the folded fingers and the thumb.
+ */
+export const PickHand = forwardRef<SVGSVGElement, Props>((props, ref) => {
+  const id = useId();
+  return (
+    <Solid ref={ref} {...props}>
+      <mask id={id}>
+        <rect width="24" height="24" fill="white" stroke="none" />
+        <path d="M12 10v4.5M14.75 10.5v4M17.5 11.5v3M5 12.6 8.6 15.4" stroke="black" strokeWidth={1.1} fill="none" />
+      </mask>
+      <g mask={`url(#${id})`}>
+        <rect x="9" y="2.5" width="2" height="11" rx="1" />
+        <rect x="12.25" y="9" width="2" height="5" rx="1" />
+        <rect x="15" y="9.75" width="2" height="5" rx="1" />
+        <rect x="17.75" y="11" width="1.75" height="4.5" rx="0.9" />
+        <path d="M9 13h10.5v2.5c0 3-2.2 5.5-5.2 5.5H13c-2 0-3.3-.9-4.4-2.4L5 13.6c-.6-.9 0-2 1-1.9.5 0 .9.3 1.2.6L9 14Z" />
+      </g>
+    </Solid>
+  );
+});
+PickHand.displayName = "PickHand";

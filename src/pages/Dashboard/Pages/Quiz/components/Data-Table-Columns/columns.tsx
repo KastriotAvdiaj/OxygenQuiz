@@ -33,7 +33,7 @@ import { MoreHorizontal } from "lucide-react";
 import {
   CopySheets,
   HiddenEye,
-  PickSparkle,
+  PickHand,
   PublishArrow,
   TrashBin,
   ViewEye,
@@ -320,7 +320,7 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
         )}
         {canPick && (
           <DropdownMenuItem className="hover:bg-background" disabled={pickAction.isPending} onClick={togglePick}>
-            <PickSparkle size={16} />
+            <PickHand size={16} />
             {quiz.isPicked ? "Remove from picked" : "Pick for the catalogue"}
           </DropdownMenuItem>
         )}

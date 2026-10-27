@@ -1,6 +1,6 @@
 import { EditPencil } from "@/components/icons/edit-pencil";
 import { PlayTriangle } from "@/components/icons/play-triangle";
-import { CopySheets, HiddenEye, PickSparkle, PublishArrow, TrashBin } from "@/components/icons/solid-icons";
+import { CopySheets, HiddenEye, PickHand, PublishArrow, TrashBin } from "@/components/icons/solid-icons";
 import { MoreHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -119,7 +119,7 @@ export const QuizActionsMenu = ({
 
       {onTogglePick && (
         <DropdownMenuItem className="hover:bg-background" disabled={isPickPending} onClick={onTogglePick}>
-          <PickSparkle size={16} />
+          <PickHand size={16} />
           {quiz.isPicked ? "Remove from picked" : "Pick for the catalogue"}
         </DropdownMenuItem>
       )}

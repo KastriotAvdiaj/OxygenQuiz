@@ -1,4 +1,4 @@
-import { Sparkles } from "lucide-react";
+import { PickHand } from "@/components/icons/solid-icons";
 import { cn } from "@/utils/cn";
 
 /**
@@ -19,7 +19,7 @@ export function PickBadge({ className }: { className?: string }) {
         className,
       )}
     >
-      <Sparkles className="h-3 w-3" aria-hidden="true" />
+      <PickHand size={12} />
       {PICK_BADGE_LABEL}
     </span>
   );
