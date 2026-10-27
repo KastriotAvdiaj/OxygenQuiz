@@ -146,7 +146,9 @@ export function ReportDialog({ open, onOpenChange, questionId, quizId }: ReportD
                     maxLength={1000}
                     rows={3}
                     onChange={(e) => setDetails(e.target.value)}
-                    className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    // ring-inset: the wrapper is overflow-hidden (for its height animation), which
+                    // clipped an outside focus ring and made the box look like it broke its edges.
+                    className="block w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                     placeholder={reason === "WrongAnswer" ? "e.g. Prishtina is the capital, not Prizren — source…" : ""}
                   />
                   {reason === "WrongAnswer" && (
@@ -163,21 +165,26 @@ export function ReportDialog({ open, onOpenChange, questionId, quizId }: ReportD
             )}
 
             <DialogFooter className="gap-2">
+              {/* size="sm" + sm:py-1: compact on a pointer device; phones keep the 36px tap
+                  floor (docs/RESPONSIVE.md). The spinner takes the check's place while it sends. */}
               <LiftedButton
-                className="flex items-center gap-2 bg-red-600 text-white"
+                size="sm"
+                className="flex items-center gap-2 bg-red-600 text-white sm:py-1"
                 liftColor="red-700"
-                disabled={submit.isPending}
+                isPending={submit.isPending}
                 onClick={send}
               >
-                <Check className="h-4 w-4" aria-hidden="true" />
-                Send report
+                {!submit.isPending && <Check className="h-3.5 w-3.5" aria-hidden="true" />}
+                {submit.isPending ? "Sending…" : "Send report"}
               </LiftedButton>
               <LiftedButton
-                className="flex items-center gap-2 border border-foreground/30 bg-background text-foreground"
+                size="sm"
+                className="flex items-center gap-2 border border-foreground/30 bg-background text-foreground sm:py-1"
                 liftColor="muted"
+                disabled={submit.isPending}
                 onClick={close}
               >
-                <X className="h-4 w-4" aria-hidden="true" />
+                <X className="h-3.5 w-3.5" aria-hidden="true" />
                 Cancel
               </LiftedButton>
             </DialogFooter>
