@@ -22,12 +22,16 @@ namespace QuizAPI.Controllers.Questions.Services
         private readonly IQuestionRepository _questions;
         private readonly IAnswerOptionService _answerOptionService;
         private readonly IMediaAttachmentService _media;
+        private readonly QuizAPI.Services.Permissions.IPermissionService? _permissions;
 
         public QuestionService(
             IQuestionRepository questions,
             IAnswerOptionService answerOptionService,
-            IMediaAttachmentService media)
+            IMediaAttachmentService media,
+            QuizAPI.Services.Permissions.IPermissionService? permissions = null)
         {
+            // Optional for unit tests; DI always supplies it. See AfterEditAsync.
+            _permissions = permissions;
             _questions = questions;
             _answerOptionService = answerOptionService;
             _media = media;
@@ -51,6 +55,7 @@ namespace QuizAPI.Controllers.Questions.Services
                     CanEditInPlace = reason == QuestionEditLock.None,
                     Reason = reason == QuestionEditLock.None ? null : reason.ToString(),
                     OtherQuizCount = f?.OtherQuizCount ?? 0,
+                    PickedQuizCount = f?.PickedQuizCount ?? 0,
                 };
             }).ToList();
         }
@@ -338,7 +343,7 @@ namespace QuizAPI.Controllers.Questions.Services
             await _media.ApplyToQuestionAsync(existingQuestion, questionUM.MediaAssetId, userId);
 
             await _questions.SaveChangesAsync();
-            await _questions.TouchQuizzesContainingAsync(existingQuestion.Id);
+            await AfterEditAsync(existingQuestion.Id, userId);
 
             var updated = await _questions.GetMultipleChoiceByIdAsync(existingQuestion.Id);
             return updated?.ToDto();
@@ -361,7 +366,7 @@ namespace QuizAPI.Controllers.Questions.Services
             await _media.ApplyToQuestionAsync(existingQuestion, questionUM.MediaAssetId, userId);
 
             await _questions.SaveChangesAsync();
-            await _questions.TouchQuizzesContainingAsync(existingQuestion.Id);
+            await AfterEditAsync(existingQuestion.Id, userId);
 
             var updated = await _questions.GetTrueFalseByIdAsync(existingQuestion.Id);
             return updated?.ToDto();
@@ -389,10 +394,22 @@ namespace QuizAPI.Controllers.Questions.Services
             await _media.ApplyToQuestionAsync(existingQuestion, questionUM.MediaAssetId, userId);
 
             await _questions.SaveChangesAsync();
-            await _questions.TouchQuizzesContainingAsync(existingQuestion.Id);
+            await AfterEditAsync(existingQuestion.Id, userId);
 
             var updated = await _questions.GetTypeTheAnswerByIdAsync(existingQuestion.Id);
             return updated?.ToDto();
+        }
+
+        /// <summary>
+        /// A question is shared, so an edit changes every quiz it is live in: they all get a new
+        /// <c>UpdatedAt</c>, and — when the editor can't auto-pick — leave the picked catalogue, as
+        /// a quiz edit would (QuizHouse.UnpickForEdit; docs/media/moderation.md §5).
+        /// </summary>
+        private async Task AfterEditAsync(int questionId, Guid editorId)
+        {
+            await _questions.TouchQuizzesContainingAsync(questionId);
+            if (!await QuizHouse.CanAutoPickAsync(_permissions, editorId, isStaff: false))
+                await _questions.UnpickQuizzesContainingAsync(questionId);
         }
 
         // ── Delete ────────────────────────────────────────────────────────────────

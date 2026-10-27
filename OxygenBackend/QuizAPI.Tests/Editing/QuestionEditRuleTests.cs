@@ -112,6 +112,22 @@ public class QuestionEditRuleTests
         Assert.Equal(QuestionEditLock.Played, QuestionEditRule.Decide(facts, Me));
     }
 
+    /// <summary>The question editors warn with this: an edit without quiz:autopick unpicks them.</summary>
+    [Fact]
+    public async Task PickedQuizzes_CountOnlyLivePickedOnes()
+    {
+        await using var ctx = NewContext();
+        var q = AddQuestion(ctx, Me);
+        var (picked, _) = AddToQuiz(ctx, q);
+        var (retired, _) = AddToQuiz(ctx, q, removedInVersion: 2);
+        var (deleted, _) = AddToQuiz(ctx, q, deleted: true);
+        AddToQuiz(ctx, q); // live, not picked
+        foreach (var quiz in new[] { picked, retired, deleted }) quiz.IsPicked = true;
+        ctx.SaveChanges();
+
+        Assert.Equal(1, (await FactsFor(ctx, q.Id, null)).PickedQuizCount);
+    }
+
     [Fact]
     public async Task SomeoneElsesQuestion_ReadsNothing()
     {

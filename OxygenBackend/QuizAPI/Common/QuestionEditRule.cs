@@ -17,7 +17,10 @@ namespace QuizAPI.Common
     /// <summary>What the rule needs to know about one saved question.</summary>
     /// <param name="OtherQuizCount">Live quizzes other than the one being built that contain it.</param>
     /// <param name="Played">Any answer row anywhere points at it.</param>
-    public sealed record QuestionEditFacts(int QuestionId, Guid OwnerId, int OtherQuizCount, bool Played);
+    /// <param name="PickedQuizCount">Picked live quizzes containing it, the one being built
+    /// included — an edit by someone without <c>quiz:autopick</c> unpicks them (QuizHouse). Not
+    /// part of the rule; the question editors warn with it.</param>
+    public sealed record QuestionEditFacts(int QuestionId, Guid OwnerId, int OtherQuizCount, bool Played, int PickedQuizCount = 0);
 
     /// <summary>
     /// The quiz builder's rule for a saved question (docs/quiz/quiz-editing.md, "Which questions

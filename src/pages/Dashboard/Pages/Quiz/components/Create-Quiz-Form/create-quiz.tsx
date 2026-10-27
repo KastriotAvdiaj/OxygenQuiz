@@ -45,6 +45,7 @@ import { useUpdateQuiz, isVersionConflictError } from "../../api/update-quiz";
 import { useCreateAiQuiz, AiImportQuestion } from "../../api/create-ai-quiz";
 import { Quiz } from "@/types/quiz-types";
 import { useUser } from "@/lib/Auth";
+import { PickedEditNotice, editUnpicks } from "@/features/reports/components/picked-edit-notice";
 import { useDraftAutosave } from "@/hooks/use-draft-autosave";
 import { useNavigationGuard } from "@/hooks/use-navigation-guard";
 import { DraftSavedIndicator, LeaveUnfinishedQuizDialog } from "../draft-notices";
@@ -122,6 +123,8 @@ const CreateQuizForm = ({
   const navigate = useNavigate();
   const location = useLocation();
   const { data: user } = useUser();
+  // Saving will cost a picked quiz its pick (docs/media/moderation.md §5) — said up front.
+  const pickedNotice = isEditMode && editUnpicks(editQuiz, user) ? <PickedEditNotice /> : null;
 
   /**
    * Only the *manual create* flow keeps a local draft.
@@ -874,7 +877,14 @@ const CreateQuizForm = ({
                 submitCount={formState.submitCount}
                 formId={formId}
                 reviewBack={reviewBack}
-                notices={reviewNotices}
+                notices={
+                  pickedNotice || reviewNotices ? (
+                    <div className="space-y-3">
+                      {pickedNotice}
+                      {reviewNotices}
+                    </div>
+                  ) : undefined
+                }
                 footnote={<DraftSavedIndicator savedAt={draftSavedAt} />}
                 submitButton={
                   <LiftedButton
@@ -924,6 +934,8 @@ const CreateQuizForm = ({
               onCancel={cancelNavigation}
               draftSaved={draftSavedAt !== null}
             />
+
+            {pickedNotice}
 
             {/* Side columns get a 15rem floor. As fifths of the row they were ~180px on a 1024px
                 window beside the nav rail — narrower than the 200px selects and the two tabs,

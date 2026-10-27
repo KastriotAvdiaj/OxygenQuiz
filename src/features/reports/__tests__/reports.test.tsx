@@ -17,6 +17,12 @@ vi.mock("@/lib/Auth", () => ({
   useUser: () => ({ data: signedIn ? { id: "u1", username: "player" } : null }),
 }));
 
+// What GET /questions/editability says, for PickedQuestionNotice.
+let editability: { questionId: number; pickedQuizCount: number }[] = [];
+vi.mock("@/pages/Dashboard/Pages/Question/api/get-question-editability", () => ({
+  useQuestionEditability: () => ({ data: editability }),
+}));
+
 const addNotification = vi.fn();
 vi.mock("@/common/Notifications", () => ({
   useNotifications: (pick: (s: { addNotification: typeof addNotification }) => unknown) => pick({ addNotification }),
@@ -25,6 +31,7 @@ vi.mock("@/common/Notifications", () => ({
 import { ReportButton } from "../components/report-dialog";
 import { QuestionMedia } from "@/common/QuestionMedia";
 import { showsPickBadge } from "../components/pick-badge";
+import { editUnpicks, PickedQuestionNotice } from "../components/picked-edit-notice";
 import { CatalogueScopeSwitch, COMMUNITY_NOTICE_KEY } from "@/pages/Quiz/components/catalogue-scope-switch";
 
 const wrap = (ui: React.ReactNode) =>
@@ -136,5 +143,29 @@ describe("Catalogue", () => {
     expect(showsPickBadge({ isPicked: true, isHouse: false })).toBe(true);
     expect(showsPickBadge({ isPicked: true, isHouse: true })).toBe(false);
     expect(showsPickBadge({ isPicked: false })).toBe(false);
+  });
+});
+
+describe("editUnpicks (QuizHouse.UnpickForEdit)", () => {
+  it("warns an author without autopick editing a picked quiz, and no one else", () => {
+    const author = { roles: ["User"], permissions: ["quiz:update:own"] };
+    expect(editUnpicks({ isPicked: true }, author)).toBe(true);
+    expect(editUnpicks({ isPicked: false }, author)).toBe(false);
+    expect(editUnpicks({ isPicked: true }, { roles: ["User"], permissions: ["quiz:autopick"] })).toBe(false);
+    expect(editUnpicks({ isPicked: true }, { roles: ["Admin"], permissions: [] })).toBe(false);
+    expect(editUnpicks({ isPicked: true }, { roles: ["SuperAdmin"], permissions: [] })).toBe(false);
+  });
+});
+
+describe("PickedQuestionNotice", () => {
+  it("warns only when the question is in a picked quiz", () => {
+    editability = [{ questionId: 7, pickedQuizCount: 2 }];
+    const { unmount } = wrap(<PickedQuestionNotice questionId={7} />);
+    expect(screen.getByRole("note")).toHaveTextContent("2 picked quizzes use this question.");
+    unmount();
+
+    editability = [{ questionId: 7, pickedQuizCount: 0 }];
+    wrap(<PickedQuestionNotice questionId={7} />);
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
   });
 });

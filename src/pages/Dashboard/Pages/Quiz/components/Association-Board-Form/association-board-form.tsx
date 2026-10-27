@@ -38,6 +38,7 @@ import { DifficultySelect } from "../../../Question/Entities/Difficulty/Componen
 import { LanguageSelect } from "../../../Question/Entities/Language/components/select-question-language";
 import { isUnspecifiedLookup } from "../../../Question/Entities/lookup-visibility";
 import { useQuizForm } from "../Create-Quiz-Form/use-quiz-form";
+import { PickedEditNotice, editUnpicks } from "@/features/reports/components/picked-edit-notice";
 import {
   associationQuizFormSchema,
   BOARD_MAX_OTHER_SPELLINGS,
@@ -377,6 +378,9 @@ const BoardFields = ({
           </LiftedButton>
         </div>
       </div>
+
+      {/* Saving costs a picked board its pick (docs/media/moderation.md §5) — said up front. */}
+      {edit && editUnpicks(edit.quiz, user) && <PickedEditNotice />}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         {/* ── The board ── */}

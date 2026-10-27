@@ -13,6 +13,8 @@ namespace QuizAPI.Controllers.Moderation
     {
         public const string Manage = "moderation:manage";
         public const string Pick = "quiz:pick";
+        /// <summary>Not checked here — at quiz creation and edit (<see cref="QuizAPI.Common.QuizHouse"/>).</summary>
+        public const string AutoPick = QuizAPI.Common.QuizHouse.AutoPickPermission;
     }
 
     /// <summary>

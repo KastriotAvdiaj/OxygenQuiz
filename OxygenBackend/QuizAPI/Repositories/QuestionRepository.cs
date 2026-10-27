@@ -79,7 +79,15 @@ namespace QuizAPI.Repositories
                         .Select(qq => qq.QuizId)
                         .Distinct()
                         .Count(),
-                    _context.UserAnswers.Any(a => a.QuizQuestion.QuestionId == q.Id)))
+                    _context.UserAnswers.Any(a => a.QuizQuestion.QuestionId == q.Id),
+                    _context.QuizQuestions
+                        .Where(qq => qq.QuestionId == q.Id
+                                     && qq.RemovedInVersion == null
+                                     && qq.Quiz.DeletedAt == null
+                                     && qq.Quiz.IsPicked)
+                        .Select(qq => qq.QuizId)
+                        .Distinct()
+                        .Count()))
                 .ToListAsync(ct);
 
         // IgnoreQueryFilters so a soft-deleted lookup still resolves to a name — the caller needs
@@ -153,5 +161,13 @@ namespace QuizAPI.Repositories
                 .Where(q => q.QuizQuestions.Any(qq => qq.QuestionId == questionId && qq.RemovedInVersion == null))
                 .ExecuteUpdateAsync(s => s.SetProperty(q => q.UpdatedAt, now), ct);
         }
+
+        public Task UnpickQuizzesContainingAsync(int questionId, CancellationToken ct = default) =>
+            _context.Quizzes
+                .Where(q => q.IsPicked
+                    && q.QuizQuestions.Any(qq => qq.QuestionId == questionId && qq.RemovedInVersion == null))
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(q => q.IsPicked, false)
+                    .SetProperty(q => q.PickedAt, (DateTime?)null), ct);
     }
 }

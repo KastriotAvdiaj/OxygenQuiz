@@ -1,4 +1,5 @@
 import { EditPencil } from "@/components/icons/edit-pencil";
+import { PickedQuestionNotice } from "@/features/reports/components/picked-edit-notice";
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
@@ -109,6 +110,8 @@ export const UpdateTrueFalseQuestionForm: React.FC<
 
             return (
               <>
+                {/* A shared question: saving unpicks the picked quizzes it's in (moderation.md §5). */}
+                <PickedQuestionNotice questionId={question.id} className="mb-3" />
                 <Input
                   id="questionText"
                   variant="minimal"

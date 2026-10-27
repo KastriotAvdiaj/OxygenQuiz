@@ -172,6 +172,11 @@ namespace QuizAPI.Migrations
                         },
                         new
                         {
+                            RoleId = 3,
+                            PermissionId = 19
+                        },
+                        new
+                        {
                             RoleId = 1,
                             PermissionId = 1
                         },
@@ -254,6 +259,11 @@ namespace QuizAPI.Migrations
                         {
                             RoleId = 1,
                             PermissionId = 18
+                        },
+                        new
+                        {
+                            RoleId = 1,
+                            PermissionId = 19
                         },
                         new
                         {
@@ -1426,6 +1436,13 @@ namespace QuizAPI.Migrations
                             Id = 18,
                             Description = "Pick a quiz for the main catalogue",
                             Name = "quiz:pick",
+                            isActive = false
+                        },
+                        new
+                        {
+                            Id = 19,
+                            Description = "Own quizzes go straight into the picked catalogue",
+                            Name = "quiz:autopick",
                             isActive = false
                         });
                 });

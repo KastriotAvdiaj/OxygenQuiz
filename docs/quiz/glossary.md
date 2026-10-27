@@ -23,8 +23,9 @@ _Avoid_: Asocijacije, association quiz, connections
 ## Catalogue
 
 **Picked quiz**:
-A `Public` quiz an admin has picked for the main catalogue — house quizzes automatically, and
-community quizzes chosen for quality (`Quiz.IsPicked`). See
+A `Public` quiz in the main catalogue (`Quiz.IsPicked`) — house quizzes and quizzes by
+`quiz:autopick` holders automatically, and community quizzes an admin chose for quality. An edit by
+someone without `quiz:autopick` takes it out again. See
 [`moderation.md`](../media/moderation.md) §5.
 _Avoid_: official quiz (the first name for it; excludes good user quizzes), featured (suggests a
 temporary highlight), approved or verified (imply fact-checking), Oxygen Pick (that is the badge's

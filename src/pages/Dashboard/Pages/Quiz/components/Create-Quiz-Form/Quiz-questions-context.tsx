@@ -216,7 +216,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   const editabilityOf = (questionId: number): QuestionEditability | undefined =>
     editability.data?.find((e) => e.questionId === questionId) ??
     (editability.isError
-      ? { questionId, canEditInPlace: false, reason: null, otherQuizCount: 0 }
+      ? { questionId, canEditInPlace: false, reason: null, otherQuizCount: 0, pickedQuizCount: 0 }
       : undefined);
 
   // "Ask before removing a question" — Settings › Quiz, or the dialog's "Don't ask again".

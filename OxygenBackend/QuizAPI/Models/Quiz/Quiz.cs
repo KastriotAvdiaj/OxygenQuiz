@@ -90,9 +90,11 @@ namespace QuizAPI.Models.Quiz
         public DateTime? ModerationHeldAt { get; set; }
 
         /// <summary>
-        /// In the main catalogue. House quizzes are picked when created; a community quiz is picked
-        /// by an admin (<c>quiz:pick</c>). Only picked quizzes are in the sitemap; a community quiz's
-        /// listing page is <c>noindex</c>. docs/media/moderation.md, "Picked and community quizzes".
+        /// In the main catalogue. Quizzes by staff or a <c>quiz:autopick</c> holder are picked when
+        /// created; any other is picked by an admin (<c>quiz:pick</c>), and leaves again when someone
+        /// without autopick edits it (<see cref="QuizAPI.Common.QuizHouse"/>). Only picked quizzes are
+        /// in the sitemap; a community quiz's listing page is <c>noindex</c>.
+        /// docs/media/moderation.md, "Picked and community quizzes".
         /// </summary>
         public bool IsPicked { get; set; }
 

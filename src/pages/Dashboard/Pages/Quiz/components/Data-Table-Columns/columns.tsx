@@ -29,15 +29,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui";
+import { MoreHorizontal } from "lucide-react";
 import {
-  Copy,
-  Eye,
-  EyeOff,
-  Hash,
-  MoreHorizontal,
-  Trash2,
-  Upload,
-} from "lucide-react";
+  CopySheets,
+  HiddenEye,
+  PickHand,
+  PublishArrow,
+  TrashBin,
+  ViewEye,
+} from "@/components/icons/solid-icons";
+import { useModerationAction } from "@/features/reports/api/reports";
 import { DeleteQuiz } from "../delete-quiz";
 import { Link, useLocation } from "react-router-dom";
 import { useUser } from "@/lib/Auth";
@@ -238,6 +239,25 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
           }),
       },
     );
+  // Pick / unpick from the admin table, so curating the catalogue doesn't mean opening every quiz.
+  // Mirrors `canPick` on the quiz page and `quiz:pick` on POST /api/moderation/quizzes/{id}/pick
+  // (Public, not held). Admin dashboard only: "My quizzes" is the author's view, not a moderator's.
+  const pickAction = useModerationAction();
+  const canPick =
+    isAdminDashboard &&
+    !quiz.deletedAt &&
+    !!currentUser &&
+    (currentUser.roles?.includes("SuperAdmin") || currentUser.permissions?.includes("quiz:pick")) &&
+    quiz.status === "Public" &&
+    !quiz.moderationHeld;
+  const togglePick = () =>
+    pickAction.mutate(
+      { kind: quiz.isPicked ? "unpick" : "pick", quizId: quiz.id },
+      {
+        onSuccess: () =>
+          addNotification({ type: "success", title: quiz.isPicked ? "Removed from picked" : "Picked for the catalogue" }),
+      },
+    );
   // Separate disclosure for the delete confirmation. It's rendered OUTSIDE the
   // dropdown (below) so closing the menu can't unmount an open dialog and leave
   // `pointer-events: none` stuck on <body>.
@@ -261,7 +281,7 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
             fell between some items and not others and read as accidental (2026-10-20). */}
         <DropdownMenuItem className="hover:bg-background" asChild>
           <Link to={quizViewPath(quiz, base)} className="flex items-center gap-2">
-            <Eye size={16} /> View
+            <ViewEye size={16} /> View
           </Link>
         </DropdownMenuItem>
         {canPlay && (
@@ -277,7 +297,7 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
             disabled={shareLink.isPending}
             onClick={() => shareLink.copy(quiz)}
           >
-            <Copy size={16} />
+            <CopySheets size={16} />
             {quiz.status === "Unlisted" ? "Copy share link" : "Copy link"}
           </DropdownMenuItem>
         )}
@@ -294,8 +314,14 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
             disabled={setStatus.isPending}
             onClick={handleToggleStatus}
           >
-            {isDraft ? <Upload size={16} /> : <EyeOff size={16} />}
+            {isDraft ? <PublishArrow size={16} /> : <HiddenEye size={16} />}
             {isDraft ? "Publish" : "Unpublish"}
+          </DropdownMenuItem>
+        )}
+        {canPick && (
+          <DropdownMenuItem className="hover:bg-background" disabled={pickAction.isPending} onClick={togglePick}>
+            <PickHand size={16} />
+            {quiz.isPicked ? "Remove from picked" : "Pick for the catalogue"}
           </DropdownMenuItem>
         )}
         {/* Admin tooling only. A player never needs a quiz's database id — nothing in the
@@ -305,9 +331,8 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
             className="hover:bg-background"
             onClick={() => navigator.clipboard.writeText(String(quiz.id))}
           >
-            {/* Hash, not Copy: "Copy link" has the copy icon, and two identical icons would
-                read as the same action. */}
-            <Hash size={16} /> Copy ID
+            {/* The same icon as Copy link: both copy something, and the label says what. */}
+            <CopySheets size={16} /> Copy ID
           </DropdownMenuItem>
         )}
         {!quiz.deletedAt && (
@@ -320,7 +345,7 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
                 requestAnimationFrame(() => deleteDialog.open());
               }}
             >
-              <Trash2 size={16} /> Delete
+              <TrashBin size={16} /> Delete
             </DropdownMenuItem>
           </>
         )}

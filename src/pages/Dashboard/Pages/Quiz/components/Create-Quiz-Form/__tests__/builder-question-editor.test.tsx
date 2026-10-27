@@ -52,7 +52,7 @@ const renderEditor = () =>
 
 describe("BuilderQuestionEditor", () => {
   it("names the reason and offers a copy when the rule says no", () => {
-    answer = [{ questionId: 7, canEditInPlace: false, reason: "UsedElsewhere", otherQuizCount: 2 }];
+    answer = [{ questionId: 7, canEditInPlace: false, reason: "UsedElsewhere", otherQuizCount: 2, pickedQuizCount: 0 }];
     renderEditor();
     expect(screen.getByText(/2 other quizzes use this question too/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Edit for this quiz/ })).toBeInTheDocument();
@@ -75,7 +75,7 @@ describe("BuilderQuestionEditor", () => {
   });
 
   it("opens straight in the editor, with no notice, when the rule allows it", () => {
-    answer = [{ questionId: 7, canEditInPlace: true, reason: null, otherQuizCount: 0 }];
+    answer = [{ questionId: 7, canEditInPlace: true, reason: null, otherQuizCount: 0, pickedQuizCount: 0 }];
     renderEditor();
     expect(screen.queryByRole("button", { name: /Edit for this quiz/ })).not.toBeInTheDocument();
     // The editor's own field holds the question's text, ready to change.

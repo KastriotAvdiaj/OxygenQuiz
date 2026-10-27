@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Eye, EyeOff, Flag, Lock, LockOpen, Sparkles, Trash2, X } from "lucide-react";
+import { Check, Eye, EyeOff, Flag, Lock, LockOpen, Trash2, X } from "lucide-react";
+import { PickHand } from "@/components/icons/solid-icons";
 import { Card, Button, BlobLoader } from "@/components/ui";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConfirmationDialog } from "@/components/ui/dialog/confirmation-dialog/confirmation-dialog";
@@ -192,7 +193,7 @@ function TargetActions({ target, resolved }: { target: ReportTarget; resolved: b
               run({ kind: target.quizPicked ? "unpick" : "pick", quizId: target.quizId! }, target.quizPicked ? "Quiz unpicked" : "Quiz picked")
             }
           >
-            <Sparkles className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+            <PickHand size={14} className="mr-1" />
             {target.quizPicked ? "Unpick" : "Pick"}
           </Button>
         )}
