@@ -30,8 +30,18 @@ const LANES: { value: ReportLane; label: string; empty: string }[] = [
  * Every action on a reported thing is here, so a decision never needs another page.
  */
 export const ModerationReports = () => {
-  const [lane, setLane] = useState<ReportLane>("Urgent");
+  // Null until the moderator picks one: until then the page opens on the first open lane with
+  // anything in it, so an empty Urgent doesn't hide work waiting in Needs attention. Derived, not
+  // an Effect that sets state once the counts arrive.
+  const [picked, setPicked] = useState<ReportLane | null>(null);
   const counts = useReportLaneCounts();
+  const firstBusy = LANES.find((l) => l.value !== "Resolved" && (counts.data?.[l.value] ?? 0) > 0)?.value;
+  const lane = picked ?? firstBusy ?? "Urgent";
+  const setLane = setPicked;
+  // The other open lanes with work in them, for the empty state.
+  const busyElsewhere = LANES.filter(
+    (l) => l.value !== "Resolved" && l.value !== lane && (counts.data?.[l.value] ?? 0) > 0,
+  ).map((l) => ({ lane: l.value, label: l.label, count: counts.data![l.value] }));
 
   return (
     <div className="container mx-auto px-4 py-8 md:px-0">
@@ -64,7 +74,14 @@ export const ModerationReports = () => {
           </TabsList>
           {LANES.map((l) => (
             <TabsContent key={l.value} value={l.value}>
-              {lane === l.value && <LaneList lane={l.value} empty={l.empty} />}
+              {lane === l.value && (
+                <LaneList
+                  lane={l.value}
+                  empty={l.empty}
+                  elsewhere={counts.data ? busyElsewhere : undefined}
+                  onGo={setLane}
+                />
+              )}
             </TabsContent>
           ))}
         </Tabs>
@@ -75,7 +92,18 @@ export const ModerationReports = () => {
 
 const targetKey = (t: ReportTarget) => `${t.targetType}-${t.questionId ?? ""}-${t.quizId ?? ""}`;
 
-function LaneList({ lane, empty }: { lane: ReportLane; empty: string }) {
+function LaneList({
+  lane,
+  empty,
+  elsewhere,
+  onGo,
+}: {
+  lane: ReportLane;
+  empty: string;
+  /** Other open lanes with reports in them; undefined while the counts load. */
+  elsewhere?: { lane: ReportLane; label: string; count: number }[];
+  onGo: (lane: ReportLane) => void;
+}) {
   const { data, isLoading, isError } = useReportLane(lane);
   if (isLoading)
     return (
@@ -89,6 +117,28 @@ function LaneList({ lane, empty }: { lane: ReportLane; empty: string }) {
       <div className="flex flex-col items-center gap-3 py-12 text-center">
         <Flag className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
         <p className="text-muted-foreground">{empty}</p>
+        {/* Say whether the rest of the queue is empty too, so an empty tab never reads as "nothing to do"
+            when another lane has work. Resolved is history, not work, so it's left out. */}
+        {lane !== "Resolved" && elsewhere && (
+          <p className="text-sm text-muted-foreground">
+            {elsewhere.length === 0 ? (
+              "Nothing waiting anywhere else either."
+            ) : (
+              elsewhere.map((e, i) => (
+                <span key={e.lane}>
+                  {i > 0 && " · "}
+                  <button
+                    type="button"
+                    onClick={() => onGo(e.lane)}
+                    className="font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                  >
+                    {e.count} in {e.label}
+                  </button>
+                </span>
+              ))
+            )}
+          </p>
+        )}
       </div>
     );
   return (

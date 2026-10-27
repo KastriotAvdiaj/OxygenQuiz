@@ -112,6 +112,10 @@ most-reported first, in four lanes:
 | **With author** | wrong-answer reports still in the author's window — visible, nothing to do yet |
 | **Resolved** | history |
 
+Each open lane's tab shows its count when it isn't empty. The page opens on the first open lane with
+reports in it (Urgent when they're all empty), and an empty lane says whether the rest of the queue
+is empty too, or links to the lanes that aren't ("2 in With author").
+
 Every action is on that page, so a decision never needs another screen:
 
 | Action | Effect |

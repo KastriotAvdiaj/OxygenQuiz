@@ -32,6 +32,7 @@ import { ReportButton } from "../components/report-dialog";
 import { QuestionMedia } from "@/common/QuestionMedia";
 import { showsPickBadge } from "../components/pick-badge";
 import { editUnpicks, PickedQuestionNotice } from "../components/picked-edit-notice";
+import { ModerationReports } from "@/pages/Dashboard/Pages/Reports/ModerationReports";
 import { CatalogueScopeSwitch, COMMUNITY_NOTICE_KEY } from "@/pages/Quiz/components/catalogue-scope-switch";
 
 const wrap = (ui: React.ReactNode) =>
@@ -50,6 +51,20 @@ beforeEach(() => {
 });
 
 describe("ReportDialog", () => {
+  it("shows that it's sending, and can't be sent twice", async () => {
+    post.mockReturnValue(new Promise(() => {})); // never settles
+    const user = userEvent.setup();
+    wrap(<ReportButton questionId={7} />);
+
+    await user.click(screen.getByRole("button", { name: "Report" }));
+    await user.click(screen.getByLabelText("Spam or nonsense"));
+    await user.click(screen.getByRole("button", { name: /send report/i }));
+
+    const sending = await screen.findByRole("button", { name: /sending/i });
+    expect(sending).toBeDisabled();
+    expect(screen.getByRole("button", { name: /cancel/i })).toBeDisabled();
+  });
+
   it("asks for the correct answer before sending a wrong-answer report", async () => {
     post.mockResolvedValue({ data: { id: "r1" } });
     const user = userEvent.setup();
@@ -167,5 +182,34 @@ describe("PickedQuestionNotice", () => {
     editability = [{ questionId: 7, pickedQuizCount: 0 }];
     wrap(<PickedQuestionNotice questionId={7} />);
     expect(screen.queryByRole("note")).not.toBeInTheDocument();
+  });
+});
+
+describe("ModerationReports", () => {
+  const answer = (counts: Record<string, number>) =>
+    get.mockImplementation((url: string) =>
+      Promise.resolve({ data: url === "/moderation/reports/counts" ? counts : [] }),
+    );
+
+  it("opens on the first lane with work in it, not an empty Urgent", async () => {
+    answer({ Urgent: 0, NeedsAttention: 3, WithAuthor: 0 });
+    wrap(<ModerationReports />);
+    await waitFor(() =>
+      expect(screen.getByRole("tab", { name: /Needs attention/ })).toHaveAttribute("aria-selected", "true"),
+    );
+  });
+
+  it("says when the rest of the queue is empty too, and links to lanes that aren't", async () => {
+    answer({ Urgent: 0, NeedsAttention: 0, WithAuthor: 0 });
+    const { unmount } = wrap(<ModerationReports />);
+    expect(await screen.findByText("Nothing waiting anywhere else either.")).toBeInTheDocument();
+    unmount();
+
+    answer({ Urgent: 1, NeedsAttention: 0, WithAuthor: 2 });
+    const user = userEvent.setup();
+    wrap(<ModerationReports />);
+    await user.click(await screen.findByRole("tab", { name: /Needs attention/ }));
+    await user.click(await screen.findByRole("button", { name: "2 in With author" }));
+    expect(screen.getByRole("tab", { name: /With author/ })).toHaveAttribute("aria-selected", "true");
   });
 });
