@@ -227,8 +227,8 @@ export function QuizStartModal({
               type="button"
               onClick={handleStartQuiz}
               liftColor={primaryColor}
-              outerClassName="rounded-none p-1.5"
-              className="gap-2 rounded-none px-10 py-3 text-xl sm:gap-3 sm:px-12 sm:text-2xl font-bold font-quiz tracking-wider bg-[var(--face)] text-[color:var(--face-text)]"
+              outerClassName="rounded-none p-1"
+              className="gap-2 rounded-none px-8 py-2.5 text-lg sm:px-10 sm:text-xl font-bold font-quiz tracking-wider bg-[var(--face)] text-[color:var(--face-text)]"
               style={
                 {
                   "--face": primaryColor,
@@ -236,7 +236,7 @@ export function QuizStartModal({
                 } as CSSProperties
               }
             >
-              <Play className="h-5 w-5 sm:h-6 sm:w-6 fill-current" aria-hidden="true" />
+              <Play className="h-4 w-4 sm:h-5 sm:w-5 fill-current" aria-hidden="true" />
               Start Quiz
             </LiftedButton>
             {canHost && (
