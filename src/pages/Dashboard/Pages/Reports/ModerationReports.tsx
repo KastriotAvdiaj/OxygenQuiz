@@ -55,20 +55,27 @@ export const ModerationReports = () => {
               <TabsTrigger
                 key={l.value}
                 value={l.value}
-                className="min-h-[2.75rem] gap-1.5 whitespace-normal px-2 leading-tight sm:min-h-0 sm:whitespace-nowrap sm:px-4"
+                className="group min-h-[2.75rem] whitespace-normal px-2 leading-tight sm:min-h-0 sm:whitespace-nowrap sm:px-4"
               >
-                {l.label}
-                {l.value !== "Resolved" && !!counts.data?.[l.value] && (
-                  <span
-                    className={
-                      l.value === "Urgent"
-                        ? "rounded-full bg-red-600 px-1.5 text-[11px] font-bold text-white tabular-nums"
-                        : "rounded-full bg-primary/15 px-1.5 text-[11px] font-bold text-primary tabular-nums"
-                    }
-                  >
-                    {counts.data[l.value]}
-                  </span>
-                )}
+                {/* Its own flex row: TabsTrigger wraps children in one inline span, so a gap on
+                    the trigger never reached the space between the label and the count. */}
+                <span className="flex items-center justify-center gap-1.5">
+                  {l.label}
+                  {l.value !== "Resolved" && !!counts.data?.[l.value] && (
+                    // Urgent's count is a red pill: the one loud state on the page. The others are
+                    // quiet blue, and turn white-on-translucent on the active (blue) tab, where blue
+                    // on blue disappeared.
+                    <span
+                      className={
+                        l.value === "Urgent"
+                          ? "inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1 text-[11px] font-bold leading-none text-white tabular-nums"
+                          : "inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary/15 px-1 text-[11px] font-bold leading-none text-primary tabular-nums transition-colors duration-200 group-data-[state=active]:bg-white/25 group-data-[state=active]:text-white"
+                      }
+                    >
+                      {counts.data[l.value]}
+                    </span>
+                  )}
+                </span>
               </TabsTrigger>
             ))}
           </TabsList>
