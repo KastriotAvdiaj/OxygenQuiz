@@ -161,23 +161,32 @@ export function QuizStartModal({
           </DialogHeader>
 
           {/* Stats. The question count is the one number that says how big this quiz is, so it
-              leads, big (2026-10-27). The time limit and who made it share the row under it: the
-              creator as the same avatar the catalogue card shows (photo or initials, name on
-              hover — CreatorAvatar), so the two places read as one quiz. */}
+              leads, big (2026-10-27), with who made it in the box's top-right corner — the same
+              avatar the catalogue card shows in its corner (photo or initials, name on hover —
+              CreatorAvatar), so the two places read as one quiz. The time limit and date share
+              the row under it. */}
           <div className="rounded-xl border border-border p-4 sm:p-5 space-y-3">
-            {/* A board has no questions — "0" here would be a wrong answer, not a missing one. */}
-            {quiz.format === "Associations" ? (
-              <p className="text-2xl sm:text-3xl font-bold leading-tight text-foreground">Associations board</p>
-            ) : (
-              <p className="flex items-baseline gap-2">
-                <span className="text-5xl sm:text-6xl font-bold leading-none text-foreground tabular-nums">
-                  {quiz.questionCount}
-                </span>
-                <span className="text-sm sm:text-base uppercase tracking-wider text-muted-foreground font-medium">
-                  {quiz.questionCount === 1 ? "question" : "questions"}
-                </span>
-              </p>
-            )}
+            <div className="flex items-start justify-between gap-3">
+              {/* A board has no questions — "0" here would be a wrong answer, not a missing one. */}
+              {quiz.format === "Associations" ? (
+                <p className="text-2xl sm:text-3xl font-bold leading-tight text-foreground">Associations board</p>
+              ) : (
+                <p className="flex items-baseline gap-2">
+                  <span className="text-5xl sm:text-6xl font-bold leading-none text-foreground tabular-nums">
+                    {quiz.questionCount}
+                  </span>
+                  <span className="text-sm sm:text-base uppercase tracking-wider text-muted-foreground font-medium">
+                    {quiz.questionCount === 1 ? "question" : "questions"}
+                  </span>
+                </p>
+              )}
+              {quiz.user && (
+                <>
+                  <span className="sr-only">by {quiz.user}</span>
+                  <CreatorAvatar name={quiz.user} imageUrl={quiz.userProfileImageUrl} className="h-8 w-8" />
+                </>
+              )}
+            </div>
 
             <div className="h-px w-full bg-border/50" />
 
@@ -188,20 +197,12 @@ export function QuizStartModal({
                   {quiz.timeLimitInSeconds > 0 ? secondsToMinutes(quiz.timeLimitInSeconds) : "None"}
                 </span>
               </p>
-              <div className="flex items-center gap-2.5 text-xs sm:text-sm text-muted-foreground">
-                {quiz.createdAt && (
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <Calendar className="h-3 w-3" style={{ color: primaryColor }} aria-hidden="true" />
-                    {formatDate(quiz.createdAt)}
-                  </span>
-                )}
-                {quiz.user && (
-                  <>
-                    <span className="sr-only">by {quiz.user}</span>
-                    <CreatorAvatar name={quiz.user} imageUrl={quiz.userProfileImageUrl} className="h-8 w-8" />
-                  </>
-                )}
-              </div>
+              {quiz.createdAt && (
+                <span className="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-muted-foreground">
+                  <Calendar className="h-3 w-3" style={{ color: primaryColor }} aria-hidden="true" />
+                  {formatDate(quiz.createdAt)}
+                </span>
+              )}
             </div>
           </div>
 
