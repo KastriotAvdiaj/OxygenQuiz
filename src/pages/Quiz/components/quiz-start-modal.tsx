@@ -8,7 +8,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { User, Calendar, Play, Presentation, Link2, Flag } from "lucide-react";
+import { Calendar, Play, Presentation, Link2, Flag } from "lucide-react";
+import { CreatorAvatar } from "./creator-avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/utils/cn";
 import { useNavigate } from "react-router-dom";
@@ -159,51 +160,48 @@ export function QuizStartModal({
             )}
           </DialogHeader>
 
-          {/* Stats grid */}
-          <div className="rounded-xl border border-border p-4 space-y-3">
-            {/* The two numbers are the point, so they're big and nothing sits beside them: the
-                icon tiles that used to (a ? and a clock) only repeated the labels (2026-10-27). */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                {/* A board has no questions — "0" here would be a wrong answer, not a missing one. */}
-                {quiz.format === "Associations" ? (
+          {/* Stats. The question count is the one number that says how big this quiz is, so it
+              leads, big (2026-10-27). The time limit and who made it share the row under it: the
+              creator as the same avatar the catalogue card shows (photo or initials, name on
+              hover — CreatorAvatar), so the two places read as one quiz. */}
+          <div className="rounded-xl border border-border p-4 sm:p-5 space-y-3">
+            {/* A board has no questions — "0" here would be a wrong answer, not a missing one. */}
+            {quiz.format === "Associations" ? (
+              <p className="text-2xl sm:text-3xl font-bold leading-tight text-foreground">Associations board</p>
+            ) : (
+              <p className="flex items-baseline gap-2">
+                <span className="text-5xl sm:text-6xl font-bold leading-none text-foreground tabular-nums">
+                  {quiz.questionCount}
+                </span>
+                <span className="text-sm sm:text-base uppercase tracking-wider text-muted-foreground font-medium">
+                  {quiz.questionCount === 1 ? "question" : "questions"}
+                </span>
+              </p>
+            )}
+
+            <div className="h-px w-full bg-border/50" />
+
+            <div className="flex items-center justify-between gap-3">
+              <p className="flex items-baseline gap-2">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Time limit</span>
+                <span className="text-base sm:text-lg font-bold text-foreground tabular-nums">
+                  {quiz.timeLimitInSeconds > 0 ? secondsToMinutes(quiz.timeLimitInSeconds) : "None"}
+                </span>
+              </p>
+              <div className="flex items-center gap-2.5 text-xs sm:text-sm text-muted-foreground">
+                {quiz.createdAt && (
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <Calendar className="h-3 w-3" style={{ color: primaryColor }} aria-hidden="true" />
+                    {formatDate(quiz.createdAt)}
+                  </span>
+                )}
+                {quiz.user && (
                   <>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Format</p>
-                    <p className="text-lg sm:text-xl font-bold leading-tight text-foreground">Associations board</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Questions</p>
-                    <p className="text-2xl sm:text-3xl font-bold leading-tight text-foreground tabular-nums">{quiz.questionCount}</p>
+                    <span className="sr-only">by {quiz.user}</span>
+                    <CreatorAvatar name={quiz.user} imageUrl={quiz.userProfileImageUrl} className="h-8 w-8" />
                   </>
                 )}
               </div>
-
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Time Limit</p>
-                <p className="text-2xl sm:text-3xl font-bold leading-tight text-foreground tabular-nums">
-                  {quiz.timeLimitInSeconds > 0 ? secondsToMinutes(quiz.timeLimitInSeconds) : "None"}
-                </p>
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="h-px w-full bg-border/50" />
-
-            {/* Author & Date */}
-            <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
-              {quiz.user && (
-                <div className="flex items-center gap-1.5">
-                  <User className="h-3 w-3" style={{ color: primaryColor }} />
-                  <span className="font-medium">{quiz.user}</span>
-                </div>
-              )}
-              {quiz.createdAt && (
-                <div className="flex items-center gap-1.5">
-                  <Calendar className="h-3 w-3" style={{ color: primaryColor }} />
-                  <span className="font-medium">{formatDate(quiz.createdAt)}</span>
-                </div>
-              )}
             </div>
           </div>
 

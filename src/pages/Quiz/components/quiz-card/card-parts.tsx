@@ -1,7 +1,6 @@
 import { type CSSProperties, type ReactNode } from "react";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
 import { cn } from "@/utils/cn";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { quizSizeLabel } from "./card-model";
 
 /**
@@ -73,53 +72,6 @@ export function QuizCardFrame({
         {children}
       </div>
     </button>
-  );
-}
-
-/**
- * The quiz creator: a round avatar in the card's top-right corner, revealing the full name on
- * hover. Dropped in the 2026-09-24 redesign and brought back on 2026-10-06.
- *
- * The name pops up *below* the avatar: the card's frame is `overflow-hidden` and the avatar sits
- * on its top row, so a popup above would be clipped. Decorative for screen readers — the
- * frame's `aria-label` ends "by <name>".
- *
- * No fill of its own — just a muted hairline. A solid background would compete with the
- * palette stripe for attention, and it would box in creator photos that already have their
- * own backdrop. The ring is `border-border`, the same hairline as the card itself, so the
- * avatar reads as part of the card rather than as a badge stuck on it.
- */
-export function CreatorAvatar({
-  name,
-  imageUrl,
-  initials,
-  className,
-}: {
-  name?: string;
-  imageUrl?: string;
-  initials: string;
-  className?: string;
-}) {
-  return (
-    <div aria-hidden="true" className="group/author relative shrink-0">
-      <Avatar
-        className={cn("h-6 w-6 rounded-full border border-border", className)}
-      >
-        <AvatarImage
-          src={imageUrl}
-          alt={name}
-          className="rounded-full"
-          loading="lazy"
-          decoding="async"
-        />
-        <AvatarFallback className="rounded-full bg-transparent text-[10px] font-bold text-muted-foreground">
-          {initials}
-        </AvatarFallback>
-      </Avatar>
-      <span className="pointer-events-none absolute right-0 top-full z-20 mt-1.5 whitespace-nowrap rounded-md border border-border bg-popover px-2 py-1 text-xs font-medium text-popover-foreground opacity-0 shadow-md transition-opacity duration-200 group-hover/author:opacity-100">
-        {name}
-      </span>
-    </div>
   );
 }
 

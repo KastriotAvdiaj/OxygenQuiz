@@ -1290,12 +1290,10 @@ fixed; these were left.
 
 ## Quiz card (2026-09-18 — see docs/quiz/quiz-card.md)
 
-- **P3 — The card no longer shows its creator, and the code for it is still there.** The
-  redesign has no author slot. `CreatorAvatar` in `card-parts.tsx` and `initials` in
-  `card-model.ts` are both unreferenced, kept because attribution on a public catalogue is a
-  decision that gets revisited rather than a feature that was removed. If it stays out, delete
-  both together; neither is useful alone.
-  → `src/pages/Quiz/components/quiz-card/`
+- **P3 — A creator's name can't be read on touch.** The catalogue card and the start dialog both
+  show the creator as `CreatorAvatar`, whose name appears on hover only. On a phone there is no
+  hover, so the name is never shown — only the photo or initials.
+  → `src/pages/Quiz/components/creator-avatar.tsx`
 - **P3 — No stories and no tests for the card.** The only visual check is the admin palette
   preview in `color-palette-input.tsx`, which exercises exactly one palette shape. The cases
   that matter are the ones the catalogue will not show on demand — two-colour and five-colour

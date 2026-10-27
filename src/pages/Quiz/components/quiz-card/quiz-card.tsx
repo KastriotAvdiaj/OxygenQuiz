@@ -2,7 +2,8 @@ import { useCallback, useMemo } from "react";
 import { PickBadge, showsPickBadge } from "@/features/reports/components/pick-badge";
 import { ArrowRight } from "lucide-react";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
-import { CreatorAvatar, DifficultyMeter, QuizCardFrame } from "./card-parts";
+import { DifficultyMeter, QuizCardFrame } from "./card-parts";
+import { CreatorAvatar } from "../creator-avatar";
 import { useQuizCardModel } from "./card-model";
 
 interface QuizCardProps {
@@ -68,7 +69,7 @@ function useDots(colors: string[]): string[] {
 }
 
 export function QuizCard({ quiz, onClick }: QuizCardProps) {
-  const { colors, accent, onAccent, initials, sizeLabel, duration, difficultyRank } =
+  const { colors, accent, onAccent, sizeLabel, duration, difficultyRank } =
     useQuizCardModel(quiz);
   const dots = useDots(colors);
   const isBoard = quiz.format === "Associations";
@@ -102,11 +103,7 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
           <span className="ml-auto flex items-center gap-2">
             {showsPickBadge(quiz) && <PickBadge />}
             {isBoard && <BoardMark accent={accent} />}
-            <CreatorAvatar
-              name={quiz.user}
-              imageUrl={quiz.userProfileImageUrl}
-              initials={initials}
-            />
+            <CreatorAvatar name={quiz.user} imageUrl={quiz.userProfileImageUrl} />
           </span>
         </div>
 
