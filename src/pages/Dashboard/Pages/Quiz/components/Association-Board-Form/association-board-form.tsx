@@ -683,7 +683,7 @@ const FinalSolutionEditor = ({
                 </LiftedButton>
               </span>
             </TooltipTrigger>
-            <TooltipContent className="bg-background border-foreground/50">
+            <TooltipContent>
               <p>
                 {canAdd
                   ? "Add another accepted spelling"

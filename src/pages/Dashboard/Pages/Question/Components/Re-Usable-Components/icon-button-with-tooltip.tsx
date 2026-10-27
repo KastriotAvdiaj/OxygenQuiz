@@ -65,7 +65,7 @@ export const IconButtonWithTooltip = React.forwardRef<
               )}
             </LiftedButton>
           </TooltipTrigger>
-          <TooltipContent className="bg-background border-foreground/50">
+          <TooltipContent>
             <p>{tooltip}</p>
           </TooltipContent>
         </Tooltip>

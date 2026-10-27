@@ -91,7 +91,7 @@ export const TestQuestionButton = ({
               <FaFlask className="h-4 w-4" />
             </LiftedButton>
           </TooltipTrigger>
-          <TooltipContent className="bg-background border-foreground/50">
+          <TooltipContent>
             <p>Test Question</p>
           </TooltipContent>
         </Tooltip>

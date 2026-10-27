@@ -41,7 +41,7 @@ export function CreatorAvatar({
         </AvatarFallback>
       </Avatar>
       {name && (
-        <span className="pointer-events-none absolute right-0 top-full z-20 mt-1.5 whitespace-nowrap rounded-md border border-border bg-popover px-2 py-1 font-app text-xs font-medium text-popover-foreground opacity-0 shadow-md transition-opacity duration-200 group-hover/author:opacity-100">
+        <span className="pointer-events-none absolute right-0 top-full z-20 mt-1.5 whitespace-nowrap rounded-md border border-border bg-background px-2 py-1 font-app text-xs font-medium text-foreground opacity-0 shadow-md transition-opacity duration-200 group-hover/author:opacity-100">
           {name}
         </span>
       )}

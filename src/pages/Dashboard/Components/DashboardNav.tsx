@@ -126,7 +126,7 @@ const NavItem = ({
   return (
     <Tooltip>
       <TooltipTrigger asChild>{button}</TooltipTrigger>
-      <TooltipContent side="right" className="font-medium bg-background">
+      <TooltipContent side="right">
         {item.label}
       </TooltipContent>
     </Tooltip>

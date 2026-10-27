@@ -20,10 +20,12 @@ import { cn } from "@/utils/cn";
  * for placement, and Radix's Presence holds the node for the exit animation, so neither
  * `forceMount` nor an open-state mirror is needed any more.
  *
- * <b>The border.</b> `border-border` on `bg-muted` is ~1.05:1 in light mode (91% vs 93%
- * lightness) and barely more in dark — declared, but invisible. It is a foreground tint instead,
- * which reads in both themes. One class, no `dark:` variant, so a caller's own
- * `border-foreground/50` still wins in dark mode too.
+ * <b>No arrow, on `bg-background`</b> (2026-10-27). The arrow was a separate SVG whose border
+ * could never line up with the box's — the seam showed where they met — and keeping its colours in
+ * step with the box took a computed-style read on every open. Without it a tooltip is a small
+ * floating label, the same as the creator's name over a quiz avatar (`CreatorAvatar`), so the two
+ * hovers look alike. `bg-background` with an `border-border` hairline: it floats over cards and
+ * the muted dashboard alike. Callers style nothing; `className` is for size (`max-w-xs`).
  */
 
 const TooltipProvider = TooltipPrimitive.Provider;
@@ -37,57 +39,27 @@ const Tooltip = ({ delayDuration = 0, ...props }: TooltipProps) => (
 
 const TooltipTrigger = TooltipPrimitive.Trigger;
 
-type TooltipContentElement = React.ElementRef<typeof TooltipPrimitive.Content>;
-
 const TooltipContent = React.forwardRef<
-  TooltipContentElement,
+  React.ElementRef<typeof TooltipPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
->(({ className, sideOffset = 4, children, ...props }, forwardedRef) => {
-  // The arrow is a separate SVG, so it can't pick up `bg-*`/`border-*` classes put on the
-  // content. Read back what those classes resolved to and hand it over, so an override on
-  // `className` reaches the arrow too. A callback ref, not an Effect: the content mounts on every
-  // open, and the moment it attaches is the moment to read it.
-  const [arrowColors, setArrowColors] = React.useState<{ fill: string; stroke: string } | null>(
-    null,
-  );
-  const ref = React.useCallback(
-    (node: TooltipContentElement | null) => {
-      if (typeof forwardedRef === "function") forwardedRef(node);
-      else if (forwardedRef) forwardedRef.current = node;
-      if (!node) return;
-      const computed = getComputedStyle(node);
-      const next = { fill: computed.backgroundColor, stroke: computed.borderTopColor };
-      setArrowColors((prev) =>
-        prev && prev.fill === next.fill && prev.stroke === next.stroke ? prev : next,
-      );
-    },
-    [forwardedRef],
-  );
-
-  return (
-    <TooltipPrimitive.Content
-      ref={ref}
-      sideOffset={sideOffset}
-      className={cn(
-        "z-50 rounded-md border border-foreground/20 bg-muted px-3 py-2 text-xs shadow-md",
-        // Enter/exit: 150ms fade + slight zoom, grown from the side it actually landed on. Under
-        // reduced motion it only fades (arrive, don't travel — docs/development/motion.md).
-        "origin-[--radix-tooltip-content-transform-origin] animate-in fade-in-0 zoom-in-95 duration-150",
-        "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
-        "motion-reduce:zoom-in-100 motion-reduce:data-[state=closed]:zoom-out-100",
-        className,
-      )}
-      {...props}
-    >
-      {children}
-      <TooltipPrimitive.Arrow
-        className="fill-muted stroke-foreground/20"
-        strokeWidth={2}
-        style={arrowColors ? { fill: arrowColors.fill, stroke: arrowColors.stroke } : undefined}
-      />
-    </TooltipPrimitive.Content>
-  );
-});
+>(({ className, sideOffset = 6, children, ...props }, ref) => (
+  <TooltipPrimitive.Content
+    ref={ref}
+    sideOffset={sideOffset}
+    className={cn(
+      "z-50 rounded-md border border-border bg-background px-2 py-1 text-xs font-medium text-foreground shadow-md",
+      // Enter/exit: 150ms fade + slight zoom, grown from the side it actually landed on. Under
+      // reduced motion it only fades (arrive, don't travel — docs/development/motion.md).
+      "origin-[--radix-tooltip-content-transform-origin] animate-in fade-in-0 zoom-in-95 duration-150",
+      "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+      "motion-reduce:zoom-in-100 motion-reduce:data-[state=closed]:zoom-out-100",
+      className,
+    )}
+    {...props}
+  >
+    {children}
+  </TooltipPrimitive.Content>
+));
 TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider };
