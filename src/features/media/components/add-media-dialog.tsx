@@ -35,7 +35,9 @@ export function AddMediaDialog({ open, onOpenChange, allowAudio, onPicked }: Add
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-[720px]">
+      {/* One fixed height for both tabs and every state: results arriving, a tab switch or "More
+          results" never resizes the window — only the results area scrolls (2026-10-27). */}
+      <DialogContent className="flex h-[min(40rem,85vh)] flex-col sm:max-w-[720px]">
         <DialogHeader>
           <DialogTitle>{allowAudio ? "Add an image or clip" : "Add an image"}</DialogTitle>
         </DialogHeader>
@@ -102,7 +104,7 @@ function UploadPanel({ allowAudio, onUploaded }: { allowAudio: boolean; onUpload
   };
 
   return (
-    <div className="space-y-2">
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
       <label
         onDragEnter={onDrag}
         onDragLeave={onDrag}
@@ -113,7 +115,7 @@ function UploadPanel({ allowAudio, onUploaded }: { allowAudio: boolean; onUpload
           pick(e.dataTransfer.files?.[0]);
         }}
         className={cn(
-          "flex min-h-[12rem] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors duration-200",
+          "flex min-h-[12rem] flex-1 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors duration-200",
           dragActive ? "border-primary/60 bg-primary/5" : "border-border hover:border-foreground/40",
           isPending ? "cursor-wait" : "cursor-pointer",
         )}

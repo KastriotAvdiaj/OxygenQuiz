@@ -226,7 +226,9 @@ swept with the other unsaved uploads.
 - **`MediaPicker`** ([`src/features/media/components/media-picker.tsx`](../../src/features/media/components/media-picker.tsx))
   is the one control: a single *Add an image or clip* button. Pressing it opens **`AddMediaDialog`**
   with two sources, **Upload** (first — drop zone and browse) and **Search images** (§7); a file
-  dropped straight on the button uploads without the dialog. The shape follows Kahoot's media window
+  dropped straight on the button uploads without the dialog. The dialog has one fixed height
+  (`min(40rem, 85vh)`) for both tabs: switching tabs or getting results never resizes it, and only
+  the results grid scrolls. The shape follows Kahoot's media window
   and Google Forms' *Insert image* — one window, the sources side by side, the device first (decided
   2026-10-26; it replaced a separate "Or find a free image" link). Client-side precheck (mirrors the
   API), inline error with the server's own message, preview (`object-contain` image, or an audio

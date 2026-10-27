@@ -113,7 +113,7 @@ export function StockSearchPanel({ onPicked }: { onPicked: (asset: MediaAsset) =
         )}
       </AnimatePresence>
 
-      <div className="-mx-1 min-h-[12rem] flex-1 overflow-y-auto px-1">
+      <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
         {!query ? (
           <p className="py-12 text-center text-sm text-muted-foreground">
             Free images anyone may reuse — flags, landmarks, artworks, photos. The credit is added for you.
