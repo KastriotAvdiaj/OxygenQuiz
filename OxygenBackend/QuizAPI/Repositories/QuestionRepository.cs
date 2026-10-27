@@ -153,5 +153,13 @@ namespace QuizAPI.Repositories
                 .Where(q => q.QuizQuestions.Any(qq => qq.QuestionId == questionId && qq.RemovedInVersion == null))
                 .ExecuteUpdateAsync(s => s.SetProperty(q => q.UpdatedAt, now), ct);
         }
+
+        public Task UnpickQuizzesContainingAsync(int questionId, CancellationToken ct = default) =>
+            _context.Quizzes
+                .Where(q => q.IsPicked
+                    && q.QuizQuestions.Any(qq => qq.QuestionId == questionId && qq.RemovedInVersion == null))
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(q => q.IsPicked, false)
+                    .SetProperty(q => q.PickedAt, (DateTime?)null), ct);
     }
 }

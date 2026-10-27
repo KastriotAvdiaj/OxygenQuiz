@@ -24,14 +24,19 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         private readonly ILogger<QuizService> _logger;
         private readonly QuizAPI.Services.Media.IMediaAttachmentService _media;
         private readonly QuizAPI.Services.CurrentUserService.ICurrentUserService _current;
+        private readonly QuizAPI.Services.Permissions.IPermissionService? _permissions;
 
         public QuizService(
             IQuizRepository quizzes,
             IQuestionRepository questions,
             ILogger<QuizService> logger,
             QuizAPI.Services.Media.IMediaAttachmentService media,
-            QuizAPI.Services.CurrentUserService.ICurrentUserService currentUser)
+            QuizAPI.Services.CurrentUserService.ICurrentUserService currentUser,
+            QuizAPI.Services.Permissions.IPermissionService? permissions = null)
         {
+            // Optional so unit tests that don't care about picking needn't build one; DI always
+            // supplies it. Without it only staff auto-pick (QuizHouse.CanAutoPickAsync).
+            _permissions = permissions;
             // Who is asking decides which quiz *formats* exist for them (QuizFormatAccess):
             // a format still in preview is admin-only, in every read below.
             _current = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
@@ -42,11 +47,15 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         }
 
         /// <summary>
-        /// A quiz staff create is a house quiz, and house quizzes are picked — they make up the main
-        /// catalogue (docs/media/moderation.md, "Picked and community quizzes"). Read from the
-        /// creating request's roles; stamped once, so a later role change rewrites nothing.
+        /// A quiz staff create is a house quiz, and picked; so is one by a <c>quiz:autopick</c>
+        /// holder, without being house (docs/media/moderation.md, "Picked and community quizzes").
+        /// Read from the creating request; stamped once, so a later role change rewrites nothing.
         /// </summary>
-        private void StampHouse(Quiz quiz) => QuizHouse.Stamp(quiz, _current.IsAdmin, DateTime.UtcNow);
+        private async Task StampHouseAsync(Quiz quiz) =>
+            QuizHouse.Stamp(quiz, _current.IsAdmin, DateTime.UtcNow, await CanAutoPickAsync());
+
+        private Task<bool> CanAutoPickAsync() =>
+            QuizHouse.CanAutoPickAsync(_permissions, _current.UserId, _current.IsAdmin);
 
         // The name and the match live in QuizAPI.Common.LookupDefaults — one definition for the
         // three services that need it, rather than this copy and QuestionService's being "kept in
@@ -304,7 +313,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 quiz.CreatedAt = DateTime.UtcNow;
                 quiz.Version = 1;
                 quiz.TimeLimitInSeconds = quizCM.Questions.Sum(q => q.TimeLimitInSeconds);
-                StampHouse(quiz);
+                await StampHouseAsync(quiz);
                 await _media.ApplyToQuizCoverAsync(quiz, quizCM.CoverAssetId, userId);
 
                 await _quizzes.AddAsync(quiz);
@@ -405,7 +414,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                     TimeLimitInSeconds = importCM.Questions.Sum(q => q.TimeLimitInSeconds),
                 };
 
-                StampHouse(quiz);
+                await StampHouseAsync(quiz);
                 await _media.ApplyToQuizCoverAsync(quiz, importCM.CoverAssetId, userId);
                 await _quizzes.AddAsync(quiz);
 
@@ -580,7 +589,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 // them back with Undo, then saving, used to bump the version on every save — the
                 // number then overstated how often the quiz had changed. Blank and null
                 // descriptions are the same thing (the form sends "", the column may hold null).
-                var metadataChanged =
+                var contentChanged =
                     quiz.Title != quizUM.Title
                     || (quiz.Description ?? "") != (quizUM.Description ?? "")
                     || quiz.CategoryId != quizUM.CategoryId
@@ -588,9 +597,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                     || quiz.DifficultyId != quizUM.DifficultyId
                     || quiz.ShowFeedbackImmediately != quizUM.ShowFeedbackImmediately
                     || quiz.ShuffleQuestions != quizUM.ShuffleQuestions
-                    || quiz.Status != newStatus
-                    || quiz.CoverAssetId != quizUM.CoverAssetId;
-                if (!metadataChanged && !diff.HasQuestionChanges)
+                    || quiz.CoverAssetId != quizUM.CoverAssetId
+                    || diff.HasQuestionChanges;
+                if (!contentChanged && quiz.Status == newStatus)
                 {
                     await transaction.CommitAsync();
                     return await GetQuizByIdAsync(quiz.Id, userId);
@@ -604,6 +613,10 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 quiz.ShowFeedbackImmediately = quizUM.ShowFeedbackImmediately;
                 quiz.ShuffleQuestions = quizUM.ShuffleQuestions;
                 quiz.Status = newStatus;
+                // A content edit by someone who can't auto-pick takes a picked quiz out of the
+                // catalogue; publishing or unpublishing alone doesn't (QuizHouse.UnpickForEdit).
+                if (contentChanged)
+                    QuizHouse.UnpickForEdit(quiz, await CanAutoPickAsync());
                 // The edit form sends the cover like every other field; until 2026-10-22 this
                 // update ignored it, so changing a quiz's image while editing was silently lost.
                 await _media.ApplyToQuizCoverAsync(quiz, quizUM.CoverAssetId, userId);

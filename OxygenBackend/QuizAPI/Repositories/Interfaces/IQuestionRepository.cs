@@ -73,5 +73,12 @@ namespace QuizAPI.Repositories.Interfaces
         /// docs/quiz/quiz-listing.md, "Quiz.UpdatedAt".
         /// </summary>
         Task TouchQuizzesContainingAsync(int questionId, CancellationToken ct = default);
+
+        /// <summary>
+        /// Takes every picked quiz this question is live in out of the picked catalogue — one
+        /// <c>UPDATE</c>, whoever owns them. For an edit by someone without <c>quiz:autopick</c>
+        /// (<see cref="QuizAPI.Common.QuizHouse"/>). Not supported by the InMemory provider; tests mock this.
+        /// </summary>
+        Task UnpickQuizzesContainingAsync(int questionId, CancellationToken ct = default);
     }
 }

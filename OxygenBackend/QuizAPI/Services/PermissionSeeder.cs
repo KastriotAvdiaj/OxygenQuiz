@@ -35,10 +35,12 @@ namespace QuizAPI.Services
                 new() { Id = 11, Name = "user:delete:any", Description = "Delete any user account" },
                 new() { Id = 16, Name = "user:update:any", Description = "Update any user details" },
 
-                // Moderation (docs/media/moderation.md). Admin and SuperAdmin get both through the
-                // "everything" rules below; no other role does.
+                // Moderation (docs/media/moderation.md). Admin and SuperAdmin get all three through
+                // the "everything" rules below; no other role does. quiz:autopick is the one to hand
+                // to a role of trusted creators (a "Trusted Creator" role made in the dashboard).
                 new() { Id = 17, Name = "moderation:manage", Description = "Review reports, hide media, hold quizzes" },
-                new() { Id = 18, Name = "quiz:pick", Description = "Pick a quiz for the main catalogue" }
+                new() { Id = 18, Name = "quiz:pick", Description = "Pick a quiz for the main catalogue" },
+                new() { Id = 19, Name = "quiz:autopick", Description = "Own quizzes go straight into the picked catalogue" }
             };
 
             modelBuilder.Entity<Permission>().HasData(permissions);

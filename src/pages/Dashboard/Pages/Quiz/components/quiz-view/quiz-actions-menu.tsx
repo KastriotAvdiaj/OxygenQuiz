@@ -1,6 +1,7 @@
 import { EditPencil } from "@/components/icons/edit-pencil";
 import { PlayTriangle } from "@/components/icons/play-triangle";
-import { Copy, Eye, EyeOff, MoreHorizontal, Sparkles, Trash2 } from "lucide-react";
+import { CopySheets, HiddenEye, PickSparkle, PublishArrow, TrashBin } from "@/components/icons/solid-icons";
+import { MoreHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -49,6 +50,9 @@ export interface QuizActionsMenuProps {
  * the second line made one item twice the height of the rest. Delete is still last and red,
  * which is grouping enough. Not a `Tooltip` either: inside an open Radix menu it fights the
  * menu for the same hover.
+ *
+ * <b>Every icon is solid</b> (`components/icons/solid-icons.tsx`, 2026-10-27), as on the rows:
+ * lucide outlines beside the solid Play and Edit read as two icon sets in one menu.
  */
 export const QuizActionsMenu = ({
   quiz,
@@ -99,7 +103,7 @@ export const QuizActionsMenu = ({
           disabled={isSharePending}
           onClick={onShare}
         >
-          <Copy size={16} />
+          <CopySheets size={16} />
           {quiz.status === "Unlisted" ? "Copy share link" : "Copy link"}
         </DropdownMenuItem>
       )}
@@ -109,13 +113,13 @@ export const QuizActionsMenu = ({
         disabled={isStatusPending}
         onClick={onSetStatus}
       >
-        {isDraft ? <Eye size={16} /> : <EyeOff size={16} />}
+        {isDraft ? <PublishArrow size={16} /> : <HiddenEye size={16} />}
         {isDraft ? "Publish" : "Unpublish"}
       </DropdownMenuItem>
 
       {onTogglePick && (
         <DropdownMenuItem className="hover:bg-background" disabled={isPickPending} onClick={onTogglePick}>
-          <Sparkles size={16} />
+          <PickSparkle size={16} />
           {quiz.isPicked ? "Remove from picked" : "Pick for the catalogue"}
         </DropdownMenuItem>
       )}
@@ -128,7 +132,7 @@ export const QuizActionsMenu = ({
         className="text-red-600 focus:text-red-600"
         onSelect={() => requestAnimationFrame(onDelete)}
       >
-        <Trash2 size={16} /> Delete quiz
+        <TrashBin size={16} /> Delete quiz
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>

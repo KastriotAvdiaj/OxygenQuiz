@@ -131,9 +131,26 @@ the outcome either way — *led to a change* or *left as it is*.
 The public catalogue has two halves:
 
 - **Picked** (`Quiz.IsPicked`) — the default view, and the only quizzes in the sitemap and indexed
-  by search engines. Quizzes made by staff are **house** quizzes (`IsHouse`) and picked at creation
-  (`QuizHouse.Stamp`); a moderator can pick a community quiz from its quiz page's menu or the
-  queue, and its author is notified. Only a Public quiz that isn't held can be picked.
+  by search engines. A quiz gets there three ways:
+  - **House.** Quizzes made by staff (an Admin or SuperAdmin at creation — a role check,
+    `ICurrentUserService.IsAdmin`) are **house** quizzes (`IsHouse`) and picked at creation
+    (`QuizHouse.Stamp`). No badge.
+  - **Auto-pick.** A creator holding `quiz:autopick` has their quizzes picked at creation too, but
+    they aren't house, so they carry the badge. It's a permission, not a role: a SuperAdmin makes a
+    role (say "Trusted Creator") in the dashboard, ticks `quiz:autopick` in the permission matrix,
+    and gives the role to people. Admin and SuperAdmin hold it as seeded. It covers *their own*
+    quizzes only — picking anyone else's is `quiz:pick`.
+  - **Picked by hand.** Anyone holding `quiz:pick` (Admin and SuperAdmin) picks a community quiz
+    from the ⋯ menu of its row in **Dashboard → Quizzes**, the ⋯ menu on its dashboard quiz page,
+    or the report queue; its author is notified. Only a Public quiz that isn't held can be picked.
+
+  **An edit takes a quiz back out** ([ADR 0036](../adr/0036-an-edit-takes-a-quiz-out-of-the-picked-catalogue.md)):
+  when someone without `quiz:autopick` changes a picked quiz's content — its fields, cover,
+  questions or board — it is unpicked (`QuizHouse.UnpickForEdit`), and a moderator picks it again.
+  Publishing or unpublishing alone keeps the pick. Editing a question from the question bank
+  unpicks every picked quiz it is live in (`IQuestionRepository.UnpickQuizzesContainingAsync`), as
+  it changes them all. Both builders say so before the author saves (`PickedEditNotice`). An
+  upheld harmful report unpicks too (§4).
 - **Community** — every other Public quiz, behind a switch on the catalogue. The first switch shows
   a one-time notice that these quizzes haven't been checked (remembered per browser). A community
   quiz still has its listing page, served `noindex` by the Worker (`isIndexable` in
@@ -162,7 +179,8 @@ both, which is what the lobby's quiz picker and older callers get.
 | POST | `/api/moderation/media/{assetId}/remove` | `moderation:manage` |
 | GET | `/api/media/hidden/question/{id}` | signed in |
 
-Both permissions are seeded for Admin (SuperAdmin passes every check).
+All three permissions (`moderation:manage`, `quiz:pick`, `quiz:autopick`) are seeded for Admin
+(SuperAdmin passes every check); `quiz:autopick` is checked at quiz creation and edit, not on a route.
 
 ## 7. Files
 
@@ -171,13 +189,14 @@ Both permissions are seeded for Admin (SuperAdmin passes every check).
 `ModerationService.cs` (lanes, every moderator action); `Controllers/Moderation/ModerationControllers.cs`;
 `Common/CatalogueScope.cs`, `Common/QuizHouse.cs`, `Common/QuizPlayAccess.cs`; migration
 `AddReportsAndModeration` (which also marks every existing quiz owned by an Admin or SuperAdmin as
-house and picked).
+house and picked); `AddQuizAutoPickPermission`.
 
 **Frontend:** `src/features/reports/` (API, report dialog, badge, the shared target summary);
 `src/common/QuestionMedia.tsx` (the cover); `src/pages/Dashboard/Pages/Reports/ModerationReports.tsx`;
-`src/pages/UserDashboard/ReceivedReports.tsx`; `src/pages/Quiz/components/catalogue-scope-switch.tsx`.
+`src/pages/UserDashboard/ReceivedReports.tsx`; `src/pages/Quiz/components/catalogue-scope-switch.tsx`;
+the pick item in both quiz ⋯ menus (`Data-Table-Columns/columns.tsx`, `quiz-view/quiz-actions-menu.tsx`).
 
-**Tests:** `QuizAPI.Tests/Moderation/` (`ModerationTests`, `HoldAndPickedEntryPointTests`),
+**Tests:** `QuizAPI.Tests/Moderation/` (`ModerationTests`, `HoldAndPickedEntryPointTests`, `AutoPickTests`),
 `Security/ModerationEndpointTests`; `src/features/reports/__tests__/reports.test.tsx`;
 `worker/__tests__/listing.test.js` (`isIndexable`).
 

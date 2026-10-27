@@ -261,6 +261,31 @@ public class AssociationBoardServiceTests
         Assert.Equal(1, board.CreatedInVersion);   // still visible to both versions
     }
 
+    /// <summary>
+    /// An edit by someone who can't auto-pick takes a picked board out of the catalogue
+    /// (docs/media/moderation.md §5). This service has no permission service, so the owner can't.
+    /// </summary>
+    [Fact]
+    public async Task Update_OfAPickedBoard_ByAnAuthorWithoutAutopick_UnpicksIt()
+    {
+        using var db = new Db();
+        var id = await CreateOne(db);
+        await using (var ctx = db.Context())
+        {
+            var quiz = ctx.Quizzes.Single();
+            quiz.IsPicked = true;
+            quiz.PickedAt = DateTime.UtcNow;
+            ctx.SaveChanges();
+        }
+
+        await using (var ctx = db.Context())
+            await Service(ctx).UpdateAsync(OwnerId, Um(db, id, version: 1, board: Board(" v2")));
+
+        await using var check = db.Context();
+        Assert.False(check.Quizzes.Single().IsPicked);
+        Assert.Null(check.Quizzes.Single().PickedAt);
+    }
+
     /// <summary>A board save is an edit the sitemap must report (docs/quiz/quiz-listing.md, "Quiz.UpdatedAt").</summary>
     [Fact]
     public async Task Update_BumpsUpdatedAt()

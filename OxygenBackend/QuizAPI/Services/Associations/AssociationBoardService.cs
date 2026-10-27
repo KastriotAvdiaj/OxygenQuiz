@@ -46,6 +46,7 @@ namespace QuizAPI.Services.Associations
         private readonly IAssociationRulesProvider _rules;
         private readonly QuizAPI.Services.Media.IMediaAttachmentService _media;
         private readonly QuizAPI.Services.CurrentUserService.ICurrentUserService? _current;
+        private readonly QuizAPI.Services.Permissions.IPermissionService? _permissions;
 
         public AssociationBoardService(
             IQuizRepository quizzes,
@@ -53,8 +54,10 @@ namespace QuizAPI.Services.Associations
             IQuizService quizService,
             IAssociationRulesProvider rules,
             QuizAPI.Services.Media.IMediaAttachmentService media,
-            QuizAPI.Services.CurrentUserService.ICurrentUserService? current = null)
+            QuizAPI.Services.CurrentUserService.ICurrentUserService? current = null,
+            QuizAPI.Services.Permissions.IPermissionService? permissions = null)
         {
+            _permissions = permissions;
             _quizzes = quizzes;
             _boards = boards;
             _quizService = quizService;
@@ -92,7 +95,7 @@ namespace QuizAPI.Services.Associations
             var board = AssociationBoardMapping.ToEntity(clean, quizId: 0, createdInVersion: 1);
             board.Quiz = quiz;
 
-            QuizAPI.Common.QuizHouse.Stamp(quiz, _current?.IsAdmin == true, DateTime.UtcNow);
+            QuizAPI.Common.QuizHouse.Stamp(quiz, _current?.IsAdmin == true, DateTime.UtcNow, await CanAutoPickAsync());
             await _media.ApplyToQuizCoverAsync(quiz, cm.CoverAssetId, userId);
             await _quizzes.AddAsync(quiz);
             await _boards.AddAsync(board);
@@ -137,11 +140,25 @@ namespace QuizAPI.Services.Associations
             // Copy-on-write: a changed Board is a new row at the new version, and the old one is
             // retired — never edited — so games pinned to the old version keep their Board.
             var live = await _boards.GetLiveAsync(quiz.Id, track: true);
-            if (live is null || !AssociationBoardMapping.HasSameContent(live, clean))
+            var boardChanged = live is null || !AssociationBoardMapping.HasSameContent(live, clean);
+            if (boardChanged)
             {
                 if (live is not null) live.RemovedInVersion = newVersion;
                 await _boards.AddAsync(AssociationBoardMapping.ToEntity(clean, quiz.Id, newVersion));
             }
+
+            // Publishing or unpublishing alone keeps a pick; any other change, by someone who
+            // can't auto-pick, takes the quiz out of the picked catalogue (QuizHouse.UnpickForEdit).
+            var contentChanged = boardChanged
+                || quiz.Title != um.Title.Trim()
+                || (quiz.Description ?? "") != (um.Description ?? "")
+                || quiz.CategoryId != um.CategoryId
+                || quiz.LanguageId != um.LanguageId
+                || quiz.DifficultyId != um.DifficultyId
+                || quiz.CoverAssetId != um.CoverAssetId
+                || quiz.TimeLimitInSeconds != um.BoardTimeInSeconds;
+            if (contentChanged)
+                QuizAPI.Common.QuizHouse.UnpickForEdit(quiz, await CanAutoPickAsync());
 
             quiz.Title = um.Title.Trim();
             quiz.Description = um.Description;
@@ -158,6 +175,9 @@ namespace QuizAPI.Services.Associations
 
             return quiz.ToDto();
         }
+
+        private Task<bool> CanAutoPickAsync() =>
+            QuizAPI.Common.QuizHouse.CanAutoPickAsync(_permissions, _current?.UserId, _current?.IsAdmin == true);
 
         /// <summary>The rules about the quiz itself, shared with Classic: lookups exist, and the publishing gate.</summary>
         private async Task EnsureQuizFieldsAsync(AssociationQuizCM cm, QuizStatus status, Guid? userId)
