@@ -79,7 +79,15 @@ namespace QuizAPI.Repositories
                         .Select(qq => qq.QuizId)
                         .Distinct()
                         .Count(),
-                    _context.UserAnswers.Any(a => a.QuizQuestion.QuestionId == q.Id)))
+                    _context.UserAnswers.Any(a => a.QuizQuestion.QuestionId == q.Id),
+                    _context.QuizQuestions
+                        .Where(qq => qq.QuestionId == q.Id
+                                     && qq.RemovedInVersion == null
+                                     && qq.Quiz.DeletedAt == null
+                                     && qq.Quiz.IsPicked)
+                        .Select(qq => qq.QuizId)
+                        .Distinct()
+                        .Count()))
                 .ToListAsync(ct);
 
         // IgnoreQueryFilters so a soft-deleted lookup still resolves to a name — the caller needs

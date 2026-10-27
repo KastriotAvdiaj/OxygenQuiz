@@ -1,4 +1,5 @@
 import { EditPencil } from "@/components/icons/edit-pencil";
+import { PickedQuestionNotice } from "@/features/reports/components/picked-edit-notice";
 import React, { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -140,6 +141,8 @@ export const UpdateTypeAnswerQuestionForm: React.FC<
 
             return (
               <>
+                {/* A shared question: saving unpicks the picked quizzes it's in (moderation.md §5). */}
+                <PickedQuestionNotice questionId={question.id} className="mb-3" />
                 <Input
                   label="Question"
                   id="questionText"

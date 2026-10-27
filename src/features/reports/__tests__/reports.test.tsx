@@ -17,6 +17,12 @@ vi.mock("@/lib/Auth", () => ({
   useUser: () => ({ data: signedIn ? { id: "u1", username: "player" } : null }),
 }));
 
+// What GET /questions/editability says, for PickedQuestionNotice.
+let editability: { questionId: number; pickedQuizCount: number }[] = [];
+vi.mock("@/pages/Dashboard/Pages/Question/api/get-question-editability", () => ({
+  useQuestionEditability: () => ({ data: editability }),
+}));
+
 const addNotification = vi.fn();
 vi.mock("@/common/Notifications", () => ({
   useNotifications: (pick: (s: { addNotification: typeof addNotification }) => unknown) => pick({ addNotification }),
@@ -25,7 +31,7 @@ vi.mock("@/common/Notifications", () => ({
 import { ReportButton } from "../components/report-dialog";
 import { QuestionMedia } from "@/common/QuestionMedia";
 import { showsPickBadge } from "../components/pick-badge";
-import { editUnpicks } from "../components/picked-edit-notice";
+import { editUnpicks, PickedQuestionNotice } from "../components/picked-edit-notice";
 import { CatalogueScopeSwitch, COMMUNITY_NOTICE_KEY } from "@/pages/Quiz/components/catalogue-scope-switch";
 
 const wrap = (ui: React.ReactNode) =>
@@ -148,5 +154,18 @@ describe("editUnpicks (QuizHouse.UnpickForEdit)", () => {
     expect(editUnpicks({ isPicked: true }, { roles: ["User"], permissions: ["quiz:autopick"] })).toBe(false);
     expect(editUnpicks({ isPicked: true }, { roles: ["Admin"], permissions: [] })).toBe(false);
     expect(editUnpicks({ isPicked: true }, { roles: ["SuperAdmin"], permissions: [] })).toBe(false);
+  });
+});
+
+describe("PickedQuestionNotice", () => {
+  it("warns only when the question is in a picked quiz", () => {
+    editability = [{ questionId: 7, pickedQuizCount: 2 }];
+    const { unmount } = wrap(<PickedQuestionNotice questionId={7} />);
+    expect(screen.getByRole("note")).toHaveTextContent("2 picked quizzes use this question.");
+    unmount();
+
+    editability = [{ questionId: 7, pickedQuizCount: 0 }];
+    wrap(<PickedQuestionNotice questionId={7} />);
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
   });
 });

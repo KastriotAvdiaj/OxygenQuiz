@@ -11,6 +11,8 @@ export type QuestionEditability = {
   reason: QuestionEditLockReason | null;
   /** Other live quizzes using it (only for your own questions). */
   otherQuizCount: number;
+  /** Picked live quizzes using it (only for your own questions) — see `PickedQuestionNotice`. */
+  pickedQuizCount: number;
 };
 
 /**

@@ -149,7 +149,9 @@ The public catalogue has two halves:
   questions or board — it is unpicked (`QuizHouse.UnpickForEdit`), and a moderator picks it again.
   Publishing or unpublishing alone keeps the pick. Editing a question from the question bank
   unpicks every picked quiz it is live in (`IQuestionRepository.UnpickQuizzesContainingAsync`), as
-  it changes them all. Both builders say so before the author saves (`PickedEditNotice`). An
+  it changes them all. Both builders say so before the author saves (`PickedEditNotice`), and so
+  do the three question editors when the question is in at least one picked quiz
+  (`PickedQuestionNotice`, from `PickedQuizCount` on `GET /api/questions/editability`). An
   upheld harmful report unpicks too (§4).
 - **Community** — every other Public quiz, behind a switch on the catalogue. The first switch shows
   a one-time notice that these quizzes haven't been checked (remembered per browser). A community

@@ -55,6 +55,7 @@ namespace QuizAPI.Controllers.Questions.Services
                     CanEditInPlace = reason == QuestionEditLock.None,
                     Reason = reason == QuestionEditLock.None ? null : reason.ToString(),
                     OtherQuizCount = f?.OtherQuizCount ?? 0,
+                    PickedQuizCount = f?.PickedQuizCount ?? 0,
                 };
             }).ToList();
         }

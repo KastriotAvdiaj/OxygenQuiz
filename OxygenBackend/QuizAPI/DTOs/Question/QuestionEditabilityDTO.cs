@@ -12,5 +12,10 @@ namespace QuizAPI.DTOs.Question
         public string? Reason { get; set; }
         /// <summary>Other live quizzes using it. Only filled for the caller's own questions.</summary>
         public int OtherQuizCount { get; set; }
+        /// <summary>
+        /// Picked live quizzes using it (only for the caller's own questions). Saving an edit
+        /// without <c>quiz:autopick</c> unpicks them, so the question editors warn with this.
+        /// </summary>
+        public int PickedQuizCount { get; set; }
     }
 }
