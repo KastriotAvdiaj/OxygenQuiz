@@ -1,6 +1,8 @@
 # Proposal: which source a grounded generation reads, and who decides when it is ambiguous
 
-**Status: open.** Nothing implemented. Written 2026-10-28. Prerequisite for Phase 2 of
+**Status: accepted 2026-10-28, implementation in progress.** Rank 3 (English source → non-English
+questions) is **rejected** — see §4d. The source provider and its selection rules are built; the
+generation-flow integration and the review UI are not. Written 2026-10-28. Prerequisite for Phase 2 of
 [`../quiz/ai-question-accuracy-plan.md`](../quiz/ai-question-accuracy-plan.md), which assumes a
 source can be picked automatically. The measurements below say it cannot.
 
@@ -87,6 +89,26 @@ category or language fails to resolve, and the wizard renders `ConfirmDetailsCar
 topic box until it is answered. An unresolved *topic* is the same shape of problem and routes into
 the same gate — a list of titles with their first sentence, one of which the author picks.
 
+### 4a bis. A much longer runner-up is also a question
+
+The disambiguation marker only catches terms the source itself knows are ambiguous. It does not
+catch `Human respiratory system` returning *Human body*, or `Balkans campaign World War II`
+returning the World War I front — both real articles, both wrong, nothing flagged.
+
+The signal that survives is **length against search rank**: when a lower-ranked article is much
+longer than the top hit, the search was not confident. Ask instead of guessing. Against the nine
+cases measured on 2026-10-28, a 1.5× ratio matches the human judgement on all nine — it fires on
+Mercury, Human body, the Balkans and `Historia e Kosovës`, and stays quiet on Photosynthesis,
+C Sharp, the 2024 Olympics, Rilindja and Kuzhina.
+
+**That number is fitted, not validated.** It was derived from those nine cases, so matching them is
+circular. What it buys is a conversion of three silent wrong picks into three answerable questions;
+whether it holds on unseen topics is a Phase 0 measurement, and the ratio is configurable so it can
+be moved when there is data rather than argued about now.
+
+A gate that fires on good results is worse than no gate, because people learn to click through it.
+That is the thing to watch in the eval: how often it asks when the top hit was right.
+
 ### 4b. Always show which source was used, with a link
 
 Cheaper than any detector and catches more, including every case §3 cannot detect. An author
@@ -121,16 +143,24 @@ allowlist, consulted in priority order until one returns a source that clears §
 |---|---|---|
 | 1 | any | the author's own material (Source mode — already works server-side) |
 | 2 | History, Geography, Science, Entertainment | Wikipedia on the quiz's language domain |
-| 3 | same | Wikipedia on `en`, **translated-from disclosed in the review** |
+| ~~3~~ | ~~same~~ | ~~Wikipedia on `en`, translated-from disclosed~~ — **rejected, see below** |
 | 4 | Programming / tech | official documentation domains (learn.microsoft.com, postgresql.org, docs.python.org) |
 | 5 | Sports rules | the governing body (FIFA, UEFA) |
 | — | anything else | no source: generate ungrounded and say so |
 
-Rank 3 is the decision this proposal is least sure of, and it is the main Albanian path: an
-English source producing Albanian questions is a translation task wearing a generation task's
-clothes, and translationese is one of the two complaints that started this work. It may be worse
-than ungrounded generation. **Phase 0 can answer it** — that is what `--language-mode` and the
-per-language fluency column in the report exist for.
+**Rank 3 is rejected (2026-10-28).** An English source producing Albanian questions is a
+translation task wearing a generation task's clothes, and translationese is one of the two
+complaints that started this work. Handing that task to the current generator — a free-tier
+open-weights model whose non-English prose is the problem being fixed — would make the symptom
+worse while the UI showed a citation saying the questions were sourced.
+
+The condition under which it could return is specific: a model genuinely strong at translation.
+Until then a language with no Wikipedia domain of its own gets **no Wikipedia source**, and the
+generation runs ungrounded and says so — which is honest, rather than grounded-in-the-wrong-language
+and silent about it.
+
+This is also why `SourceOptions.LanguageDomains` has no fallback entry. A missing language is a
+missing source, not a redirect to English.
 
 ## 5. Rejected
 
@@ -149,7 +179,9 @@ The tiered allowlist keeps the set small enough to check deliberately.
 ## 6. Open questions
 
 - The minimum source length. A guess until Phase 0 runs.
-- Rank 3 (English source → Albanian questions): better or worse than ungrounded? Measurable.
+- ~~Rank 3 (English source → Albanian questions)~~ — **rejected 2026-10-28**, see §4d. Revisit only
+  with a model strong at translation, and measure it before trusting it.
+- The close-contest ratio (§4a bis). Fitted to nine cases; the eval's false-ask rate is what sets it.
 - Does a grounded generation cost the same quota slot? It is up to two calls instead of one.
 - Caching. Two HTTP 429s came back inside a dozen probe requests, so the plan's
   `IMemoryCache` by (language, title) is load-bearing, not an optimisation.
