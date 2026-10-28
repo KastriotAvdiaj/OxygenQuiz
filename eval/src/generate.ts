@@ -70,14 +70,45 @@ function arg(name: string, fallback: string): string {
   return hit ? hit.slice(name.length + 3) : fallback;
 }
 
+/**
+ * Is the API up, before anything else is attempted?
+ *
+ * Worth its own step because every other failure reads the same from the outside. A run that
+ * dies on its first call with a bare network error is indistinguishable from a bad password, a
+ * wrong port, or a server that stopped — and the first version of this harness reported all of
+ * them as the word "failed".
+ */
+async function preflight(): Promise<void> {
+  try {
+    await fetch(`${API_URL}/quiz/ai-quota`, { method: "GET" });
+  } catch (err) {
+    throw new Error(
+      `Cannot reach the API at ${API_URL}\n` +
+        `  ${describeError(err)}\n\n` +
+        `  Is it running? The harness needs it for POST /quiz/ai-prompt — that is the only\n` +
+        `  thing it asks the server for, and without it there is no prompt to send.\n` +
+        `    - start it:        dotnet run --project OxygenBackend/QuizAPI\n` +
+        `    - check the port:  EVAL_API_URL is ${API_URL}; compare with what dotnet run prints\n` +
+        `    - self-signed TLS: set EVAL_INSECURE_TLS=1 in eval/.env`,
+    );
+  }
+}
+
 async function login(): Promise<string> {
-  const res = await fetch(`${API_URL}/Authentication/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: API_USER.email, password: API_USER.password }),
-  });
+  const res = await fetchWithRetry(
+    `${API_URL}/Authentication/login`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: API_USER.email, password: API_USER.password }),
+    },
+    "login",
+  );
   if (!res.ok) {
-    throw new Error(`Login failed (${res.status}). Check EVAL_API_EMAIL / EVAL_API_PASSWORD.`);
+    throw new Error(
+      `Login failed (${res.status}) for ${API_USER.email}. ` +
+        `Check EVAL_API_EMAIL / EVAL_API_PASSWORD against an account in the database this API is using.`,
+    );
   }
   const body = (await res.json()) as { token?: string };
   if (!body.token) throw new Error("Login succeeded but returned no token.");
@@ -235,6 +266,7 @@ async function main(): Promise<void> {
     throw new Error(`--only matched no topics. Ids in topics.json: ${file.topics.map((t) => t.id).join(", ")}`);
   }
 
+  await preflight();
   const token = await login();
 
   console.log(`run        ${runId}`);
@@ -291,6 +323,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  console.error(err instanceof Error ? err.message : err);
+  console.error(describeError(err));
   process.exit(1);
 });
