@@ -6,13 +6,50 @@
  * OpenAI-compatible endpoint. Both are configured the same way the app configures them, so a
  * run measures the vendor you actually ship.
  */
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const env = process.env;
-
 /** The repository root: this file lives at eval/src/. */
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+
+/**
+ * Load `eval/.env` into `process.env`.
+ *
+ * Hand-rolled rather than pulling in `dotenv`, because the harness is three scripts and this is
+ * fifteen lines. It cannot be left to the runner: Vite only exposes `VITE_`-prefixed variables,
+ * and to `import.meta.env` rather than `process.env`, so nothing here would ever be read — and
+ * Node refuses `--env-file` inside `NODE_OPTIONS`, so the npm scripts cannot pass it either.
+ *
+ * A variable already set in the real environment wins, so CI and one-off shell overrides
+ * (`EVAL_AI_MODEL=... npm run eval:generate`) beat the file rather than being silently replaced.
+ *
+ * Must run before the constants below are evaluated — they read `process.env` at module load.
+ */
+function loadDotEnv(): void {
+  const file = path.join(REPO_ROOT, "eval", ".env");
+  let text: string;
+  try {
+    text = fs.readFileSync(file, "utf8");
+  } catch {
+    return; // No .env: the real environment is expected to carry everything.
+  }
+  for (const line of text.split("\n")) {
+    const trimmed = line.trim();
+    if (trimmed.length === 0 || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq < 1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    if (key in process.env) continue;
+    let value = trimmed.slice(eq + 1).trim();
+    if (value.length > 1 && /^(".*"|'.*')$/s.test(value)) value = value.slice(1, -1);
+    process.env[key] = value;
+  }
+}
+
+loadDotEnv();
+
+const env = process.env;
 export const EVAL_ROOT = path.join(REPO_ROOT, "eval");
 export const RUNS_ROOT = path.join(EVAL_ROOT, "runs");
 export const TOPICS_FILE = path.join(EVAL_ROOT, "topics.json");
