@@ -122,7 +122,26 @@ async function main(): Promise<void> {
   await fs.mkdir(parsedDir, { recursive: true });
 
   const files = (await fs.readdir(rawDir)).filter((f) => f.endsWith(".json")).sort();
-  if (files.length === 0) throw new Error(`No raw replies in ${rawDir}. Run generate.ts first.`);
+  if (files.length === 0) {
+    // Say which runs do have something, rather than only that this one does not. Picking the
+    // wrong run is easy when the id is a timestamp and the default is "most recent".
+    const others = await Promise.all(
+      (await fs.readdir(RUNS_ROOT, { withFileTypes: true }))
+        .filter((e) => e.isDirectory())
+        .map(async (e) => {
+          const count = await fs
+            .readdir(path.join(RUNS_ROOT, e.name, "raw"))
+            .then((f) => f.filter((n) => n.endsWith(".json")).length)
+            .catch(() => 0);
+          return `  ${count === 0 ? "(empty)" : `${count} topic${count === 1 ? "" : "s"}`}  ${e.name}`;
+        }),
+    );
+    throw new Error(
+      `Run '${runId}' has no raw replies in ${rawDir}.\n\n` +
+        `Runs available:\n${others.join("\n")}\n\n` +
+        `Pick one with --run-id=<name>, or run the generate step to make a new one.`,
+    );
+  }
 
   const rows: LabelRow[] = [];
   const key: Record<string, unknown> = {};

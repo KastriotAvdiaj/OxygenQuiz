@@ -81,6 +81,12 @@ need a paid vendor tier first.
 
 ---
 
+> **A generation is not a flat cost across languages.** Measured 2026-10-28, an Albanian quiz
+> costs about 1.23× the output tokens of an English one for the same question count — tokenizer
+> economics, see [`../quiz/ai-quiz-generation-flow.md`](../quiz/ai-quiz-generation-flow.md) §2c.
+> Any tier counted in generations is therefore cheaper to serve for some users than others.
+> Pricing against the more expensive language is the obvious answer; charging per language is not.
+
 ## 2. Options
 
 ### 2.1 What to sell

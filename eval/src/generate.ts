@@ -253,7 +253,6 @@ async function main(): Promise<void> {
 
   const runId = arg("run-id", `${new Date().toISOString().replace(/[:.]/g, "-")}-${languageMode}`);
   const runDir = path.join(RUNS_ROOT, runId);
-  await fs.mkdir(path.join(runDir, "raw"), { recursive: true });
 
   const file = JSON.parse(await fs.readFile(TOPICS_FILE, "utf8")) as TopicsFile;
 
@@ -268,6 +267,11 @@ async function main(): Promise<void> {
 
   await preflight();
   const token = await login();
+
+  // Only now. Creating the directory before the gates above left an empty run behind every time
+  // a start failed — and since the later steps default to the most recently modified run, that
+  // empty directory is exactly what they would pick up next.
+  await fs.mkdir(path.join(runDir, "raw"), { recursive: true });
 
   console.log(`run        ${runId}`);
   console.log(`model      ${VENDOR.model} @ temperature ${SAMPLING.temperature}, seed ${SAMPLING.seed}`);

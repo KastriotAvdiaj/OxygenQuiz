@@ -236,6 +236,39 @@ arrives as a generation failure rather than as our own 429.
 
 ---
 
+## 2c. Albanian costs about a quarter more output tokens than English
+
+Measured on the first eval run, 2026-10-28: twelve topics, ten questions each, the same prompt
+structure, `openai/gpt-oss-120b` at temperature 0.
+
+| | output tokens, range | mean |
+|---|---|---|
+| English (6 topics) | 944–1,073 | 1,004.5 |
+| Albanian (6 topics) | 1,122–1,318 | 1,231.8 |
+
+**Albanian is 1.23× English for the same question count.** This is tokenizer economics, not a
+quirk of these topics: the vendor's tokenizer is fitted to a corpus that is overwhelmingly
+English, so Albanian words — and `ë` and `ç` in particular — fragment into more tokens per word.
+Expect the same of any language that is not well represented in the tokenizer's training, which
+is every language this app offers except English.
+
+Three consequences, none of them urgent today:
+
+- **Rate limits bite sooner.** The free tier's ceiling is tokens per minute, so a run of Albanian
+  generations reaches it faster than the same number of English ones.
+- **The output ceiling has less headroom.** At `Ai:MaxQuestionsPerGeneration` of 15, Albanian
+  extrapolates to roughly 1,850 output tokens against English's 1,500 — both comfortably under
+  `MaxOutputTokens` of 4,000, so nothing to change. Worth re-checking if that ceiling is ever
+  raised or the per-question output grows (a longer `explanation`, say).
+- **A paid vendor charges about a quarter more for an Albanian quiz.** This matters to
+  [`../proposals/paid-plans-and-payments.md`](../proposals/paid-plans-and-payments.md), where a
+  plan's AI allowance is counted in *generations*: the same allowance costs more to serve for
+  an Albanian-speaking user than an English-speaking one.
+
+The third is the only one worth acting on, and only when prices are set. A per-language allowance
+would be the wrong fix — it would charge people for the language they speak. Pricing the
+allowance against the more expensive language is the obvious alternative.
+
 ## 3. One request, end to end
 
 ```mermaid
