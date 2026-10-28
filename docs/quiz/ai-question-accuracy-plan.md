@@ -210,8 +210,14 @@ report volumes, and if it comes, hide from *new* sessions only, with a threshold
 
 ## Open questions
 
-- Language: grounded Albanian quizzes depend on sq.wikipedia coverage — measure in Phase 0 before
-  promising it.
+- ~~Language: grounded Albanian quizzes depend on sq.wikipedia coverage — measure in Phase 0~~
+  **Partly answered (2026-10-28).** sq.wikipedia holds 106,477 articles and the coverage is
+  uneven: `Rilindja Kombëtare Shqiptare` is 6,157 words, `Historia e Kosovës` is **276**. A
+  stub that short is worse than no source — it looks grounded and cannot carry ten questions.
+  So Wikipedia alone is not enough for Albanian, and Phase 2b's source rule does not survive
+  contact with the search index either. See
+  [`../proposals/topic-disambiguation-and-source-tiers.md`](../proposals/topic-disambiguation-and-source-tiers.md).
+  What is still unmeasured is question *quality*, which needs the Phase 0 run.
 - Should a grounded generation cost the same quota slot as today? It is up to two calls instead of
   one.
 - Is a "no article found" fallback to ungrounded generation acceptable, or should Topic mode
