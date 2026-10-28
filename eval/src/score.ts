@@ -15,13 +15,11 @@
  */
 import fs from "node:fs/promises";
 import path from "node:path";
-import { REPO_ROOT, RUNS_ROOT } from "./config";
+import { REPO_ROOT, RUNS_ROOT, resolveRunId } from "./config";
 
-function arg(name: string, fallback?: string): string {
+function arg(name: string): string | undefined {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
-  const value = hit ? hit.slice(name.length + 3) : fallback;
-  if (value === undefined) throw new Error(`--${name}= is required.`);
-  return value;
+  return hit ? hit.slice(name.length + 3) : undefined;
 }
 
 interface LabelRow {
@@ -195,11 +193,11 @@ function report(runId: string, data: Awaited<ReturnType<typeof loadRun>>): strin
 }
 
 async function main(): Promise<void> {
-  const runId = arg("run-id");
+  const runId = resolveRunId(arg("run-id"));
   const data = await loadRun(runId);
   let out = report(runId, data);
 
-  const compare = process.argv.find((a) => a.startsWith("--compare="))?.slice("--compare=".length);
+  const compare = arg("compare")?.replace(/^<+/, "").replace(/>+$/, "").trim();
   if (compare) {
     out += "\n---\n\n" + report(compare, await loadRun(compare));
     out +=

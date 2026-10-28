@@ -84,6 +84,54 @@ async function login(): Promise<string> {
   return body.token;
 }
 
+/**
+ * Unwrap what `fetch` actually failed on.
+ *
+ * Node's fetch throws a bare `TypeError: fetch failed` and hides the real reason — ECONNRESET,
+ * ENOTFOUND, a TLS error, a socket hang-up — one level down in `cause`. Reporting the outer
+ * message tells you nothing, which is exactly what the first run of this harness did across six
+ * topics. Always print the chain.
+ */
+function describeError(err: unknown): string {
+  if (!(err instanceof Error)) return String(err);
+  const parts: string[] = [err.message];
+  let cause: unknown = (err as { cause?: unknown }).cause;
+  while (cause instanceof Error) {
+    const code = (cause as { code?: string }).code;
+    parts.push(code ? `${cause.message} (${code})` : cause.message);
+    cause = (cause as { cause?: unknown }).cause;
+  }
+  return parts.join(" ← ");
+}
+
+/**
+ * A transient network failure should cost a retry, not a topic.
+ *
+ * Deliberately not a retry on HTTP status: a 4xx from either endpoint is a real answer the caller
+ * needs to see and act on. This covers only the case where no response arrived at all.
+ */
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  label: string,
+  attempts = 3,
+): Promise<Response> {
+  let last: unknown;
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      return await fetch(url, init);
+    } catch (err) {
+      last = err;
+      if (i < attempts) {
+        const wait = 4000 * i;
+        console.warn(`      ${label} attempt ${i}/${attempts} failed: ${describeError(err)} — retrying in ${wait / 1000}s`);
+        await sleep(wait);
+      }
+    }
+  }
+  throw new Error(`${label} failed after ${attempts} attempts: ${describeError(last)}`);
+}
+
 /** The request body both `ai-prompt` and `ai-generate` take (`AiGenerateCM`). */
 function buildRequest(topic: TopicRow, defaults: TopicsFile["defaults"], mode: LanguageMode) {
   return {
@@ -100,11 +148,11 @@ function buildRequest(topic: TopicRow, defaults: TopicsFile["defaults"], mode: L
 }
 
 async function fetchPrompt(token: string, body: unknown): Promise<string> {
-  const res = await fetch(`${API_URL}/quiz/ai-prompt`, {
+  const res = await fetchWithRetry(`${API_URL}/quiz/ai-prompt`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify(body),
-  });
+  }, "ai-prompt");
   if (!res.ok) {
     throw new Error(`ai-prompt returned ${res.status}: ${await res.text()}`);
   }
@@ -127,7 +175,7 @@ interface ModelReply {
 }
 
 async function callModel(prompt: string): Promise<ModelReply> {
-  const res = await fetch(`${VENDOR.baseUrl.replace(/\/$/, "")}/chat/completions`, {
+  const res = await fetchWithRetry(`${VENDOR.baseUrl.replace(/\/$/, "")}/chat/completions`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${VENDOR.apiKey}` },
     body: JSON.stringify({
@@ -140,9 +188,16 @@ async function callModel(prompt: string): Promise<ModelReply> {
       ...(VENDOR.reasoningEffort ? { reasoning_effort: VENDOR.reasoningEffort } : {}),
       stream: false,
     }),
-  });
+  }, "model");
   if (!res.ok) {
-    throw new Error(`Model call returned ${res.status}: ${(await res.text()).slice(0, 400)}`);
+    // The free tier's tokens-per-minute ceiling is the likeliest failure on a 12-topic run, and
+    // it answers with a Retry-After the caller can act on. Say the number rather than leave
+    // someone guessing at EVAL_THROTTLE_MS.
+    const retryAfter = res.headers.get("retry-after");
+    const hint = retryAfter
+      ? ` — vendor says retry after ${retryAfter}s; set EVAL_THROTTLE_MS above that`
+      : "";
+    throw new Error(`Model call returned ${res.status}${hint}: ${(await res.text()).slice(0, 400)}`);
   }
   const body = (await res.json()) as {
     choices?: { message?: { content?: string } }[];
@@ -170,17 +225,28 @@ async function main(): Promise<void> {
   await fs.mkdir(path.join(runDir, "raw"), { recursive: true });
 
   const file = JSON.parse(await fs.readFile(TOPICS_FILE, "utf8")) as TopicsFile;
+
+  // `--only=sq-01,sq-04` reruns a subset. The topic list is ordered by language, so a failure
+  // that starts partway down is ambiguous between "this language fails" and "everything after
+  // the Nth call fails" — rerunning the failures from a cold start tells the two apart.
+  const only = arg("only", "").split(",").map((s) => s.trim()).filter(Boolean);
+  const topics = only.length > 0 ? file.topics.filter((t) => only.includes(t.id)) : file.topics;
+  if (topics.length === 0) {
+    throw new Error(`--only matched no topics. Ids in topics.json: ${file.topics.map((t) => t.id).join(", ")}`);
+  }
+
   const token = await login();
 
   console.log(`run        ${runId}`);
   console.log(`model      ${VENDOR.model} @ temperature ${SAMPLING.temperature}, seed ${SAMPLING.seed}`);
   console.log(`language   ${languageMode}`);
-  console.log(`topics     ${file.topics.length}\n`);
+  console.log(`throttle   ${THROTTLE_MS}ms between topics`);
+  console.log(`topics     ${topics.length}${only.length > 0 ? ` (filtered from ${file.topics.length})` : ""}\n`);
 
   const failures: { id: string; error: string }[] = [];
 
-  for (const [i, topic] of file.topics.entries()) {
-    const label = `[${i + 1}/${file.topics.length}] ${topic.id}`;
+  for (const [i, topic] of topics.entries()) {
+    const label = `[${i + 1}/${topics.length}] ${topic.id}`;
     try {
       const request = buildRequest(topic, file.defaults, languageMode);
       const prompt = await fetchPrompt(token, request);
@@ -192,11 +258,11 @@ async function main(): Promise<void> {
       );
       console.log(`${label}  ok  (${reply.outputTokens} output tokens)`);
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = describeError(err);
       failures.push({ id: topic.id, error: message });
       console.error(`${label}  FAILED  ${message}`);
     }
-    if (i < file.topics.length - 1) await sleep(THROTTLE_MS);
+    if (i < topics.length - 1) await sleep(THROTTLE_MS);
   }
 
   await fs.writeFile(

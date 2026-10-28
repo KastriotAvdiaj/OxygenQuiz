@@ -103,6 +103,39 @@ export const THROTTLE_MS = Number(env.EVAL_THROTTLE_MS ?? 8000);
 /** Self-signed dev certificate. Set EVAL_INSECURE_TLS=1 when pointing at localhost. */
 export const INSECURE_TLS = env.EVAL_INSECURE_TLS === "1";
 
+/**
+ * Which run a command operates on.
+ *
+ * Takes `--run-id` when given, the most recently modified run when not. Omitting it is the
+ * common case — you almost always mean the run you just produced — and typing a timestamped id
+ * by hand invites exactly the transcription error it is there to avoid.
+ *
+ * Angle brackets are stripped because documentation writes placeholders as `<run-id>` and they
+ * get copied verbatim; `mkdir '<2026-10-28T…>'` is a worse error message than it needs to be.
+ */
+export function resolveRunId(raw: string | undefined): string {
+  const cleaned = raw?.replace(/^<+/, "").replace(/>+$/, "").trim();
+  if (cleaned) return cleaned;
+
+  let entries: string[];
+  try {
+    entries = fs
+      .readdirSync(RUNS_ROOT, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name);
+  } catch {
+    throw new Error(`No runs directory at ${RUNS_ROOT}. Run the generate step first.`);
+  }
+  if (entries.length === 0) throw new Error("No runs yet. Run the generate step first.");
+
+  const latest = entries
+    .map((name) => ({ name, at: fs.statSync(path.join(RUNS_ROOT, name)).mtimeMs }))
+    .sort((a, b) => b.at - a.at)[0]!.name;
+
+  console.log(`run-id not given — using the most recent run: ${latest}\n`);
+  return latest;
+}
+
 export function requireEnv(): void {
   const missing: string[] = [];
   if (!API_USER.email) missing.push("EVAL_API_EMAIL");

@@ -24,13 +24,11 @@ import {
   type ParseContext,
   type ParseResult,
 } from "@/pages/Dashboard/Pages/Quiz/components/AI-Quiz/parse-ai-output";
-import { REPO_ROOT, RUNS_ROOT } from "./config";
+import { REPO_ROOT, RUNS_ROOT, resolveRunId } from "./config";
 
-function arg(name: string, fallback?: string): string {
+function arg(name: string): string | undefined {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
-  const value = hit ? hit.slice(name.length + 3) : fallback;
-  if (value === undefined) throw new Error(`--${name}= is required.`);
-  return value;
+  return hit ? hit.slice(name.length + 3) : undefined;
 }
 
 /**
@@ -117,7 +115,7 @@ function shuffle<T>(items: T[], seed: number): T[] {
 }
 
 async function main(): Promise<void> {
-  const runId = arg("run-id");
+  const runId = resolveRunId(arg("run-id"));
   const runDir = path.join(RUNS_ROOT, runId);
   const rawDir = path.join(runDir, "raw");
   const parsedDir = path.join(runDir, "parsed");

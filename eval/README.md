@@ -43,13 +43,24 @@ has a flawless error rate.
 
 ```bash
 npm run eval:generate            # ~2 min: 12 topics, throttled for the Groq free tier
-npm run eval:parse -- --run-id=<the id it printed>
+npm run eval:parse               # defaults to the run you just made
 #  ... label eval/runs/<run-id>/labels.jsonl ...
-npm run eval:score -- --run-id=<run-id>
+npm run eval:score
 ```
 
-`eval:generate` prints the run id and every later command takes it. Add `--run-id=my-name` to
-choose your own.
+`--run-id` is optional everywhere: without it, each command uses the most recently modified run.
+Pass `--run-id=my-name` to `eval:generate` to name one, and to the others to pick an older one.
+
+### Rerunning a few topics
+
+```bash
+npm run eval:generate -- --only=sq-01,sq-04 --run-id=retry-sq
+```
+
+Worth knowing why this exists. `topics.json` is ordered by language, so a failure that begins
+partway down the list is ambiguous: "Albanian fails" and "everything after the sixth call fails"
+look identical. Rerunning the failures from a cold start tells them apart — if they succeed
+alone, it was rate limiting, not the topics.
 
 ### Comparing two runs
 
