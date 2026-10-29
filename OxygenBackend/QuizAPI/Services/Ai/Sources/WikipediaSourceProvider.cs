@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -302,22 +303,51 @@ namespace QuizAPI.Services.Ai.Sources
             return text[..(word > 0 ? word : max)].TrimEnd();
         }
 
+        /// <summary>
+        /// One API call, retried once. A failure <b>throws</b> <see cref="HttpRequestException"/>,
+        /// which every caller turns into <see cref="SourceOutcome.Unavailable"/> — never into an
+        /// empty result. Returning nothing on failure used to read as "no such article": on
+        /// 2026-10-29 a transient error made the eval's sq-03 "not found" for an article that
+        /// exists, and the generation went ahead ungrounded while reporting a false reason.
+        ///
+        /// <para>Two kinds of failure: an HTTP error (429, 5xx), and a 200 whose body is an
+        /// <c>error</c> object — CirrusSearch answers "Search is currently too busy" that way.
+        /// Both are usually gone a moment later, hence the one retry; the lookup's overall
+        /// <see cref="SourceOptions.TimeoutSeconds"/> still bounds the wait.</para>
+        /// </summary>
         private async Task<T?> GetAsync<T>(string url, CancellationToken ct)
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, url);
-            // Wikimedia's policy: an anonymous agent is answered with 429.
-            request.Headers.TryAddWithoutValidation("User-Agent", _options.UserAgent);
-            request.Headers.TryAddWithoutValidation("Accept", "application/json");
-
-            using var response = await _http.SendAsync(request, ct);
-            if (!response.IsSuccessStatusCode)
+            for (var attempt = 1; ; attempt++)
             {
-                _logger.LogWarning("Wikipedia returned {Status} for {Url}", (int)response.StatusCode, url);
-                return default;
-            }
+                using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                // Wikimedia's policy: an anonymous agent is answered with 429.
+                request.Headers.TryAddWithoutValidation("User-Agent", _options.UserAgent);
+                request.Headers.TryAddWithoutValidation("Accept", "application/json");
 
-            await using var stream = await response.Content.ReadAsStreamAsync(ct);
-            return await JsonSerializer.DeserializeAsync<T>(stream, Json, ct);
+                using var response = await _http.SendAsync(request, ct);
+                string? failure = null;
+                T? body = default;
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    failure = $"HTTP {(int)response.StatusCode}";
+                }
+                else
+                {
+                    var json = await response.Content.ReadAsStringAsync(ct);
+                    var node = JsonNode.Parse(json);
+                    if (node?["error"] is JsonNode error)
+                        failure = error["code"]?.GetValue<string>() ?? "error";
+                    else
+                        body = node.Deserialize<T>(Json);
+                }
+
+                if (failure is null) return body;
+
+                _logger.LogWarning("Wikipedia answered {Failure} for {Url} (attempt {Attempt}).", failure, url, attempt);
+                if (attempt >= 2) throw new HttpRequestException($"Wikipedia answered {failure}.");
+                await Task.Delay(TimeSpan.FromMilliseconds(600), ct);
+            }
         }
 
         // ── Wire types. Shapes verified against the live API on 2026-10-28 (formatversion 1,

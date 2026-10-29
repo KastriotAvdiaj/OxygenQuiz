@@ -31,10 +31,17 @@ public class WikipediaSourceProviderTests
         public List<HttpRequestMessage> Requests { get; } = new();
         public bool Offline { get; init; }
 
+        /// <summary>Answer this many requests with <see cref="FailWith"/> before replaying normally.</summary>
+        public int FailFirst { get; set; }
+
+        /// <summary>Either an HTTP status, or a 200 carrying a MediaWiki <c>error</c> body.</summary>
+        public Func<HttpResponseMessage> FailWith { get; init; } = () => new HttpResponseMessage(HttpStatusCode.TooManyRequests);
+
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
             Requests.Add(request);
             if (Offline) throw new HttpRequestException("offline");
+            if (FailFirst > 0) { FailFirst--; return Task.FromResult(FailWith()); }
 
             var uri = request.RequestUri!;
             var domain = uri.Host.Split('.')[0];
@@ -53,9 +60,9 @@ public class WikipediaSourceProviderTests
         }
     }
 
-    private static (WikipediaSourceProvider Provider, Replay Http) Build(bool offline = false)
+    private static (WikipediaSourceProvider Provider, Replay Http) Build(bool offline = false, Replay? replay = null)
     {
-        var http = new Replay { Offline = offline };
+        var http = replay ?? new Replay { Offline = offline };
         var provider = new WikipediaSourceProvider(
             new HttpClient(http),
             new MemoryCache(new MemoryCacheOptions()),
@@ -162,6 +169,41 @@ public class WikipediaSourceProviderTests
         Assert.Equal(SourceOutcome.Unavailable, (await provider.LookupAsync("Photosynthesis", "English", CancellationToken.None)).Outcome);
         Assert.Equal(SourceOutcome.Unavailable, (await provider.FetchAsync("Photosynthesis", "English", CancellationToken.None)).Outcome);
         Assert.False(await provider.HasTitleAsync("Chemistry", "English", CancellationToken.None));
+    }
+
+    /// <summary>CirrusSearch's way of saying "later": HTTP 200 and an error object.</summary>
+    private static HttpResponseMessage TooBusy() => new(HttpStatusCode.OK)
+    {
+        Content = new StringContent(
+            "{\"error\":{\"code\":\"cirrussearch-too-busy-error\",\"info\":\"Search is currently too busy.\"}}",
+            Encoding.UTF8, "application/json"),
+    };
+
+    [Fact]
+    public async Task A_passing_error_is_retried_once()
+    {
+        var (provider, _) = Build(replay: new Replay { FailFirst = 1, FailWith = TooBusy });
+
+        var lookup = await provider.LookupAsync("Photosynthesis", "English", CancellationToken.None);
+
+        Assert.Equal(SourceOutcome.Selected, lookup.Outcome);
+    }
+
+    [Theory]
+    [InlineData(true)]   // HTTP 429 every time
+    [InlineData(false)]  // 200 + "too busy" every time
+    public async Task A_lasting_error_is_unavailable_never_not_found(bool httpError)
+    {
+        // "Not found" would claim the article doesn't exist; this was sq-03 in the 2026-10-29 run.
+        var replay = new Replay
+        {
+            FailFirst = int.MaxValue,
+            FailWith = httpError ? () => new HttpResponseMessage(HttpStatusCode.TooManyRequests) : TooBusy,
+        };
+        var (provider, _) = Build(replay: replay);
+
+        Assert.Equal(SourceOutcome.Unavailable, (await provider.LookupAsync("Photosynthesis", "English", CancellationToken.None)).Outcome);
+        Assert.Equal(SourceOutcome.Unavailable, (await provider.FetchAsync("Mercury (planet)", "English", CancellationToken.None)).Outcome);
     }
 
     [Fact]

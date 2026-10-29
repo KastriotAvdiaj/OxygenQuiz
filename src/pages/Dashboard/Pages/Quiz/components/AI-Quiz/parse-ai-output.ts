@@ -44,6 +44,15 @@ const aiAnswerOptionSchema = z.object({
   isCorrect: z.boolean(),
 });
 
+/**
+ * A field that doesn't apply may come back as `null` rather than missing: models fill every key of
+ * the shape for every type (`"correctAnswer": null` on a MultipleChoice question). Null means "not
+ * given", exactly like absent. Before this, one such null failed the whole reply — eleven good
+ * Albanian questions lost in the 2026-10-29 grounded eval run.
+ */
+const absentIfNull = <T extends z.ZodTypeAny>(schema: T) =>
+  schema.nullish().transform((v) => v ?? undefined);
+
 const aiQuestionSchema = z
   .object({
     type: z.nativeEnum(QuestionType),
@@ -52,13 +61,13 @@ const aiQuestionSchema = z
     pointSystem: z.string().trim().optional().nullable(),
     timeLimitInSeconds: z.number().optional().nullable(),
     // MultipleChoice
-    answerOptions: z.array(aiAnswerOptionSchema).optional(),
-    allowMultipleSelections: z.boolean().optional(),
+    answerOptions: absentIfNull(z.array(aiAnswerOptionSchema)),
+    allowMultipleSelections: absentIfNull(z.boolean()),
     // TrueFalse / TypeTheAnswer share the name but not the type
-    correctAnswer: z.union([z.boolean(), z.string()]).optional(),
+    correctAnswer: absentIfNull(z.union([z.boolean(), z.string()])),
     // TypeTheAnswer
-    acceptableAnswers: z.array(z.string()).optional(),
-    isCaseSensitive: z.boolean().optional(),
+    acceptableAnswers: absentIfNull(z.array(z.string())),
+    isCaseSensitive: absentIfNull(z.boolean()),
     // Source mode only: the sentence the model says proves its answer. Optional and loose on
     // purpose — a reply from an older prompt, or from Topic mode, simply has none.
     sourceQuote: z.string().optional().nullable(),
@@ -71,9 +80,20 @@ const aiQuestionSchema = z
   })
   .passthrough();
 
+/**
+ * Questions are checked one at a time below, not here: a single question the schema can't read
+ * is dropped with a reason, and the rest of the reply survives. Validating the array as a whole
+ * turned one bad question into "That JSON doesn't match the expected format" for all of them.
+ */
 const aiPayloadSchema = z.object({
-  questions: z.array(aiQuestionSchema).min(1),
+  questions: z.array(z.unknown()).min(1),
 });
+
+/** Which field made a question unreadable, in words a quiz author can follow. */
+const describeShapeError = (error: z.ZodError): string => {
+  const field = error.issues[0]?.path.join(".");
+  return field ? `isn't in a shape the app can read (the "${field}" field)` : "isn't in a shape the app can read";
+};
 
 export interface ParsedQuestion {
   question: NewAnyQuestion;
@@ -414,7 +434,18 @@ export const parseAiOutput = (raw: string, ctx: ParseContext): ParseResult => {
   const isRepeat = createRepeatDetector();
   const sourceText = ctx.sourceText?.trim() || null;
 
-  parsed.data.questions.forEach((rawQuestion, index) => {
+  parsed.data.questions.forEach((candidate, index) => {
+    const shaped = aiQuestionSchema.safeParse(candidate);
+    if (!shaped.success) {
+      const text = (candidate as { text?: unknown } | null)?.text;
+      dropped.push({
+        index: index + 1,
+        text: typeof text === "string" && text.trim() ? text.trim() : `Question ${index + 1}`,
+        reason: describeShapeError(shaped.error),
+      });
+      return;
+    }
+    const rawQuestion = shaped.data;
     const label = rawQuestion.text?.trim() || `Question ${index + 1}`;
 
     // A missing or too-short quote is tolerated, not dropped: replies from older prompts and

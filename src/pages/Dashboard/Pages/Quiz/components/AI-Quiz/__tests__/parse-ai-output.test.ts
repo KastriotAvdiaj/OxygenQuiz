@@ -104,6 +104,41 @@ describe("parseAiOutput", () => {
     ]);
   });
 
+  it("treats null in a field that doesn't apply as absent", () => {
+    // The shape of a real reply (2026-10-29 eval, sq-04): every key of the schema on every
+    // question, with the ones that don't apply set to null. It used to fail all eleven questions.
+    const result = parseAiOutput(
+      reply([
+        { ...mc, correctAnswer: null, acceptableAnswers: null, isCaseSensitive: null },
+        {
+          type: QuestionType.TrueFalse,
+          text: "Water boils at 100 °C at sea level.",
+          correctAnswer: true,
+          answerOptions: null,
+          allowMultipleSelections: null,
+        },
+      ]),
+      parseContext,
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.questions).toHaveLength(2);
+    expect(result.dropped).toEqual([]);
+  });
+
+  it("drops a question it can't read instead of failing the whole reply", () => {
+    const result = parseAiOutput(
+      reply([mc, { ...mc, text: "Malformed options", answerOptions: "Condensation, Evaporation" }]),
+      parseContext,
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.questions).toHaveLength(1);
+    expect(result.dropped).toEqual([
+      { index: 2, text: "Malformed options", reason: 'isn\'t in a shape the app can read (the "answerOptions" field)' },
+    ]);
+  });
+
   it("snaps a time limit to one the builder can show, within the allowed range", () => {
     const result = parseAiOutput(
       reply([
