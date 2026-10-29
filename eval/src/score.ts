@@ -150,6 +150,53 @@ function report(runId: string, data: Awaited<ReturnType<typeof loadRun>>): strin
   }
   lines.push("");
 
+  // Per topic, because this is the cut that says what to do next. Language tells you which
+  // half is worse and type tells you which shape is worse, but neither distinguishes "the model
+  // does not know this subject" from "the model is unreliable in general" — and those have
+  // completely different fixes. The first run made the point: every English error sat in three
+  // of six topics.
+  lines.push("## Per topic — where the errors actually are");
+  lines.push("");
+  lines.push("| topic | labelled | wrong | ambiguous | defective | mean fluency |");
+  lines.push("|---|---:|---:|---:|---:|---:|");
+  const byTopic = new Map<string, LabelRow[]>();
+  for (const l of labels) {
+    const t = key[l.rowId]?.topicId ?? "unknown";
+    byTopic.set(t, [...(byTopic.get(t) ?? []), l]);
+  }
+  const topicRows = [...byTopic.entries()]
+    .map(([topic, rows]) => {
+      const done = rows.filter((r) => r.correctness !== "");
+      const wrong = done.filter((r) => r.correctness === "wrong").length;
+      const amb = done.filter((r) => r.correctness === "ambiguous").length;
+      const fl = rows.map((r) => r.fluency).filter((f): f is number => typeof f === "number");
+      return {
+        topic,
+        n: done.length,
+        wrong,
+        amb,
+        defective: wrong + amb,
+        fluency: fl.length > 0 ? (fl.reduce((a, b) => a + b, 0) / fl.length).toFixed(2) : "–",
+      };
+    })
+    .sort((a, b) => b.defective - a.defective || b.wrong - a.wrong);
+  for (const t of topicRows) {
+    const share = t.n > 0 ? ` (${pct(t.defective / t.n)})` : "";
+    lines.push(
+      `| ${t.topic} | ${t.n} | ${t.wrong} | ${t.amb} | **${t.defective}**${share} | ${t.fluency} |`,
+    );
+  }
+  lines.push("");
+  const clean = topicRows.filter((t) => t.wrong === 0).map((t) => t.topic);
+  if (clean.length > 0 && clean.length < topicRows.length) {
+    lines.push(
+      `No wrong answers at all in: ${clean.map((t) => `\`${t}\``).join(", ")}. ` +
+        `A failure that concentrates in some subjects and not others is a knowledge problem, ` +
+        `which grounding addresses; one spread evenly is not.`,
+    );
+    lines.push("");
+  }
+
   lines.push("## Why the parser dropped things");
   lines.push("");
   const allDrops = Object.values(stages).flatMap((t) => t.dropped);
