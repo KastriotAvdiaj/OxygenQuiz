@@ -251,6 +251,8 @@ const meta = {
     onTopicChange: fn(),
     onSourceDataChange: fn(),
     onUploadFile: fn(),
+    onAnswerSource: fn(),
+    onDismissSourceChoice: fn(),
     onCategoryIdChange: fn(),
     onLanguageIdChange: fn(),
     onQuestionCountChange: fn(),
@@ -562,6 +564,72 @@ export const FeatureDisabled: Story = {
   },
 };
 
+// ── Grounding: written from a Wikipedia article (docs/quiz/ai-quiz-generation-flow.md §2e) ──
+//
+// With `Ai:Source:Enabled`, a topic is looked up on Wikipedia before the model writes. When
+// the server can't decide something it asks — before any allowance is spent — and the card
+// below takes the topic box's place. The candidates are real search results (2026-10-29).
+
+/** "Python": both Wikipedias have it, so the language is asked. */
+export const GroundingAsksLanguage: Story = {
+  args: {
+    topic: "Python",
+    sourceChoice: { status: "NeedsLanguage", languages: ["English", "Albanian"] },
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /Albanian · shqip/ }));
+    await expect(args.onAnswerSource).toHaveBeenCalledWith({ sourceLanguage: "Albanian" });
+  },
+};
+
+/** "Mercury": a disambiguation page. Picking an article generates from it. */
+export const GroundingAsksArticle: Story = {
+  args: {
+    topic: "Mercury",
+    sourceChoice: {
+      status: "NeedsArticle",
+      language: "English",
+      articles: [
+        { title: "Mercury (planet)", words: 16170, url: "https://en.wikipedia.org/wiki/Mercury_(planet)" },
+        { title: "Freddie Mercury", words: 17329, url: "https://en.wikipedia.org/wiki/Freddie_Mercury" },
+        { title: "Mercury (element)", words: 13576, url: "https://en.wikipedia.org/wiki/Mercury_(element)" },
+      ],
+    },
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /Mercury \(planet\)/ }));
+    await expect(args.onAnswerSource).toHaveBeenCalledWith({ sourceTitle: "Mercury (planet)" });
+  },
+};
+
+/** "None of these" is always offered, and says what it costs. */
+export const GroundingDeclined: Story = {
+  args: GroundingAsksArticle.args,
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /None of these/ }));
+    await expect(args.onAnswerSource).toHaveBeenCalledWith({ sourceDeclined: true });
+  },
+};
+
+/**
+ * Wikipedia is down. Not a silent fallback: the author is told what writing from memory costs
+ * and chooses — try again, or go ahead.
+ */
+export const GroundingWikipediaDown: Story = {
+  args: {
+    topic: "Rilindja Kombëtare",
+    sourceChoice: { status: "SourceUnavailable", language: "Albanian", reason: "unavailable" },
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /Write from memory anyway/ }));
+    await expect(args.onAnswerSource).toHaveBeenCalledWith({ sourceAcceptFromMemory: true });
+  },
+};
+
 // ── Confirming what the AI couldn't match ──────────────────────────────────────────────
 
 /**
@@ -695,6 +763,38 @@ export const ReviewHandoffWithDifficultyFallbacks: Story = {
 // ── Lookup query states ────────────────────────────────────────────────────────────────
 // Only loading. A lookup *failure* throws to the route's error element, so there is no
 // in-view state to story — see docs/development/error-handling.md.
+
+// ── Grounding, in the review ──
+
+/** The review, grounded: the article is named and linked above the questions. */
+export const ReviewGrounded: Story = {
+  args: {
+    topic: "Kuzhina tradicionale shqiptare",
+    parseResult: goodResult,
+    builderSlot: <BuilderStandIn result={goodResult} />,
+    grounding: {
+      status: "Grounded",
+      language: "Albanian",
+      source: {
+        provider: "wikipedia",
+        title: "Kuzhina shqiptare",
+        url: "https://sq.wikipedia.org/wiki/Kuzhina_shqiptare",
+        text: "…",
+        language: "Albanian",
+      },
+    },
+  },
+};
+
+/** The review after going ahead while Wikipedia was down: the one amber line. */
+export const ReviewFromMemoryWikipediaDown: Story = {
+  args: {
+    topic: "Rilindja Kombëtare",
+    parseResult: goodResult,
+    builderSlot: <BuilderStandIn result={goodResult} />,
+    grounding: { status: "Ungrounded", language: "Albanian", reason: "unavailable" },
+  },
+};
 
 export const LoadingEntities: Story = {
   args: { isLoadingEntities: true },

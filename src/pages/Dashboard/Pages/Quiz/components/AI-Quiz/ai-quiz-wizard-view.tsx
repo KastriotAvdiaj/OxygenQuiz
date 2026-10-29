@@ -14,6 +14,8 @@ import type {
 import type {
   AiGenerateError,
   AiGenerationMode,
+  AiGrounding,
+  AiGroundingAnswers,
   AiQuotaStatus,
 } from "../../api/generate-ai-quiz";
 import type { ParseResult } from "./parse-ai-output";
@@ -31,6 +33,7 @@ import {
   type SourceFileInfo,
 } from "./components/generation-input";
 import { ImportNotices } from "./components/import-notices";
+import { SourceChoiceCard } from "./components/source-choice-card";
 import { ImportNote } from "./components/import-note";
 import { QuotaNote } from "./components/quota-note";
 import { WizardButton } from "./components/wizard-button";
@@ -80,6 +83,20 @@ export interface AiQuizWizardViewProps {
    * own-AI page is topic-only, so sending someone there with a document in hand loses it.
    */
   topicPath?: string;
+
+  // ── Grounding (docs/quiz/ai-quiz-generation-flow.md §2e) ──
+  /**
+   * The server's question, when grounding needs the author before it can go on: which
+   * language, which article, or whether to go ahead from memory while Wikipedia is down.
+   * Shown in place of the form, like `ConfirmDetailsCard`. Asked before anything is spent.
+   */
+  sourceChoice?: AiGrounding | null;
+  /** An answer to `sourceChoice`. An empty object is "try again" — the same question, re-asked. */
+  onAnswerSource?: (answer: AiGroundingAnswers) => void;
+  /** Back to the form without answering. */
+  onDismissSourceChoice?: () => void;
+  /** What the held reply was written from — the review's provenance line. */
+  grounding?: AiGrounding | null;
 
   // ── Advanced. All optional: null category/language means "let the AI suggest". ─
   /**
@@ -190,6 +207,10 @@ export const AiQuizWizardView = ({
   sourceFile = null,
   uploadError,
   topicPath,
+  sourceChoice = null,
+  onAnswerSource,
+  onDismissSourceChoice,
+  grounding = null,
   onCategoryIdChange,
   onLanguageIdChange,
   questionCount,
@@ -309,7 +330,11 @@ export const AiQuizWizardView = ({
     succeeded: parseResult?.ok === true || needsConfirmation,
     // The request failed, or it came back and the parser could make nothing of it.
     // Either way the next thing on screen is a panel explaining it, not a quiz.
-    failed: generateError !== null || (parseResult !== null && !parseResult.ok),
+    // A question from grounding counts too: the next thing on screen is the card asking it.
+    failed:
+      generateError !== null ||
+      sourceChoice !== null ||
+      (parseResult !== null && !parseResult.ok),
   });
 
   /**
@@ -392,7 +417,11 @@ export const AiQuizWizardView = ({
             skipped" is what needs reading, and it is the one message on this screen the user
             cannot switch off. `ImportNote` under it is a single muted line. */}
         <ImportNotices result={parseResult} />
-        <ImportNote isFromTopic={mode === "Topic"} onStartOver={onStartOver} />
+        <ImportNote
+          isFromTopic={mode === "Topic"}
+          grounding={grounding}
+          onStartOver={onStartOver}
+        />
         <div className="flex-1 min-h-0">{builderSlot}</div>
         {leaveDialog}
         {generatingOverlay}
@@ -462,6 +491,22 @@ export const AiQuizWizardView = ({
             suggestedCategoryName={suggestedCategoryName}
             suggestedLanguageName={suggestedLanguageName}
             onStartOver={onStartOver}
+          />
+        </div>
+      ) : sourceChoice && resultsMayShow && onAnswerSource ? (
+        // Grounding needs one answer before it can go on. Same slot, same reason as the
+        // confirm card above: the wizard pausing to ask for one thing, with nothing spent.
+        <div className={arriving}>
+          <SourceChoiceCard
+            question={sourceChoice}
+            topic={topic}
+            busy={isGenerating}
+            onPickLanguage={(language) => onAnswerSource({ sourceLanguage: language })}
+            onPickArticle={(title) => onAnswerSource({ sourceTitle: title })}
+            onDecline={() => onAnswerSource({ sourceDeclined: true })}
+            onRetry={() => onAnswerSource({})}
+            onWriteFromMemory={() => onAnswerSource({ sourceAcceptFromMemory: true })}
+            onEditTopic={() => onDismissSourceChoice?.()}
           />
         </div>
       ) : (

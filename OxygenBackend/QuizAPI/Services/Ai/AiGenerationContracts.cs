@@ -153,6 +153,9 @@ namespace QuizAPI.Services.Ai
         /// <summary>Topic mode, grounding on: the author answered "none of these" — write from memory.</summary>
         public bool SourceDeclined { get; init; }
 
+        /// <summary>Topic mode, grounding on: the source was down and the author chose to write from memory anyway.</summary>
+        public bool SourceAcceptFromMemory { get; init; }
+
         /// <summary>
         /// <c>POST /ai-prompt</c> only: build the prompt grounded, as generation would. Off by
         /// default so the own-AI page keeps today's prompt until it can show the questions grounding
@@ -241,9 +244,14 @@ namespace QuizAPI.Services.Ai
             {
                 Success = false,
                 ErrorCode = AiErrorCodes.SourceNeedsChoice,
-                Message = grounding.Status == GroundingStatus.NeedsLanguage
-                    ? "Is this quiz in English or Albanian? Pick one and we'll find a source in that language."
-                    : "That topic could mean more than one thing. Pick the article the quiz should come from.",
+                Message = grounding.Status switch
+                {
+                    GroundingStatus.NeedsLanguage =>
+                        "Is this quiz in English or Albanian? Pick one and we'll find a source in that language.",
+                    GroundingStatus.SourceUnavailable =>
+                        "Wikipedia can't be reached right now. Try again in a minute, or let the AI write from memory — those questions are much more likely to contain mistakes.",
+                    _ => "That topic could mean more than one thing. Pick the article the quiz should come from.",
+                },
                 Grounding = grounding,
             };
 

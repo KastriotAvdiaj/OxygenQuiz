@@ -77,6 +77,9 @@ namespace QuizAPI.DTOs.Quiz
         /// <summary>The author's answer "none of these" to "which article?" — generate from memory.</summary>
         public bool SourceDeclined { get; set; }
 
+        /// <summary>The source was down; the author chose to write from memory rather than wait.</summary>
+        public bool SourceAcceptFromMemory { get; set; }
+
         /// <summary><c>ai-prompt</c> only: ground the prompt as generation would. See <see cref="AiGenerationRequest.Ground"/>.</summary>
         public bool Ground { get; set; }
 
@@ -104,6 +107,7 @@ namespace QuizAPI.DTOs.Quiz
                 SourceLanguage = SourceLanguage,
                 SourceTitle = SourceTitle,
                 SourceDeclined = SourceDeclined,
+                SourceAcceptFromMemory = SourceAcceptFromMemory,
                 Ground = Ground,
             };
         }
@@ -115,7 +119,7 @@ namespace QuizAPI.DTOs.Quiz
     /// </summary>
     public class AiGroundingDTO
     {
-        /// <summary>"Grounded", "Ungrounded", "NeedsLanguage" or "NeedsArticle".</summary>
+        /// <summary>"Grounded", "Ungrounded", "NeedsLanguage", "NeedsArticle" or "SourceUnavailable".</summary>
         public string Status { get; set; } = string.Empty;
 
         /// <summary>The language settled on, when one was.</summary>

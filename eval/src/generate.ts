@@ -69,7 +69,7 @@ interface TopicRow {
 
 /** What `--grounding` was told by the server, per topic. Written to raw/ and read by parse. */
 interface GroundingInfo {
-  status: "Grounded" | "Ungrounded" | "NeedsLanguage" | "NeedsArticle";
+  status: "Grounded" | "Ungrounded" | "NeedsLanguage" | "NeedsArticle" | "SourceUnavailable";
   language?: string | null;
   reason?: string | null;
   source?: { provider: string; title: string; url?: string | null; text: string; language: string } | null;
@@ -79,7 +79,7 @@ interface GroundingInfo {
 
 /** One question the server put to the "author", and how the run answered it. */
 interface Ask {
-  kind: "language" | "article";
+  kind: "language" | "article" | "unavailable";
   offered: string[];
   answered: string;
   /** True when topics.json didn't say what to pick and the run took the first offer. */
@@ -248,6 +248,11 @@ async function promptFor(
       if (!answered) throw new Error("The server asked which article but offered none.");
       asks.push({ kind: "article", offered, answered, auto: wanted === undefined });
       body = { ...body, SourceTitle: answered, SourceLanguage: question.language ?? topic.language };
+    } else if (question.status === "SourceUnavailable" && !asks.some((a) => a.kind === "unavailable")) {
+      // Wikipedia was down. An author could wait; a measurement shouldn't silently become a
+      // from-memory run, so the report marks the topic (asked: unavailable) and it can be re-run.
+      asks.push({ kind: "unavailable", offered: ["try again", "write from memory"], answered: "write from memory", auto: true });
+      body = { ...body, SourceAcceptFromMemory: true, SourceLanguage: question.language ?? topic.language };
     } else {
       throw new Error(`The server asked again after being answered: ${JSON.stringify(question)}`);
     }

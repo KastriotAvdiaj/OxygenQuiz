@@ -289,7 +289,9 @@ namespace QuizAPI.Services.Ai
                 return (r, GroundingResult.Off);
 
             var grounding = await _grounding.GroundAsync(
-                r.Topic, new GroundingAnswers(r.SourceLanguage ?? r.LanguageName, r.SourceTitle, r.SourceDeclined), ct);
+                r.Topic,
+                new GroundingAnswers(r.SourceLanguage ?? r.LanguageName, r.SourceTitle, r.SourceDeclined, r.SourceAcceptFromMemory),
+                ct);
             if (grounding.Status is GroundingStatus.Off || grounding.NeedsChoice) return (r, grounding);
 
             var pinned = r;

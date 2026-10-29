@@ -239,7 +239,10 @@ namespace QuizAPI.Services.Ai
                 + "Write it in the same language as the question. "
                 + (isTopic
                     ? "Only state facts you are confident of."
-                    : "Use only facts from the SOURCE MATERIAL."));
+                    // Players never see the material, so "according to the text" explains nothing
+                    // to them. The 2026-10-29 grounded eval run found it in about ten rows, in both
+                    // languages ("sipas materialit", "the result section confirms").
+                    : "Use only facts from the SOURCE MATERIAL, but state the fact itself: players never see the material, so never refer to it — no \"the text says\", \"according to the source\", \"the article\" or \"the material\", in any language."));
 
             // Structural mistakes weaker models make often and reviewers miss easily. Each one is
             // also checked in code (question-checks.ts) — this rule lowers how many get dropped,

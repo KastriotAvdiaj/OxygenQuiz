@@ -106,6 +106,17 @@ public class AiGenerationServiceGroundingTests
     }
 
     [Fact]
+    public async Task Explanations_are_told_to_state_the_fact_not_cite_the_article()
+    {
+        // Players never see the article; "sipas materialit" explains nothing to them.
+        var h = Build(Grounded());
+
+        await h.Service.GenerateAsync(Guid.NewGuid(), TopicRequest());
+
+        Assert.Contains("never refer to it", Assert.Single(h.Prompts));
+    }
+
+    [Fact]
     public async Task The_language_grounding_settled_on_is_the_only_one_offered()
     {
         var h = Build(Grounded());
@@ -124,7 +135,7 @@ public class AiGenerationServiceGroundingTests
 
         await h.Service.GenerateAsync(Guid.NewGuid(), TopicRequest(sourceTitle: "Fotosinteza") with { SourceLanguage = "Albanian" });
 
-        h.Grounding.Verify(g => g.GroundAsync("Fotosinteza", new GroundingAnswers("Albanian", "Fotosinteza", false), It.IsAny<CancellationToken>()));
+        h.Grounding.Verify(g => g.GroundAsync("Fotosinteza", new GroundingAnswers("Albanian", "Fotosinteza", false, false), It.IsAny<CancellationToken>()));
     }
 
     [Fact]

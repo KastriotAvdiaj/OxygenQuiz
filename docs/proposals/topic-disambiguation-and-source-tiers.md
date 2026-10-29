@@ -1,11 +1,11 @@
 # Proposal: which source a grounded generation reads, and who decides when it is ambiguous
 
 **Status: accepted 2026-10-28, implementation in progress.** Rank 3 (English source → non-English
-questions) is **rejected** — see §4d. Built 2026-10-29: the provider, generation and eval
-integration, and the questions to the author — all switched off; how it works is in
+questions) is **rejected** — see §4d. Built 2026-10-29 for Wikipedia, end to end
+(server, wizard, eval) and measured — switched off; how it works is in
 [`../quiz/ai-quiz-generation-flow.md`](../quiz/ai-quiz-generation-flow.md) §2e. **Not built:**
-the wizard UI for those questions and the source link in review. **§4a bis is superseded** by a
-measured rule (below). Written 2026-10-28. Prerequisite for Phase 2 of
+the other tiers of §4d (official documentation, governing bodies), which is all that keeps this
+proposal open. **§4a bis is superseded** by a measured rule (below). Written 2026-10-28. Prerequisite for Phase 2 of
 [`../quiz/ai-question-accuracy-plan.md`](../quiz/ai-question-accuracy-plan.md), which assumes a
 source can be picked automatically. The measurements below say it cannot.
 

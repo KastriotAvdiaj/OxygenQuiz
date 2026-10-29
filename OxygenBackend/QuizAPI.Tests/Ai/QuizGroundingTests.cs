@@ -154,19 +154,42 @@ public class QuizGroundingTests
         provider.Verify(p => p.LookupAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [Theory]
-    [InlineData(SourceOutcome.NotFound, "not-found")]
-    [InlineData(SourceOutcome.Unavailable, "unavailable")]
-    public async Task No_source_falls_back_to_ungrounded_with_a_reason(SourceOutcome outcome, string reason)
+    [Fact]
+    public async Task No_article_falls_back_to_ungrounded_with_a_reason()
     {
-        var lookup = outcome == SourceOutcome.NotFound ? SourceLookup.NotFound : SourceLookup.Unavailable;
-        var provider = Provider(lookup);
+        var provider = Provider(SourceLookup.NotFound);
 
         var result = await Grounding(provider).GroundAsync("The human respiratory system", NoAnswers, default);
 
         Assert.Equal(GroundingStatus.Ungrounded, result.Status);
-        Assert.Equal(reason, result.Reason);
+        Assert.Equal("not-found", result.Reason);
         Assert.Equal("English", result.Language); // still pinned, so the fallback writes in the searched language
+    }
+
+    [Fact]
+    public async Task A_source_that_is_down_is_a_question_not_a_silent_fallback()
+    {
+        // From memory the same topics were 15% wrong against 4% grounded (2026-10-29), so the
+        // author decides: wait, or go ahead knowing that.
+        var provider = Provider(SourceLookup.Unavailable);
+
+        var result = await Grounding(provider).GroundAsync("The human respiratory system", NoAnswers, default);
+
+        Assert.Equal(GroundingStatus.SourceUnavailable, result.Status);
+        Assert.True(result.NeedsChoice);
+        Assert.Equal("English", result.Language);
+    }
+
+    [Fact]
+    public async Task Accepting_memory_after_an_outage_writes_ungrounded_and_says_why()
+    {
+        var provider = Provider(SourceLookup.Unavailable);
+
+        var result = await Grounding(provider).GroundAsync(
+            "The human respiratory system", new GroundingAnswers(null, null, AcceptFromMemory: true), default);
+
+        Assert.Equal(GroundingStatus.Ungrounded, result.Status);
+        Assert.Equal("unavailable", result.Reason);
     }
 
     [Fact]

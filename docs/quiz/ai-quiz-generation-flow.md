@@ -12,8 +12,8 @@ Status: **slices 2.0, 2.1 and 2.3.** Topic and Source modes, the one-box wizard,
 caps, kill switch, and a single server-owned prompt shared with copy-paste. Source mode takes
 pasted text or an uploaded PDF, Word or text file (§2d) — **built, and closed on the current
 model** until a vendor entry allows it. Topic mode can be **grounded** in a Wikipedia article
-(§2e) — **built server-side and in the eval, switched off**, with no wizard UI yet. **Not yet:
-streaming progress (2.2).** Last updated: 2026-10-29
+(§2e) — **built end to end and measured; switched off** until `Ai:Source:Enabled` is turned on.
+**Not yet: streaming progress (2.2).** Last updated: 2026-10-29
 
 ---
 
@@ -331,10 +331,11 @@ user hears it at once; pasted text when Generate is pressed, which is equally fr
 
 ## 2e. Grounding — Topic mode written from an article
 
-> **Status: built 2026-10-29, switched off** (`Ai:Source:Enabled=false`). The server and the eval
-> harness are done; the wizard cannot yet show the questions grounding asks (§9.18), so it must
-> stay off in production until it can. It is switched on when an eval run shows it beats the
-> Phase 0 baseline on the topics it grounds.
+> **Status: built 2026-10-29, switched off** (`Ai:Source:Enabled=false`). Server, wizard and eval
+> are all done, and the first grounded eval run beat the baseline on the topics it grounded —
+> wrong answers 15.2% → 3.6% ([`ai-question-accuracy-plan.md`](./ai-question-accuracy-plan.md)).
+> Turning it on is the one setting; mind the free tier's tokens-per-minute (§2b) — a grounded
+> generation is about 6,000 tokens of the 8,000.
 
 From memory, the model's wrong answers concentrate in subjects it knows badly
 ([`ai-question-accuracy-plan.md`](./ai-question-accuracy-plan.md), Phase 0). Grounding hands it
@@ -351,7 +352,8 @@ source, cost nothing:
 |---|---|---|
 | 1. Language | English or Albanian: the author's answer, else the topic's own words (`TopicLanguage`: ë/ç, function words, xh/zh/gj, w/ph…), else which edition has exactly that title | Ask: *English or Albanian?* |
 | 2. Article | The search hit whose **title** matches the topic (`SourceSelection`) | Ask: *which article?* — with "none of these" |
-| 3. Fallback | A stub, no match, Wikipedia down, or "none of these" | Never asks: writes from memory and says why (`reason`) |
+| 3. Fallback | A stub, no match, or "none of these" | Writes from memory and says why (`reason`) |
+| — Wikipedia down | Retried once, then reported as unavailable — never as "not found" | Ask: *try again, or write from memory?* — with what that costs |
 
 A language with no source (an explicitly named German) is ungrounded, never translated — the
 proposal rejects English sources for non-English quizzes.
@@ -377,8 +379,27 @@ Albanian); "Python", on both, is asked — correctly.
 the article's opening, cut at a paragraph — because Groq's free tier allows ~8,000 tokens a
 minute and reserves 4,000 of them for the reply. A vendor with more room can take more.
 
-**The contract.** A request carries the author's answers as `sourceLanguage`, `sourceTitle` or
-`sourceDeclined`. A question comes back as **409 `SourceNeedsChoice`** with `grounding` holding
+**Why an outage is a question.** From memory, the same topics were four times as likely to carry a
+wrong answer (15.2% against 3.6%). Wikipedia is usually back within a minute, so the author is
+told that and decides; going ahead is recorded (`reason: "unavailable"`) and the review says so
+in amber.
+
+**In the wizard.** A question takes the topic box's place as `SourceChoiceCard` — the frame of
+`ConfirmDetailsCard`, the rows of the question-type picker — with "Change the topic" as the way
+back, since nothing has been spent. The answers accumulate in the container (a language, then an
+article) and go out with each retry. In the review, `ImportNote`'s line becomes the provenance:
+the article, linked (the CC BY-SA attribution), or why the questions came from memory. The
+grounding result is stored in the draft with the payload, so a refresh keeps both the line and
+the quote check, which runs on the article's text exactly as it runs on Source-mode material.
+Every state has a story: `Dashboard/Quiz/AI/SourceChoiceCard`, `…/ImportNote`, and the
+`Grounding*` / `Review*` stories of `AiQuizWizardView`.
+
+**Explanations state the fact.** The first grounded run had about ten explanations saying
+"according to the material" — players never see the article — so the prompt now forbids
+referring to it in any language.
+
+**The contract.** A request carries the author's answers as `sourceLanguage`, `sourceTitle`,
+`sourceDeclined` or `sourceAcceptFromMemory`. A question comes back as **409 `SourceNeedsChoice`** with `grounding` holding
 the options; every grounded or ungrounded response carries `grounding` with the article (title,
 URL, text — the text is what the quote check needs) or the reason there is none. `ai-prompt`
 grounds only when the request says `ground: true` — the eval does; the own-AI page doesn't yet.
@@ -669,7 +690,7 @@ The code set is closed. Adding one means touching all four columns of this table
 | `SourceTooLarge` | An upload over `Ai:MaxSourceFileBytes`. Long *text* is cut, not refused. | 400 | untouched | The size limit, and "paste the part you want". |
 | `UnreadableSource` | Upload: unknown format, encrypted PDF, corrupt file, or no text (a scan) | 400 | untouched | One message per case, each naming the fix. |
 | `UnsupportedLanguage` | Source material not in English or Albanian (§2d) — on upload, or at generate for a paste | 400 | untouched | "Your material needs to be in English or Albanian." + "Nothing was used". |
-| `SourceNeedsChoice` | Grounding (§2e) needs the author to pick the topic's language or the article. Not a failure. | 409 | untouched | The choice — **no UI yet** (§9.18). |
+| `SourceNeedsChoice` | Grounding (§2e) needs the author: the topic's language, the article, or — Wikipedia down — whether to go ahead from memory. Not a failure. | 409 | untouched | `SourceChoiceCard` in place of the topic box. |
 | `ProviderUnavailable` | 429/5xx/transport after one retry | 502 | released | "Unavailable right now, try again in a moment." |
 | `ProviderUnavailable` | Upstream **rate limit** — 429, or Groq's 413 + `rate_limit_exceeded` | 502 | released | "Over its rate limit. Wait a minute and try again, or ask for fewer questions." Same code, different message: the client's options are identical, the user's remedy is not (§2b). |
 | `ProviderTimeout` | Over `Ai:TimeoutSeconds`, twice | 502 | released | "Took too long — try again." |
@@ -1082,12 +1103,8 @@ in front of it — the number that should decide whether any vendor entry sets `
 Add a handful of source topics (one per format, both languages, one long enough to be cut) and
 run them against the candidate model before opening the mode.
 
-**18. Grounding has no wizard UI.** The server asks "English or Albanian?" and "which article?"
-with a 409 `SourceNeedsChoice`, and nothing in the wizard answers it yet — it would show as an
-error. The browser also doesn't yet hand a grounded article's text to the parser, so the quote
-check would not run in the app (the eval does run it). Both land with the UI: a choice card in the
-`ConfirmDetailsCard` slot, and the article named and linked in the review. **Keep
-`Ai:Source:Enabled` off in production until then.**
+**18. ~~Grounding has no wizard UI.~~ Done (2026-10-29)** — `SourceChoiceCard` answers the
+server's questions, `ImportNote` names the article, and the parser checks quotes against it (§2e).
 
 **19. Grounding can only help where Wikipedia has the article.** On the Phase 0 set the four
 topics with no good article (C# 12, football rules, Python programming, Kosovo in the 20th

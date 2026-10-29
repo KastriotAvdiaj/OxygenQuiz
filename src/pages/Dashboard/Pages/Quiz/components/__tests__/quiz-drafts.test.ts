@@ -215,6 +215,35 @@ describe("parsing stored drafts", () => {
     expect(parseAiQuizDraft(JSON.parse(JSON.stringify(draft)))).toEqual(draft);
   });
 
+  it("round-trips what a grounded reply was written from", () => {
+    // The review needs it after a refresh: the article's text for the quote check, and the
+    // provenance line above the questions (docs/quiz/ai-quiz-generation-flow.md §2e).
+    const draft = {
+      ...untouchedAiDraft(),
+      payload: '{"questions":[]}',
+      grounding: {
+        status: "Grounded" as const,
+        language: "Albanian",
+        source: {
+          provider: "wikipedia",
+          title: "Kuzhina shqiptare",
+          url: "https://sq.wikipedia.org/wiki/Kuzhina_shqiptare",
+          text: "Kuzhina shqiptare mund të ndahet në tre kuzhina kryesore rajonale.",
+          language: "Albanian",
+        },
+      },
+    };
+    expect(parseAiQuizDraft(JSON.parse(JSON.stringify(draft)))).toEqual(draft);
+  });
+
+  it("drops an unreadable grounding but keeps the draft it came with", () => {
+    // A generation cost the user quota; a provenance line that no longer parses must not
+    // throw the questions away with it.
+    const parsed = parseAiQuizDraft({ ...untouchedAiDraft(), payload: "{}", grounding: { status: 42 } });
+    expect(parsed?.payload).toBe("{}");
+    expect(parsed?.grounding).toBeNull();
+  });
+
   it("refuses an AI draft that is missing a field", () => {
     const withoutPayload: Record<string, unknown> = { ...untouchedAiDraft() };
     delete withoutPayload.payload;

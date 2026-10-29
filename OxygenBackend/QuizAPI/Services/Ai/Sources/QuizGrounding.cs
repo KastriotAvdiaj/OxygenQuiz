@@ -21,6 +21,14 @@ namespace QuizAPI.Services.Ai.Sources
         /// generation runs from memory and says so; <see cref="GroundingResult.Reason"/> says why.
         /// </summary>
         Ungrounded = 4,
+
+        /// <summary>
+        /// The source could not be reached. Asked rather than decided: writing from memory instead
+        /// is a materially worse quiz (the 2026-10-29 eval: 15% wrong from memory against 4% from
+        /// an article, on the same topics), and the user may rather wait a minute. They answer with
+        /// <see cref="GroundingAnswers.AcceptFromMemory"/> or try again.
+        /// </summary>
+        SourceUnavailable = 5,
     }
 
     /// <summary>The article a grounded generation is written from.</summary>
@@ -50,7 +58,8 @@ namespace QuizAPI.Services.Ai.Sources
         /// <summary>The article that was considered and rejected (thin), for the review to link to.</summary>
         public string? ConsideredTitle { get; init; }
 
-        public bool NeedsChoice => Status is GroundingStatus.NeedsLanguage or GroundingStatus.NeedsArticle;
+        public bool NeedsChoice =>
+            Status is GroundingStatus.NeedsLanguage or GroundingStatus.NeedsArticle or GroundingStatus.SourceUnavailable;
 
         public static readonly GroundingResult Off = new() { Status = GroundingStatus.Off };
     }
@@ -62,7 +71,12 @@ namespace QuizAPI.Services.Ai.Sources
     /// "None of these": the author looked at the articles and none is right. The generation runs
     /// from memory — for topics Wikipedia has no good article for, the honest answer.
     /// </param>
-    public sealed record GroundingAnswers(string? Language, string? ArticleTitle, bool Declined = false);
+    /// <param name="AcceptFromMemory">
+    /// The source couldn't be reached and the author chose to go ahead from memory rather than
+    /// try again later (<see cref="GroundingStatus.SourceUnavailable"/>).
+    /// </param>
+    public sealed record GroundingAnswers(
+        string? Language, string? ArticleTitle, bool Declined = false, bool AcceptFromMemory = false);
 
     public interface IQuizGrounding
     {
@@ -141,7 +155,14 @@ namespace QuizAPI.Services.Ai.Sources
                     Candidates = lookup.Candidates,
                 },
                 SourceOutcome.TooThin => Ungrounded(language, "too-thin") with { ConsideredTitle = lookup.Title },
-                SourceOutcome.Unavailable => Ungrounded(language, "unavailable"),
+                SourceOutcome.Unavailable => answers.AcceptFromMemory
+                    ? Ungrounded(language, "unavailable")
+                    : new GroundingResult
+                    {
+                        Status = GroundingStatus.SourceUnavailable,
+                        Language = language,
+                        Reason = "unavailable",
+                    },
                 _ => Ungrounded(language, "not-found"),
             };
         }

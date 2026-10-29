@@ -795,9 +795,8 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
 - **P3 — The own-AI path has no material mode (§9.17).** Topic-only today; the prompt already
   supports `sourceText`.
 
-- **P2 — Grounding has no wizard UI (flow doc §9.18).** Built and switched off; the server's
-  "which language / which article?" questions have nothing to answer them in the app. Keep
-  `Ai:Source:Enabled` off in production until the UI lands.
+- ~~**P2 — Grounding has no wizard UI (flow doc §9.18).**~~ **Done 2026-10-29.** Grounding is
+  complete and switched off; turning it on is `Ai:Source:Enabled`.
 - ~~**P2 — Grounding has no safe way to pick a source yet.**~~ **Addressed 2026-10-29** by title
   matching (flow doc §2e); the original finding, kept for the record: Phase 2b assumes "the first
   non-disambiguation hit" is the right Wikipedia article. Measured 2026-10-28, it is the wrong

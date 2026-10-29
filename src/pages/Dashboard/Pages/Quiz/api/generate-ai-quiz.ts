@@ -26,14 +26,72 @@ export type AiGenerateErrorCode =
   | "SourceTooLarge"
   | "UnreadableSource"
   | "UnsupportedLanguage"
-  // Grounding asking the author to pick a language or article (409). Not a failure, and not
-  // answered by the wizard yet — docs/quiz/ai-quiz-generation-flow.md §9.18.
+  // Grounding asking the author something (409): a language, an article, or whether to go ahead
+  // from memory while the source is down. Not a failure — the wizard shows `SourceChoiceCard`.
   | "SourceNeedsChoice"
   | "ProviderUnavailable"
   | "ProviderTimeout"
   | "ModelOutputInvalid";
 
 export type AiGenerationMode = "Topic" | "Source";
+
+/**
+ * What grounding concluded (docs/quiz/ai-quiz-generation-flow.md §2e). `Grounded` and
+ * `Ungrounded` arrive with a result; the other three arrive as a 409 `SourceNeedsChoice` —
+ * a question for the author, asked before any of their allowance is spent.
+ */
+export type AiGroundingStatus =
+  | "Grounded"
+  | "Ungrounded"
+  | "NeedsLanguage"
+  | "NeedsArticle"
+  | "SourceUnavailable";
+
+/** Why a Topic quiz was written from memory. Mirrors the server's `GroundingResult.Reason`. */
+export type AiUngroundedReason =
+  | "too-thin"
+  | "not-found"
+  | "unavailable"
+  | "declined"
+  | "no-source-for-language";
+
+export interface AiGroundedSource {
+  /** The source tier, e.g. "wikipedia". */
+  provider: string;
+  title: string;
+  /** Carries the CC BY-SA attribution — the review links to it. */
+  url: string | null;
+  /** What the model read. The parser checks every `sourceQuote` against it. */
+  text: string;
+  language: string;
+}
+
+export interface AiSourceCandidate {
+  title: string;
+  words: number;
+  url: string | null;
+}
+
+export interface AiGrounding {
+  status: AiGroundingStatus;
+  language?: string | null;
+  reason?: AiUngroundedReason | string | null;
+  source?: AiGroundedSource | null;
+  /** NeedsArticle: the articles to choose between, best match first. */
+  articles?: AiSourceCandidate[] | null;
+  /** NeedsLanguage: the languages to choose between. */
+  languages?: string[] | null;
+}
+
+/** The author's answers to grounding's questions, sent back with the same request. */
+export interface AiGroundingAnswers {
+  sourceLanguage?: string;
+  sourceTitle?: string;
+  /** "None of these" — write from memory. */
+  sourceDeclined?: boolean;
+  /** The source was down and the author chose not to wait. */
+  sourceAcceptFromMemory?: boolean;
+}
 
 export interface AiGenerateInput {
   mode: AiGenerationMode;
@@ -70,6 +128,8 @@ export interface AiGenerateResult {
   quotaRemaining: number | null;
   inputTokens: number;
   outputTokens: number;
+  /** What the questions were written from. Null when grounding is switched off. */
+  grounding?: AiGrounding | null;
 }
 
 export interface AiQuotaStatus {
@@ -137,6 +197,8 @@ export class AiGenerateError extends Error {
     public readonly code: AiGenerateErrorCode | "Unknown",
     message: string,
     public readonly retryAfter?: string,
+    /** `SourceNeedsChoice`: the question to put to the author. */
+    public readonly grounding?: AiGrounding,
   ) {
     super(message);
     this.name = "AiGenerateError";
@@ -170,6 +232,7 @@ interface ServerErrorBody {
   code?: string;
   message?: string;
   retryAfter?: string;
+  grounding?: AiGrounding | null;
 }
 
 const toAiGenerateError = (error: unknown): AiGenerateError => {
@@ -180,6 +243,7 @@ const toAiGenerateError = (error: unknown): AiGenerateError => {
       body.code as AiGenerateErrorCode,
       body.message ?? "Quiz generation failed.",
       body.retryAfter,
+      body.grounding ?? undefined,
     );
   }
 
@@ -206,7 +270,9 @@ const toAiGenerateError = (error: unknown): AiGenerateError => {
  * `Promise<T>` compiles and then hands every caller an object whose fields are all
  * `undefined`. See the warning on the `api` export in `src/lib/Api-client.ts`.
  */
-export const generateAiQuiz = (data: AiGenerateInput): Promise<AiGenerateResult> =>
+export const generateAiQuiz = (
+  data: AiGenerateInput & AiGroundingAnswers,
+): Promise<AiGenerateResult> =>
   apiService
     .post<AiGenerateResult>("/quiz/ai-generate", data, {
       // The wizard renders its own error panel, which says what to do next per code —
