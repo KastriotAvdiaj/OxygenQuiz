@@ -409,6 +409,23 @@ async function main(): Promise<void> {
   await preflight();
   const token = await login();
 
+  // A grounded run against an API that isn't grounding would measure the baseline again and
+  // call it grounding. Ask once, before any directory or model call, rather than failing every
+  // topic in turn.
+  if (grounding) {
+    const probe = await promptFor(token, topics[0], buildRequest(topics[0], file.defaults, languageMode, true));
+    if (probe.grounding === null) {
+      throw new Error(
+        "--grounding was given but the API answered without grounding. Either:\n" +
+          "  - it is running a build from before grounding existed: pull, rebuild and restart it; or\n" +
+          "  - Ai:Source:Enabled is not reaching it. An $env: variable only reaches an API started from\n" +
+          "    that same terminal, never one started from Visual Studio. This works for both:\n" +
+          '      cd OxygenBackend/QuizAPI; dotnet user-secrets set "Ai:Source:Enabled" "true"\n' +
+          "    then restart the API.",
+      );
+    }
+  }
+
   // Only now. Creating the directory before the gates above left an empty run behind every time
   // a start failed — and since the later steps default to the most recently modified run, that
   // empty directory is exactly what they would pick up next.
@@ -429,12 +446,9 @@ async function main(): Promise<void> {
     try {
       const built = buildRequest(topic, file.defaults, languageMode, grounding);
       const { prompt, grounding: groundingInfo, asks, request } = await promptFor(token, topic, built);
-      // A grounded run against a server with grounding switched off would silently measure the
-      // baseline again and call it grounding. Refuse instead.
+      // Checked up front as well; this catches an API restarted mid-run with grounding off.
       if (grounding && groundingInfo === null) {
-        throw new Error(
-          "--grounding was given but the API answered without grounding. Start it with Ai__Source__Enabled=true.",
-        );
+        throw new Error("The API stopped grounding partway through the run — was it restarted?");
       }
 
       const waited = await pacer.waitForRoom();
