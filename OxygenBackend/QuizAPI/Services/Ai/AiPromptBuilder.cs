@@ -234,10 +234,14 @@ namespace QuizAPI.Services.Ai
 
             // Structural mistakes weaker models make often and reviewers miss easily. Each one is
             // also checked in code (question-checks.ts) — this rule lowers how many get dropped,
-            // it is not what catches them.
+            // it is not what catches them. The exception is the real-distractor sentence: the
+            // Phase 0 baseline found invented Albanian distractors ("Marrëzë", "Petëqengë") that
+            // no code check can see; Phase 3's verifier is meant to flag them
+            // (docs/quiz/ai-question-accuracy-plan.md).
             rules.Add(
                 "Every question must be unambiguous: whatever you mark correct must be the only defensible answer. "
                 + "Wrong options must be clearly wrong, not partly true or true under another reading. "
+                + "Every wrong option must still be a real, correctly spelled term of the same kind as the answer (another real dish, another real writer, another real year) — never an invented or nonsense word, which makes the question trivial. "
                 + "All options must be different from each other. "
                 + "Never write the answer, or an obvious hint to it, in the question text. "
                 + "Avoid \"all of the above\", \"none of the above\" and questions phrased with NOT or EXCEPT.");

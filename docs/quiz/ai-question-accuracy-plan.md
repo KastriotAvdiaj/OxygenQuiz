@@ -170,6 +170,12 @@ intervals do not overlap: the after-run's *upper* bound has to fall below this r
 of 13.6%. At ~116 labelled questions that means **at most 8 wrong (≈6.9%, CI 3.5–13.0%)**, with
 yield reported next to it. A wrong rate of, say, 12% would be an encouraging sign, not a result.
 
+**Changes since the baseline that the next run will also measure** — list them here so an
+after-run is not credited to one change when it carries several:
+
+- 2026-10-29: the quality rule asks for real, correctly spelled distractors of the same kind as
+  the answer (`AiPromptBuilder`). Too small to measure alone (about 2 affected rows of 116).
+
 ### Phase 1 — Deterministic checks ✅ implemented
 
 No model calls, no schema change, both paths.
