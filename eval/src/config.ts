@@ -122,11 +122,23 @@ export function resolveRunId(raw: string | undefined): string {
     entries = fs
       .readdirSync(RUNS_ROOT, { withFileTypes: true })
       .filter((e) => e.isDirectory())
-      .map((e) => e.name);
+      .map((e) => e.name)
+      // "The most recent run" has to mean the most recent run that holds something. A directory
+      // with no replies in it is debris — a failed start, or a mistyped --run-id — and silently
+      // picking it is how one typo breaks the next three commands.
+      .filter((name) => {
+        try {
+          return fs
+            .readdirSync(path.join(RUNS_ROOT, name, "raw"))
+            .some((f) => f.endsWith(".json"));
+        } catch {
+          return false;
+        }
+      });
   } catch {
     throw new Error(`No runs directory at ${RUNS_ROOT}. Run the generate step first.`);
   }
-  if (entries.length === 0) throw new Error("No runs yet. Run the generate step first.");
+  if (entries.length === 0) throw new Error("No runs with any replies in them yet. Run the generate step first.");
 
   const latest = entries
     .map((name) => ({ name, at: fs.statSync(path.join(RUNS_ROOT, name)).mtimeMs }))

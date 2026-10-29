@@ -119,9 +119,15 @@ async function main(): Promise<void> {
   const runDir = path.join(RUNS_ROOT, runId);
   const rawDir = path.join(runDir, "raw");
   const parsedDir = path.join(runDir, "parsed");
-  await fs.mkdir(parsedDir, { recursive: true });
 
-  const files = (await fs.readdir(rawDir)).filter((f) => f.endsWith(".json")).sort();
+  // Read before creating anything. Creating `parsed/` first turned a mistyped --run-id into a
+  // real directory, which then became "the most recent run" for the next command and failed
+  // again — the typo outlived the command that made it.
+  const files = await fs
+    .readdir(rawDir)
+    .then((f) => f.filter((n) => n.endsWith(".json")).sort())
+    .catch(() => [] as string[]);
+
   if (files.length === 0) {
     // Say which runs do have something, rather than only that this one does not. Picking the
     // wrong run is easy when the id is a timestamp and the default is "most recent".
@@ -142,6 +148,8 @@ async function main(): Promise<void> {
         `Pick one with --run-id=<name>, or run the generate step to make a new one.`,
     );
   }
+
+  await fs.mkdir(parsedDir, { recursive: true });
 
   const rows: LabelRow[] = [];
   const key: Record<string, unknown> = {};
