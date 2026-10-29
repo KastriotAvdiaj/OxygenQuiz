@@ -179,6 +179,33 @@ after-run is not credited to one change when it carries several:
 - 2026-10-29: Source mode (Phase 2a) exists but cannot affect a Topic-mode run — the eval only
   runs topics, and the mode is closed on the baseline's model.
 
+#### First grounded run (2026-10-29) — grounding works on the topics it reaches
+
+Run `2026-10-29T17-25-10-002Z-inferred-grounded`: same model, seed and topics, `--grounding`, 121
+of 121 labelled blind. Eight topics grounded (en-01/02/03/04/06, sq-02/03/04); four had no good
+Wikipedia article and were written from memory (en-05, sq-01, sq-05, sq-06). Compared with
+`eval:score --compare`:
+
+| cut | baseline | grounded run | Fisher exact |
+|---|---|---|---|
+| **grounded topics — wrong** | 15.2% (12/79, CI 8.9–24.7) | **3.6%** (3/84, CI 1.2–10.0) | p = 0.014 |
+| **grounded topics — wrong + ambiguous** | 36.7% (29/79, CI 26.9–47.7) | **11.9%** (10/84, CI 6.6–20.5) | p = 0.0002 |
+| memory topics — wrong (the control) | 11/37 | 13/37 | p = 0.80 |
+| whole run — wrong | 19.8% (23/116) | 13.2% (16/121) | p = 0.22 |
+
+- **Wrong + ambiguous clears the harness's own bar** (intervals don't overlap); wrong alone misses
+  it by a hair (10.0 against 8.9) but is significant by an exact test.
+- **The control held still**, so the gain is grounding's, not the run's or the distractor rule's.
+- **Albanian fluency rose from 3.12 to 3.55**, and wrong answers in Albanian from 14/57 to 9/62.
+- **The whole run can't show it** — as predicted, the four memory topics hold most of what's left.
+- **Every grounded question carried a quote; 83 of 84 were verbatim** and the 84th a correct
+  ellipsis splice. The quote check dropped nothing because there was nothing to drop.
+- **New defect: explanations that cite the source** — "sipas materialit", "the text confirms" —
+  in about ten grounded rows. Players never see the source, so the explanation must state the
+  fact. A prompt rule fixes it.
+- **The model returns one question too many** on some topics (four here, two in the baseline).
+  Yield "of requested" counts them, so it reads 100.8%; capped per topic it is 97.5%.
+
 ### Phase 1 — Deterministic checks ✅ implemented
 
 No model calls, no schema change, both paths.
