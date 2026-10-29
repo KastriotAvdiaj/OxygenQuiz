@@ -20,7 +20,8 @@
     "eval:generate": "vite-node -c eval/vite.config.ts eval/src/generate.ts --",
     "eval:parse": "vite-node -c eval/vite.config.ts eval/src/parse.ts --",
     "eval:score": "vite-node -c eval/vite.config.ts eval/src/score.ts --",
-    "eval:label": "vite-node -c eval/vite.config.ts eval/src/label.ts --"
+    "eval:label": "vite-node -c eval/vite.config.ts eval/src/label.ts --",
+    "eval:repair-labels": "vite-node -c eval/vite.config.ts eval/src/repair-labels.ts --"
   },
   "dependencies": {
     "@azure/msal-browser": "^4.13.0",

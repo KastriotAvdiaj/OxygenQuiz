@@ -149,7 +149,11 @@ function render() {
   el("next").disabled = i === rows.length - 1;
 }
 
+const FIELDS = ["correctness","observedLanguage","fluency","note"];
 async function save(patch) {
+  for (const k of Object.keys(patch)) {
+    if (!FIELDS.includes(k)) { alert("Bug: tried to save unknown field " + k); throw new Error("bad field " + k); }
+  }
   Object.assign(rows[i], patch);
   render();
   el("saved").textContent = "saving…";
@@ -187,9 +191,9 @@ document.addEventListener("keydown", e => {
 
 (async () => {
   rows = await (await fetch("/api/rows")).json();
-  chips(el("correctness"), CORRECTNESS);
-  chips(el("observedLanguage"), LANGS);
-  chips(el("fluency"), [1,2,3,4]);
+  chips(el("correctness"), CORRECTNESS, "correctness");
+  chips(el("observedLanguage"), LANGS, "observedLanguage");
+  chips(el("fluency"), [1,2,3,4], "fluency");
   const first = rows.findIndex(r => !r.correctness);
   i = first === -1 ? 0 : first;
   render();
