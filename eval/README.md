@@ -44,7 +44,7 @@ has a flawless error rate.
 ```bash
 npm run eval:generate            # ~5 min: 12 topics, paced under the vendor's tokens/min ceiling
 npm run eval:parse               # defaults to the run you just made
-#  ... label eval/runs/<run-id>/labels.jsonl ...
+npm run eval:label               # opens a local page; label there, not in the JSON
 npm run eval:score
 ```
 
@@ -127,7 +127,22 @@ eval/runs/<run-id>/
 
 ## Labelling guide
 
-One JSON object per line. Fill four fields and leave the rest alone:
+**Use `npm run eval:label`.** It serves a page at `http://localhost:5174` showing one question at
+a time — the question, its options, the answer and the explanation — with buttons and keyboard
+shortcuts, and writes each verdict straight to `labels.jsonl`. Close the tab whenever; nothing is
+held in memory. It shows nothing about which topic or language a question came from, so the run
+stays blind.
+
+| key | does |
+|---|---|
+| `1` `2` `3` `4` | correct / wrong / ambiguous / time-sensitive |
+| `q` `w` `e` `r` | fluency 1–4 |
+| `a` `s` `d` `f` | English / Albanian / mixed / other |
+| `←` `→` | move between questions |
+| `n` | jump to the next unlabelled one |
+
+Editing `labels.jsonl` by hand works too. One JSON object per line; fill four fields and leave
+the rest alone:
 
 | field | values | notes |
 |---|---|---|

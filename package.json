@@ -19,7 +19,8 @@
     "chromatic": "npx chromatic --project-token=chpt_cf4e4fa48d1e026",
     "eval:generate": "vite-node -c eval/vite.config.ts eval/src/generate.ts --",
     "eval:parse": "vite-node -c eval/vite.config.ts eval/src/parse.ts --",
-    "eval:score": "vite-node -c eval/vite.config.ts eval/src/score.ts --"
+    "eval:score": "vite-node -c eval/vite.config.ts eval/src/score.ts --",
+    "eval:label": "vite-node -c eval/vite.config.ts eval/src/label.ts --"
   },
   "dependencies": {
     "@azure/msal-browser": "^4.13.0",
