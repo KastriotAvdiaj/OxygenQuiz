@@ -93,12 +93,26 @@ export const SAMPLING = {
 } as const;
 
 /**
- * Milliseconds between generations. The Groq free tier is ~250 requests/day and 8k tokens per
- * minute, and a 10-question reply is a sizeable chunk of that minute — a run that fires 12 of
- * them back to back gets a 413 with `rate_limit_exceeded`, which the app deliberately does not
- * retry.
+ * Minimum milliseconds between generations — a floor, not the real pacing. `TPM_LIMIT` below
+ * does the actual work.
+ *
+ * This was 8000 and that was arithmetic done badly: the free tier's ceiling is 8,000 tokens per
+ * minute, and one Albanian generation costs about 2,700 (prompt plus reply), so spacing calls 8s
+ * apart asks for roughly 20,000 tokens a minute. It survived six English topics and failed on
+ * the twelfth.
  */
-export const THROTTLE_MS = Number(env.EVAL_THROTTLE_MS ?? 8000);
+export const THROTTLE_MS = Number(env.EVAL_THROTTLE_MS ?? 5000);
+
+/**
+ * Tokens per minute the vendor will allow. The harness keeps a rolling 60-second window of what
+ * it has actually spent and waits when the next call would not fit.
+ *
+ * Pacing on measured usage rather than a fixed delay matters because the cost per call is not
+ * constant: Albanian runs about 1.23× English (docs/quiz/ai-quiz-generation-flow.md §2c), so any
+ * single delay is either too slow for English or too fast for Albanian. Groq's free tier is
+ * 8,000; the Dev tier is higher, and raising this is the first thing to change after upgrading.
+ */
+export const TPM_LIMIT = Number(env.EVAL_TPM_LIMIT ?? 8000);
 
 /** Self-signed dev certificate. Set EVAL_INSECURE_TLS=1 when pointing at localhost. */
 export const INSECURE_TLS = env.EVAL_INSECURE_TLS === "1";

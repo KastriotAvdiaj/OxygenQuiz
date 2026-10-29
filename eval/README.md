@@ -42,7 +42,7 @@ has a flawless error rate.
 ## Running it
 
 ```bash
-npm run eval:generate            # ~2 min: 12 topics, throttled for the Groq free tier
+npm run eval:generate            # ~5 min: 12 topics, paced under the vendor's tokens/min ceiling
 npm run eval:parse               # defaults to the run you just made
 #  ... label eval/runs/<run-id>/labels.jsonl ...
 npm run eval:score
@@ -50,6 +50,13 @@ npm run eval:score
 
 `--run-id` is optional everywhere: without it, each command uses the most recently modified run.
 Pass `--run-id=my-name` to `eval:generate` to name one, and to the others to pick an older one.
+
+### If it says it is pausing
+
+That is the pacer. The free tier allows 8,000 tokens a minute and one Albanian generation costs
+about 2,700, so roughly three calls fit in a minute. The harness tracks what it has actually
+spent and waits rather than collecting a 429 — and if one arrives anyway it honours the vendor's
+retry delay instead of dropping the topic. Raise `EVAL_TPM_LIMIT` after upgrading your tier.
 
 ### Rerunning a few topics
 

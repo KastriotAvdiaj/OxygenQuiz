@@ -26,6 +26,7 @@ import {
   RUNS_ROOT,
   SAMPLING,
   THROTTLE_MS,
+  TPM_LIMIT,
   TOPICS_FILE,
   VENDOR,
   requireEnv,
@@ -205,7 +206,7 @@ interface ModelReply {
   outputTokens: number;
 }
 
-async function callModel(prompt: string): Promise<ModelReply> {
+async function callModel(prompt: string, attempt = 1): Promise<ModelReply> {
   const res = await fetchWithRetry(`${VENDOR.baseUrl.replace(/\/$/, "")}/chat/completions`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${VENDOR.apiKey}` },
@@ -220,14 +221,23 @@ async function callModel(prompt: string): Promise<ModelReply> {
       stream: false,
     }),
   }, "model");
+
+  // A 429 is the vendor saying "later", not "no". It carries the wait, so take it: losing a
+  // topic to a limit that clears in four seconds is throwing away a measurement for nothing.
+  if (res.status === 429 && attempt < 3) {
+    const body = await res.text();
+    const header = Number(res.headers.get("retry-after"));
+    const fromBody = Number(/try again in ([0-9.]+)s/i.exec(body)?.[1]);
+    const waitSeconds = [header, fromBody].find((n) => Number.isFinite(n) && n > 0) ?? 20;
+    const ms = Math.ceil(waitSeconds * 1000) + 1000;
+    console.warn(`      rate limited — waiting ${(ms / 1000).toFixed(1)}s and retrying (attempt ${attempt + 1}/3)`);
+    await sleep(ms);
+    return callModel(prompt, attempt + 1);
+  }
+
   if (!res.ok) {
-    // The free tier's tokens-per-minute ceiling is the likeliest failure on a 12-topic run, and
-    // it answers with a Retry-After the caller can act on. Say the number rather than leave
-    // someone guessing at EVAL_THROTTLE_MS.
     const retryAfter = res.headers.get("retry-after");
-    const hint = retryAfter
-      ? ` — vendor says retry after ${retryAfter}s; set EVAL_THROTTLE_MS above that`
-      : "";
+    const hint = retryAfter ? ` — vendor asked for ${retryAfter}s` : "";
     throw new Error(`Model call returned ${res.status}${hint}: ${(await res.text()).slice(0, 400)}`);
   }
   const body = (await res.json()) as {
@@ -242,6 +252,47 @@ async function callModel(prompt: string): Promise<ModelReply> {
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Keeps the run inside the vendor's tokens-per-minute ceiling.
+ *
+ * A fixed delay cannot do this. Cost per call varies by about a quarter between languages, and
+ * the vendor's window is rolling, so the only honest way to pace is to remember what was
+ * actually spent and wait until enough of it has aged out.
+ *
+ * The estimate for the *next* call is the largest seen so far, because being wrong in the other
+ * direction costs a 429 and a lost topic.
+ */
+class TokenPacer {
+  private readonly spent: { at: number; tokens: number }[] = [];
+  private largest = 3000; // Before anything is measured: a touch above a long Albanian reply.
+
+  constructor(private readonly limitPerMinute: number) {}
+
+  record(tokens: number): void {
+    this.spent.push({ at: Date.now(), tokens });
+    if (tokens > this.largest) this.largest = tokens;
+  }
+
+  /** Waits, if the next call would not fit in the window. Returns how long it waited. */
+  async waitForRoom(): Promise<number> {
+    const windowMs = 60_000;
+    let waited = 0;
+    for (;;) {
+      const cutoff = Date.now() - windowMs;
+      while (this.spent.length > 0 && this.spent[0].at < cutoff) this.spent.shift();
+
+      const used = this.spent.reduce((sum, e) => sum + e.tokens, 0);
+      if (used + this.largest <= this.limitPerMinute || this.spent.length === 0) return waited;
+
+      // Wait until the oldest entry leaves the window, plus a small margin for clock skew.
+      const ms = this.spent[0].at + windowMs - Date.now() + 250;
+      if (ms <= 0) continue;
+      await sleep(ms);
+      waited += ms;
+    }
+  }
+}
 
 async function main(): Promise<void> {
   requireEnv();
@@ -276,17 +327,23 @@ async function main(): Promise<void> {
   console.log(`run        ${runId}`);
   console.log(`model      ${VENDOR.model} @ temperature ${SAMPLING.temperature}, seed ${SAMPLING.seed}`);
   console.log(`language   ${languageMode}`);
-  console.log(`throttle   ${THROTTLE_MS}ms between topics`);
+  console.log(`pacing     ${TPM_LIMIT} tokens/min ceiling, ${THROTTLE_MS}ms floor between topics`);
   console.log(`topics     ${topics.length}${only.length > 0 ? ` (filtered from ${file.topics.length})` : ""}\n`);
 
   const failures: { id: string; error: string }[] = [];
+  const pacer = new TokenPacer(TPM_LIMIT);
 
   for (const [i, topic] of topics.entries()) {
     const label = `[${i + 1}/${topics.length}] ${topic.id}`;
     try {
       const request = buildRequest(topic, file.defaults, languageMode);
       const prompt = await fetchPrompt(token, request);
+
+      const waited = await pacer.waitForRoom();
+      if (waited > 0) console.log(`      paused ${(waited / 1000).toFixed(1)}s to stay under ${TPM_LIMIT} tokens/min`);
+
       const reply = await callModel(prompt);
+      pacer.record(reply.inputTokens + reply.outputTokens);
 
       await fs.writeFile(
         path.join(runDir, "raw", `${topic.id}.json`),
