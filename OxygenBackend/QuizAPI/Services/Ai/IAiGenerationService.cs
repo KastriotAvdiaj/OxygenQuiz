@@ -34,5 +34,12 @@ namespace QuizAPI.Services.Ai
         /// rather than let someone press it into a 503.
         /// </summary>
         Task<bool> IsAvailableAsync(CancellationToken ct = default);
+
+        /// <summary>
+        /// <see cref="IsAvailableAsync"/>, and the configured model is allowed to write from a
+        /// user's own material (<c>AiVendorOptions.AllowsSourceMode</c>). False means a Source-mode
+        /// generation or an upload would be refused, so the UI shows the option as not yet available.
+        /// </summary>
+        Task<bool> IsSourceModeAvailableAsync(CancellationToken ct = default);
     }
 }

@@ -23,26 +23,27 @@ import {
 import { LiftedButton } from "@/common/LiftedButton";
 import { ModeCard } from "@/pages/Quiz/components/mode-card";
 import { useFormatAvailable } from "../format-access";
+import { useAiQuota } from "../api/generate-ai-quiz";
+import { useUser } from "@/lib/Auth";
 
 /**
- * Whether "from my material" can be picked yet.
+ * Whether "from my material" can be picked — the server's call, not a constant here.
  *
- * The server already accepts pasted `sourceText`, but the mode users actually asked for is
- * *upload a file* — slice 2.3 in docs/quiz/ai-quiz-generation-flow.md. Until that lands the
- * card renders disabled and says "Coming soon": showing it settles the shape of the choice
- * now, so enabling it later doesn't move the other option under anyone's cursor.
+ * It opens when the configured model is strong enough to write from someone's own document
+ * (`AllowsSourceMode` on the server's vendor entry; docs/quiz/ai-quiz-generation-flow.md,
+ * "Source mode"), so it can change with a deploy and no frontend release. `GET /quiz/ai-quota`
+ * carries it as `sourceModeEnabled`.
  *
- * Flipping this to `true` takes two steps, and they only work together:
- *   1. this constant,
- *   2. register `quizzes/create-quiz/ai/material` (and the `/my-dashboard` twin) in
- *      `routes/Router.tsx` — `useAiQuizDraft` already reads the mode off that segment, and
- *      the wizard already renders whichever field that mode asks for.
- *
- * Nothing else. In particular the card already navigates to `aiMaterialPath`, so flipping
- * the flag can't leave it pointing somewhere plausible-but-wrong — the failure mode that
- * makes a feature flag worse than no flag at all.
+ * Asked only once the dialog reaches the step that shows the card, and only for a signed-in
+ * user: the landing page opens this dialog for visitors too, and the endpoint answers them 401.
+ * Until the answer arrives the card reads "Coming soon", which is also what it says when the
+ * server can't be asked — the safe reading of "don't know".
  */
-export const AI_MATERIAL_MODE_ENABLED = false;
+const useMaterialModeAvailable = (askNow: boolean): boolean => {
+  const user = useUser();
+  const quota = useAiQuota({ enabled: askNow && Boolean(user.data) });
+  return quota.data?.sourceModeEnabled === true;
+};
 
 /**
  * The steps, one question each:
@@ -65,12 +66,8 @@ export interface CreateQuizMethodDialogProps {
   /** The generate-for-me wizard in topic mode, e.g. `/dashboard/quizzes/create-quiz/ai/topic`. */
   aiTopicPath: string;
   /**
-   * The same wizard in source mode, e.g. `/dashboard/quizzes/create-quiz/ai/material`.
-   *
-   * Passed even though the route isn't registered yet and the card is disabled: the point of
-   * wiring it now is that turning `AI_MATERIAL_MODE_ENABLED` on is a one-line change with
-   * nothing left to remember. A card that navigates somewhere wrong the day it goes live is
-   * exactly what a disabled placeholder is supposed to prevent.
+   * The same wizard in source mode, e.g. `/dashboard/quizzes/create-quiz/ai/material`. The
+   * card is disabled until the server allows the mode (`useMaterialModeAvailable`).
    */
   aiMaterialPath: string;
   /**
@@ -147,6 +144,7 @@ export const CreateQuizMethodDialog = ({
   const firstStep: Step = showAssociations ? "format" : "method";
 
   const [step, setStep] = useState<Step>(initialStep ?? firstStep);
+  const materialAvailable = useMaterialModeAvailable(step === "aiSource");
   // The card being left for the next step (it and its sibling are animating out), if any.
   const [leaving, setLeaving] = useState<string | null>(null);
   // Where the next step's cards pop out from; null for Back, which just fades in.
@@ -408,12 +406,12 @@ export const CreateQuizMethodDialog = ({
                   icon={FileText}
                   title="From my material"
                   description="Build questions out of your own notes, article or transcript."
-                  meta="Coming soon"
-                  metaIcon={Clock}
+                  meta={materialAvailable ? "Uses one daily generation" : "Coming soon"}
+                  metaIcon={materialAvailable ? Zap : Clock}
                   accent="foreground"
                   size="compact"
                   entrance={false}
-                  disabled={!AI_MATERIAL_MODE_ENABLED}
+                  disabled={!materialAvailable}
                   onSelect={() => navigate(aiMaterialPath)}
                 />,
               )}

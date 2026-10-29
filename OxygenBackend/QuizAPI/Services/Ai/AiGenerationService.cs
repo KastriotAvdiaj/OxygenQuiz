@@ -80,6 +80,14 @@ namespace QuizAPI.Services.Ai
         public async Task<bool> IsAvailableAsync(CancellationToken ct = default) =>
             _options.Enabled && !await _quota.IsOverBudgetAsync(ct);
 
+        /// <summary>
+        /// <see cref="IsAvailableAsync"/> and the vendor allowing Source mode. Mirrors the
+        /// Source-mode gate in <see cref="GenerateAsync"/>, the same way the method above mirrors
+        /// the other two.
+        /// </summary>
+        public async Task<bool> IsSourceModeAvailableAsync(CancellationToken ct = default) =>
+            _options.SourceModeEnabled && await IsAvailableAsync(ct);
+
         public async Task<AiGenerationOutcome> GenerateAsync(
             Guid userId, AiGenerationRequest request, CancellationToken ct = default)
         {
@@ -90,6 +98,13 @@ namespace QuizAPI.Services.Ai
                 return AiGenerationOutcome.Fail(
                     AiErrorCodes.FeatureDisabled,
                     "AI generation is turned off right now. You can still create a quiz by copying the prompt into your own AI.");
+
+            // Mirrored by IsSourceModeAvailableAsync. A per-model decision, so it is checked before
+            // anything per-user: no amount of quota makes a weak model good at this.
+            if (request.Mode == AiGenerationMode.Source && !_options.SourceModeEnabled)
+                return AiGenerationOutcome.Fail(
+                    AiErrorCodes.FeatureDisabled,
+                    "Creating a quiz from your own material isn't available yet. You can create one from a topic instead.");
 
             var user = await _users.GetByIdAsync(userId, tracked: false, ct);
             if (user is null)
@@ -208,7 +223,7 @@ namespace QuizAPI.Services.Ai
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
 
-            return request with
+            var normalised = request with
             {
                 Topic = Truncate(request.Topic?.Trim(), _options.MaxTopicChars),
                 SourceText = Truncate(request.SourceText?.Trim(), _options.MaxSourceChars),
@@ -220,6 +235,43 @@ namespace QuizAPI.Services.Ai
                 LanguageNames = CleanNames(request.LanguageNames),
                 CategoryNames = CleanNames(request.CategoryNames),
             };
+
+            return normalised.Mode == AiGenerationMode.Source
+                ? PinToSourceLanguage(normalised)
+                : normalised;
+        }
+
+        /// <summary>
+        /// Source mode writes in the material's own language, always. Any language the caller
+        /// named is dropped, and the vocabulary the model may pick from shrinks to the one the
+        /// material is in — so the prompt still asks for <c>"language"</c> and the browser reads
+        /// it back through <c>extractQuizSuggestions</c>, exactly as in Topic mode, but there is
+        /// only one right answer to give.
+        ///
+        /// <para>When the material is in neither supported language, or the caller's vocabulary
+        /// lacks the detected one, this changes nothing and <see cref="ValidateContent"/> refuses
+        /// the request. The copy-paste prompt (<see cref="BuildPrompt"/>) goes through here too,
+        /// so it asks for the same thing.</para>
+        /// </summary>
+        private static AiGenerationRequest PinToSourceLanguage(AiGenerationRequest r)
+        {
+            var language = MatchSourceLanguage(r);
+            return language is null
+                ? r
+                : r with { LanguageName = null, LanguageNames = new[] { language } };
+        }
+
+        /// <summary>
+        /// The caller's own spelling of the material's language, or null when it is unsupported
+        /// or the caller did not offer it. The caller's spelling, because that is the name the
+        /// browser resolves back to a <c>QuestionLanguages</c> row.
+        /// </summary>
+        private static string? MatchSourceLanguage(AiGenerationRequest r)
+        {
+            var detected = SourceLanguageDetector.Detect(r.SourceText);
+            return detected is null
+                ? null
+                : r.LanguageNames.FirstOrDefault(n => string.Equals(n, detected, StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
@@ -275,6 +327,11 @@ namespace QuizAPI.Services.Ai
                 AiGenerationMode.Source when (r.SourceText?.Trim().Length ?? 0) < 40 =>
                     AiGenerationOutcome.Fail(AiErrorCodes.EmptySource, "Add some source material for the AI to work from."),
 
+                // Normalise already pinned the vocabulary to the detected language; a miss here
+                // means there was nothing to pin to. Free to refuse — no quota is reserved yet.
+                AiGenerationMode.Source when MatchSourceLanguage(r) is null =>
+                    AiGenerationOutcome.Fail(AiErrorCodes.UnsupportedLanguage, UnsupportedLanguageMessage),
+
                 _ => null
             };
         }
@@ -303,6 +360,10 @@ namespace QuizAPI.Services.Ai
 
             return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(material))).ToLowerInvariant();
         }
+
+        /// <summary>Shared with the upload endpoint, so both say the same thing.</summary>
+        public const string UnsupportedLanguageMessage =
+            "Your material needs to be in English or Albanian. The questions are written in the same language as the material.";
 
         private static string? Truncate(string? value, int max) =>
             value is null ? null : value.Length <= max ? value : value[..max];

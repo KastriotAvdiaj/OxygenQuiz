@@ -8,10 +8,11 @@ Update this file in the same commit as the behaviour it describes. A gap that ge
 out of §9; a gap discovered while implementing gets added to it, even if it isn't fixed yet —
 especially then.
 
-Status: **slices 2.0 and 2.1, merged to `main`.** Topic and source-*text* modes,
-the one-box wizard, quota, spend caps, kill switch, and a single server-owned prompt shared with
-copy-paste. **Not yet: streaming progress (2.2) and file upload (2.3)** — "source" today means
-pasted text, not a PDF. Last updated: 2026-08-22
+Status: **slices 2.0, 2.1 and 2.3.** Topic and Source modes, the one-box wizard, quota, spend
+caps, kill switch, and a single server-owned prompt shared with copy-paste. Source mode takes
+pasted text or an uploaded PDF, Word or text file (§2d) — **built, and closed on the current
+model** until a vendor entry allows it. **Not yet: streaming progress (2.2).** Last updated:
+2026-10-29
 
 ---
 
@@ -119,6 +120,8 @@ worst case is a wrong-but-real category on a Draft quiz that a human is looking 
 | Own-AI path | `AI-Quiz/own-ai-quiz.tsx` + `own-ai-quiz-view.tsx` | Copy the prompt out, paste the reply back. Its own route — [`ai-quiz-two-paths.md`](./ai-quiz-two-paths.md). |
 | View pieces | `AI-Quiz/components/*.tsx` | One block each: `generation-input`, `advanced-options`, `quota-note`, `generate-error-panel`, `confirm-details-card`, `import-note`, `question-type-options`, `question-count-stepper`. |
 | Limits | `AI-Quiz/prompt.ts` | Numbers only. The prompt text lives in C# (slice 2.1). |
+| Source files | `Services/Ai/SourceFileReader.cs` | Upload → plain text: PDF, .docx, .txt, .md. Size and character limits, whitespace normalisation, a message per kind of unreadable file. §2d. |
+| Source language | `Services/Ai/SourceLanguageDetector.cs` | English, Albanian or neither, from function-word counts. Decides the questions' language and whether Source mode runs at all. §2d. |
 | Quality checks | `AI-Quiz/question-checks.ts` | Pure checks the parser runs on every question, both paths: duplicate options, contradictory key, giveaway, repeat, source quote not in the material. Plan: [`ai-question-accuracy-plan.md`](./ai-question-accuracy-plan.md). |
 
 ---
@@ -148,6 +151,7 @@ environment selects one with a single value:
 | `Ai:Model` | Which model there. Recorded on every usage row. **Not** shown in the wizard — the model note was removed (see `quota-note.tsx`); the `ai-quota` endpoint still returns it, nothing renders it. |
 | `Ai:InputCostPerMillionUsd` / `Ai:OutputCostPerMillionUsd` | What it costs. **Change these in the same edit** — see §9.14. |
 | `Ai:ReasoningEffort` | How long a *reasoning* model may think. Unset for everything else, and unset means the field is never sent. See §2b. |
+| `Ai:Vendors:<name>:AllowsSourceMode` | Whether this model may write from a user's own material. Off unless the entry says so, and off on `groq`. §2d. |
 
 Two things follow from that split, and both were bugs waiting to happen before it:
 
@@ -268,6 +272,57 @@ Three consequences, none of them urgent today:
 The third is the only one worth acting on, and only when prices are set. A per-language allowance
 would be the wrong fix — it would charge people for the language they speak. Pricing the
 allowance against the more expensive language is the obvious alternative.
+
+## 2d. Source mode
+
+A quiz from the user's own material instead of a topic. Route `…/ai/material`, the same wizard
+as Topic mode; the method dialog's "From my material" card leads there.
+Decision record: [ADR 0026](../adr/0026-source-mode-writes-in-the-materials-language-and-opens-per-model.md).
+
+**Closed until the model is good enough.** `AllowsSourceMode` on the selected `Ai:Vendors` entry
+opens it; nothing else can. `groq` leaves it off: the Phase 0 eval measured that model at 24.6%
+wrong in Albanian ([`ai-question-accuracy-plan.md`](./ai-question-accuracy-plan.md)), and a full
+40,000-character source does not fit the free tier's per-minute token ceiling (§2b). The flag is
+enforced three times, all reading `AiOptions.SourceModeEnabled`:
+
+| Where | What it does when closed |
+|---|---|
+| `AiGenerationService.GenerateAsync` | `FeatureDisabled`, before the user lookup — no quota touched. |
+| `POST /quiz/ai-source` | 503 `FeatureDisabled`; the file is not read. |
+| `GET /quiz/ai-quota` → `sourceModeEnabled` | The dialog's card says "Coming soon"; the wizard, reached by URL, disables Generate and the upload and offers the topic wizard. |
+
+The offline stub turns it on, so the flow runs locally with no key.
+
+**Material in, text out.** An upload goes to `POST /quiz/ai-source`, which reads it on the
+server (`SourceFileReader`) and returns the text. The wizard puts that text in the material
+box, where the user can see and trim what was read — a PDF can come out with a header on every
+page — and then generates from it as if it had been pasted. One string, produced once, is what
+the model reads, what `parse-ai-output.ts` checks `sourceQuote` against, and what the user saw.
+
+| Limit | Value | When exceeded |
+|---|---|---|
+| `Ai:MaxSourceFileBytes` | 10 MB | `SourceTooLarge`, file unread. A 12 MB request ceiling sits above it. |
+| `Ai:MaxSourceChars` | 40,000 | Uploads are cut at a word and say so; the box stops typing at the limit and counts towards it. The server cuts anything longer either way. |
+| Minimum | 40 characters | `EmptySource` for a paste; `UnreadableSource` for a file — a PDF that yields nothing is almost always a scan. |
+
+PDFs are read in content order (`ContentOrderTextExtractor`), not with `page.Text`, which glues
+letters together wherever a PDF positions words instead of spacing them — after which no quote
+matches and every question is dropped as invented. Encrypted, corrupt and unknown-format files
+each get their own message naming the fix.
+
+**The questions are written in the material's language — English or Albanian, nothing else.**
+`SourceLanguageDetector` counts the commonest function words of ten languages and accepts the
+text only when English or Albanian clearly wins (at least 12% of words, and 1.5× the runner-up).
+Lists for languages we refuse are there because overlap is the failure: with only two lists,
+Italian passed as Albanian ("e", "i", "per", "se"). Typed-without-diacritics Albanian
+("eshte", "nje") counts. Measured against the Phase 0 run, all twelve topics come back right,
+and single ~25-word questions 113 of 116.
+
+On a match, `AiGenerationService` drops any language the caller named and shrinks the
+`languageNames` vocabulary to the detected one. The prompt still asks for `"language"`, so the
+browser reads it back through `extractQuizSuggestions` as in Topic mode — there is just one right
+answer. On no match: `UnsupportedLanguage`, before quota. Uploads are checked when read, so the
+user hears it at once; pasted text when Generate is pressed, which is equally free.
 
 ## 3. One request, end to end
 
@@ -550,9 +605,11 @@ The code set is closed. Adding one means touching all four columns of this table
 | `EmailNotVerified` | `user.EmailConfirmed == false` | 403 | untouched | A prompt to verify, with a resend link. |
 | `QuotaExceeded` | Daily cap spent | 429 + `Retry-After` | untouched | "All N used for today", the reset time, and the copy-paste fallback. |
 | `InvalidRequest` | Unknown mode, no question types, no difficulties, no language | 400 | untouched | Inline field error. Mostly unreachable — the client validates first. |
-| `EmptySource` | No topic (topic mode), or under 40 chars of source (source mode) | 400 | untouched | "Tell the AI what to write about" / "add some material". |
-| `SourceTooLarge` | *Unused in 2.0* — oversized input is truncated, not rejected | 400 | — | — |
-| `UnreadableSource` | *Unused in 2.0* — arrives with file extraction in 2.3 | 400 | — | — |
+| `FeatureDisabled` | Source mode while the vendor entry doesn't allow it (§2d) — generate and upload both | 503 | untouched | "Creating a quiz from your own material isn't available yet." |
+| `EmptySource` | No topic (topic mode), or under 40 chars of source (source mode), or an upload with no file | 400 | untouched | "Tell the AI what to write about" / "add some material". |
+| `SourceTooLarge` | An upload over `Ai:MaxSourceFileBytes`. Long *text* is cut, not refused. | 400 | untouched | The size limit, and "paste the part you want". |
+| `UnreadableSource` | Upload: unknown format, encrypted PDF, corrupt file, or no text (a scan) | 400 | untouched | One message per case, each naming the fix. |
+| `UnsupportedLanguage` | Source material not in English or Albanian (§2d) — on upload, or at generate for a paste | 400 | untouched | "Your material needs to be in English or Albanian." + "Nothing was used". |
 | `ProviderUnavailable` | 429/5xx/transport after one retry | 502 | released | "Unavailable right now, try again in a moment." |
 | `ProviderUnavailable` | Upstream **rate limit** — 429, or Groq's 413 + `rate_limit_exceeded` | 502 | released | "Over its rate limit. Wait a minute and try again, or ask for fewer questions." Same code, different message: the client's options are identical, the user's remedy is not (§2b). |
 | `ProviderTimeout` | Over `Ai:TimeoutSeconds`, twice | 502 | released | "Took too long — try again." |
@@ -615,7 +672,7 @@ copy-paste mode will call once slice 2.1 retires the duplicate in `prompt.ts`.
 
 ### `GET /api/quiz/ai-quota`
 
-`{ "enabled": true, "limit": 2, "used": 1, "remaining": 1, "resetsAt": "...", "model": "openai/gpt-oss-120b" }`
+`{ "enabled": true, "limit": 2, "used": 1, "remaining": 1, "resetsAt": "...", "model": "openai/gpt-oss-120b", "sourceModeEnabled": false }`
 — so the UI can show "1 of 2 left today" (`Ai:DefaultDailyQuota` ships as 2), name what will write the questions, and stop offering
 the Generate button when it could only fail.
 
@@ -631,6 +688,29 @@ once on mount, costs nothing, and is the only place that knows whether a generat
 at all; a second endpoint for one string would be two round trips to say less. Nothing in the
 client branches on the value — it is display-only, and which vendor we use stays a server
 decision.
+
+---
+
+`sourceModeEnabled` is `enabled` **and** the vendor entry's `AllowsSourceMode` (§2d). The method
+dialog asks for it only on its AI-source step and only for a signed-in user — the landing page
+opens that dialog for visitors too, and this endpoint answers them 401.
+
+### `POST /api/quiz/ai-source`
+
+`multipart/form-data` with one `file`. Reads it; creates nothing, spends no quota, calls no
+model. On the `ai` rate-limit policy, unlike the other free endpoints — parsing an untrusted PDF
+is real CPU, and an upload is a step towards a generation.
+
+```jsonc
+// 200
+{ "text": "…the extracted text…", "truncated": false, "language": "Albanian" }
+
+// non-200: the same error shape as ai-generate
+{ "code": "UnreadableSource", "message": "We couldn't find any text in that PDF. …" }
+```
+
+The browser puts `text` in the material box and later sends it back, unchanged unless the user
+edits it, as `sourceText`.
 
 ---
 
@@ -935,3 +1015,13 @@ separate row with no id in common. So after a model change, "which one wrote thi
 for the *ledger* but not for a *quiz*. Closing it means a column on `Quiz` and a migration, which
 was deliberately out of scope for the rename; do it if the answer ever matters for a support
 question rather than curiosity.
+
+**16. Source mode has never been measured.** The eval harness (`eval/`) has twelve topics and no
+source material, so nothing says how often the model gets a question wrong when it has the text
+in front of it — the number that should decide whether any vendor entry sets `AllowsSourceMode`.
+Add a handful of source topics (one per format, both languages, one long enough to be cut) and
+run them against the candidate model before opening the mode.
+
+**17. The own-AI path has no material mode.** `…/ai/own` is topic-only, so the wizard in Source
+mode doesn't offer it as the way out — it offers the topic wizard instead. Nothing stops the own
+path taking `sourceText`; the prompt already supports it. Worth doing when Source mode opens.

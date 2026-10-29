@@ -1,7 +1,8 @@
 # Plan: Accurate AI Question Generation
 
 Status: **Phases 0, 1 and 1b implemented** (eval harness, deterministic checks, prompt hardening,
-question explanations), and the **baseline is measured** (Phase 0, below). Phases 2–5 proposed.
+question explanations), the **baseline is measured** (Phase 0, below), and **2a is built but
+closed** on the current model. The rest of Phase 2, and 3–5, proposed.
 Transient plan doc — fold what ships into [`ai-quiz-generation-flow.md`](./ai-quiz-generation-flow.md)
 and [`ai-quiz-architecture.md`](./ai-quiz-architecture.md), then delete this file.
 Last updated: 2026-10-29
@@ -175,6 +176,8 @@ after-run is not credited to one change when it carries several:
 
 - 2026-10-29: the quality rule asks for real, correctly spelled distractors of the same kind as
   the answer (`AiPromptBuilder`). Too small to measure alone (about 2 affected rows of 116).
+- 2026-10-29: Source mode (Phase 2a) exists but cannot affect a Topic-mode run — the eval only
+  runs topics, and the mode is closed on the baseline's model.
 
 ### Phase 1 — Deterministic checks ✅ implemented
 
@@ -201,7 +204,12 @@ states the answer: the session DTO no longer carries the answer key mid-quiz
 
 ### Phase 2 — Grounding
 
-- **2a.** Register `/ai/material` — Source mode already works server-side. Cheapest grounded path.
+- **2a. ✅ Built 2026-10-29, closed on the current model.** `/ai/material` takes pasted text or
+  an uploaded PDF, Word or text file; questions are written in the material's language, English
+  or Albanian only. Opens when a vendor entry sets `AllowsSourceMode` — not `groq`, which the
+  baseline above rules out. How it works: [`ai-quiz-generation-flow.md`](./ai-quiz-generation-flow.md)
+  §2d; why: [ADR 0026](../adr/0026-source-mode-writes-in-the-materials-language-and-opens-per-model.md).
+  Measure it before opening it (flow doc §9.16).
 - **2b.** `WikipediaSourceProvider` for Topic mode. Search API → first non-disambiguation hit →
   plain-text extract, from `sq.wikipedia.org` when the quiz language is Albanian, falling back to
   English. The server then builds the **Source-mode** prompt from it.

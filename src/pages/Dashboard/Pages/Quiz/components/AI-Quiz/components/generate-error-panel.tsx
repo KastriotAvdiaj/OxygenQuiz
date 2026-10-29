@@ -30,6 +30,11 @@ export const GenerateErrorPanel = ({ error }: { error: AiGenerateError }) => {
           Nothing was used from your daily allowance — press Generate to try again.
         </p>
       )}
+      {error.code === "UnsupportedLanguage" && (
+        <p className="text-destructive/80 text-xs mt-1 pl-6">
+          Nothing was used from your daily allowance.
+        </p>
+      )}
       {error.code === "QuotaExceeded" && error.retryAfter && (
         <p className="text-destructive/80 text-xs mt-1 pl-6">
           Resets {new Date(error.retryAfter).toLocaleString()}.

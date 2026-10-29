@@ -5,8 +5,10 @@ import { useNavigationGuard } from "@/hooks/use-navigation-guard";
 import {
   useGenerateAiQuiz,
   useAiQuota,
+  useReadAiSource,
   AiGenerateError,
 } from "../../api/generate-ai-quiz";
+import type { SourceFileInfo } from "./components/generation-input";
 
 import { AiQuizWizardView } from "./ai-quiz-wizard-view";
 import { useAiQuizDraft } from "./use-ai-quiz-draft";
@@ -33,6 +35,36 @@ export const AiQuizWizard = () => {
 
   const generateMutation = useGenerateAiQuiz();
   const quotaQuery = useAiQuota();
+  const readSource = useReadAiSource();
+
+  /**
+   * Which file the material box's text came from. Wizard-only state: the own-AI page has no
+   * material mode, and nothing about the file outlives this screen — the text does, in the
+   * draft, and that is all generation needs.
+   */
+  const [sourceFile, setSourceFile] = useState<SourceFileInfo | null>(null);
+  const [uploadError, setUploadError] = useState<string | undefined>();
+
+  /**
+   * Reads the file on the server and puts its text in the box. Replaces what was there: one
+   * source per quiz. A refused file leaves the box as it was, so a bad pick costs nothing.
+   */
+  const handleUploadFile = (file: File) => {
+    setUploadError(undefined);
+    readSource.mutate(file, {
+      onSuccess: (result) => {
+        draft.setSourceData(result.text);
+        setSourceFile({ name: file.name, language: result.language, truncated: result.truncated });
+        // A generation error about the *previous* text no longer describes what's in the box.
+        setGenerateError(null);
+      },
+      onError: (error) => {
+        setUploadError(
+          error instanceof AiGenerateError ? error.message : "That file couldn't be read.",
+        );
+      },
+    });
+  };
 
   /**
    * The request is in flight and the page owns it — there is no job id to come back to, so
@@ -95,6 +127,11 @@ export const AiQuizWizard = () => {
       onTopicChange={draft.setTopic}
       sourceData={draft.sourceData}
       onSourceDataChange={draft.setSourceData}
+      onUploadFile={handleUploadFile}
+      isReadingFile={readSource.isPending}
+      sourceFile={sourceFile}
+      uploadError={uploadError}
+      topicPath={draft.paths.generate}
       onCategoryIdChange={draft.setCategoryId}
       onLanguageIdChange={draft.setLanguageId}
       questionCount={draft.questionCount}

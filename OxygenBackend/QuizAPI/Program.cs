@@ -347,6 +347,7 @@ builder.Services.AddScoped<IAiGenerationUsageRepository, AiGenerationUsageReposi
 builder.Services.AddScoped<QuizAPI.Services.Ai.IAiQuotaPolicy, QuizAPI.Services.Ai.ConfigAiQuotaPolicy>();
 builder.Services.AddScoped<QuizAPI.Services.Ai.IAiQuotaService, QuizAPI.Services.Ai.AiQuotaService>();
 builder.Services.AddScoped<QuizAPI.Services.Ai.IAiGenerationService, QuizAPI.Services.Ai.AiGenerationService>();
+builder.Services.AddScoped<QuizAPI.Services.Ai.ISourceFileReader, QuizAPI.Services.Ai.SourceFileReader>();
 builder.Services.AddScoped<QuizAPI.Services.Ai.AiReservationSweeper>();
 builder.Services.AddScoped<QuizAPI.Services.AbandonedSessionSweeper>();
 builder.Services.AddScoped<QuizAPI.Services.AccountAnonymisationSweeper>();

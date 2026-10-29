@@ -199,11 +199,31 @@ namespace QuizAPI.Services.Ai
         /// </summary>
         public int ReservationTimeoutMinutes { get; set; } = 10;
 
+        /// <summary>
+        /// Whether Source mode (generate from the user's own material) is offered. <b>Resolved,
+        /// not configured</b>: <see cref="AiConfigurationResolver"/> copies it from the selected
+        /// vendor's <see cref="AiVendorOptions.AllowsSourceMode"/>, and turns it on for the
+        /// offline stub so the flow can be exercised locally. Meaningless while
+        /// <see cref="Enabled"/> is false — nothing is offered then.
+        /// </summary>
+        public bool SourceModeEnabled { get; set; }
+
         // ── Input caps ──
 
         public int MaxQuestionsPerGeneration { get; set; } = 15;
         public int MaxTopicChars { get; set; } = 200;
+        /// <summary>
+        /// Source mode's text limit, pasted or extracted. Longer material is cut, not refused —
+        /// the wizard says so — because an upload's length is not something the user chose.
+        /// </summary>
         public int MaxSourceChars { get; set; } = 40_000;
+
+        /// <summary>
+        /// Largest file <c>POST /api/quiz/ai-source</c> will open. 10 MB holds a long text-based
+        /// PDF; anything bigger is nearly always scanned images, which have no text to extract.
+        /// The controller's <c>RequestSizeLimit</c> is a fixed ceiling above this.
+        /// </summary>
+        public long MaxSourceFileBytes { get; set; } = 10 * 1024 * 1024;
         public int MaxExtraInstructionChars { get; set; } = 500;
     }
 }

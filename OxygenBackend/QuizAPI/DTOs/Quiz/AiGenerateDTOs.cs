@@ -159,5 +159,29 @@ namespace QuizAPI.DTOs.Quiz
         /// call would be a claim, not information. The client treats null as "say nothing".</para>
         /// </summary>
         public string? Model { get; set; }
+
+        /// <summary>
+        /// Whether "from my material" is offered: <see cref="Enabled"/> and the configured model
+        /// is allowed to write from a user's own material (<c>AiVendorOptions.AllowsSourceMode</c>).
+        /// False shows the option as "Coming soon". The generate and upload endpoints refuse it
+        /// independently — this only stops the UI offering something that would be refused.
+        /// </summary>
+        public bool SourceModeEnabled { get; set; }
+    }
+
+    /// <summary>
+    /// <c>POST /api/quiz/ai-source</c>: an uploaded file, read. The browser shows <see cref="Text"/>
+    /// for review and sends it back unchanged as <c>sourceText</c>, so generation and the quote
+    /// check see exactly what the user saw.
+    /// </summary>
+    public class AiSourceResponse
+    {
+        public string Text { get; set; } = string.Empty;
+
+        /// <summary>The file held more than <c>Ai:MaxSourceChars</c>; only the start was kept.</summary>
+        public bool Truncated { get; set; }
+
+        /// <summary>"English" or "Albanian" — the language the questions will be written in.</summary>
+        public string Language { get; set; } = string.Empty;
     }
 }

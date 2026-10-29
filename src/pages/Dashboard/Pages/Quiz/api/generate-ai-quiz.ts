@@ -25,6 +25,7 @@ export type AiGenerateErrorCode =
   | "EmptySource"
   | "SourceTooLarge"
   | "UnreadableSource"
+  | "UnsupportedLanguage"
   | "ProviderUnavailable"
   | "ProviderTimeout"
   | "ModelOutputInvalid";
@@ -98,6 +99,27 @@ export interface AiQuotaStatus {
    * this value.
    */
   model: string | null;
+  /**
+   * Whether "from my material" is offered: `enabled`, and the configured model is allowed to
+   * write from a user's own material (`AllowsSourceMode` on the server's vendor entry). False
+   * shows that option as "Coming soon". The server refuses Source-mode generations and uploads
+   * on its own — this only stops the UI offering one.
+   */
+  sourceModeEnabled: boolean;
+}
+
+/** `POST /quiz/ai-source`: an uploaded file, read on the server. */
+export interface AiSourceResult {
+  /**
+   * The file's text, whitespace-normalised and cut to `AI_QUESTION_LIMITS.maxSourceChars`.
+   * It goes into the material box as-is and is sent back unchanged as `sourceText`, so the
+   * model, the quote check and the user all see one string.
+   */
+  text: string;
+  /** The file held more than the limit and only its start was kept. */
+  truncated: boolean;
+  /** "English" or "Albanian" — what the questions will be written in. */
+  language: string;
 }
 
 /**
@@ -137,6 +159,8 @@ const AI_TIMEOUTS_MS = {
   prompt: 15_000,
   generate: 120_000,
   quota: 10_000,
+  // Upload plus parsing a long PDF on the server. No model call, but a slow uplink matters.
+  source: 60_000,
 } as const;
 
 interface ServerErrorBody {
@@ -231,6 +255,31 @@ export const getAiPrompt = (data: AiGenerateInput): Promise<{ prompt: string }> 
       throw toAiGenerateError(error);
     });
 
+/**
+ * Reads an uploaded file into text. Creates nothing and spends no generation — the text comes
+ * back for the user to look over, then goes out again with `generateAiQuiz`. Failures carry
+ * the same codes as generation (`UnreadableSource`, `SourceTooLarge`, `UnsupportedLanguage`),
+ * each with a message that names the fix.
+ */
+export const readAiSource = (file: File): Promise<AiSourceResult> => {
+  const body = new FormData();
+  body.append("file", file);
+  return apiService
+    .post<AiSourceResult>("/quiz/ai-source", body, {
+      // As the other uploads do (upload-file.ts): axios fills in the boundary.
+      headers: { "Content-Type": "multipart/form-data" },
+      // Shown beside the upload button instead; the interceptor's toast would be a second copy.
+      skipErrorToast: true,
+      timeout: AI_TIMEOUTS_MS.source,
+    })
+    .catch((error) => {
+      throw toAiGenerateError(error);
+    });
+};
+
+/** No invalidation: reading a file changes nothing on the server. */
+export const useReadAiSource = () => useMutation({ mutationFn: readAiSource });
+
 export const getAiQuota = (): Promise<AiQuotaStatus> =>
   apiService.get<AiQuotaStatus>("/quiz/ai-quota", {
     timeout: AI_TIMEOUTS_MS.quota,
@@ -252,10 +301,13 @@ export const getAiQuota = (): Promise<AiQuotaStatus> =>
  * the path a user needs when the AI service is having a bad day. See
  * docs/development/error-handling.md, "When to opt out".
  */
-export const useAiQuota = () =>
+export const useAiQuota = ({ enabled = true }: { enabled?: boolean } = {}) =>
   useQuery({
     queryKey: ["ai-quota"],
     queryFn: getAiQuota,
+    // `enabled: false` for callers that render where nobody may be signed in — the create-quiz
+    // dialog opens from the landing page — since the endpoint answers 401 to a visitor.
+    enabled,
     retry: false,
     throwOnError: false,
     staleTime: 30_000,

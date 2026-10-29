@@ -18,10 +18,11 @@ export const AI_QUESTION_LIMITS = {
   minTimeLimit: 5,
   maxTimeLimit: 300,
   /**
-   * Soft cap for the copy-paste path — most LLM context windows start truncating well
-   * before this. In-app generation truncates server-side at `Ai:MaxSourceChars` instead.
+   * Source mode's material limit, pasted or uploaded. Mirrors `Ai:MaxSourceChars`, which is
+   * the gate: the server cuts anything longer. The material box stops typing here and counts
+   * towards it, so the cut is never a surprise.
    */
-  sourceWarningLength: 12000,
+  maxSourceChars: 40_000,
   /**
    * Ceiling for in-app generation, mirroring `Ai:MaxQuestionsPerGeneration`. Lower than
    * `maxQuestions` on purpose: one call asking for 30 degrades in quality and risks the

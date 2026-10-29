@@ -6,7 +6,10 @@ namespace QuizAPI.Services.Ai
         /// <summary>Generated from a subject line alone — the model recalls the facts (plan §8).</summary>
         Topic = 0,
 
-        /// <summary>Generated from user-supplied material (pasted text today; files in 2.3).</summary>
+        /// <summary>
+        /// Generated from user-supplied material, pasted or extracted from an uploaded file.
+        /// Offered only when the vendor entry allows it (<see cref="AiOptions.SourceModeEnabled"/>).
+        /// </summary>
         Source = 1,
 
         /// <summary>
@@ -68,7 +71,15 @@ namespace QuizAPI.Services.Ai
         /// <summary>The user gave the model nothing to work from — no topic, or too little source text.</summary>
         public const string EmptySource = "EmptySource";
         public const string SourceTooLarge = "SourceTooLarge";
+
+        /// <summary>An uploaded file whose text could not be read: wrong format, encrypted, or a scan with no text layer.</summary>
         public const string UnreadableSource = "UnreadableSource";
+
+        /// <summary>
+        /// The material is not in a language Source mode writes in — English or Albanian
+        /// (<see cref="SourceLanguageDetector"/>). Refused before quota is touched.
+        /// </summary>
+        public const string UnsupportedLanguage = "UnsupportedLanguage";
         public const string ProviderUnavailable = "ProviderUnavailable";
         public const string ProviderTimeout = "ProviderTimeout";
         public const string ModelOutputInvalid = "ModelOutputInvalid";

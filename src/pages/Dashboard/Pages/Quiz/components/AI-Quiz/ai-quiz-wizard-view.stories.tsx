@@ -190,6 +190,7 @@ const quotaAvailable = {
   remaining: 2,
   resetsAt: "2026-08-10T00:00:00Z",
   model: "deepseek-v4-flash",
+  sourceModeEnabled: true,
 };
 
 // ── Meta ───────────────────────────────────────────────────────────────────────────────
@@ -249,6 +250,7 @@ const meta = {
     parseResult: null,
     onTopicChange: fn(),
     onSourceDataChange: fn(),
+    onUploadFile: fn(),
     onCategoryIdChange: fn(),
     onLanguageIdChange: fn(),
     onQuestionCountChange: fn(),
@@ -388,10 +390,9 @@ export const ValidationOnShortSource: Story = {
 
 // ── Source mode ────────────────────────────────────────────────────────────────────────
 //
-// `/ai/material` is not a registered route yet — the method dialog shows that option as
-// "Soon" (AI_MATERIAL_MODE_ENABLED in create-quiz-method-dialog.tsx). These stories stay:
-// the view renders whichever field its `mode` asks for, and they are the only place the
-// material screen can be reviewed until slice 2.3 registers the route.
+// `/ai/material`: paste, or upload a PDF, Word or text file that the server reads into the
+// box. Open only when the server's vendor entry allows it (`sourceModeEnabled`); see
+// docs/quiz/ai-quiz-generation-flow.md, "Source mode".
 
 export const SourceModeEmpty: Story = {
   args: { mode: "Source" },
@@ -401,13 +402,69 @@ export const SourceModeReady: Story = {
   args: { mode: "Source", sourceData: SOURCE_MATERIAL },
 };
 
-/** Past the soft cap — an amber warning, not a block; the server truncates. */
-export const SourceModeTooLong: Story = {
+/** At the 40,000-character limit: the box stops taking input and the counter turns amber. */
+export const SourceModeAtLimit: Story = {
   args: {
     mode: "Source",
     sourceData: SOURCE_MATERIAL.repeat(
-      Math.ceil(AI_QUESTION_LIMITS.sourceWarningLength / SOURCE_MATERIAL.length) + 1,
+      Math.ceil(AI_QUESTION_LIMITS.maxSourceChars / SOURCE_MATERIAL.length) + 1,
+    ).slice(0, AI_QUESTION_LIMITS.maxSourceChars),
+  },
+};
+
+/** The server is reading an uploaded file; the box and Generate wait for it. */
+export const SourceModeReadingFile: Story = {
+  args: { mode: "Source", isReadingFile: true },
+};
+
+/** An upload read: its text is in the box, and the line under it says where from and in what language. */
+export const SourceModeFromFile: Story = {
+  args: {
+    mode: "Source",
+    sourceData: SOURCE_MATERIAL,
+    sourceFile: { name: "photosynthesis-notes.pdf", language: "English", truncated: false },
+  },
+};
+
+/** A file longer than the limit arrives already cut, and says so. */
+export const SourceModeFileTruncated: Story = {
+  args: {
+    mode: "Source",
+    sourceData: SOURCE_MATERIAL,
+    sourceFile: { name: "biology-textbook.pdf", language: "English", truncated: true },
+  },
+};
+
+/** A refused file leaves the box as it was; the message names the fix. */
+export const SourceModeUploadRefused: Story = {
+  args: {
+    mode: "Source",
+    uploadError:
+      "We couldn't find any text in that PDF. If it's a scan, it holds pictures of text rather than text — paste the text instead.",
+  },
+};
+
+/** Pasted material in another language: refused at Generate, before anything is spent. */
+export const SourceModeUnsupportedLanguage: Story = {
+  args: {
+    mode: "Source",
+    sourceData: SOURCE_MATERIAL,
+    generateError: new AiGenerateError(
+      "UnsupportedLanguage",
+      "Your material needs to be in English or Albanian. The questions are written in the same language as the material.",
     ),
+  },
+};
+
+/**
+ * Reached by URL while the configured model isn't allowed to write from material. No upload,
+ * Generate disabled, and the way out is the topic wizard — the own-AI page is topic-only.
+ */
+export const SourceModeClosed: Story = {
+  args: {
+    mode: "Source",
+    quota: { ...quotaAvailable, sourceModeEnabled: false },
+    topicPath: "/dashboard/quizzes/create-quiz/ai/topic",
   },
 };
 
@@ -457,6 +514,7 @@ export const QuotaUnlimitedForStaff: Story = {
       remaining: null,
       resetsAt: "2026-08-10T00:00:00Z",
       model: "deepseek-v4-flash",
+      sourceModeEnabled: true,
     },
   },
 };

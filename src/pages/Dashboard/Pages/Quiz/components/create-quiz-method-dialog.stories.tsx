@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { fn } from "@storybook/test";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CreateQuizMethodDialog } from "./create-quiz-method-dialog";
 
 /**
@@ -18,6 +19,11 @@ import { CreateQuizMethodDialog } from "./create-quiz-method-dialog";
  * game-mode hub, so the two "pick how you want to do this" screens in the app look like one
  * app. Worth reviewing side by side with `Quiz/GameModeSelection` after any change to either.
  *
+ * QueryClientProvider decorator: the dialog reads the signed-in user (which formats to offer)
+ * and the AI quota (whether "From my material" is open) through React Query, and threw "No
+ * QueryClient set" without one. Nobody is signed in here, so nothing is fetched: Associations
+ * stays hidden and the material card reads "Coming soon".
+ *
  * MemoryRouter decorator: the options navigate with `useNavigate`, which throws outside a
  * router. Same pattern as Not-Found-Content.stories.tsx. Clicking one in a story navigates
  * the in-memory history, so nothing appears to happen — that's expected; the targets are
@@ -27,15 +33,21 @@ import { CreateQuizMethodDialog } from "./create-quiz-method-dialog";
  * Check both themes: the accents read from `--primary-edge`, `--foreground` and a green
  * mix, and the card's depth shadow is what carries them.
  */
+const storyQueryClient = new QueryClient({
+  defaultOptions: { queries: { retry: false } },
+});
+
 const meta = {
   title: "Dashboard/Quiz/CreateQuizMethodDialog",
   component: CreateQuizMethodDialog,
   parameters: { layout: "centered" },
   decorators: [
     (Story) => (
-      <MemoryRouter>
-        <Story />
-      </MemoryRouter>
+      <QueryClientProvider client={storyQueryClient}>
+        <MemoryRouter>
+          <Story />
+        </MemoryRouter>
+      </QueryClientProvider>
     ),
   ],
   args: {

@@ -26,7 +26,10 @@ import { GenerateErrorPanel } from "./components/generate-error-panel";
 import { GeneratingOverlay } from "./components/generating-overlay";
 import { useGenerationWait } from "./components/use-generation-wait";
 import { LeaveGenerationDialog } from "./components/leave-generation-dialog";
-import { GenerationInput } from "./components/generation-input";
+import {
+  GenerationInput,
+  type SourceFileInfo,
+} from "./components/generation-input";
 import { ImportNotices } from "./components/import-notices";
 import { ImportNote } from "./components/import-note";
 import { QuotaNote } from "./components/quota-note";
@@ -66,6 +69,17 @@ export interface AiQuizWizardViewProps {
   onTopicChange: (value: string) => void;
   sourceData: string;
   onSourceDataChange: (value: string) => void;
+  /** Source mode: read an uploaded file into the material box (`POST /quiz/ai-source`). */
+  onUploadFile?: (file: File) => void;
+  isReadingFile?: boolean;
+  /** The file the material box's text came from; null when it was typed or pasted. */
+  sourceFile?: SourceFileInfo | null;
+  uploadError?: string;
+  /**
+   * The topic-mode wizard. Source mode's way out when material mode is unavailable — the
+   * own-AI page is topic-only, so sending someone there with a document in hand loses it.
+   */
+  topicPath?: string;
 
   // ── Advanced. All optional: null category/language means "let the AI suggest". ─
   /**
@@ -171,6 +185,11 @@ export const AiQuizWizardView = ({
   onTopicChange,
   sourceData,
   onSourceDataChange,
+  onUploadFile,
+  isReadingFile = false,
+  sourceFile = null,
+  uploadError,
+  topicPath,
   onCategoryIdChange,
   onLanguageIdChange,
   questionCount,
@@ -253,7 +272,15 @@ export const AiQuizWizardView = ({
    * Generation is unavailable rather than merely having failed, so there's no point
    * offering the button. The fallback opens itself in this state.
    */
+  /**
+   * Material mode is closed until the configured model is strong enough for it
+   * (`AllowsSourceMode` on the server). The method dialog won't offer it then, so this is
+   * someone arriving by URL or a bookmark.
+   */
+  const sourceModeClosed = mode === "Source" && quota?.sourceModeEnabled === false;
+
   const generationBlocked =
+    sourceModeClosed ||
     quota?.enabled === false ||
     generateError?.code === "FeatureDisabled" ||
     generateError?.code === "EmailNotVerified" ||
@@ -452,6 +479,11 @@ export const AiQuizWizardView = ({
                 onTopicChange={onTopicChange}
                 sourceData={sourceData}
                 onSourceDataChange={onSourceDataChange}
+                // No upload while the mode is closed: the server would refuse the file anyway.
+                onUploadFile={sourceModeClosed ? undefined : onUploadFile}
+                isReadingFile={isReadingFile}
+                sourceFile={sourceFile}
+                uploadError={uploadError}
                 disabled={isGenerating}
                 error={
                   showValidation ? (validationMessage ?? undefined) : undefined
@@ -507,30 +539,48 @@ export const AiQuizWizardView = ({
                     not that behaviour: see docs/quiz/ai-quiz-two-paths.md §2. */}
                 {generationBlocked && (
                   <p className="text-muted-foreground text-xs">
-                    Generating in the app isn't available right now.
+                    {sourceModeClosed
+                      ? "Creating a quiz from your own material isn't available yet."
+                      : "Generating in the app isn't available right now."}
                   </p>
                 )}
-                <Link
-                  to={ownAiPath}
-                  className={cn(
-                    "block text-sm",
-                    generationBlocked
-                      ? "text-primary font-medium hover:underline"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  Use your own AI instead (free)
-                </Link>
+                {mode === "Source" ? (
+                  // The own-AI page is topic-only; offering it here would drop the material.
+                  generationBlocked &&
+                  topicPath && (
+                    <Link
+                      to={topicPath}
+                      className="block text-sm text-primary font-medium hover:underline"
+                    >
+                      Create from a topic instead
+                    </Link>
+                  )
+                ) : (
+                  <Link
+                    to={ownAiPath}
+                    className={cn(
+                      "block text-sm",
+                      generationBlocked
+                        ? "text-primary font-medium hover:underline"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Use your own AI instead (free)
+                  </Link>
+                )}
               </div>
 
               <WizardButton
                 type="button"
                 className="shrink-0"
-                disabled={isGenerating || generationBlocked}
+                // Not while a file is being read: Generate would send the text it is about to replace.
+                disabled={isGenerating || generationBlocked || isReadingFile}
                 title={
-                  generationBlocked
-                    ? "Generating in the app isn't available right now — use your own AI below."
-                    : undefined
+                  sourceModeClosed
+                    ? "Creating a quiz from your own material isn't available yet."
+                    : generationBlocked
+                      ? "Generating in the app isn't available right now — use your own AI below."
+                      : undefined
                 }
                 onClick={runWhenValid(onGenerate)}
               >
