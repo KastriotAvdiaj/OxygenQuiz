@@ -138,3 +138,8 @@ One JSON object per line. Fill four fields and leave the rest alone:
 
 Label every row, including ones you are unsure about — an unlabelled row is silently excluded
 from the denominator, which flatters the result.
+
+**Your labels are the only thing here that cannot be regenerated.** `runs/` is gitignored and
+nothing else holds a human's verdict, so `eval:parse` refuses to overwrite a labels file that
+has any labels in it; pass `--force` when you genuinely mean to start that run over. Back the
+file up before a long session if you want belt and braces.

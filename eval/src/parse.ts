@@ -217,6 +217,35 @@ async function main(): Promise<void> {
   const shuffled = shuffle(rows, seed);
 
   const labelsPath = path.join(runDir, "labels.jsonl");
+
+  // Never silently overwrite work. Labelling a run is one to two hours of a person's judgement
+  // and it exists nowhere else — not in git (runs/ is ignored), not derivable from anything.
+  // Re-running parse is otherwise harmless and easy to do by reflex, which is exactly the
+  // combination that loses an afternoon.
+  const existing = await fs.readFile(labelsPath, "utf8").catch(() => null);
+  if (existing !== null && !process.argv.includes("--force")) {
+    const labelled = existing
+      .split("\n")
+      .filter((l) => l.trim().length > 0)
+      .filter((l) => {
+        try {
+          const row = JSON.parse(l) as { correctness?: string };
+          return typeof row.correctness === "string" && row.correctness.length > 0;
+        } catch {
+          return false;
+        }
+      }).length;
+
+    if (labelled > 0) {
+      throw new Error(
+        `${labelsPath}\n  already holds ${labelled} labelled question(s), and re-parsing would replace them.\n\n` +
+          `  To score what you have:      npm run eval:score -- --run-id=${runId}\n` +
+          `  To parse a different run:    npm run eval:parse -- --run-id=<other>\n` +
+          `  To discard these labels:     npm run eval:parse -- --run-id=${runId} --force`,
+      );
+    }
+  }
+
   await fs.writeFile(labelsPath, shuffled.map((r) => JSON.stringify(r)).join("\n") + "\n");
   await fs.writeFile(path.join(runDir, "key.json"), JSON.stringify(key, null, 2));
   await fs.writeFile(path.join(runDir, "stages.json"), JSON.stringify(perTopic, null, 2));
