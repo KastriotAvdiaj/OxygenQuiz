@@ -103,6 +103,31 @@ language. Running both and comparing the per-language rows of the report is how 
 missing picker gets a number instead of an opinion — which is the point of having the harness
 before the fix rather than after.
 
+## Grounded runs, and the comparison that can show them working
+
+`--grounding` builds every prompt the way a grounded generation would (`ground: true` on
+`ai-prompt`; the API must run with `Ai__Source__Enabled=true`, and the run refuses to start
+otherwise). When the server asks a question, the run answers as an author would: the topic's
+`language` for "English or Albanian?", and for "which article?" the topic's `sourceTitle`,
+"none of these" when `noSource` is set, or the first offer — marked *(auto)* in the report so
+`topics.json` can be fixed. The article text is saved with the reply, so `parse` runs the quote
+check exactly as the app does for Source mode.
+
+The report gains a grounding table — what each topic was written from, and what was asked. With
+`--compare`, it also gives **the grounded topics only, in both runs**. That cut is the one that can
+show grounding working: topics Wikipedia has no article for are written from memory in a
+grounded run too, and on the Phase 0 set they held 11 of the 23 wrong answers — enough that the
+whole-run rate could not clear the "intervals don't overlap" bar even if grounding fixed every
+error it touched.
+
+```bash
+# API: Ai__Source__Enabled=true
+npm run eval:generate -- --grounding
+npm run eval:parse
+npm run eval:label
+npm run eval:score -- --compare=2026-10-28T23-41-01-324Z-inferred
+```
+
 ## What it deliberately does not do
 
 - **No automated correctness check.** There is none to have; that is the whole premise.

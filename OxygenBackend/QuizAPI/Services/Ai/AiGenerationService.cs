@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using QuizAPI.Common;
 using QuizAPI.Exceptions;
 using QuizAPI.Repositories.Interfaces;
+using QuizAPI.Services.Ai.Sources;
 
 namespace QuizAPI.Services.Ai
 {
@@ -29,6 +30,7 @@ namespace QuizAPI.Services.Ai
         private readonly AiPromptBuilder _promptBuilder;
         private readonly AiOptions _options;
         private readonly ILogger<AiGenerationService> _logger;
+        private readonly IQuizGrounding? _grounding;
 
         /// <summary>
         /// Appended verbatim to the prompt on the one retry after unparseable output. Kept short:
@@ -44,8 +46,11 @@ namespace QuizAPI.Services.Ai
             IUserRepository users,
             AiPromptBuilder promptBuilder,
             IOptions<AiOptions> options,
-            ILogger<AiGenerationService> logger)
+            ILogger<AiGenerationService> logger,
+            // Optional so a test that isn't about grounding needn't build one: absent is "off".
+            IQuizGrounding? grounding = null)
         {
+            _grounding = grounding;
             _provider = provider;
             _quota = quota;
             _users = users;
@@ -55,6 +60,21 @@ namespace QuizAPI.Services.Ai
         }
 
         public string BuildPrompt(AiGenerationRequest request) => _promptBuilder.Build(Normalise(request));
+
+        /// <summary>
+        /// <see cref="BuildPrompt"/>, grounded the way <see cref="GenerateAsync"/> would ground it
+        /// when the request asks for that (<see cref="AiGenerationRequest.Ground"/>). Free: a
+        /// source lookup, no model and no quota. A result that needs a choice carries no prompt.
+        /// </summary>
+        public async Task<(string? Prompt, GroundingResult Grounding)> BuildPromptAsync(
+            AiGenerationRequest request, CancellationToken ct = default)
+        {
+            var normalised = Normalise(request);
+            if (!request.Ground) return (_promptBuilder.Build(normalised), GroundingResult.Off);
+
+            var (grounded, grounding) = await GroundAsync(normalised, ct);
+            return grounding.NeedsChoice ? (null, grounding) : (_promptBuilder.Build(grounded), grounding);
+        }
 
         /// <inheritdoc />
         public string ModelId => _provider.Model;
@@ -128,6 +148,12 @@ namespace QuizAPI.Services.Ai
             var contentError = ValidateContent(normalised);
             if (contentError is not null) return contentError;
 
+            // Grounding — before the reservation, so a question put to the author costs nothing,
+            // and a slow or failing source costs nothing either (it degrades to ungrounded).
+            var (grounded, grounding) = await GroundAsync(normalised, ct);
+            if (grounding.NeedsChoice) return AiGenerationOutcome.NeedsChoice(grounding);
+            normalised = grounded;
+
             // ── 2. Reserve before spending anything.
             var reservation = await _quota.TryReserveAsync(userId, normalised, HashRequest(normalised), ct);
             if (!reservation.Succeeded)
@@ -164,7 +190,7 @@ namespace QuizAPI.Services.Ai
                         payload.QuestionCount, normalised.QuestionCount, userId);
                 }
 
-                return AiGenerationOutcome.Ok(payload.Json, usage, reservation.Remaining);
+                return AiGenerationOutcome.Ok(payload.Json, usage, reservation.Remaining, grounding);
             }
             catch (AiProviderException ex)
             {
@@ -229,6 +255,10 @@ namespace QuizAPI.Services.Ai
                 SourceText = Truncate(request.SourceText?.Trim(), _options.MaxSourceChars),
                 ExtraInstructions = Truncate(request.ExtraInstructions?.Trim(), _options.MaxExtraInstructionChars),
                 LanguageName = string.IsNullOrWhiteSpace(request.LanguageName) ? null : request.LanguageName.Trim(),
+                SourceLanguage = string.IsNullOrWhiteSpace(request.SourceLanguage) ? null : request.SourceLanguage.Trim(),
+                SourceTitle = string.IsNullOrWhiteSpace(request.SourceTitle) ? null : request.SourceTitle.Trim(),
+                // Never from a caller: only GroundAsync sets this, from a lookup it made itself.
+                Grounding = null,
                 QuestionCount = Math.Clamp(request.QuestionCount, 1, Math.Max(1, _options.MaxQuestionsPerGeneration)),
                 AllowedTypes = allowedTypes,
                 DifficultyNames = CleanNames(request.DifficultyNames),
@@ -239,6 +269,38 @@ namespace QuizAPI.Services.Ai
             return normalised.Mode == AiGenerationMode.Source
                 ? PinToSourceLanguage(normalised)
                 : normalised;
+        }
+
+        /// <summary>
+        /// Topic mode only: find the article to write from (<see cref="IQuizGrounding"/>) and fold
+        /// the answer into the request — the article, and the language it settled on. Off, or no
+        /// grounding service, returns the request untouched, so a deployment with
+        /// <c>Ai:Source:Enabled=false</c> sends byte-for-byte the prompt it sent before.
+        ///
+        /// <para>The language is pinned whenever grounding decided one, grounded or not: the
+        /// search was run in that language, and an ungrounded fallback should not then be free to
+        /// write in another. A language the author named (<see cref="AiGenerationRequest.LanguageName"/>)
+        /// is left as the instruction it already is.</para>
+        /// </summary>
+        private async Task<(AiGenerationRequest Request, GroundingResult Grounding)> GroundAsync(
+            AiGenerationRequest r, CancellationToken ct)
+        {
+            if (_grounding is null || r.Mode != AiGenerationMode.Topic || string.IsNullOrWhiteSpace(r.Topic))
+                return (r, GroundingResult.Off);
+
+            var grounding = await _grounding.GroundAsync(
+                r.Topic, new GroundingAnswers(r.SourceLanguage ?? r.LanguageName, r.SourceTitle, r.SourceDeclined), ct);
+            if (grounding.Status is GroundingStatus.Off || grounding.NeedsChoice) return (r, grounding);
+
+            var pinned = r;
+            if (string.IsNullOrWhiteSpace(r.LanguageName) && grounding.Language is { } language)
+            {
+                var spelled = r.LanguageNames.FirstOrDefault(
+                    n => string.Equals(n, language, StringComparison.OrdinalIgnoreCase));
+                if (spelled is not null) pinned = r with { LanguageNames = new[] { spelled } };
+            }
+
+            return (pinned with { Grounding = grounding.Source }, grounding);
         }
 
         /// <summary>
@@ -356,7 +418,8 @@ namespace QuizAPI.Services.Ai
                 string.Join(',', r.DifficultyNames),
                 r.QuestionCount,
                 string.Join(',', r.AllowedTypes),
-                r.ExtraInstructions ?? string.Empty);
+                r.ExtraInstructions ?? string.Empty,
+                r.Grounding?.Title ?? string.Empty);
 
             return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(material))).ToLowerInvariant();
         }

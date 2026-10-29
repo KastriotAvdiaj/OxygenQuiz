@@ -72,10 +72,22 @@ async function loadRun(runId: string) {
   const key = JSON.parse(await fs.readFile(path.join(runDir, "key.json"), "utf8")) as Record<string, KeyRow>;
   const stages = JSON.parse(await fs.readFile(path.join(runDir, "stages.json"), "utf8")) as Record<
     string,
-    { requested: number; returned: number; kept: number; dropped: string[] }
+    {
+      requested: number;
+      returned: number;
+      kept: number;
+      dropped: string[];
+      grounding?: {
+        status: string;
+        title: string | null;
+        reason: string | null;
+        asks: { kind: string; answered: string; auto: boolean }[];
+      };
+    }
   >;
   const meta = JSON.parse(await fs.readFile(path.join(runDir, "run.json"), "utf8")) as {
     languageMode: string;
+    grounding?: boolean;
     vendor: { model: string };
     sampling: { temperature: number; seed: number };
   };
@@ -99,7 +111,7 @@ function report(runId: string, data: Awaited<ReturnType<typeof loadRun>>): strin
   lines.push("");
   lines.push(
     `Model \`${meta.vendor.model}\`, temperature ${meta.sampling.temperature}, seed ${meta.sampling.seed}, ` +
-      `language mode **${meta.languageMode}**. Labelled ${labelled.length} of ${labels.length} kept questions.`,
+      `language mode **${meta.languageMode}**, grounding **${meta.grounding ? "on" : "off"}**. Labelled ${labelled.length} of ${labels.length} kept questions.`,
   );
   lines.push("");
 
@@ -197,6 +209,36 @@ function report(runId: string, data: Awaited<ReturnType<typeof loadRun>>): strin
     lines.push("");
   }
 
+  // Grounding — only for a grounded run. Two things to read here besides the error rate: how
+  // often the server had to ask (a gate that fires on good topics gets clicked through, see
+  // docs/proposals/topic-disambiguation-and-source-tiers.md §4a bis), and which topics fell back
+  // to memory, because those rows are not a test of grounding at all.
+  const grounded = Object.entries(stages).filter(([, s]) => s.grounding);
+  if (grounded.length > 0) {
+    const count = (status: string) => grounded.filter(([, s]) => s.grounding!.status === status).length;
+    const asked = grounded.filter(([, s]) => s.grounding!.asks.length > 0);
+    const auto = grounded.filter(([, s]) => s.grounding!.asks.some((a) => a.auto));
+    lines.push("## Grounding — what each topic was written from");
+    lines.push("");
+    lines.push(
+      `Grounded ${count("Grounded")} of ${grounded.length}; ungrounded ${count("Ungrounded")}. ` +
+        `The server asked on ${asked.length} topic(s)` +
+        (auto.length > 0
+          ? `, and ${auto.length} answer(s) were the run's first-candidate guess — set \`sourceTitle\` in topics.json for those.`
+          : "."),
+    );
+    lines.push("");
+    lines.push("| topic | written from | asked |");
+    lines.push("|---|---|---|");
+    for (const [topic, s] of grounded.sort(([a], [b]) => a.localeCompare(b))) {
+      const g = s.grounding!;
+      const from = g.status === "Grounded" ? `**${g.title}**` : `memory (${g.reason ?? "?"})`;
+      const asks = g.asks.map((a) => `${a.kind} → ${a.answered}${a.auto ? " *(auto)*" : ""}`).join("; ") || "–";
+      lines.push(`| ${topic} | ${from} | ${asks} |`);
+    }
+    lines.push("");
+  }
+
   lines.push("## Why the parser dropped things");
   lines.push("");
   const allDrops = Object.values(stages).flatMap((t) => t.dropped);
@@ -239,6 +281,54 @@ function report(runId: string, data: Awaited<ReturnType<typeof loadRun>>): strin
   return lines.join("\n");
 }
 
+/**
+ * The comparison that can actually show grounding working: the same topics, in both runs.
+ *
+ * Over the whole run it can't. Topics Wikipedia has no article for are generated from memory in
+ * a grounded run too, and on the Phase 0 set those held 11 of the 23 wrong answers — so even a
+ * grounding that fixed every error it touched could not move the whole-run rate past the
+ * "intervals don't overlap" bar. Comparing the topics this run grounded, against the same topics
+ * in the other run, measures what grounding did and nothing else.
+ */
+function sameTopics(
+  runId: string,
+  run: Awaited<ReturnType<typeof loadRun>>,
+  otherId: string,
+  other: Awaited<ReturnType<typeof loadRun>>,
+): string {
+  const groundedTopics = new Set(
+    Object.entries(run.stages).filter(([, s]) => s.grounding?.status === "Grounded").map(([t]) => t),
+  );
+  if (groundedTopics.size === 0) return "";
+
+  const cut = (d: Awaited<ReturnType<typeof loadRun>>) => {
+    const rows = d.labels.filter((l) => l.correctness !== "" && groundedTopics.has(d.key[l.rowId]?.topicId ?? ""));
+    const wrong = rows.filter((l) => l.correctness === "wrong").length;
+    const defective = rows.filter((l) => l.correctness === "wrong" || l.correctness === "ambiguous").length;
+    return { n: rows.length, wrong, defective };
+  };
+  const a = cut(run);
+  const b = cut(other);
+  const topics = [...groundedTopics].sort().map((t) => `\`${t}\``).join(", ");
+
+  return [
+    "",
+    "---",
+    "",
+    `## Grounded topics only — ${runId} against ${otherId}`,
+    "",
+    `The ${groundedTopics.size} topics this run grounded: ${topics}.`,
+    "",
+    "| run | labelled | wrong | defective (wrong + ambiguous) |",
+    "|---|---:|---|---|",
+    `| ${runId} | ${a.n} | ${rate(a.wrong, a.n)} | ${rate(a.defective, a.n)} |`,
+    `| ${otherId} | ${b.n} | ${rate(b.wrong, b.n)} | ${rate(b.defective, b.n)} |`,
+    "",
+    "> Same rule as everywhere: overlapping intervals mean the difference has not been shown.",
+    "",
+  ].join("\n");
+}
+
 async function main(): Promise<void> {
   const runId = resolveRunId(arg("run-id"));
   const data = await loadRun(runId);
@@ -246,7 +336,9 @@ async function main(): Promise<void> {
 
   const compare = arg("compare")?.replace(/^<+/, "").replace(/>+$/, "").trim();
   if (compare) {
-    out += "\n---\n\n" + report(compare, await loadRun(compare));
+    const other = await loadRun(compare);
+    out += sameTopics(runId, data, compare, other);
+    out += "\n---\n\n" + report(compare, other);
     out +=
       "\n> Two runs are comparable only if their intervals barely overlap. " +
       "Overlapping intervals mean the difference has not been demonstrated.\n";

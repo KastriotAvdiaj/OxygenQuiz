@@ -1,0 +1,623 @@
+{
+ "search|en|Photosynthesis": {
+  "batchcomplete": "",
+  "continue": {
+   "sroffset": 5,
+   "continue": "-||"
+  },
+  "query": {
+   "searchinfo": {
+    "totalhits": 3864
+   },
+   "search": [
+    {
+     "ns": 0,
+     "title": "Photosynthesis",
+     "pageid": 24544,
+     "wordcount": 11914
+    },
+    {
+     "ns": 0,
+     "title": "Photosynthesis (disambiguation)",
+     "pageid": 83416238,
+     "wordcount": 101
+    },
+    {
+     "ns": 0,
+     "title": "Artificial photosynthesis",
+     "pageid": 1430539,
+     "wordcount": 5111
+    },
+    {
+     "ns": 0,
+     "title": "Photosynthetic efficiency",
+     "pageid": 4066860,
+     "wordcount": 2548
+    },
+    {
+     "ns": 0,
+     "title": "Anoxygenic photosynthesis",
+     "pageid": 25269493,
+     "wordcount": 1827
+    }
+   ]
+  }
+ },
+ "props|en|Photosynthesis|Photosynthesis (disambiguation)|Artificial photosynthesis|Photosynthetic efficiency|Anoxygenic photosynthesis": {
+  "batchcomplete": "",
+  "query": {
+   "pages": {
+    "25269493": {
+     "pageid": 25269493,
+     "ns": 0,
+     "title": "Anoxygenic photosynthesis",
+     "contentmodel": "wikitext",
+     "pagelanguage": "en",
+     "pagelanguagehtmlcode": "en",
+     "pagelanguagedir": "ltr",
+     "touched": "2026-10-26T19:43:36Z",
+     "lastrevid": 1368834356,
+     "length": 18167,
+     "fullurl": "https://en.wikipedia.org/wiki/Anoxygenic_photosynthesis",
+     "editurl": "https://en.wikipedia.org/w/index.php?title=Anoxygenic_photosynthesis&action=edit",
+     "canonicalurl": "https://en.wikipedia.org/wiki/Anoxygenic_photosynthesis"
+    },
+    "1430539": {
+     "pageid": 1430539,
+     "ns": 0,
+     "title": "Artificial photosynthesis",
+     "contentmodel": "wikitext",
+     "pagelanguage": "en",
+     "pagelanguagehtmlcode": "en",
+     "pagelanguagedir": "ltr",
+     "touched": "2026-10-26T19:18:57Z",
+     "lastrevid": 1379823717,
+     "length": 50469,
+     "fullurl": "https://en.wikipedia.org/wiki/Artificial_photosynthesis",
+     "editurl": "https://en.wikipedia.org/w/index.php?title=Artificial_photosynthesis&action=edit",
+     "canonicalurl": "https://en.wikipedia.org/wiki/Artificial_photosynthesis"
+    },
+    "24544": {
+     "pageid": 24544,
+     "ns": 0,
+     "title": "Photosynthesis",
+     "contentmodel": "wikitext",
+     "pagelanguage": "en",
+     "pagelanguagehtmlcode": "en",
+     "pagelanguagedir": "ltr",
+     "touched": "2026-10-29T01:57:51Z",
+     "lastrevid": 1379238357,
+     "length": 111086,
+     "fullurl": "https://en.wikipedia.org/wiki/Photosynthesis",
+     "editurl": "https://en.wikipedia.org/w/index.php?title=Photosynthesis&action=edit",
+     "canonicalurl": "https://en.wikipedia.org/wiki/Photosynthesis"
+    },
+    "83416238": {
+     "pageid": 83416238,
+     "ns": 0,
+     "title": "Photosynthesis (disambiguation)",
+     "pageprops": {
+      "disambiguation": ""
+     },
+     "contentmodel": "wikitext",
+     "pagelanguage": "en",
+     "pagelanguagehtmlcode": "en",
+     "pagelanguagedir": "ltr",
+     "touched": "2026-10-24T11:32:16Z",
+     "lastrevid": 1358840367,
+     "length": 566,
+     "fullurl": "https://en.wikipedia.org/wiki/Photosynthesis_(disambiguation)",
+     "editurl": "https://en.wikipedia.org/w/index.php?title=Photosynthesis_(disambiguation)&action=edit",
+     "canonicalurl": "https://en.wikipedia.org/wiki/Photosynthesis_(disambiguation)"
+    },
+    "4066860": {
+     "pageid": 4066860,
+     "ns": 0,
+     "title": "Photosynthetic efficiency",
+     "contentmodel": "wikitext",
+     "pagelanguage": "en",
+     "pagelanguagehtmlcode": "en",
+     "pagelanguagedir": "ltr",
+     "touched": "2026-10-26T19:23:37Z",
+     "lastrevid": 1368849253,
+     "length": 21794,
+     "fullurl": "https://en.wikipedia.org/wiki/Photosynthetic_efficiency",
+     "editurl": "https://en.wikipedia.org/w/index.php?title=Photosynthetic_efficiency&action=edit",
+     "canonicalurl": "https://en.wikipedia.org/wiki/Photosynthetic_efficiency"
+    }
+   }
+  }
+ },
+ "extract|en|Photosynthesis": {
+  "batchcomplete": "",
+  "query": {
+   "pages": {
+    "24544": {
+     "pageid": 24544,
+     "ns": 0,
+     "title": "Photosynthesis",
+     "extract": "Photosynthesis is a system of biological processes by which photopigment-bearing autotrophic organisms, such as most plants, algae and cyanobacteria, convert light energy—typically from sunlight—into the chemical energy necessary to fuel their metabolism. The term photosynthesis usually refers to oxygenic photosynthesis, a process that releases oxygen as a byproduct of water splitting. Photosynthetic organisms store the converted chemical energy within the bonds of intracellular organic compounds (complex compounds containing carbon), typically carbohydrates like sugars (mainly glucose, fructose and sucrose), starches, phytoglycogen and cellulose. When needing to use this stored energy, an organism's cells then metabolize the organic compounds through cellular respiration. Photosynthesis plays a critical role in producing and maintaining the oxygen content of the Earth's atmosphere, and it supplies most of the biological energy necessary for complex life on Earth.\nSome organisms also perform anoxygenic photosynthesis, which does not produce oxygen. Some bacteria (e.g. purple bacteria) use bacteriochlorophyll to split hydrogen sulfide as a reductant instead of water, releasing sulfur instead of oxygen, which was a dominant form of photosynthesis in the euxinic Canfield oceans during the Boring Billion. Archaea such as Halobacterium also perform a type of non-carbon-fixing anoxygenic photosynthesis, where the simpler photopigment retinal and its microbial rhodopsin derivatives are used to absorb green light and produce a proton (hydron) gradient across the cell membrane, and the subsequent ion movement powers transmembrane proton pumps to directly synthesize adenosine triphosphate (ATP), the \"energy currency\" of cells. Such archaeal photosynthesis might have been the earliest form of photosynthesis that evolved on Earth, as far back as the Paleoarchean, preceding that of cyanobacteria (see Purple Earth hypothesis).\nWhile the details may differ between species, the process always begins when light energy is absorbed by the reaction centers, proteins that contain photosynthetic pigments or chromophores. In plants, these pigments are chlorophylls (a porphyrin derivative that absorbs the red and blue spectra of light, thus reflecting green) held inside chloroplasts, abundant in leaf cells. In cyanobacteria, they are embedded in the plasma membrane. In these light-dependent reactions, some energy is used to strip electrons from suitable substances, such as water, producing oxygen gas. The hydrogen freed by the splitting of water is used in the creation of two important molecules that participate in energetic processes: reduced nicotinamide adenine dinucleotide phosphate (NADPH) and ATP.\nIn plants, algae, and cyanobacteria, sugars are synthesized by a subsequent sequence of light-independent reactions called the Calvin cycle. In this process, atmospheric carbon dioxide is incorporated into already existing organic compounds, such as ribulose bisphosphate (RuBP). Using the ATP and NADPH produced by the light-dependent reactions, the resulting compounds are then reduced and removed to form further carbohydrates, such as glucose. In other bacteria, different mechanisms like the reverse Krebs cycle are used to achieve the same end.\nThe first photosynthetic organisms probably evolved early in the evolutionary history of life using reducing agents such as hydrogen or hydrogen sulfide, rather than water, as sources of electrons. Cyanobacteria appeared later; the excess oxygen they produced contributed directly to the oxygenation of the Earth, which rendered the evolution of complex life possible. The average rate of energy captured by global photosynthesis is approximately 130 terawatts, which is about eight times the total power consumption of human civilization. Photosynthetic organisms also convert around 100–115 billion tons (91–104 Pg petagrams, or billions of metric tons), of carbon into biomass per year. Photosynthesis was discovered in 1779 by Jan Ingenhousz who showed that plants need light, not just soil and water.\n\n\n== Overview ==\n\nMost photosynthetic organisms are photoautotrophs, which means that they are able to synthesize food directly from carbon dioxide and water using energy from light. However, not all organisms use carbon dioxide as a source of carbon atoms to carry out photosynthesis; photoheterotrophs use organic compounds, rather than carbon dioxide, as a source of carbon.\nIn plants, algae, and cyanobacteria, photosynthesis releases oxygen. This oxygenic photosynthesis is by far the most common type of photosynthesis used by living organisms. Some shade-loving plants (sciophytes) produce such low levels of oxygen during photosynthesis that they use all of it themselves instead of releasing it to the atmosphere.\nAlthough there are some differences between oxygenic photosynthesis in plants, algae, and cyanobacteria, the overall process is quite similar in these organisms. There are also many varieties of anoxygenic photosynthesis, used mostly by bacteria, which consume carbon dioxide but do not release oxygen or which produce elemental sulfur instead of molecular oxygen.\nCarbon dioxide is converted into sugars in a process called carbon fixation; photosynthesis captures energy from sunlight to convert carbon dioxide into carbohydrates. Carbon fixation is an endothermic redox reaction. In general outline, photosynthesis is the opposite of cellular respiration: while photosynthesis is a process of reduction of carbon dioxide to carbohydrates, cellular respiration is the oxidation of carbohydrates or other nutrients to carbon dioxide. Nutrients used in cellular respiration include carbohydrates, amino acids and fatty acids. These nutrients are oxidized to produce carbon dioxide and water, and to release chemical energy to drive the organism's metabolism.\nPhotosynthesis and cellular respiration are distinct processes, as they take place through different sequences of chemical reactions and in different cellular compartments (cellular respiration in mitochondria).\nThe general equation for photosynthesis as first proposed by Cornelis van Niel is:\n\nCO2carbondioxide + 2H2Aelectron donor + photonslight energy → [CH2O]carbohydrate + 2Aoxidizedelectrondonor + H2Owater\nSince water is used as the electron donor in oxygenic photosynthesis, the equation for this process is:\n\nCO2carbondioxide + 2H2Owater + photonslight energy → [CH2O]carbohydrate + O2oxygen + H2Owater\nThis equation emphasizes that water is both a reactant in the light-dependent reaction and a product of the light-independent reaction, but canceling n water molecules from each side gives the net equation:\n\nCO2carbondioxide + H2O water  + photonslight energy → [CH2O]carbohydrate + O2 oxygen \nOther processes substitute other compounds (such as arsenite) for water in the electron-supply role; for example some microbes use sunlight to oxidize arsenite to arsenate: The equation for this reaction is:\n\nCO2carbondioxide + (AsO3−3)arsenite + photonslight energy → (AsO3−4)arsenate + COcarbonmonoxide(used to build other compounds in subsequent reactions)\nPhotosynthesis occurs in two stages. In the first stage, light-dependent reactions or light reactions capture the energy of light and use it to make the hydrogen carrier NADPH and the energy-storage molecule ATP. During the second stage, the light-independent reactions use these products to capture and reduce carbon dioxide.\nMost organisms that use oxygenic photosynthesis use visible light for the light-dependent reactions, although at least three use shortwave infrared or, more specifically, far-red radiation.\nSome organisms employ even more radical variants of photosynthesis. Some archaea use a simpler method that employs a pigment similar to those used for vision in animals. The bacteriorhodopsin changes its configuration in response to sunlight, acting as a proton pump. This produces a proton gradient more directly, which is then converted to chemical energy. The process does not involve carbon dioxide fixation and does not release oxygen, and seems to have evolved separately from the more common types of photosynthesis.\n\n\n== Photosynthetic membranes and organelles ==\n\nIn photosynthetic bacteria, the proteins that gather light for photosynthesis are embedded in cell membranes. In its simplest form, this involves the membrane surrounding the cell itself. However, the membrane may be tightly folded into cylindrical sheets called thylakoids, or bunched up into round vesicles called intracytoplasmic membranes. These structures can fill most of the interior of a cell, giving the membrane a very large surface area and therefore increasing the amount of light that the bacteria can absorb.\nIn plants and algae, photosynthesis takes place in organelles called chloroplasts. A typical plant cell contains about 10 to 100 chloroplasts. The chloroplast is enclosed by a membrane. This membrane is composed of a phospholipid inner membrane, a phospholipid outer membrane, and an intermembrane space. Enclosed by the membrane is an aqueous fluid called the stroma. Embedded within the stroma are stacks of thylakoids (grana), which are the site of photosynthesis. The thylakoids appear as flattened disks. The thylakoid itself is enclosed by the thylakoid membrane, and within the enclosed volume is a lumen or thylakoid space. Embedded in the thylakoid membrane are integral and peripheral membrane protein complexes of the photosynthetic system.\nPlants absorb light primarily using the pigment chlorophyll. The green part of the light spectrum is not absorbed but is reflected, which is the reason that most plants have a green color. Besides chlorophyll, plants also use pigments such as carotenes and xanthophylls. Algae also use chlorophyll, but various other pigments are present, such as phycocyanin, carotenes, and xanthophylls in green algae, phycoerythrin in red algae (rhodophytes) and fucoxanthin in brown algae and diatoms resulting in a wide variety of colors.\nThese pigments are embedded in plants and algae in complexes called antenna proteins. In such proteins, the pigments are arranged to work together. Such a combination of proteins is also called a light-harvesting complex.\nAlthough all cells in the green parts of a plant have chloroplasts, the majority of those are found in specially adapted structures called leaves. Certain species adapted to conditions of strong sunlight and aridity, such as many Euphorbia and cactus species, have their main photosynthetic organs in their stems. The cells in the interior tissues of a leaf, called the mesophyll, can contain between 450,000 and 800,000 chloroplasts for every square millimeter of leaf. The surface of the leaf is coated with a water-resistant waxy cuticle that protects the leaf from excessive evaporation of water and decreases the absorption of ultraviolet or blue light to minimize heating. The transparent epidermis layer allows light to pass through to the palisade mesophyll cells where most of the photosynthesis takes place.\n\n\n== Light-dependent reactions ==\n\nIn the light-dependent reactions, one molecule of the pigment chlorophyll absorbs one photon and loses one electron. This electron is taken up by a modified form of chlorophyll called pheophytin, which passes the electron to a quinone molecule, starting the flow of electrons down an electron transport chain that leads to the ultimate reduction of NADP to NADPH. In addition, this creates a proton gradient (energy gradient) across the chloroplast membrane, which is used by ATP synthase in the synthesis of ATP. The chlorophyll molecule ultimately regains the electron it lost when a water molecule is split in a process called photolysis, which releases oxygen.\nThe overall equation for the light-dependent reactions under the conditions of non-cyclic electron flow in green plants is:\n\nNot all wavelengths of light can support photosynthesis. The photosynthetic action spectrum depends on the type of accessory pigments present. For example, in green plants, the action spectrum resembles the absorption spectrum for chlorophylls and carotenoids with absorption peaks in violet-blue and red light. In red algae, the action spectrum is blue-green light, which allows these algae to use the blue end of the spectrum to grow in the deeper waters that filter out the longer wavelengths (red light) used by above-ground green plants. The non-absorbed part of the light spectrum is what gives photosynthetic organisms their color (e.g., green plants, red algae, purple bacteria) and is the least effective for photosynthesis in the respective organisms.\n\n\n=== Z scheme ===\n\nIn plants, light-dependent reactions occur in the thylakoid membranes of the chloroplasts where they drive the synthesis of ATP and NADPH. The light-dependent reactions are of two forms: cyclic and non-cyclic.\nIn the non-cyclic reaction, the photons are captured in the light-harvesting antenna complexes of photosystem II by chlorophyll and other accessory pigments (see diagram \"Z-scheme\"). The absorption of a photon by the antenna complex loosens an electron by a process called photoinduced charge separation. The antenna system is at the core of the chlorophyll molecule of the photosystem II reaction center. That loosened electron is taken up by the primary electron-acceptor molecule, pheophytin. As the electrons are shuttled through an electron transport chain (the so-called Z-scheme shown in the diagram), a chemiosmotic potential is generated by pumping proton cations (H+) across the membrane and into the thylakoid space. An ATP synthase enzyme uses that chemiosmotic potential to make ATP during photophosphorylation, whereas NADPH is a product of the terminal redox reaction in the Z-scheme. The electron enters a chlorophyll molecule in Photosystem I. There it is further excited by the light absorbed by that photosystem. The electron is then passed along a chain of electron acceptors to which it transfers some of its energy. The energy delivered to the electron acceptors is used to move hydrogen ions across the thylakoid membrane into the lumen. The electron is eventually used to reduce the coenzyme NADP with an H+ to NADPH (which has functions in the light-independent reaction); at that point, the path of that electron ends.\nThe cyclic reaction is similar to that of the non-cyclic but differs in that it generates only ATP, and no reduced NADP (NADPH) is created. The cyclic reaction takes place only at photosystem I. Once the electron is displaced from the photosystem, the electron is passed down the electron acceptor molecules and returns to photosystem I, from where it was emitted, hence the name cyclic reaction.\n\n\n=== Water photolysis ===\n\nLinear electron transport through a photosystem will leave the reaction center of that photosystem oxidized. Elevating another electron will first require re-reduction of the reaction center. The excited electrons lost from the reaction center (P700) of photosystem I are replaced by transfer from plastocyanin, whose electrons come from electron transport through photosystem II. Photosystem II, as the first step of the Z-scheme, requires an external source of electrons to reduce its oxidized chlorophyll a reaction center. The source of electrons for photosynthesis in green plants and cyanobacteria is water. Two water molecules are oxidized by the energy of four successive charge-separation reactions of photosystem II to yield a molecule of diatomic oxygen and four hydrogen ions. The electrons yielded are transferred to a redox-active tyrosine residue that is oxidized by the energy of P680+. This resets the ability of P680 to absorb another photon and release another photo-dissociated electron. The oxidation of water is catalyzed in photosystem II by a redox-active structure that contains four manganese ions and a calcium ion; this oxygen-evolving complex binds two water molecules and contains the four oxidizing equivalents that are used to drive the water-oxidizing reaction (Kok's S-state diagrams). The hydrogen ions are released in the thylakoid lumen and therefore contribute to the transmembrane chemiosmotic potential that leads to ATP synthesis. Oxygen is a waste product of light-dependent reactions, but the majority of organisms on Earth use oxygen and its energy for cellular respiration, including photosynthetic organisms.\n\n\n== Light-independent reactions ==\n\n\n=== Calvin cycle ===\n\nIn the light-independent (or \"dark\") reactions, the enzyme RuBisCO captures CO2 from the atmosphere and, in a process called the Calvin cycle, uses the newly formed NADPH and releases three-carbon sugars, which are later combined to form sucrose and starch. The overall equation for the light-independent reactions in green plants is\n\nCarbon fixation produces the three-carbon sugar intermediate, which is then converted into the final carbohydrate products. The simple carbon sugars photosynthesis produces are then used to form other organic compounds, such as the building material cellulose, the precursors for lipid and amino acid biosynthesis, or as a fuel in cellular respiration. The latter occurs not only in plants but also in animals when the carbon and energy from plants is passed through a food chain.\nThe fixation or reduction of carbon dioxide is a process in which carbon dioxide combines with a five-carbon sugar, ribulose 1,5-bisphosphate, to yield two molecules of a three-carbon compound, glycerate 3-phosphate, also known as 3-phosphoglycerate. Glycerate 3-phosphate, in the presence of ATP and NADPH produced during the light-dependent stages, is reduced to glyceraldehyde 3-phosphate. This product is also referred to as 3-phosphoglyceraldehyde (PGAL) or, more generically, as triose phosphate. Most (five out of six molecules) of the glyceraldehyde 3-phosphate produced are used to regenerate ribulose 1,5-bisphosphate so the process can continue. The triose phosphates not thus \"recycled\" often condense to form hexose phosphates, which ultimately yield sucrose, starch, and cellulose, as well as glucose and fructose. The sugars produced during carbon metabolism yield carbon skeletons that can be used for other metabolic reactions like the production of amino acids and lipids.\n\n\n=== Carbon concentrating mechanisms ===\n\n\n==== On land ====\n\nIn hot and dry conditions, plants close their stomata to prevent water loss. Under these conditions, CO2 will decrease and oxygen gas, produced by the light reactions of photosynthesis, will increase, causing an increase of photorespiration by the oxygenase activity of ribulose-1,5-bisphosphate carboxylase/oxygenase (RuBisCO) and decrease in carbon fixation. Some plants have evolved mechanisms to increase the CO2 concentration in the leaves under these conditions.\nPlants that use the C4 carbon fixation process chemically fix carbon dioxide in the cells of the mesophyll by adding it to the three-carbon molecule phosphoenolpyruvate (PEP), a reaction catalyzed by an enzyme called PEP carboxylase, creating the four-carbon organic acid oxaloacetic acid. Oxaloacetic acid or malate synthesized by this process is then translocated to specialized bundle sheath cells where the enzyme RuBisCO and other Calvin cycle enzymes are located, and where CO2 released by decarboxylation of the four-carbon acids is then fixed by RuBisCO activity to the three-carbon 3-phosphoglyceric acids. The physical separation of RuBisCO from the oxygen-generating light reactions reduces photorespiration and increases CO2 fixation and, thus, the photosynthetic capacity of the leaf. C4 plants can produce more sugar than C3 plants in conditions of high light and temperature. Many important crop plants are C4 plants, including maize, sorghum, sugarcane, and millet. Plants that do not use PEP-carboxylase in carbon fixation are called C3 plants because the primary carboxylation reaction, catalyzed by RuBisCO, produces the three-carbon 3-phosphoglyceric acids directly in the"
+    }
+   }
+  }
+ },
+ "search|en|Mercury": {
+  "batchcomplete": "",
+  "continue": {
+   "sroffset": 5,
+   "continue": "-||"
+  },
+  "query": {
+   "searchinfo": {
+    "totalhits": 71831
+   },
+   "search": [
+    {
+     "ns": 0,
+     "title": "Mercury",
+     "pageid": 19007,
+     "wordcount": 974
+    },
+    {
+     "ns": 0,
+     "title": "Mercury (planet)",
+     "pageid": 19694,
+     "wordcount": 16170
+    },
+    {
+     "ns": 0,
+     "title": "Freddie Mercury",
+     "pageid": 42068,
+     "wordcount": 17329
+    },
+    {
+     "ns": 0,
+     "title": "Mercury (element)",
+     "pageid": 18617142,
+     "wordcount": 13576
+    },
+    {
+     "ns": 0,
+     "title": "Mercury Prize",
+     "pageid": 140995,
+     "wordcount": 3833
+    }
+   ]
+  }
+ },
+ "props|en|Mercury|Mercury (planet)|Freddie Mercury|Mercury (element)|Mercury Prize": {
+  "batchcomplete": "",
+  "query": {
+   "pages": {
+    "42068": {
+     "pageid": 42068,
+     "ns": 0,
+     "title": "Freddie Mercury",
+     "contentmodel": "wikitext",
+     "pagelanguage": "en",
+     "pagelanguagehtmlcode": "en",
+     "pagelanguagedir": "ltr",
+     "touched": "2026-10-29T01:57:51Z",
+     "lastrevid": 1379651217,
+     "length": 192070,
+     "fullurl": "https://en.wikipedia.org/wiki/Freddie_Mercury",
+     "editurl": "https://en.wikipedia.org/w/index.php?title=Freddie_Mercury&action=edit",
+     "canonicalurl": "https://en.wikipedia.org/wiki/Freddie_Mercury"
+    },
+    "19007": {
+     "pageid": 19007,
+     "ns": 0,
+     "title": "Mercury",
+     "pageprops": {
+      "disambiguation": ""
+     },
+     "contentmodel": "wikitext",
+     "pagelanguage": "en",
+     "pagelanguagehtmlcode": "en",
+     "pagelanguagedir": "ltr",
+     "touched": "2026-10-13T21:35:08Z",
+     "lastrevid": 1380113383,
+     "length": 8268,
+     "fullurl": "https://en.wikipedia.org/wiki/Mercury",
+     "editurl": "https://en.wikipedia.org/w/index.php?title=Mercury&action=edit",
+     "canonicalurl": "https://en.wikipedia.org/wiki/Mercury"
+    },
+    "18617142": {
+     "pageid": 18617142,
+     "ns": 0,
+     "title": "Mercury (element)",
+     "contentmodel": "wikitext",
+     "pagelanguage": "en",
+     "pagelanguagehtmlcode": "en",
+     "pagelanguagedir": "ltr",
+     "touched": "2026-10-29T01:58:06Z",
+     "lastrevid": 1382286341,
+     "length": 130274,
+     "fullurl": "https://en.wikipedia.org/wiki/Mercury_(element)",
+     "editurl": "https://en.wikipedia.org/w/index.php?title=Mercury_(element)&action=edit",
+     "canonicalurl": "https://en.wikipedia.org/wiki/Mercury_(element)"
+    },
+    "19694": {
+     "pageid": 19694,
+     "ns": 0,
+     "title": "Mercury (planet)",
+     "contentmodel": "wikitext",
+     "pagelanguage": "en",
+     "pagelanguagehtmlcode": "en",
+     "pagelanguagedir": "ltr",
+     "touched": "2026-10-29T01:57:51Z",
+     "lastrevid": 1381089194,
+     "length": 160627,
+     "fullurl": "https://en.wikipedia.org/wiki/Mercury_(planet)",
+     "editurl": "https://en.wikipedia.org/w/index.php?title=Mercury_(planet)&action=edit",
+     "canonicalurl": "https://en.wikipedia.org/wiki/Mercury_(planet)"
+    },
+    "140995": {
+     "pageid": 140995,
+     "ns": 0,
+     "title": "Mercury Prize",
+     "contentmodel": "wikitext",
+     "pagelanguage": "en",
+     "pagelanguagehtmlcode": "en",
+     "pagelanguagedir": "ltr",
+     "touched": "2026-10-26T19:14:53Z",
+     "lastrevid": 1381500664,
+     "length": 80357,
+     "fullurl": "https://en.wikipedia.org/wiki/Mercury_Prize",
+     "editurl": "https://en.wikipedia.org/w/index.php?title=Mercury_Prize&action=edit",
+     "canonicalurl": "https://en.wikipedia.org/wiki/Mercury_Prize"
+    }
+   }
+  }
+ },
+ "extract|en|Mercury (planet)": {
+  "batchcomplete": "",
+  "query": {
+   "pages": {
+    "19694": {
+     "pageid": 19694,
+     "ns": 0,
+     "title": "Mercury (planet)",
+     "extract": "Mercury is the first planet from the Sun and the smallest in the Solar System. It is a rocky planet with a trace atmosphere and a surface gravity slightly lower than that of Mars. The surface of Mercury is similar to Earth's Moon, being cratered, with an expansive rupes system generated from thrust faults, and bright ray systems, formed by ejecta. Its largest crater, Caloris Planitia, has a diameter of 1,550 km (960 mi), which is about one-third the diameter of the planet (4,880 km or 3,030 mi). Being the most inferior orbiting planet, it always appears close to the Sun in Earth's sky, as either a \"morning star\" or an \"evening star\". It is the planet with the highest delta-v required for travel from Earth, as well as to and from the other planets in the Solar System.\nMercury's sidereal year (88.0 Earth days) and sidereal day (58.65 Earth days) are in a 3:2 ratio, in a spin–orbit resonance. Consequently, one solar day (sunrise to sunrise) on Mercury lasts for around 176 Earth days, or twice Mercury's sidereal year. This means that one side of Mercury will remain in sunlight for one Mercurian year of 88 Earth days; while during the next orbit, that side will be in darkness all the time until the next sunrise after another 88 Earth days. Above the planet's surface is an extremely tenuous exosphere and a faint magnetic field just strong enough to deflect solar winds. Combined with its high orbital eccentricity, the planet's surface has widely varying sunlight intensity and temperature, with the equatorial regions ranging from −170 °C (−270 °F) at night to 420 °C (790 °F) during sunlight. Despite being the closest planet to the sun, it is the second hottest after Venus, lacking an atmosphere to trap heat. Due to its very small axial tilt, the planet's poles are permanently shadowed. This strongly suggests that water ice could be present in the craters.\nLike the other planets in the Solar System, Mercury formed approximately 4.5 billion years ago. There are  competing hypotheses about Mercury's origins and development, some of which incorporate collision with planetesimals and rock vaporization; as of the early 2020s, many broad details of Mercury's geological history are still under investigation or pending data from space probes. Its mantle is highly homogeneous, which suggests that Mercury had a magma ocean early in its history, like the Moon. According to current models, Mercury may have a solid silicate crust and mantle overlaying a solid outer core, a deeper liquid core layer, and a solid inner core. Mercury is expected to be destroyed, along with Venus, and possibly the Earth and the Moon, when the Sun becomes a red giant in approximately seven or eight billion years.\nMercury is a classical planet that has been observed and recognized throughout history as a planet (or wandering star). In English, it is named after the ancient Roman god Mercurius (Mercury), god of commerce and communication, and the messenger of the gods. The first successful flyby of Mercury was conducted by Mariner 10 in 1974, and it has since been visited and explored by the MESSENGER and BepiColombo orbiters.\n\n\n== Nomenclature ==\nHistorically, humans knew Mercury by different names depending on whether it was seen as an evening star or a morning star. By about 350 BC, the ancient Greeks had realized the two \"stars\" were the same. They knew the planet as Στίλβων Stilbōn, meaning \"twinkling\", and Ἑρμής Hermēs, for its fleeting motion, a name that is retained in modern Greek (Ερμής Ermis). The Romans named the planet after the swift-footed Roman messenger god, Mercury (Latin Mercurius), whom they equated with the Greek Hermes, because it moves across the sky faster than any other planet, though some associated the planet with Apollo instead, as detailed by Pliny the Elder. The astronomical symbol for Mercury is a stylized version of Hermes' caduceus; a Christian cross was added in the 16th century: ☿.\n\n\n== Physical characteristics ==\nMercury is one of four terrestrial planets in the Solar System, which means it is a rocky body like Earth. It is the smallest planet in the Solar System, with an equatorial radius of 2,439.7 kilometres (1,516.0 mi). Mercury is also smaller—albeit more massive—than the largest natural satellites in the Solar System, Ganymede and Titan. Mercury consists of approximately 70% metallic and 30% silicate material.\n\n\n=== Internal structure ===\n\nMercury appears to have a solid silicate crust and mantle overlying a solid, metallic outer core layer, a deeper liquid core layer, and a solid inner core. The composition of the iron-rich core remains uncertain, but it likely contains nickel, silicon and perhaps sulfur and carbon, plus trace amounts of other elements. The planet's density is the second highest in the Solar System at 5.427 g/cm3, only slightly less than Earth's density of 5.515 g/cm3. If the effect of gravitational compression were to be factored out from both planets, the materials of which Mercury is made would be denser than those of Earth, with an uncompressed density of 5.3 g/cm3 versus Earth's 4.4 g/cm3. Mercury's density can be used to infer details of its inner structure. Although Earth's high density results appreciably from gravitational compression, particularly at the core, Mercury is much smaller and its inner regions are not as compressed. Therefore, for it to have such a high density, its core must be large and rich in iron.\nThe radius of Mercury's core is estimated to be 2,020 ± 30 km (1,255 ± 19 mi), based on interior models constrained to be consistent with a moment of inertia factor of 0.346±0.014. Hence, Mercury's core occupies about 57% of its volume; for Earth this proportion is 17%. Research published in 2007 suggests that Mercury has a molten core. The mantle-crust layer is in total 420 km (260 mi) thick. Projections differ as to the size of the crust specifically; data from the Mariner 10 and MESSENGER probes suggests a thickness of 35 km (22 mi), whereas an Airy isostacy model suggests a thickness of 26 ± 11 km (16.2 ± 6.8 mi). One distinctive feature of Mercury's surface is the presence of numerous narrow ridges, extending up to several hundred kilometers in length. It is thought that these were formed as Mercury's core and mantle cooled and contracted at a time when the crust had already solidified.\nMercury's core has a higher iron content than that of any other planet in the Solar System, and several theories have been proposed to explain this. The most widely accepted theory is that Mercury originally had a metal–silicate ratio similar to common chondrite meteorites, thought to be typical of the Solar System's rocky matter, and a mass approximately 2.25 times its current mass. Early in the Solar System's history, Mercury may have been struck by a planetesimal of approximately 1⁄6 Mercury's mass and several thousand kilometers across. The impact would have stripped away much of the original crust and mantle, leaving the core behind as a relatively major component. A similar process, known as the giant impact hypothesis, has been proposed to explain the formation of Earth's Moon.\nAlternatively, Mercury may have formed from the solar nebula before the Sun's energy output had stabilized. It would initially have had twice its present mass, but as the protosun contracted, temperatures near Mercury could have been between 2,500 and 3,500 K and possibly even as high as 10,000 K. Much of Mercury's surface rock could have been vaporized at such temperatures, forming an atmosphere of \"rock vapor\" that could have been carried away by the solar wind. A third hypothesis proposes that the solar nebula caused drag on the particles from which Mercury was accreting, which meant that lighter particles were lost from the accreting material and not gathered by Mercury.\nEach hypothesis predicts a different surface composition, and two space missions have been tasked with making observations of this composition. The first MESSENGER, which ended in 2015, found higher-than-expected potassium and sulfur levels on the surface, suggesting that the giant impact hypothesis and vaporization of the crust and mantle did not occur because said potassium and sulfur would have been driven off by the extreme heat of these events. BepiColombo, which will arrive at Mercury in 2026, will make observations to test these hypotheses. The findings so far would seem to favor the third hypothesis; however, further analysis of the data is needed.\n\n\n=== Surface geology ===\n\nMercury's surface is similar in appearance to that of the Moon, showing extensive mare-like plains and heavy cratering, indicating that it has been geologically inactive for billions of years. It is more heterogeneous than the surface of Mars or the Moon, both of which contain significant stretches of similar geology, such as maria and plateaus. Albedo features are areas of markedly different reflectivity, which include impact craters, the resulting ejecta, and ray systems. Larger albedo features correspond to higher reflectivity plains. Mercury has \"wrinkle-ridges\" (dorsa), Moon-like highlands, mountains (montes), plains (planitiae), escarpments (rupes), and valleys (valles).\n\nThe planet's mantle is chemically heterogeneous, suggesting the planet went through a magma ocean phase early in its history. Crystallization of minerals and convective overturn resulted in a layered, chemically heterogeneous crust with large-scale variations in chemical composition observed on the surface. The crust is low in iron but high in sulfur, resulting from the stronger early chemically reducing conditions than is found on other terrestrial planets. The surface is dominated by iron-poor pyroxene and olivine, as represented by enstatite and forsterite, respectively, along with sodium-rich plagioclase and minerals of mixed magnesium, calcium, and iron-sulfide. The less reflective regions of the crust are high in carbon, most likely in the form of graphite.\nNames for features on Mercury come from a variety of sources and are set according to the IAU planetary nomenclature system. Names coming from people are limited to the deceased. Craters are named for artists, musicians, painters, and authors who have made outstanding or fundamental contributions to their field. Ridges, or dorsa, are named for scientists who have contributed to the study of Mercury. Depressions or fossae are named for works of architecture. Montes are named for the word \"hot\" in a variety of languages. Plains or planitiae are named for Mercury in various languages. Escarpments or rupēs are named for ships of scientific expeditions. Valleys or valles are named for abandoned cities, towns, or settlements of antiquity.\n\n\n==== Impact basins and craters ====\n\nMercury was heavily bombarded by comets and asteroids during and shortly following its formation 4.6 billion years ago, as well as during a possibly separate subsequent episode called the Late Heavy Bombardment that ended 3.8 billion years ago. Mercury received impacts over its entire surface during this period of intense crater formation, facilitated by the lack of any atmosphere to slow impactors down. During this time Mercury was volcanically active; basins were filled by magma, producing smooth plains similar to the maria found on the Moon. One of the most unusual craters is Apollodorus, or \"the Spider\", which hosts a series of radiating troughs extending outwards from its impact site.\nCraters on Mercury range in diameter from small bowl-shaped cavities to multi-ringed impact basins hundreds of kilometers across. They appear in all states of degradation, from relatively fresh rayed craters to highly degraded crater remnants. Mercurian craters differ subtly from lunar craters in that the area blanketed by their ejecta is much smaller, a consequence of Mercury's stronger surface gravity. According to International Astronomical Union rules, each new crater must be named after an artist who was famous for more than fifty years, and dead for more than three years, before the date the crater is named.\n\nThe largest known crater is Caloris Planitia, or Caloris Basin, with a diameter of 1,550 km (960 mi). The impact that created the Caloris Basin was so powerful that it caused lava eruptions and left a concentric mountainous ring ~2 km (1.2 mi) tall surrounding the impact crater. The floor of the Caloris Basin is filled by a geologically distinct flat plain, broken up by ridges and fractures in a roughly polygonal pattern. It is not clear whether they were volcanic lava flows induced by the impact or a large sheet of impact melt.\nAt the antipode of the Caloris Basin is a large region of unusual, hilly terrain known as the \"Weird Terrain\". One hypothesis for its origin is that shock waves generated during the Caloris impact traveled around Mercury, converging at the basin's antipode (180 degrees away). The resulting high stresses fractured the surface. Alternatively, it has been suggested that this terrain formed as a result of the convergence of ejecta at this basin's antipode.\n\nOverall, 46 impact basins have been identified. A notable basin is the 400 km (250 mi)-wide, multi-ring Tolstoj Basin that has an ejecta blanket extending up to 500 km (310 mi) from its rim and a floor that has been filled by smooth plains materials. Beethoven Basin has a similar-sized ejecta blanket and a 625 km (388 mi)-diameter rim. Like the Moon, the surface of Mercury has likely incurred the effects of space weathering processes, including solar wind and micrometeorite impacts.\n\n\n==== Plains ====\nThere are two geologically distinct plains regions on Mercury. Gently rolling, hilly plains in the regions between craters are Mercury's oldest visible surfaces, predating the heavily cratered terrain. These inter-crater plains appear to have obliterated many earlier craters, and show a general paucity of smaller craters below about 30 km (19 mi) in diameter.\nSmooth plains are widespread flat areas that fill depressions of various sizes and bear a strong resemblance to lunar maria. Unlike lunar maria, the smooth plains of Mercury have the same albedo as the older inter-crater plains. Despite a lack of unequivocally volcanic characteristics, the localization and rounded, lobate shape of these plains strongly support volcanic origins. All the smooth plains of Mercury formed significantly later than the Caloris basin, as evidenced by appreciably smaller crater densities than on the Caloris ejecta blanket.\n\n\n==== Compressional features ====\nAn unusual feature of Mercury's surface is the numerous compression folds, or rupes, that crisscross the plains. These exist on the Moon, but are much more prominent on Mercury. As Mercury's interior cooled, it contracted and its surface began to deform, creating wrinkle ridges and lobate scarps associated with thrust faults. The scarps can reach lengths of 1,000 km (620 mi) and heights of 3 km (1.9 mi). These compressional features can be seen on top of other features, such as craters and smooth plains, indicating they are more recent. Mapping of the features has suggested a total shrinkage of Mercury's radius in the range of ~1–7 km (0.62–4.35 mi). Most activity along the major thrust systems probably ended about 3.6–3.7 billion years ago. Small-scale thrust fault scarps have been found, tens of meters in height and with lengths in the range of a few kilometers, that appear to be less than 50 million years old, indicating that compression of the interior and consequent surface geological activity continue to the present.\n\n\n==== Volcanism ====\n\nThere is evidence for pyroclastic flows on Mercury from low-profile shield volcanoes. Fifty-one pyroclastic deposits have been identified, where 90% of them are found within impact craters. A study of the degradation state of the impact craters that host pyroclastic deposits suggests that pyroclastic activity occurred on Mercury over a prolonged interval.\nA \"rimless depression\" inside the southwest rim of the Caloris Basin consists of at least nine overlapping volcanic vents, each individually up to 8 km (5.0 mi) in diameter. It is thus a \"compound volcano\". The vent floors are at least 1 km (0.62 mi) below their brinks and they bear a closer resemblance to volcanic craters sculpted by explosive eruptions or modified by collapse into void spaces created by magma withdrawal back down into a conduit. Scientists could not quantify the age of the volcanic complex system but reported that it could be on the order of a billion years.\n\n\n=== Surface conditions and exosphere ===\n\nThe surface temperature of Mercury ranges from 100 to 700 K (−173 to 427 °C; −280 to 800 °F). It never rises above 180 K (−93 °C) at the poles, due to the absence of an atmosphere and a steep temperature gradient between the equator and the poles. At perihelion, the equatorial subsolar point is located at longitude 0°W or 180°W, and it climbs to a temperature of about 700 K. During aphelion, this occurs at 90° or 270°W and reaches only 550 K. On the dark side of the planet, temperatures average 110 K, 110 K (−163 °C). The intensity of sunlight on Mercury's surface ranges between 4.59 and 10.61 times the solar constant (1,370 W·m−2).\nAlthough daylight temperatures at the surface of Mercury are generally extremely high, observations strongly suggest that ice (frozen water) exists on Mercury. The floors of deep craters at the poles are never exposed to direct sunlight, and temperatures there remain below 102 K, far lower than the global average. This creates a cold trap where ice can accumulate. Water ice strongly reflects radar, and observations by the 70-meter Goldstone Solar System Radar and the VLA in the early 1990s revealed that there are patches of high radar reflection near the poles. Although ice was not the only possible cause of these reflective regions, astronomers thought it to be the most likely explanation. The presence of water ice was confirmed using MESSENGER images of craters at the north pole.\nThe icy crater regions are estimated to contain about 1014–1015 kg of ice, and may be covered by a layer of regolith that inhibits sublimation. By comparison, the Antarctic ice sheet on Earth has a mass of about 4×1018 kg, and Mars's south polar cap contains about 1016 kg of water. The origin of the ice on Mercury is not yet known, but the two most likely sources are from outgassing of water from the planet's interior and deposition by impacts of comets.\nMercury is too small and hot for its gravity to retain any significant atmosphere over long periods of time; it does have a tenuous surface-bounded exosphere at a surface pressure of less than approximately 0.5 nPa (0.005 picobars). It includes hydrogen, helium, oxygen, sodium, calcium, potassium, magnesium, silicon, and hydroxide, among others. This exosphere is not stable—atoms are continuously lost and replenished from a variety of sources. Hydrogen atoms and helium atoms probably come from the solar wind, diffusing into Mercury's magnetosphere before later escaping back into space. The radioactive decay of elements within Mercury's crust is another source of helium, as well as sodium and potassium. Water vapor is present, released by a combination of processes such as comets striking its surface, sputtering creating water out of hydrogen from the solar wind and oxygen from rock, and sublimation from reservoirs of water ice in the permanently shadowed polar craters. The detection of high amounts of water-related ions such as O+, OH−, and H3O+ was a surprise. Because of the quantities of these ions detected in Mercury's space environment, scientists surmise that these molecules were blasted from the surface or exosphere by the solar wind.\nSodium, potassium, and calcium were discovered in the atmosphere during the 1980s–1990s, and are thought to result primarily from the vaporization of surface rock struck by micrometeorite impacts including presently from Comet Encke. In 2008, magnesium was discovere"
+    }
+   }
+  }
+ },
+ "search|sq|Historia e Kosovës": {
+  "batchcomplete": "",
+  "continue": {
+   "sroffset": 5,
+   "continue": "-||"
+  },
+  "query": {
+   "searchinfo": {
+    "totalhits": 1549
+   },
+   "search": [
+    {
+     "ns": 0,
+     "title": "Historia e Kosovës",
+     "pageid": 3632,
+     "wordcount": 276
+    },
+    {
+     "ns": 0,
+     "title": "Beteja e Kosovës",
+     "pageid": 29284,
+     "wordcount": 433
+    },
+    {
+     "ns": 0,
+     "title": "Krahina Socialiste Autonome e Kosovës",
+     "pageid": 4302,
+     "wordcount": 1218
+    },
+    {
+     "ns": 0,
+     "title": "Historia moderne e Kosovës",
+     "pageid": 322329,
+     "wordcount": 5943
+    },
+    {
+     "ns": 0,
+     "title": "Ligji Kushtetues i Kosovës",
+     "pageid": 322204,
+     "wordcount": 360
+    }
+   ]
+  }
+ },
+ "props|sq|Historia e Kosovës|Beteja e Kosovës|Krahina Socialiste Autonome e Kosovës|Historia moderne e Kosovës|Ligji Kushtetues i Kosovës": {
+  "batchcomplete": "",
+  "query": {
+   "pages": {
+    "29284": {
+     "pageid": 29284,
+     "ns": 0,
+     "title": "Beteja e Kosovës",
+     "contentmodel": "wikitext",
+     "pagelanguage": "sq",
+     "pagelanguagehtmlcode": "sq",
+     "pagelanguagedir": "ltr",
+     "touched": "2026-07-05T13:12:55Z",
+     "lastrevid": 3005828,
+     "length": 4121,
+     "fullurl": "https://sq.wikipedia.org/wiki/Beteja_e_Kosov%C3%ABs",
+     "editurl": "https://sq.wikipedia.org/w/index.php?title=Beteja_e_Kosov%C3%ABs&action=edit",
+     "canonicalurl": "https://sq.wikipedia.org/wiki/Beteja_e_Kosov%C3%ABs"
+    },
+    "3632": {
+     "pageid": 3632,
+     "ns": 0,
+     "title": "Historia e Kosovës",
+     "contentmodel": "wikitext",
+     "pagelanguage": "sq",
+     "pagelanguagehtmlcode": "sq",
+     "pagelanguagedir": "ltr",
+     "touched": "2026-08-17T20:53:31Z",
+     "lastrevid": 2900244,
+     "length": 2100,
+     "fullurl": "https://sq.wikipedia.org/wiki/Historia_e_Kosov%C3%ABs",
+     "editurl": "https://sq.wikipedia.org/w/index.php?title=Historia_e_Kosov%C3%ABs&action=edit",
+     "canonicalurl": "https://sq.wikipedia.org/wiki/Historia_e_Kosov%C3%ABs"
+    },
+    "322329": {
+     "pageid": 322329,
+     "ns": 0,
+     "title": "Historia moderne e Kosovës",
+     "contentmodel": "wikitext",
+     "pagelanguage": "sq",
+     "pagelanguagehtmlcode": "sq",
+     "pagelanguagedir": "ltr",
+     "touched": "2026-09-21T10:05:03Z",
+     "lastrevid": 2975719,
+     "length": 46182,
+     "fullurl": "https://sq.wikipedia.org/wiki/Historia_moderne_e_Kosov%C3%ABs",
+     "editurl": "https://sq.wikipedia.org/w/index.php?title=Historia_moderne_e_Kosov%C3%ABs&action=edit",
+     "canonicalurl": "https://sq.wikipedia.org/wiki/Historia_moderne_e_Kosov%C3%ABs"
+    },
+    "4302": {
+     "pageid": 4302,
+     "ns": 0,
+     "title": "Krahina Socialiste Autonome e Kosovës",
+     "contentmodel": "wikitext",
+     "pagelanguage": "sq",
+     "pagelanguagehtmlcode": "sq",
+     "pagelanguagedir": "ltr",
+     "touched": "2026-10-01T00:46:09Z",
+     "lastrevid": 3001963,
+     "length": 10118,
+     "fullurl": "https://sq.wikipedia.org/wiki/Krahina_Socialiste_Autonome_e_Kosov%C3%ABs",
+     "editurl": "https://sq.wikipedia.org/w/index.php?title=Krahina_Socialiste_Autonome_e_Kosov%C3%ABs&action=edit",
+     "canonicalurl": "https://sq.wikipedia.org/wiki/Krahina_Socialiste_Autonome_e_Kosov%C3%ABs"
+    },
+    "322204": {
+     "pageid": 322204,
+     "ns": 0,
+     "title": "Ligji Kushtetues i Kosovës",
+     "contentmodel": "wikitext",
+     "pagelanguage": "sq",
+     "pagelanguagehtmlcode": "sq",
+     "pagelanguagedir": "ltr",
+     "touched": "2026-09-09T07:58:38Z",
+     "lastrevid": 2983567,
+     "length": 3053,
+     "fullurl": "https://sq.wikipedia.org/wiki/Ligji_Kushtetues_i_Kosov%C3%ABs",
+     "editurl": "https://sq.wikipedia.org/w/index.php?title=Ligji_Kushtetues_i_Kosov%C3%ABs&action=edit",
+     "canonicalurl": "https://sq.wikipedia.org/wiki/Ligji_Kushtetues_i_Kosov%C3%ABs"
+    }
+   }
+  }
+ },
+ "extract|sq|Historia e Kosovës": {
+  "batchcomplete": "",
+  "query": {
+   "pages": {
+    "3632": {
+     "pageid": 3632,
+     "ns": 0,
+     "title": "Historia e Kosovës",
+     "extract": "Historia e Kosovës daton që nga kohërat parahistorike kur kultura e Starçevës, kultura e Vinçës, kultura Bubanj-Hum dhe kultura Baden ishin aktive në rajon. Që atëherë, janë zbuluar shumë vende arkeologjike për shkak të bollëkut të burimeve natyrore që i dhanë rrugë zhvillimit të jetës.\nNë antikitet, zona ishte pjesë e Mbretërisë së Dardanisë. Ajo u aneksua nga Perandoria Romake drejt fundit të shekullit të 1-rë para Krishtit dhe u përfshi në provincën e Moesia-s. Në Mesjetë, rajoni u bë pjesë e Perandorisë Bullgare, Perandorisë Bizantine dhe shteteve mesjetare serbe. Në vitin 1389, Beteja e Kosovës u zhvillua midis një koalicioni shtetesh ballkanike dhe Perandorisë Osmane, duke rezultuar në një rënie serbe dhe pushtim përfundimtar osman në vitin 1459.\nHistoria moderne e Kosovës mund të gjurmohet në Sanxhakun Osman të Prizrenit, pjesë të të cilit u organizuan në Vilajetin e Kosovës në vitin 1877. Kjo ishte kur Kosova u përdor si emër i të gjithë territorit për herë të parë. Në vitin 1913, Vilajeti i Kosovës u përfshi në Mbretërinë e Serbisë, e cila në vitin 1918 formoi Jugosllavinë. Kosova fitoi autonomi në vitin 1963 nën drejtimin e Josip Broz Titos. Kjo autonomi u zgjerua ndjeshëm nga Kushtetuta e Jugosllavisë e vitit 1974, por u humb në një sërë politikash shtypëse të imponuara nga Slobodan Millosheviq. Përfundimisht, Lufta e Kosovës filloi në vitin 1998 dhe përfundoi me ndërhyrjen e NATO-s në vitin 1999. Më 17 shkurt 2008, përfaqësuesit e popullit të Kosovës shpallën në mënyrë të njëanshme pavarësinë e Kosovës dhe më pas miratuan Kushtetutën e Republikës së Kosovës, e cila hyri në fuqi më 15 qershor 2008.\n\n\n== Shiko edhe ==\nDardania\nKultura e Kosovës\n\n\n== Burime =="
+    }
+   }
+  }
+ },
+ "search|sq|Futbolli": {
+  "batchcomplete": "",
+  "continue": {
+   "sroffset": 5,
+   "continue": "-||"
+  },
+  "query": {
+   "searchinfo": {
+    "totalhits": 2290
+   },
+   "search": [
+    {
+     "ns": 0,
+     "title": "Futbolli",
+     "pageid": 3777,
+     "wordcount": 871
+    },
+    {
+     "ns": 0,
+     "title": "Futbolli regbi",
+     "pageid": 282470,
+     "wordcount": 285
+    },
+    {
+     "ns": 0,
+     "title": "Futbolli për Miqësinë",
+     "pageid": 243785,
+     "wordcount": 6539
+    },
+    {
+     "ns": 0,
+     "title": "Futbolli në Shqipëri",
+     "pageid": 243793,
+     "wordcount": 931
+    },
+    {
+     "ns": 0,
+     "title": "Futbolli në Amerikën e Jugut",
+     "pageid": 349419,
+     "wordcount": 3348
+    }
+   ]
+  }
+ },
+ "props|sq|Futbolli|Futbolli regbi|Futbolli për Miqësinë|Futbolli në Shqipëri|Futbolli në Amerikën e Jugut": {
+  "batchcomplete": "",
+  "query": {
+   "pages": {
+    "3777": {
+     "pageid": 3777,
+     "ns": 0,
+     "title": "Futbolli",
+     "contentmodel": "wikitext",
+     "pagelanguage": "sq",
+     "pagelanguagehtmlcode": "sq",
+     "pagelanguagedir": "ltr",
+     "touched": "2026-10-18T21:34:16Z",
+     "lastrevid": 3057838,
+     "length": 10559,
+     "fullurl": "https://sq.wikipedia.org/wiki/Futbolli",
+     "editurl": "https://sq.wikipedia.org/w/index.php?title=Futbolli&action=edit",
+     "canonicalurl": "https://sq.wikipedia.org/wiki/Futbolli"
+    },
+    "349419": {
+     "pageid": 349419,
+     "ns": 0,
+     "title": "Futbolli në Amerikën e Jugut",
+     "contentmodel": "wikitext",
+     "pagelanguage": "sq",
+     "pagelanguagehtmlcode": "sq",
+     "pagelanguagedir": "ltr",
+     "touched": "2026-09-21T10:05:05Z",
+     "lastrevid": 2965973,
+     "length": 25537,
+     "fullurl": "https://sq.wikipedia.org/wiki/Futbolli_n%C3%AB_Amerik%C3%ABn_e_Jugut",
+     "editurl": "https://sq.wikipedia.org/w/index.php?title=Futbolli_n%C3%AB_Amerik%C3%ABn_e_Jugut&action=edit",
+     "canonicalurl": "https://sq.wikipedia.org/wiki/Futbolli_n%C3%AB_Amerik%C3%ABn_e_Jugut"
+    },
+    "243793": {
+     "pageid": 243793,
+     "ns": 0,
+     "title": "Futbolli në Shqipëri",
+     "contentmodel": "wikitext",
+     "pagelanguage": "sq",
+     "pagelanguagehtmlcode": "sq",
+     "pagelanguagedir": "ltr",
+     "touched": "2026-09-25T18:40:13Z",
+     "lastrevid": 3049902,
+     "length": 8092,
+     "fullurl": "https://sq.wikipedia.org/wiki/Futbolli_n%C3%AB_Shqip%C3%ABri",
+     "editurl": "https://sq.wikipedia.org/w/index.php?title=Futbolli_n%C3%AB_Shqip%C3%ABri&action=edit",
+     "canonicalurl": "https://sq.wikipedia.org/wiki/Futbolli_n%C3%AB_Shqip%C3%ABri"
+    },
+    "243785": {
+     "pageid": 243785,
+     "ns": 0,
+     "title": "Futbolli për Miqësinë",
+     "contentmodel": "wikitext",
+     "pagelanguage": "sq",
+     "pagelanguagehtmlcode": "sq",
+     "pagelanguagedir": "ltr",
+     "touched": "2026-09-21T10:05:01Z",
+     "lastrevid": 2997751,
+     "length": 47570,
+     "fullurl": "https://sq.wikipedia.org/wiki/Futbolli_p%C3%ABr_Miq%C3%ABsin%C3%AB",
+     "editurl": "https://sq.wikipedia.org/w/index.php?title=Futbolli_p%C3%ABr_Miq%C3%ABsin%C3%AB&action=edit",
+     "canonicalurl": "https://sq.wikipedia.org/wiki/Futbolli_p%C3%ABr_Miq%C3%ABsin%C3%AB"
+    },
+    "282470": {
+     "pageid": 282470,
+     "ns": 0,
+     "title": "Futbolli regbi",
+     "contentmodel": "wikitext",
+     "pagelanguage": "sq",
+     "pagelanguagehtmlcode": "sq",
+     "pagelanguagedir": "ltr",
+     "touched": "2026-09-11T06:26:02Z",
+     "lastrevid": 2878951,
+     "length": 2037,
+     "fullurl": "https://sq.wikipedia.org/wiki/Futbolli_regbi",
+     "editurl": "https://sq.wikipedia.org/w/index.php?title=Futbolli_regbi&action=edit",
+     "canonicalurl": "https://sq.wikipedia.org/wiki/Futbolli_regbi"
+    }
+   }
+  }
+ },
+ "exists|en|Futbolli": {
+  "batchcomplete": "",
+  "query": {
+   "pages": {
+    "-1": {
+     "ns": 0,
+     "title": "Futbolli",
+     "missing": ""
+    }
+   }
+  }
+ },
+ "exists|sq|Futbolli": {
+  "batchcomplete": "",
+  "query": {
+   "pages": {
+    "3777": {
+     "pageid": 3777,
+     "ns": 0,
+     "title": "Futbolli"
+    }
+   }
+  }
+ },
+ "exists|en|Chemistry": {
+  "batchcomplete": "",
+  "query": {
+   "pages": {
+    "5180": {
+     "pageid": 5180,
+     "ns": 0,
+     "title": "Chemistry"
+    }
+   }
+  }
+ },
+ "exists|sq|Chemistry": {
+  "batchcomplete": "",
+  "query": {
+   "pages": {
+    "-1": {
+     "ns": 0,
+     "title": "Chemistry",
+     "missing": ""
+    }
+   }
+  }
+ },
+ "exists|en|Python": {
+  "batchcomplete": "",
+  "query": {
+   "pages": {
+    "46332325": {
+     "pageid": 46332325,
+     "ns": 0,
+     "title": "Python"
+    }
+   }
+  }
+ },
+ "exists|sq|Python": {
+  "batchcomplete": "",
+  "query": {
+   "pages": {
+    "42185": {
+     "pageid": 42185,
+     "ns": 0,
+     "title": "Python"
+    }
+   }
+  }
+ }
+}

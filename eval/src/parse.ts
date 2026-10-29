@@ -36,7 +36,7 @@ function arg(name: string): string | undefined {
  * every question and never interprets them; only `difficulties` does real work, because an
  * unmatched difficulty name is a silent fallback the report counts.
  */
-function contextFor(difficultyNames: string[]): ParseContext {
+function contextFor(difficultyNames: string[], sourceText: string | null): ParseContext {
   const difficulties: QuestionDifficulty[] = difficultyNames.map((level, i) => ({
     id: i + 1,
     level,
@@ -48,7 +48,23 @@ function contextFor(difficultyNames: string[]): ParseContext {
     languageId: 1,
     quizDifficultyId: difficulties[0]?.id ?? 1,
     difficulties,
-    sourceText: null, // Topic mode: the quote check has nothing to compare against and is skipped.
+    // From-memory Topic prompts have nothing to check a quote against, so the check is skipped.
+    // A grounded run passes the article the model read, exactly as the app does in Source mode.
+    sourceText,
+  };
+}
+
+/** One topic's path through the stages — and, for a grounded run, what grounding did. */
+interface StageRow {
+  requested: number;
+  returned: number;
+  kept: number;
+  dropped: string[];
+  grounding?: {
+    status: string;
+    title: string | null;
+    reason: string | null;
+    asks: { kind: string; answered: string; auto: boolean }[];
   };
 }
 
@@ -153,7 +169,7 @@ async function main(): Promise<void> {
 
   const rows: LabelRow[] = [];
   const key: Record<string, unknown> = {};
-  const perTopic: Record<string, { requested: number; returned: number; kept: number; dropped: string[] }> = {};
+  const perTopic: Record<string, StageRow> = {};
 
   for (const file of files) {
     const raw = JSON.parse(await fs.readFile(path.join(rawDir, file), "utf8")) as {
@@ -161,9 +177,18 @@ async function main(): Promise<void> {
       request: { QuestionCount: number; DifficultyNames: string[] };
       reply: { content: string };
       languageMode: string;
+      grounding?: {
+        status: string;
+        reason?: string | null;
+        source?: { title: string; text: string; url?: string | null } | null;
+      } | null;
+      asks?: { kind: string; answered: string; auto: boolean }[];
     };
 
-    const result: ParseResult = parseAiOutput(raw.reply.content, contextFor(raw.request.DifficultyNames));
+    const result: ParseResult = parseAiOutput(
+      raw.reply.content,
+      contextFor(raw.request.DifficultyNames, raw.grounding?.source?.text ?? null),
+    );
     await fs.writeFile(path.join(parsedDir, file), JSON.stringify(result, null, 2));
 
     // What the model emitted, before the parser decided. `QuestionsReturned` on the usage row
@@ -181,6 +206,18 @@ async function main(): Promise<void> {
       returned,
       kept: result.questions.length,
       dropped: result.dropped.map((d) => d.reason),
+      // Kept out of labels.jsonl and key.json on purpose: whether a question was grounded is
+      // exactly what labelling must not know. Only the scorer reads stages.json.
+      ...(raw.grounding
+        ? {
+            grounding: {
+              status: raw.grounding.status,
+              title: raw.grounding.source?.title ?? null,
+              reason: raw.grounding.reason ?? null,
+              asks: raw.asks ?? [],
+            },
+          }
+        : {}),
     };
 
     for (const [qIndex, parsed] of result.questions.entries()) {

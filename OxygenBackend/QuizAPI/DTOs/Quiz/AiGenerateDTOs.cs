@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using QuizAPI.Services.Ai;
+using QuizAPI.Services.Ai.Sources;
 
 namespace QuizAPI.DTOs.Quiz
 {
@@ -65,6 +66,20 @@ namespace QuizAPI.DTOs.Quiz
         [MaxLength(500)]
         public string? ExtraInstructions { get; set; }
 
+        /// <summary>The author's answer to "English or Albanian?" (grounding, <c>SourceNeedsChoice</c>).</summary>
+        [MaxLength(100)]
+        public string? SourceLanguage { get; set; }
+
+        /// <summary>The author's answer to "which article?" (grounding, <c>SourceNeedsChoice</c>).</summary>
+        [MaxLength(300)]
+        public string? SourceTitle { get; set; }
+
+        /// <summary>The author's answer "none of these" to "which article?" — generate from memory.</summary>
+        public bool SourceDeclined { get; set; }
+
+        /// <summary><c>ai-prompt</c> only: ground the prompt as generation would. See <see cref="AiGenerationRequest.Ground"/>.</summary>
+        public bool Ground { get; set; }
+
         /// <summary>
         /// Maps to the service contract. Returns null when <see cref="Mode"/> is not a known mode,
         /// which the controller turns into a 400.
@@ -86,8 +101,74 @@ namespace QuizAPI.DTOs.Quiz
                 QuestionCount = QuestionCount,
                 AllowedTypes = AllowedTypes,
                 ExtraInstructions = ExtraInstructions,
+                SourceLanguage = SourceLanguage,
+                SourceTitle = SourceTitle,
+                SourceDeclined = SourceDeclined,
+                Ground = Ground,
             };
         }
+    }
+
+    /// <summary>
+    /// What grounding concluded, on every response that went through it
+    /// (docs/quiz/ai-quiz-generation-flow.md §2e). Absent when grounding is off.
+    /// </summary>
+    public class AiGroundingDTO
+    {
+        /// <summary>"Grounded", "Ungrounded", "NeedsLanguage" or "NeedsArticle".</summary>
+        public string Status { get; set; } = string.Empty;
+
+        /// <summary>The language settled on, when one was.</summary>
+        public string? Language { get; set; }
+
+        /// <summary>Ungrounded: "too-thin", "not-found", "unavailable", "declined" or "no-source-for-language".</summary>
+        public string? Reason { get; set; }
+
+        /// <summary>Grounded: the article. Its text is what the browser checks each <c>sourceQuote</c> against.</summary>
+        public AiGroundedSourceDTO? Source { get; set; }
+
+        /// <summary>NeedsArticle: the articles to choose between, best first.</summary>
+        public List<AiSourceCandidateDTO>? Articles { get; set; }
+
+        /// <summary>NeedsLanguage: the languages to choose between.</summary>
+        public List<string>? Languages { get; set; }
+
+        public static AiGroundingDTO? From(GroundingResult g) => g.Status == GroundingStatus.Off ? null : new()
+        {
+            Status = g.Status.ToString(),
+            Language = g.Language,
+            Reason = g.Reason,
+            Source = g.Source is null ? null : new AiGroundedSourceDTO
+            {
+                Provider = g.Source.Provider,
+                Title = g.Source.Title,
+                Url = g.Source.Url,
+                Text = g.Source.Text,
+                Language = g.Source.Language,
+            },
+            Articles = g.Status == GroundingStatus.NeedsArticle
+                ? g.Candidates.Select(c => new AiSourceCandidateDTO { Title = c.Title, Words = c.Words, Url = c.Url }).ToList()
+                : null,
+            Languages = g.Status == GroundingStatus.NeedsLanguage ? g.Languages.ToList() : null,
+        };
+    }
+
+    public class AiGroundedSourceDTO
+    {
+        /// <summary>The source tier, e.g. "wikipedia".</summary>
+        public string Provider { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        /// <summary>Carries the CC BY-SA attribution; the review links to it.</summary>
+        public string? Url { get; set; }
+        public string Text { get; set; } = string.Empty;
+        public string Language { get; set; } = string.Empty;
+    }
+
+    public class AiSourceCandidateDTO
+    {
+        public string Title { get; set; } = string.Empty;
+        public int Words { get; set; }
+        public string? Url { get; set; }
     }
 
     /// <summary>
@@ -111,6 +192,9 @@ namespace QuizAPI.DTOs.Quiz
 
         public int InputTokens { get; set; }
         public int OutputTokens { get; set; }
+
+        /// <summary>What grounding concluded; null when grounding is off.</summary>
+        public AiGroundingDTO? Grounding { get; set; }
     }
 
     /// <summary>
@@ -127,6 +211,9 @@ namespace QuizAPI.DTOs.Quiz
 
         /// <summary>Kept so the shared axios error interceptor surfaces the message verbatim.</summary>
         public bool IsCustomMessage { get; set; } = true;
+
+        /// <summary><c>SourceNeedsChoice</c>: the question to put to the author.</summary>
+        public AiGroundingDTO? Grounding { get; set; }
     }
 
     public class AiQuotaResponse

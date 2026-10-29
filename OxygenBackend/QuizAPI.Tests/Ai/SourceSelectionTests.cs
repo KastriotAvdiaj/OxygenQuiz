@@ -6,166 +6,174 @@ namespace QuizAPI.Tests.Ai;
 /// <summary>
 /// The rules that decide which article grounds a generation, or whether to ask.
 ///
-/// <para>Most of these are real search results, measured against the MediaWiki API on
-/// 2026-10-28 and written down here because they are the evidence the rules exist for. If a
-/// rule changes, these say what it used to get right.</para>
+/// <para>The cases are the real top-five search results for the twelve eval topics, measured
+/// against the MediaWiki API on 2026-10-29 — written down because they are the evidence the
+/// rules exist for. Each says what the author would want, and the rule is held to that.</para>
 ///
-/// <para>Note what they are <b>not</b>: the ratio was fitted to these cases, so passing them is
-/// not evidence it generalises. That is the eval harness's job (docs/development/ai-eval.md).</para>
+/// <para>Note what they are <b>not</b>: the thresholds were chosen with these cases in view, so
+/// passing them is not evidence the rules generalise. That is the eval harness's job
+/// (docs/development/ai-eval.md).</para>
 /// </summary>
 public class SourceSelectionTests
 {
     private const int MinWords = 400;
-    private const double Ratio = 1.5;
     private const int Offer = 5;
 
-    private static SourceCandidate A(string title, int words, bool disambig = false) =>
-        new(title, words) { IsDisambiguation = disambig };
+    private static SourceCandidate A(string title, int words, bool disambig = false, string? redirect = null) =>
+        new(title, words) { IsDisambiguation = disambig, RedirectTitle = redirect };
 
-    private static SourceDecision Decide(params SourceCandidate[] candidates) =>
-        SourceSelection.Decide(candidates, MinWords, Ratio, Offer);
+    private static SourceDecision Decide(string topic, params SourceCandidate[] hits) =>
+        SourceSelection.Decide(topic, hits, MinWords, Offer);
 
-    // ── The measured English cases ───────────────────────────────────────────────────────
+    // ── Used: a clear title match ────────────────────────────────────────────────────────
 
     [Fact]
-    public void A_disambiguation_page_at_the_top_asks_rather_than_skipping_to_the_next_hit()
+    public void A_title_matching_the_topic_beats_a_higher_ranked_body_match()
     {
-        // "Mercury": the top hit is the disambiguation page. Skipping it lands on the planet by
-        // luck — Freddie Mercury is one rank behind with a thousand more words.
-        var decision = Decide(
-            A("Mercury", 974, disambig: true),
-            A("Mercury (planet)", 16170),
-            A("Freddie Mercury", 17329),
-            A("Mercury (element)", 13576));
+        // The first-hit rule took "Human body" here.
+        var d = Decide("The human respiratory system",
+            A("Human body", 5622), A("Respiratory system", 11254), A("Respiratory tract", 3170),
+            A("Respiratory syncytial virus", 10190), A("Lung", 11085));
 
-        Assert.Equal(SourceDecisionKind.Ask, decision.Kind);
-        Assert.Contains(decision.Candidates, c => c.Title == "Mercury (planet)");
-        Assert.DoesNotContain(decision.Candidates, c => c.IsDisambiguation);
+        Assert.Equal(SourceDecisionKind.Use, d.Kind);
+        Assert.Equal("Respiratory system", d.Chosen!.Title);
     }
 
     [Fact]
-    public void A_much_longer_second_hit_asks_rather_than_trusting_the_search_rank()
+    public void The_right_war_wins_on_shared_words_not_on_length()
     {
-        // "Human respiratory system" really does return Human body first. Nothing marks it as
-        // wrong; only the length gap suggests the search was not confident.
-        var decision = Decide(
-            A("Human body", 5622),
-            A("Respiratory system", 11254),
-            A("Respiratory tract", 3170));
+        // "World War II" (25,790 words) and the World War I front are both longer; neither is the topic.
+        var d = Decide("World War II in the Balkans",
+            A("Balkans campaign (World War II)", 1188), A("World War II", 25790),
+            A("Balkan Front (World War I)", 2625), A("History of the Balkans", 13708),
+            A("War crimes in World War II", 9418));
 
-        Assert.Equal(SourceDecisionKind.Ask, decision.Kind);
+        Assert.Equal("Balkans campaign (World War II)", d.Chosen?.Title);
     }
 
     [Fact]
-    public void The_longest_article_is_never_chosen_on_its_own()
+    public void Stubs_are_skipped_rather_than_reported_as_the_best_match()
     {
-        // "Balkans campaign World War II" returns the World War I front second, and longer.
-        // A pick-the-longest rule chooses the wrong war silently; asking does not.
-        var decision = Decide(
-            A("Balkans campaign (World War II)", 1188),
-            A("Balkan Front (World War I)", 2625));
+        // The first two hits are 28- and 30-word book stubs; the article is fourth.
+        var d = Decide("Kuzhina tradicionale shqiptare",
+            A("Kuzhina Shqiptare. 600 receta tradicionale", 28), A("Kuzhina Shqiptare. 500 receta tradicionale", 30),
+            A("Kuzhina kosovare", 627), A("Kuzhina shqiptare", 1843), A("Kuzhina ballkanike", 1113));
 
-        Assert.Equal(SourceDecisionKind.Ask, decision.Kind);
-        Assert.Null(decision.Chosen);
+        Assert.Equal(SourceDecisionKind.Use, d.Kind);
+        Assert.Equal("Kuzhina shqiptare", d.Chosen!.Title);
     }
 
     [Fact]
-    public void A_confident_search_is_not_second_guessed()
+    public void Of_two_equal_matches_the_more_precise_title_wins()
     {
-        // "Photosynthesis": right answer first, by a wide margin. Asking here would be noise,
-        // and a gate that fires on good results is a gate people learn to click through.
-        var decision = Decide(
-            A("Photosynthesis", 11914),
-            A("Photosynthesis (disambiguation)", 101, disambig: true),
-            A("Artificial photosynthesis", 5111));
+        // Both share "letërsia shqipe"; only one of them is about Albanian literature as such.
+        var d = Decide("Letërsia shqipe dhe Rilindja Kombëtare",
+            A("Letërsia shqipe në Maqedoni të Veriut", 880), A("Letërsia shqipe", 4563),
+            A("Historia e letërsisë shqipe", 766), A("Sabri Hamiti", 2246), A("Idriz Ajeti", 1041));
 
-        Assert.Equal(SourceDecisionKind.Use, decision.Kind);
-        Assert.Equal("Photosynthesis", decision.Chosen!.Title);
-    }
-
-    // ── The measured Albanian cases ──────────────────────────────────────────────────────
-
-    [Fact]
-    public void An_ambiguous_and_thin_topic_is_still_put_to_the_author()
-    {
-        // "Historia e Kosovës" is a 276-word stub, and a longer related article sits below it.
-        // Order matters: deciding thinness first would hide a candidate that might actually
-        // work from the one person able to judge.
-        var decision = Decide(
-            A("Historia e Kosovës", 276),
-            A("Beteja e Kosovës", 433),
-            A("Krahina Socialiste Autonome e Kosovës", 1218));
-
-        Assert.Equal(SourceDecisionKind.Ask, decision.Kind);
-    }
-
-    [Fact]
-    public void A_clear_but_short_winner_is_reported_as_too_thin_not_used()
-    {
-        // The dangerous case: one obvious article, far too short to carry ten questions. Using
-        // it would show a citation over answers the model invented.
-        var decision = Decide(A("Historia e Kosovës", 276));
-
-        Assert.Equal(SourceDecisionKind.TooThin, decision.Kind);
-        Assert.Equal("Historia e Kosovës", decision.Chosen!.Title);
+        Assert.Equal("Letërsia shqipe", d.Chosen?.Title);
     }
 
     [Theory]
-    [InlineData("Rilindja Kombëtare Shqiptare", 6157, "Rilindja kombëtare letoneze", 478)]
-    [InlineData("Kuzhina shqiptare", 1843, "Kuzhina kosovare", 627)]
-    public void A_clear_winner_in_Albanian_is_used(string top, int topWords, string next, int nextWords)
-    {
-        var decision = Decide(A(top, topWords), A(next, nextWords));
-
-        Assert.Equal(SourceDecisionKind.Use, decision.Kind);
-        Assert.Equal(top, decision.Chosen!.Title);
-    }
-
-    // ── Edges ────────────────────────────────────────────────────────────────────────────
+    [InlineData("Photosynthesis", "Photosynthesis", 11914)]
+    [InlineData("The 2024 Summer Olympics", "2024 Summer Olympics", 13724)]
+    public void An_exact_title_is_used(string topic, string title, int words) =>
+        Assert.Equal(title, Decide(topic, A(title, words), A("Something else entirely", 9000)).Chosen?.Title);
 
     [Fact]
-    public void No_hits_is_not_found()
+    public void A_redirect_the_search_matched_through_counts_as_the_title()
     {
-        Assert.Equal(SourceDecisionKind.NotFound, Decide().Kind);
+        var d = Decide("Quantum physics",
+            A("Quantum", 2100), A("Quantum mechanics", 14000, redirect: "Quantum physics"));
+
+        Assert.Equal("Quantum mechanics", d.Chosen?.Title);
     }
 
-    [Fact]
-    public void Nothing_but_disambiguation_pages_is_not_found_rather_than_a_question()
-    {
-        // Offering a choice between two lists-of-links is not a question anyone can answer.
-        var decision = Decide(
-            A("Mercury", 974, disambig: true),
-            A("Mercury (disambiguation)", 120, disambig: true));
-
-        Assert.Equal(SourceDecisionKind.NotFound, decision.Kind);
-    }
+    // ── Asked: no clear match ────────────────────────────────────────────────────────────
 
     [Fact]
-    public void A_single_long_article_is_used_without_a_second_to_compare_against()
+    public void A_disambiguation_page_at_the_top_asks_with_the_real_articles()
     {
-        var decision = Decide(A("2024 Summer Olympics", 34090));
+        var d = Decide("Mercury",
+            A("Mercury", 974, disambig: true), A("Mercury (planet)", 16170), A("Freddie Mercury", 17329),
+            A("Mercury (element)", 13576), A("Mercury Prize", 3833));
 
-        Assert.Equal(SourceDecisionKind.Use, decision.Kind);
+        Assert.Equal(SourceDecisionKind.Ask, d.Kind);
+        Assert.DoesNotContain(d.Candidates, c => c.IsDisambiguation);
+        Assert.Contains(d.Candidates, c => c.Title == "Mercury (planet)");
     }
 
     [Fact]
-    public void The_ratio_is_exclusive_of_its_own_boundary_in_neither_direction()
+    public void One_shared_word_out_of_three_is_not_enough_the_snake_case()
     {
-        // Exactly at the ratio counts as a contest: the gate is "not clearly better", and 1.5x
-        // on the nose is not clearly better.
-        Assert.Equal(SourceDecisionKind.Ask, Decide(A("a", 1000), A("b", 1500)).Kind);
-        Assert.Equal(SourceDecisionKind.Use, Decide(A("a", 1000), A("b", 1499)).Kind);
+        // sq.wikipedia's "Python" is the snake. Sharing only the word "Python" with a topic about
+        // programming used to be enough; now it is a question, where "none of these" is the answer.
+        var d = Decide("Bazat e programimit në Python",
+            A("Python", 8854), A("Baza e të dhënave e bazuar në objeke", 2724),
+            A("Elixir (gjuhë programimi)", 1082), A("C++", 5526), A("C (gjuhë programimi)", 7254));
+
+        Assert.Equal(SourceDecisionKind.Ask, d.Kind);
     }
 
     [Fact]
-    public void A_disambiguation_page_below_the_top_does_not_trigger_a_question_by_itself()
+    public void A_title_mostly_about_something_else_is_a_question()
     {
-        // Only the top hit being a disambiguation page means the term is ambiguous. One further
-        // down is normal — most big topics have one.
-        var decision = Decide(
-            A("Photosynthesis", 11914),
-            A("Photosynthesis (disambiguation)", 101, disambig: true));
+        // Shares "historia" and "Kosovës", but it is the history of football in Kosovo.
+        var d = Decide("Historia e Kosovës në shekullin XX",
+            A("Historia e Stantërgut", 381), A("Historia e futbollit në Kosovë", 1473),
+            A("Historia e Prishtinës", 2800), A("Komuna e Prishtinës", 665), A("Historia e Vushtrrisë", 963));
 
-        Assert.Equal(SourceDecisionKind.Use, decision.Kind);
+        Assert.Equal(SourceDecisionKind.Ask, d.Kind);
+        Assert.Equal("Historia e futbollit në Kosovë", d.Candidates[0].Title); // best match offered first
+        Assert.DoesNotContain(d.Candidates, c => c.Words < MinWords);       // a stub is never offered
+    }
+
+    [Theory]
+    [InlineData("Rregullat e futbollit")]               // the Polish national team came first
+    [InlineData("New features in C# 12 and .NET 8")]   // Wikipedia has no such article
+    public void Topics_wikipedia_has_no_article_for_ask_rather_than_guess(string topic)
+    {
+        var d = topic.StartsWith("Rregullat")
+            ? Decide(topic, A("Kombëtarja polake e futbollit", 990), A("Përfaqësuesja kosovare e futbollit", 1769),
+                A("Kombëtarja sovjetike e futbollit", 1164), A("Kampionati Botëror i Futbollit 2010", 524),
+                A("Historia e futbollit në Kosovë", 1473))
+            : Decide(topic, A(".NET", 2923), A("Features new to Windows 8", 13231),
+                A(".NET Framework version history", 6989), A("ASP.NET", 967), A("PHP", 12565));
+
+        Assert.Equal(SourceDecisionKind.Ask, d.Kind);
+    }
+
+    [Fact]
+    public void A_two_word_topic_needs_both_words()
+    {
+        // "Fizika" alone is physics in general.
+        Assert.Equal(SourceDecisionKind.Ask, Decide("Fizika kuantike", A("Fizika", 6000), A("Atomi", 3000)).Kind);
+    }
+
+    // ── Nothing to use ───────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void No_hits_is_not_found() => Assert.Equal(SourceDecisionKind.NotFound, Decide("Anything").Kind);
+
+    [Fact]
+    public void Hits_sharing_no_word_with_the_topic_are_not_found()
+    {
+        Assert.Equal(SourceDecisionKind.NotFound, Decide("Photosynthesis", A("Chlorophyll", 5000), A("Leaf", 4000)).Kind);
+    }
+
+    [Fact]
+    public void Only_stubs_is_too_thin_and_names_the_nearest()
+    {
+        var d = Decide("Historia e Kosovës", A("Historia e Kosovës", 276), A("Ligji Kushtetues i Kosovës", 360));
+
+        Assert.Equal(SourceDecisionKind.TooThin, d.Kind);
+        Assert.Equal("Historia e Kosovës", d.Chosen!.Title);
+    }
+
+    [Fact]
+    public void Only_disambiguation_pages_is_not_found_rather_than_an_empty_question()
+    {
+        Assert.Equal(SourceDecisionKind.NotFound,
+            Decide("Mercury", A("Mercury", 974, disambig: true), A("Mercury (disambiguation)", 300, disambig: true)).Kind);
     }
 }

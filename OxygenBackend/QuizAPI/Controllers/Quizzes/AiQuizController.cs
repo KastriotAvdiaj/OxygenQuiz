@@ -100,6 +100,7 @@ namespace QuizAPI.Controllers.Quizzes
                 QuotaRemaining = outcome.QuotaRemaining,
                 InputTokens = outcome.Usage.InputTokens,
                 OutputTokens = outcome.Usage.OutputTokens,
+                Grounding = AiGroundingDTO.From(outcome.Grounding),
             });
         }
 
@@ -112,7 +113,7 @@ namespace QuizAPI.Controllers.Quizzes
         [HttpPost("ai-prompt")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public IActionResult GetPrompt([FromBody] AiGenerateCM request)
+        public async Task<IActionResult> GetPrompt([FromBody] AiGenerateCM request, CancellationToken ct)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
@@ -124,7 +125,16 @@ namespace QuizAPI.Controllers.Quizzes
                     Message = $"'{request.Mode}' is not a valid generation mode.",
                 });
 
-            return Ok(new { prompt = _generation.BuildPrompt(serviceRequest) });
+            var (prompt, grounding) = await _generation.BuildPromptAsync(serviceRequest, ct);
+            if (prompt is null)
+                return StatusCode(StatusCodes.Status409Conflict, new AiGenerateErrorResponse
+                {
+                    Code = AiErrorCodes.SourceNeedsChoice,
+                    Message = AiGenerationOutcome.NeedsChoice(grounding).Message!,
+                    Grounding = AiGroundingDTO.From(grounding),
+                });
+
+            return Ok(new { prompt, grounding = AiGroundingDTO.From(grounding) });
         }
 
         /// <summary>
@@ -232,6 +242,7 @@ namespace QuizAPI.Controllers.Quizzes
                 Code = outcome.ErrorCode ?? "Unknown",
                 Message = outcome.Message ?? "Quiz generation failed.",
                 RetryAfter = outcome.RetryAfterUtc,
+                Grounding = AiGroundingDTO.From(outcome.Grounding),
             };
 
             switch (outcome.ErrorCode)
@@ -246,6 +257,12 @@ namespace QuizAPI.Controllers.Quizzes
 
                 case AiErrorCodes.EmailNotVerified:
                     return StatusCode(StatusCodes.Status403Forbidden, body);
+
+                // Not an error: a question for the author. 409 because the request can't proceed
+                // as sent and the body says exactly what to add — and no 4xx the client already
+                // treats as "fix your input" is a better fit.
+                case AiErrorCodes.SourceNeedsChoice:
+                    return StatusCode(StatusCodes.Status409Conflict, body);
 
                 case AiErrorCodes.FeatureDisabled:
                     return StatusCode(StatusCodes.Status503ServiceUnavailable, body);

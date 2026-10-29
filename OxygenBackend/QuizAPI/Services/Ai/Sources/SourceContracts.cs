@@ -42,6 +42,12 @@ namespace QuizAPI.Services.Ai.Sources
         public bool IsDisambiguation { get; init; }
 
         public string? Url { get; init; }
+
+        /// <summary>
+        /// The redirect the search matched through, when it matched one — "Quantum physics" for
+        /// <i>Quantum mechanics</i>. <see cref="SourceSelection"/> scores it like a second title.
+        /// </summary>
+        public string? RedirectTitle { get; init; }
     }
 
     /// <summary>The result of looking a topic up in one source.</summary>

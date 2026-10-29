@@ -26,6 +26,9 @@ export type AiGenerateErrorCode =
   | "SourceTooLarge"
   | "UnreadableSource"
   | "UnsupportedLanguage"
+  // Grounding asking the author to pick a language or article (409). Not a failure, and not
+  // answered by the wizard yet — docs/quiz/ai-quiz-generation-flow.md §9.18.
+  | "SourceNeedsChoice"
   | "ProviderUnavailable"
   | "ProviderTimeout"
   | "ModelOutputInvalid";

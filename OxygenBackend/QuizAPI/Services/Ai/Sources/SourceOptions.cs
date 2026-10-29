@@ -22,13 +22,6 @@ namespace QuizAPI.Services.Ai.Sources
         /// </summary>
         public int MinSourceWords { get; set; } = 400;
 
-        /// <summary>
-        /// Ask the author when the second-ranked article is at least this many times longer than
-        /// the first. See <see cref="SourceSelection"/> for where the number comes from and why it
-        /// should not be trusted further than the cases it was fitted to.
-        /// </summary>
-        public double CloseContestRatio { get; set; } = 1.5;
-
         /// <summary>How many candidates a disambiguation prompt offers. More is a worse question.</summary>
         public int MaxCandidatesToOffer { get; set; } = 5;
 
@@ -36,10 +29,17 @@ namespace QuizAPI.Services.Ai.Sources
         public int SearchLimit { get; set; } = 5;
 
         /// <summary>
-        /// Ceiling on the extract handed to the prompt. Mirrors <c>Ai:MaxSourceChars</c>, which
-        /// bounds pasted material, so both doors into Source mode truncate at the same place.
+        /// Ceiling on the extract handed to the prompt — the article's opening, cut at a paragraph.
+        ///
+        /// <para><b>6,000, not the 40,000 pasted material gets.</b> Set by the current vendor, not by
+        /// Wikipedia: Groq's free tier allows about 8,000 tokens a minute and reserves the 4,000 of
+        /// <c>Ai:MaxOutputTokens</c> up front, so prompt plus article must fit in roughly 4,000
+        /// tokens. The rules take ~1,500; 6,000 characters of English is ~1,500 tokens, and Albanian
+        /// costs about a quarter more (docs/quiz/ai-quiz-generation-flow.md §2c). The opening of an
+        /// article is its densest summary, so this is the part worth keeping. Raise it with a
+        /// vendor that allows more — the eval's per-run token counts say how far.</para>
         /// </summary>
-        public int MaxSourceChars { get; set; } = 40_000;
+        public int MaxSourceChars { get; set; } = 6_000;
 
         /// <summary>
         /// Per-request budget. The whole generation sits under a ~100s Cloudflare proxy timeout and

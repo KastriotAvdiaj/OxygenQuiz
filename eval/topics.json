@@ -7,7 +7,10 @@
     "against those rows. It is also the yardstick the scorer measures observed language against.",
     "'topic' must read like something a user would actually type. A topic that explains its own",
     "trap ('Mercury planet vs element disambiguation') tells the model the answer and measures",
-    "nothing."
+    "nothing.",
+    "'sourceTitle' / 'noSource' are only read by --grounding: how an author would answer the server's",
+    "'which article?' question for that topic. Set from a dry run on 2026-10-29 — Wikipedia has no",
+    "good article for the four 'noSource' topics, so a grounded run writes them from memory."
   ],
   "defaults": {
     "questionCount": 10,
@@ -24,14 +27,17 @@
     { "id": "en-03", "language": "English", "topic": "World War II in the Balkans",
       "note": "regionally relevant, and tests whether the model knows non-Anglocentric history." },
     { "id": "en-04", "language": "English", "topic": "Mercury",
-      "note": "AMBIGUITY TRAP. Planet, element, Roman god, Freddie. A grounded pipeline must disclose which it chose." },
+      "note": "AMBIGUITY TRAP. Planet, element, Roman god, Freddie. A grounded pipeline must disclose which it chose.",
+      "sourceTitle": "Mercury (planet)" },
     { "id": "en-05", "language": "English", "topic": "New features in C# 12 and .NET 8",
-      "note": "STALENESS TRAP, and the case where Wikipedia is useless but official docs are excellent." },
+      "note": "STALENESS TRAP, and the case where Wikipedia is useless but official docs are excellent.",
+      "noSource": true },
     { "id": "en-06", "language": "English", "topic": "The 2024 Summer Olympics",
       "note": "RECENCY TRAP — near or past the training cutoff. Medal counts invite confident invention." },
 
     { "id": "sq-01", "language": "Albanian", "topic": "Historia e Kosovës në shekullin XX",
-      "note": "national history — the best-covered Albanian case. If grounding fails here it fails everywhere in sq." },
+      "note": "national history — the best-covered Albanian case. If grounding fails here it fails everywhere in sq.",
+      "noSource": true },
     { "id": "sq-02", "language": "Albanian", "topic": "Gjeografia e Shqipërisë dhe Kosovës",
       "note": "classroom staple. Place names stress the inflection problem in the giveaway check." },
     { "id": "sq-03", "language": "Albanian", "topic": "Letërsia shqipe dhe Rilindja Kombëtare",
@@ -39,8 +45,10 @@
     { "id": "sq-04", "language": "Albanian", "topic": "Kuzhina tradicionale shqiptare",
       "note": "popular, but mostly folk knowledge with little encyclopedic text — a hard case for Wikipedia grounding." },
     { "id": "sq-05", "language": "Albanian", "topic": "Rregullat e futbollit",
-      "note": "popular, and rules are precise, so a wrong answer is unarguable rather than a matter of taste." },
+      "note": "popular, and rules are precise, so a wrong answer is unarguable rather than a matter of taste.",
+      "noSource": true },
     { "id": "sq-06", "language": "Albanian", "topic": "Bazat e programimit në Python",
-      "note": "TECHNICAL-VOCABULARY STRESS CASE. Almost no Albanian corpus for this; translation-flavoured output should show here first." }
+      "note": "TECHNICAL-VOCABULARY STRESS CASE. Almost no Albanian corpus for this; translation-flavoured output should show here first.",
+      "noSource": true }
   ]
 }

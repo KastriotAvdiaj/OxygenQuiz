@@ -14,6 +14,13 @@ namespace QuizAPI.Services.Ai
         /// </summary>
         string BuildPrompt(AiGenerationRequest request);
 
+        /// <summary>
+        /// The prompt, grounded when <see cref="AiGenerationRequest.Ground"/> asks for it. Prompt is
+        /// null when grounding needs the author to choose first — the result says what to ask.
+        /// </summary>
+        Task<(string? Prompt, Sources.GroundingResult Grounding)> BuildPromptAsync(
+            AiGenerationRequest request, CancellationToken ct = default);
+
         Task<AiQuotaStatus> GetQuotaStatusAsync(Guid userId, CancellationToken ct = default);
 
         /// <summary>

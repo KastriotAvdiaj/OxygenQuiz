@@ -54,6 +54,36 @@ interface TopicRow {
   difficultyNames?: string[];
   categoryNames?: string[];
   languageNames?: string[];
+  /**
+   * `--grounding` only: the article an author would pick if the server asks "which article?".
+   * Must match a candidate's title exactly. Absent, or not among the candidates, the run takes
+   * the first candidate and the report marks that topic as auto-answered.
+   */
+  sourceTitle?: string;
+  /**
+   * `--grounding` only: answer "which article?" with "none of these" — for topics Wikipedia has no
+   * good article for, where an author would decline rather than pick a wrong one.
+   */
+  noSource?: boolean;
+}
+
+/** What `--grounding` was told by the server, per topic. Written to raw/ and read by parse. */
+interface GroundingInfo {
+  status: "Grounded" | "Ungrounded" | "NeedsLanguage" | "NeedsArticle";
+  language?: string | null;
+  reason?: string | null;
+  source?: { provider: string; title: string; url?: string | null; text: string; language: string } | null;
+  articles?: { title: string; words: number }[] | null;
+  languages?: string[] | null;
+}
+
+/** One question the server put to the "author", and how the run answered it. */
+interface Ask {
+  kind: "language" | "article";
+  offered: string[];
+  answered: string;
+  /** True when topics.json didn't say what to pick and the run took the first offer. */
+  auto: boolean;
 }
 
 interface TopicsFile {
@@ -165,9 +195,17 @@ async function fetchWithRetry(
 }
 
 /** The request body both `ai-prompt` and `ai-generate` take (`AiGenerateCM`). */
-function buildRequest(topic: TopicRow, defaults: TopicsFile["defaults"], mode: LanguageMode) {
+function buildRequest(
+  topic: TopicRow,
+  defaults: TopicsFile["defaults"],
+  mode: LanguageMode,
+  grounding: boolean,
+) {
   return {
     Mode: "Topic",
+    // Off reproduces the baseline's prompt exactly; on grounds it as generation would
+    // (docs/quiz/ai-quiz-generation-flow.md §2e). The server must also have Ai:Source:Enabled.
+    Ground: grounding,
     Topic: topic.topic,
     // Omitted in `inferred` mode so the server takes the same branch the app takes today.
     LanguageName: mode === "pinned" ? topic.language : undefined,
@@ -179,16 +217,61 @@ function buildRequest(topic: TopicRow, defaults: TopicsFile["defaults"], mode: L
   };
 }
 
-async function fetchPrompt(token: string, body: unknown): Promise<string> {
+/**
+ * The prompt for one topic, answering grounding's questions the way an author would: the topic's
+ * own language for "English or Albanian?", and `sourceTitle` (else the first offer) for "which
+ * article?". At most one of each, so a server that keeps asking fails the topic instead of looping.
+ */
+async function promptFor(
+  token: string,
+  topic: TopicRow,
+  request: Record<string, unknown>,
+): Promise<{ prompt: string; grounding: GroundingInfo | null; asks: Ask[]; request: Record<string, unknown> }> {
+  const asks: Ask[] = [];
+  let body = { ...request };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const result = await fetchPrompt(token, body);
+    if ("prompt" in result) return { ...result, asks, request: body };
+
+    const question = result.needsChoice;
+    if (question.status === "NeedsLanguage" && !asks.some((a) => a.kind === "language")) {
+      asks.push({ kind: "language", offered: question.languages ?? [], answered: topic.language, auto: false });
+      body = { ...body, SourceLanguage: topic.language };
+    } else if (question.status === "NeedsArticle" && !asks.some((a) => a.kind === "article") && topic.noSource) {
+      const offered = (question.articles ?? []).map((a) => a.title);
+      asks.push({ kind: "article", offered, answered: "none of these", auto: false });
+      body = { ...body, SourceDeclined: true, SourceLanguage: question.language ?? topic.language };
+    } else if (question.status === "NeedsArticle" && !asks.some((a) => a.kind === "article")) {
+      const offered = (question.articles ?? []).map((a) => a.title);
+      const wanted = topic.sourceTitle && offered.includes(topic.sourceTitle) ? topic.sourceTitle : undefined;
+      const answered = wanted ?? offered[0];
+      if (!answered) throw new Error("The server asked which article but offered none.");
+      asks.push({ kind: "article", offered, answered, auto: wanted === undefined });
+      body = { ...body, SourceTitle: answered, SourceLanguage: question.language ?? topic.language };
+    } else {
+      throw new Error(`The server asked again after being answered: ${JSON.stringify(question)}`);
+    }
+  }
+  throw new Error("Grounding kept asking.");
+}
+
+async function fetchPrompt(
+  token: string,
+  body: unknown,
+): Promise<{ prompt: string; grounding: GroundingInfo | null } | { needsChoice: GroundingInfo }> {
   const res = await fetchWithRetry(`${API_URL}/quiz/ai-prompt`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify(body),
   }, "ai-prompt");
+  if (res.status === 409) {
+    const err = (await res.json()) as { code?: string; grounding?: GroundingInfo };
+    if (err.code === "SourceNeedsChoice" && err.grounding) return { needsChoice: err.grounding };
+  }
   if (!res.ok) {
     throw new Error(`ai-prompt returned ${res.status}: ${await res.text()}`);
   }
-  const { prompt } = (await res.json()) as { prompt?: string };
+  const { prompt, grounding } = (await res.json()) as { prompt?: string; grounding?: GroundingInfo | null };
   if (!prompt || prompt.length < 200) {
     throw new Error(`ai-prompt returned an implausibly short prompt (${prompt?.length ?? 0} chars).`);
   }
@@ -197,7 +280,7 @@ async function fetchPrompt(token: string, body: unknown): Promise<string> {
   if (!prompt.toLowerCase().includes("json")) {
     throw new Error("The fetched prompt contains no 'json' — it is not the production prompt.");
   }
-  return prompt;
+  return { prompt, grounding: grounding ?? null };
 }
 
 interface ModelReply {
@@ -302,7 +385,14 @@ async function main(): Promise<void> {
     throw new Error(`--language-mode must be 'inferred' or 'pinned', got '${languageMode}'.`);
   }
 
-  const runId = arg("run-id", `${new Date().toISOString().replace(/[:.]/g, "-")}-${languageMode}`);
+  // `--grounding`: build every prompt grounded, answering the server's questions as an author
+  // would. Needs Ai__Source__Enabled=true on the API — checked on the first topic below.
+  const grounding = process.argv.includes("--grounding");
+
+  const runId = arg(
+    "run-id",
+    `${new Date().toISOString().replace(/[:.]/g, "-")}-${languageMode}${grounding ? "-grounded" : ""}`,
+  );
   const runDir = path.join(RUNS_ROOT, runId);
 
   const file = JSON.parse(await fs.readFile(TOPICS_FILE, "utf8")) as TopicsFile;
@@ -327,6 +417,7 @@ async function main(): Promise<void> {
   console.log(`run        ${runId}`);
   console.log(`model      ${VENDOR.model} @ temperature ${SAMPLING.temperature}, seed ${SAMPLING.seed}`);
   console.log(`language   ${languageMode}`);
+  console.log(`grounding  ${grounding ? "on" : "off"}`);
   console.log(`pacing     ${TPM_LIMIT} tokens/min ceiling, ${THROTTLE_MS}ms floor between topics`);
   console.log(`topics     ${topics.length}${only.length > 0 ? ` (filtered from ${file.topics.length})` : ""}\n`);
 
@@ -336,8 +427,15 @@ async function main(): Promise<void> {
   for (const [i, topic] of topics.entries()) {
     const label = `[${i + 1}/${topics.length}] ${topic.id}`;
     try {
-      const request = buildRequest(topic, file.defaults, languageMode);
-      const prompt = await fetchPrompt(token, request);
+      const built = buildRequest(topic, file.defaults, languageMode, grounding);
+      const { prompt, grounding: groundingInfo, asks, request } = await promptFor(token, topic, built);
+      // A grounded run against a server with grounding switched off would silently measure the
+      // baseline again and call it grounding. Refuse instead.
+      if (grounding && groundingInfo === null) {
+        throw new Error(
+          "--grounding was given but the API answered without grounding. Start it with Ai__Source__Enabled=true.",
+        );
+      }
 
       const waited = await pacer.waitForRoom();
       if (waited > 0) console.log(`      paused ${(waited / 1000).toFixed(1)}s to stay under ${TPM_LIMIT} tokens/min`);
@@ -347,9 +445,15 @@ async function main(): Promise<void> {
 
       await fs.writeFile(
         path.join(runDir, "raw", `${topic.id}.json`),
-        JSON.stringify({ topic, request, prompt, reply, languageMode }, null, 2),
+        JSON.stringify({ topic, request, prompt, reply, languageMode, grounding: groundingInfo, asks }, null, 2),
       );
-      console.log(`${label}  ok  (${reply.outputTokens} output tokens)`);
+      const source = groundingInfo?.source
+        ? `grounded on "${groundingInfo.source.title}"`
+        : groundingInfo
+          ? `ungrounded (${groundingInfo.reason ?? "?"})`
+          : "";
+      const asked = asks.length > 0 ? `, asked ${asks.map((a) => a.kind).join(" + ")}` : "";
+      console.log(`${label}  ok  (${reply.outputTokens} output tokens${source ? `, ${source}` : ""}${asked})`);
     } catch (err) {
       const message = describeError(err);
       failures.push({ id: topic.id, error: message });
@@ -365,6 +469,7 @@ async function main(): Promise<void> {
         runId,
         startedAt: new Date().toISOString(),
         languageMode,
+        grounding,
         vendor: { baseUrl: VENDOR.baseUrl, model: VENDOR.model, reasoningEffort: VENDOR.reasoningEffort },
         sampling: SAMPLING,
         topicCount: file.topics.length,

@@ -6,9 +6,9 @@ namespace QuizAPI.Services.Ai.Sources
         Use = 0,
         /// <summary>Do not guess — put the candidates to the author.</summary>
         Ask = 1,
-        /// <summary>One article, and it is too short to ground anything.</summary>
+        /// <summary>The only matching articles are too short to ground anything.</summary>
         TooThin = 2,
-        /// <summary>Nothing usable came back.</summary>
+        /// <summary>Nothing usable came back, or nothing that shares a word with the topic.</summary>
         NotFound = 3,
     }
 
@@ -20,58 +20,91 @@ namespace QuizAPI.Services.Ai.Sources
     /// <summary>
     /// Which article a set of search hits points at, or whether to ask.
     ///
-    /// <para>Pure on purpose: no HTTP, no cache, no clock. The rules below are the part that is
-    /// worth testing, and keeping them away from the network is what makes that cheap.</para>
+    /// <para>Pure on purpose: no HTTP, no cache, no clock. The rules below are the part worth
+    /// testing, and keeping them away from the network is what makes that cheap.</para>
     ///
-    /// <para><b>Why not simply take the first hit.</b> Measured against the MediaWiki search API on
-    /// 2026-10-28, the first hit is the wrong article in three of five English cases: "Human
-    /// respiratory system" returns <i>Human body</i> ahead of <i>Respiratory system</i>, and
-    /// "Balkans campaign World War II" returns the World War I front. Taking the longest hit is
-    /// worse — it chooses the wrong war <i>and</i> Freddie Mercury over the planet.</para>
+    /// <para><b>The rule (2026-10-29).</b> Disambiguation pages and stubs under the minimum length
+    /// are never sources. Among the rest, the article whose title best matches the topic
+    /// (<see cref="TitleMatch"/>: most shared words, then the most precise title, then search rank)
+    /// is used only when the match is clear — it shares at least two of the topic's words (all of
+    /// them for a one-word topic), covers at least half of them, and at least three-quarters of its
+    /// own title's words come from the topic. A weaker best match is a question for the author, and
+    /// no shared word at all is "not found".</para>
     ///
-    /// <para><b>The close-contest rule.</b> When a lower-ranked article is much longer than the top
-    /// hit, the search is not confident, and the cost of being wrong is ten grounded-looking wrong
-    /// questions. Asking is cheap; a silent wrong pick is not. The ratio was fitted to nine
-    /// observed cases and matches the human judgement on all nine — which is fitting, not
-    /// validation. The eval harness is what tests whether it generalises.</para>
+    /// <para><b>What it replaced.</b> The first version used search rank plus a "much longer
+    /// runner-up" ratio, fitted to nine title-like queries. Run on the twelve eval topics — which
+    /// are phrases, as real topics are — it asked on seven, called a 28-word book stub the best
+    /// Albanian-cuisine article, and silently picked the snake for "Bazat e programimit në Python".
+    /// This rule, on the same twelve plus 29 shorter topics, uses the expected article on 31,
+    /// asks on 10 — including every topic Wikipedia has no good article for — and picks no wrong
+    /// article. That is fitting, not validation; the eval is what tests it.</para>
     /// </summary>
     public static class SourceSelection
     {
+        public const double MinCoverage = 0.5;
+        public const double MinPrecision = 0.75;
+
         public static SourceDecision Decide(
+            string topic,
             IReadOnlyList<SourceCandidate> candidates,
             int minWords,
-            double closeContestRatio,
             int maxCandidatesToOffer)
         {
             if (candidates is null || candidates.Count == 0)
                 return new SourceDecision(SourceDecisionKind.NotFound, null, Array.Empty<SourceCandidate>());
 
-            // Disambiguation pages are never a source — they are a list of links. They can still be
-            // the signal that a choice is needed, which is why they are filtered out here rather
-            // than earlier.
             var articles = candidates.Where(c => !c.IsDisambiguation).ToList();
-            if (articles.Count == 0)
+            var usable = articles.Where(c => c.Words >= minWords).ToList();
+
+            // Best match first; search rank breaks ties, so it still counts for something.
+            var ranked = usable
+                .Select((c, rank) => (Candidate: c, Score: Best(topic, c), Rank: rank))
+                .OrderByDescending(x => x.Score.Overlap)
+                .ThenByDescending(x => x.Score.Precision)
+                .ThenBy(x => x.Rank)
+                .ToList();
+            var offer = ranked.Select(x => x.Candidate).Take(Math.Max(2, maxCandidatesToOffer)).ToList();
+
+            // The source itself says the term is ambiguous. Nothing to weigh — ask.
+            if (candidates[0].IsDisambiguation)
+                return offer.Count > 0
+                    ? new SourceDecision(SourceDecisionKind.Ask, null, offer)
+                    : new SourceDecision(SourceDecisionKind.NotFound, null, Array.Empty<SourceCandidate>());
+
+            if (ranked.Count == 0)
+            {
+                // Only stubs. Say which one was nearest, so the review can name what it passed over.
+                var nearest = articles
+                    .OrderByDescending(c => Best(topic, c).Overlap)
+                    .FirstOrDefault(c => Best(topic, c).Overlap > 0);
+                return nearest is null
+                    ? new SourceDecision(SourceDecisionKind.NotFound, null, Array.Empty<SourceCandidate>())
+                    : new SourceDecision(SourceDecisionKind.TooThin, nearest, Array.Empty<SourceCandidate>());
+            }
+
+            var best = ranked[0];
+            if (best.Score.Overlap == 0)
                 return new SourceDecision(SourceDecisionKind.NotFound, null, Array.Empty<SourceCandidate>());
 
-            var offer = articles.Take(Math.Max(2, maxCandidatesToOffer)).ToList();
+            var clear = best.Score.Overlap >= TitleMatch.RequiredOverlap(topic)
+                        && best.Score.Coverage >= MinCoverage
+                        && best.Score.Precision >= MinPrecision;
 
-            // The top hit is an explicit disambiguation page: the source itself is telling us the
-            // term is ambiguous. Nothing to weigh.
-            if (candidates[0].IsDisambiguation)
-                return new SourceDecision(SourceDecisionKind.Ask, null, offer);
+            return clear
+                ? new SourceDecision(SourceDecisionKind.Use, best.Candidate, Array.Empty<SourceCandidate>())
+                : new SourceDecision(SourceDecisionKind.Ask, null, offer);
+        }
 
-            // Close contest: a lower-ranked article is substantially longer than the top hit.
-            if (articles.Count > 1 && articles[1].Words >= articles[0].Words * closeContestRatio)
-                return new SourceDecision(SourceDecisionKind.Ask, null, offer);
-
-            var chosen = articles[0];
-
-            // Thinness is checked last, so an ambiguous-and-thin topic is still put to the author:
-            // one of the candidates they are offered may be long enough.
-            if (chosen.Words < minWords)
-                return new SourceDecision(SourceDecisionKind.TooThin, chosen, Array.Empty<SourceCandidate>());
-
-            return new SourceDecision(SourceDecisionKind.Use, chosen, Array.Empty<SourceCandidate>());
+        /// <summary>
+        /// The better of the title and the redirect the search matched through. "Quantum physics"
+        /// finds <i>Quantum mechanics</i> by its redirect, and the redirect is what matches.
+        /// </summary>
+        private static TitleScore Best(string topic, SourceCandidate c)
+        {
+            var title = TitleMatch.Score(topic, c.Title);
+            if (string.IsNullOrWhiteSpace(c.RedirectTitle)) return title;
+            var redirect = TitleMatch.Score(topic, c.RedirectTitle);
+            return (redirect.Overlap, redirect.Precision).CompareTo((title.Overlap, title.Precision)) > 0 ? redirect : title;
         }
     }
 }

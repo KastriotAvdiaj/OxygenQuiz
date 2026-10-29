@@ -25,5 +25,21 @@ namespace QuizAPI.Services.Ai.Sources
         bool SupportsLanguage(string? languageName);
 
         Task<SourceLookup> LookupAsync(string topic, string? languageName, CancellationToken ct);
+
+        /// <summary>
+        /// The article the author picked after a <see cref="SourceOutcome.NeedsDisambiguation"/>.
+        /// No search and no close-contest rule — the choice is made — but still the thinness gate:
+        /// picking a stub does not make it long enough.
+        /// </summary>
+        Task<SourceLookup> FetchAsync(string title, string? languageName, CancellationToken ct);
+
+        /// <summary>
+        /// Whether a page with exactly this title (or one redirecting from it) exists in the
+        /// language's edition. The tiebreak when a topic's own words don't say which language it is
+        /// in (<see cref="TopicLanguage"/>): "Chemistry" exists only on English Wikipedia,
+        /// "Futbolli" only on Albanian. False when the source can't be reached — an unknown answer
+        /// must lead to asking, never to a guess.
+        /// </summary>
+        Task<bool> HasTitleAsync(string title, string? languageName, CancellationToken ct);
     }
 }

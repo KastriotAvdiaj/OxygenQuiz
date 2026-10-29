@@ -348,6 +348,15 @@ builder.Services.AddScoped<QuizAPI.Services.Ai.IAiQuotaPolicy, QuizAPI.Services.
 builder.Services.AddScoped<QuizAPI.Services.Ai.IAiQuotaService, QuizAPI.Services.Ai.AiQuotaService>();
 builder.Services.AddScoped<QuizAPI.Services.Ai.IAiGenerationService, QuizAPI.Services.Ai.AiGenerationService>();
 builder.Services.AddScoped<QuizAPI.Services.Ai.ISourceFileReader, QuizAPI.Services.Ai.SourceFileReader>();
+// Grounding (docs/quiz/ai-quiz-generation-flow.md §2e). Off unless Ai:Source:Enabled; when off,
+// QuizGrounding answers "Off" without a request and generation is unchanged. Source tiers are
+// IQuizSourceProviders consulted in registration order — Wikipedia is the only one so far.
+builder.Services.Configure<QuizAPI.Services.Ai.Sources.SourceOptions>(
+    builder.Configuration.GetSection(QuizAPI.Services.Ai.Sources.SourceOptions.SectionName));
+builder.Services.AddHttpClient<QuizAPI.Services.Ai.Sources.WikipediaSourceProvider>();
+builder.Services.AddScoped<QuizAPI.Services.Ai.Sources.IQuizSourceProvider>(
+    sp => sp.GetRequiredService<QuizAPI.Services.Ai.Sources.WikipediaSourceProvider>());
+builder.Services.AddScoped<QuizAPI.Services.Ai.Sources.IQuizGrounding, QuizAPI.Services.Ai.Sources.QuizGrounding>();
 builder.Services.AddScoped<QuizAPI.Services.Ai.AiReservationSweeper>();
 builder.Services.AddScoped<QuizAPI.Services.AbandonedSessionSweeper>();
 builder.Services.AddScoped<QuizAPI.Services.AccountAnonymisationSweeper>();

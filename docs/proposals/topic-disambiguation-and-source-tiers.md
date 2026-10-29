@@ -1,8 +1,11 @@
 # Proposal: which source a grounded generation reads, and who decides when it is ambiguous
 
 **Status: accepted 2026-10-28, implementation in progress.** Rank 3 (English source → non-English
-questions) is **rejected** — see §4d. The source provider and its selection rules are built; the
-generation-flow integration and the review UI are not. Written 2026-10-28. Prerequisite for Phase 2 of
+questions) is **rejected** — see §4d. Built 2026-10-29: the provider, generation and eval
+integration, and the questions to the author — all switched off; how it works is in
+[`../quiz/ai-quiz-generation-flow.md`](../quiz/ai-quiz-generation-flow.md) §2e. **Not built:**
+the wizard UI for those questions and the source link in review. **§4a bis is superseded** by a
+measured rule (below). Written 2026-10-28. Prerequisite for Phase 2 of
 [`../quiz/ai-question-accuracy-plan.md`](../quiz/ai-question-accuracy-plan.md), which assumes a
 source can be picked automatically. The measurements below say it cannot.
 
@@ -90,6 +93,12 @@ topic box until it is answered. An unresolved *topic* is the same shape of probl
 the same gate — a list of titles with their first sentence, one of which the author picks.
 
 ### 4a bis. A much longer runner-up is also a question
+
+> **Superseded 2026-10-29** by title matching (flow doc §2e). Run against the twelve eval topics
+> — phrases, as real topics are, where the nine cases below were title-like — this rule asked on
+> seven, called a 28-word stub the best article for Albanian cuisine, and silently used the snake
+> for "Bazat e programimit në Python". The replacement picks the hit whose *title* matches the
+> topic and asks when the match is weak. Kept below as the record of what was tried.
 
 The disambiguation marker only catches terms the source itself knows are ambiguous. It does not
 catch `Human respiratory system` returning *Human body*, or `Balkans campaign World War II`
@@ -181,7 +190,8 @@ The tiered allowlist keeps the set small enough to check deliberately.
 - The minimum source length. A guess until Phase 0 runs.
 - ~~Rank 3 (English source → Albanian questions)~~ — **rejected 2026-10-28**, see §4d. Revisit only
   with a model strong at translation, and measure it before trusting it.
-- The close-contest ratio (§4a bis). Fitted to nine cases; the eval's false-ask rate is what sets it.
+- ~~The close-contest ratio (§4a bis).~~ Replaced by title matching; its thresholds (coverage ½,
+  precision ¾) are fitted the same way, and the eval's ask rate is what tests them.
 - Does a grounded generation cost the same quota slot? It is up to two calls instead of one.
 - Caching. Two HTTP 429s came back inside a dozen probe requests, so the plan's
   `IMemoryCache` by (language, title) is load-bearing, not an optimisation.
