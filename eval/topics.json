@@ -9,8 +9,10 @@
     "trap ('Mercury planet vs element disambiguation') tells the model the answer and measures",
     "nothing.",
     "'sourceTitle' / 'noSource' are only read by --grounding: how an author would answer the server's",
-    "'which article?' question for that topic. Set from a dry run on 2026-10-29 — Wikipedia has no",
-    "good article for the four 'noSource' topics, so a grounded run writes them from memory."
+    "'which article?' question for that topic. Set from a dry run on 2026-10-29 — no source has a",
+    "good article for the 'noSource' topics, so a grounded run writes them from memory. en-05 moved",
+    "from noSource to a Microsoft Learn page on 2026-10-30, which makes its grounded rows not",
+    "comparable with earlier grounded runs."
   ],
   "defaults": {
     "questionCount": 10,
@@ -30,8 +32,8 @@
       "note": "AMBIGUITY TRAP. Planet, element, Roman god, Freddie. A grounded pipeline must disclose which it chose.",
       "sourceTitle": "Mercury (planet)" },
     { "id": "en-05", "language": "English", "topic": "New features in C# 12 and .NET 8",
-      "note": "STALENESS TRAP, and the case where Wikipedia is useless but official docs are excellent.",
-      "noSource": true },
+      "note": "STALENESS TRAP, and the case where Wikipedia is useless but official docs are excellent. Since 2026-10-30 Microsoft Learn offers its 'What's new' pages; runs before that declined (noSource).",
+      "sourceTitle": "What's new in C# 12" },
     { "id": "en-06", "language": "English", "topic": "The 2024 Summer Olympics",
       "note": "RECENCY TRAP — near or past the training cutoff. Medal counts invite confident invention." },
 

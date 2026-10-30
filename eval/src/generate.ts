@@ -61,7 +61,7 @@ interface TopicRow {
    */
   sourceTitle?: string;
   /**
-   * `--grounding` only: answer "which article?" with "none of these" — for topics Wikipedia has no
+   * `--grounding` only: answer "which article?" with "none of these" — for topics no source has a
    * good article for, where an author would decline rather than pick a wrong one.
    */
   noSource?: boolean;
@@ -73,8 +73,10 @@ interface GroundingInfo {
   language?: string | null;
   reason?: string | null;
   source?: { provider: string; title: string; url?: string | null; text: string; language: string } | null;
-  articles?: { title: string; words: number }[] | null;
+  /** `provider` and `key` arrive since Microsoft Learn (2026-10-30): the key is what's sent back. */
+  articles?: { title: string; words: number; provider?: string; key?: string }[] | null;
   languages?: string[] | null;
+  unreachable?: string[] | null;
 }
 
 /** One question the server put to the "author", and how the run answered it. */
@@ -242,14 +244,21 @@ async function promptFor(
       asks.push({ kind: "article", offered, answered: "none of these", auto: false });
       body = { ...body, SourceDeclined: true, SourceLanguage: question.language ?? topic.language };
     } else if (question.status === "NeedsArticle" && !asks.some((a) => a.kind === "article")) {
-      const offered = (question.articles ?? []).map((a) => a.title);
-      const wanted = topic.sourceTitle && offered.includes(topic.sourceTitle) ? topic.sourceTitle : undefined;
-      const answered = wanted ?? offered[0];
-      if (!answered) throw new Error("The server asked which article but offered none.");
-      asks.push({ kind: "article", offered, answered, auto: wanted === undefined });
-      body = { ...body, SourceTitle: answered, SourceLanguage: question.language ?? topic.language };
+      const articles = question.articles ?? [];
+      const offered = articles.map((a) => a.title);
+      const wanted = articles.find((a) => a.title === topic.sourceTitle);
+      const picked = wanted ?? articles[0];
+      if (!picked) throw new Error("The server asked which article but offered none.");
+      asks.push({ kind: "article", offered, answered: picked.title, auto: wanted === undefined });
+      // The candidate's key, not its title: on Microsoft Learn it is the page's address.
+      body = {
+        ...body,
+        SourceTitle: picked.key ?? picked.title,
+        SourceProvider: picked.provider,
+        SourceLanguage: question.language ?? topic.language,
+      };
     } else if (question.status === "SourceUnavailable" && !asks.some((a) => a.kind === "unavailable")) {
-      // Wikipedia was down. An author could wait; a measurement shouldn't silently become a
+      // A source was down. An author could wait; a measurement shouldn't silently become a
       // from-memory run, so the report marks the topic (asked: unavailable) and it can be re-run.
       asks.push({ kind: "unavailable", offered: ["try again", "write from memory"], answered: "write from memory", auto: true });
       body = { ...body, SourceAcceptFromMemory: true, SourceLanguage: question.language ?? topic.language };

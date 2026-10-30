@@ -11,9 +11,10 @@ especially then.
 Status: **slices 2.0, 2.1 and 2.3.** Topic and Source modes, the one-box wizard, quota, spend
 caps, kill switch, and a single server-owned prompt shared with copy-paste. Source mode takes
 pasted text or an uploaded PDF, Word or text file (§2d) — **built, and closed on the current
-model** until a vendor entry allows it. Topic mode can be **grounded** in a Wikipedia article
-(§2e) — **built end to end and measured; switched off** until `Ai:Source:Enabled` is turned on.
-**Not yet: streaming progress (2.2).** Last updated: 2026-10-29
+model** until a vendor entry allows it. Topic mode can be **grounded** in a Wikipedia article,
+or for English technical topics a Microsoft Learn page (§2e) — **built end to end and measured;
+switched off** until `Ai:Source:Enabled` is turned on.
+**Not yet: streaming progress (2.2).** Last updated: 2026-10-30
 
 ---
 
@@ -124,7 +125,8 @@ worst case is a wrong-but-real category on a Draft quiz that a human is looking 
 | Limits | `AI-Quiz/prompt.ts` | Numbers only. The prompt text lives in C# (slice 2.1). |
 | Source files | `Services/Ai/SourceFileReader.cs` | Upload → plain text: PDF, .docx, .txt, .md. Size and character limits, whitespace normalisation, a message per kind of unreadable file. §2d. |
 | Grounding | `Services/Ai/Sources/QuizGrounding.cs` | Topic mode: which language, which article, or what to ask the author. §2e. |
-| Source tiers | `Services/Ai/Sources/IQuizSourceProvider.cs`, `WikipediaSourceProvider.cs` | Search, title check and article fetch for one source. Wikipedia is the only tier so far. |
+| Source tiers | `Services/Ai/Sources/IQuizSourceProvider.cs`, `WikipediaSourceProvider.cs`, `MicrosoftLearnSourceProvider.cs` | Search, title check and article fetch for one source: Wikipedia (English, Albanian), Microsoft Learn (English). |
+| Source routing | `Services/Ai/Sources/SourceRouting.cs` | Every source for the language is searched at once; this picks between their answers (§2e, "More than one source"). |
 | Article choice | `Services/Ai/Sources/SourceSelection.cs`, `TitleMatch.cs` | Pure: which search hit is the topic's article, or whether to ask. §2e. |
 | Topic language | `Services/Ai/Sources/TopicLanguage.cs` | English, Albanian or unsure, from a topic's own words. §2e. |
 | Source language | `Services/Ai/SourceLanguageDetector.cs` | English, Albanian or neither, from function-word counts. Decides the questions' language and whether Source mode runs at all. §2d. |
@@ -354,7 +356,7 @@ source, cost nothing:
 | 1. Language | English or Albanian: the author's answer, else the topic's own words (`TopicLanguage`: ë/ç, function words, xh/zh/gj, w/ph…), else which edition has exactly that title | Ask: *English or Albanian?* |
 | 2. Article | The search hit whose **title** matches the topic (`SourceSelection`) | Ask: *which article?* — with "none of these" |
 | 3. Fallback | A stub, no match, or "none of these" | Writes from memory and says why (`reason`) |
-| — Wikipedia down | Retried once, then reported as unavailable — never as "not found" | Ask: *try again, or write from memory?* — with what that costs |
+| — A source down | Retried once, then reported as unavailable — never as "not found" | Ask: *try again, or write from memory?* — naming the source, with what that costs |
 
 A language with no source (an explicitly named German) is ungrounded, never translated — the
 proposal rejects English sources for non-English quizzes.
@@ -370,6 +372,40 @@ half the topic's words, and three-quarters of the title's own. Anything weaker i
 On the twelve eval topics plus 29 shorter ones it uses the expected article on 31, asks on 10,
 and picks no wrong one; the snake article is no longer used for "Bazat e programimit në Python".
 
+**More than one source (2026-10-30).** English topics are searched on Wikipedia and Microsoft
+Learn at the same time; Albanian ones on Wikipedia only (Learn has no Albanian, and translating is
+rejected). Each source applies the title rule above on its own, and `SourceRouting` combines the
+answers ([ADR 38](../adr/0038-every-source-is-searched-and-the-titles-decide.md)):
+
+1. A Wikipedia **disambiguation page** asks, even if Learn was sure — "Azure" is a colour too.
+2. **One** source sure → that page. **Two** sure → the better title; equally good → ask.
+3. Otherwise everything both offered is offered together, best title first, each row naming its
+   source.
+4. Then a stub, then "unreachable" (naming which source), then not found.
+
+Learn is read through its MCP server (`learn.microsoft.com/api/mcp` — keyless, free) as plain
+JSON-RPC: a semantic search, then the best few pages fetched as Markdown and judged by their own
+heading and length, since the search gives neither reliably. Its search answers *every* query, so
+a Learn page is only offered when it shares as many topic words as a confident match needs — with
+one shared word "World War II in the Balkans" offered *Gears of War: Reloaded*. A page's address
+counts as a second title, like a Wikipedia redirect ("Entity Framework Core migrations" is a page
+called *Migrations Overview* under `/ef/core/`). Only documentation pages pass — no Q&A, training
+modules, API reference or other hosts; why is in the proposal's §4d.
+
+**Time.** The searches run in parallel, so a lookup costs the slower source, not the sum:
+measured 2026-10-30 on fifteen English topics, 0.5–1.3 s each, and 3.2 s for the one that fetched
+four Learn pages — against 10–40 s in the model. What the router chose on them:
+
+| Topic | Chosen / asked |
+|---|---|
+| Photosynthesis, The human respiratory system, World War II in the Balkans, PowerShell, Kubernetes, TypeScript, Visual Studio Code | Wikipedia, its article |
+| Azure Functions | Learn, *What is Azure Functions?* |
+| SQL Server indexes | Learn, *Creating SQL Server Indexes* — an OLE DB page; *Indexes* scores lower on title |
+| New features in C# 12 and .NET 8 | asks: Learn's *What's new in C# 12* and *…the .NET 8 runtime* first, Wikipedia's *.NET* after |
+| Git branching | asks: two Learn pages, three Wikipedia articles |
+| Python, Mercury, Azure | asks — Wikipedia's meanings first |
+| Entity Framework Core migrations | Wikipedia's *Entity Framework* — too general; see known issues |
+
 **Why ask about language at all.** Ungrounded, the model infers it while writing, and never got it
 wrong in Phase 0 (0 of 116) — which is why there is no language picker. Grounding needs it first,
 to know which edition to search. The topic's words settle most topics; the title check settles
@@ -381,27 +417,31 @@ the article's opening, cut at a paragraph — because Groq's free tier allows ~8
 minute and reserves 4,000 of them for the reply. A vendor with more room can take more.
 
 **Why an outage is a question.** From memory, the same topics were four times as likely to carry a
-wrong answer (15.2% against 3.6%). Wikipedia is usually back within a minute, so the author is
-told that and decides; going ahead is recorded (`reason: "unavailable"`) and the review says so
+wrong answer (15.2% against 3.6%). A source is usually back within a minute, so the author is
+told which one is down and decides; going ahead is recorded (`reason: "unavailable"`) and the review says so
 in amber.
 
 **In the wizard.** A question takes the topic box's place as `SourceChoiceCard` — the frame of
 `ConfirmDetailsCard`, the rows of the question-type picker — with "Change the topic" as the way
 back, since nothing has been spent. The answers accumulate in the container (a language, then an
-article) and go out with each retry. In the review, `ImportNote`'s line becomes the provenance:
-the article, linked (the CC BY-SA attribution), or why the questions came from memory. The
-grounding result is stored in the draft with the payload, so a refresh keeps both the line and
-the quote check, which runs on the article's text exactly as it runs on Source-mode material.
-Every state has a story: `Dashboard/Quiz/AI/SourceChoiceCard`, `…/ImportNote`, and the
-`Grounding*` / `Review*` stories of `AiQuizWizardView`.
+article) and go out with each retry; a picked article goes back as its `key` and `provider`. In
+the review, `SourceNote` — boxed like the import and picture notices — gives the provenance: the
+article or page, its source named and linked (the attribution: CC BY-SA on Wikipedia, CC BY on
+Learn), or why the questions came from memory. The grounding result is stored in the draft with
+the payload, so a refresh keeps both the notice and the quote check, which runs on the article's
+text exactly as it runs on Source-mode material. Every state has a story:
+`Dashboard/Quiz/AI/SourceChoiceCard`, `…/SourceNote`, and the `Grounding*` / `Review*` stories of
+`AiQuizWizardView`.
 
 **Explanations state the fact.** The first grounded run had about ten explanations saying
 "according to the material" — players never see the article — so the prompt now forbids
 referring to it in any language.
 
-**The contract.** A request carries the author's answers as `sourceLanguage`, `sourceTitle`,
-`sourceDeclined` or `sourceAcceptFromMemory`. A question comes back as **409 `SourceNeedsChoice`** with `grounding` holding
-the options; every grounded or ungrounded response carries `grounding` with the article (title,
+**The contract.** A request carries the author's answers as `sourceLanguage`, `sourceTitle` with
+`sourceProvider` (the picked candidate's `key` and `provider` — on Learn the key is the page's
+URL, and anything but a Learn documentation URL is refused unfetched), `sourceDeclined` or
+`sourceAcceptFromMemory`. A question comes back as **409 `SourceNeedsChoice`** with `grounding`
+holding the options — candidates carry `provider` and `key`; an outage carries `unreachable`; every grounded or ungrounded response carries `grounding` with the article (title,
 URL, text — the text is what the quote check needs) or the reason there is none. `ai-prompt`
 grounds only when the request says `ground: true` — the eval does; the own-AI page doesn't yet.
 
@@ -691,7 +731,7 @@ The code set is closed. Adding one means touching all four columns of this table
 | `SourceTooLarge` | An upload over `Ai:MaxSourceFileBytes`. Long *text* is cut, not refused. | 400 | untouched | The size limit, and "paste the part you want". |
 | `UnreadableSource` | Upload: unknown format, encrypted PDF, corrupt file, or no text (a scan) | 400 | untouched | One message per case, each naming the fix. |
 | `UnsupportedLanguage` | Source material not in English or Albanian (§2d) — on upload, or at generate for a paste | 400 | untouched | "Your material needs to be in English or Albanian." + "Nothing was used". |
-| `SourceNeedsChoice` | Grounding (§2e) needs the author: the topic's language, the article, or — Wikipedia down — whether to go ahead from memory. Not a failure. | 409 | untouched | `SourceChoiceCard` in place of the topic box. |
+| `SourceNeedsChoice` | Grounding (§2e) needs the author: the topic's language, the article, or — a source down — whether to go ahead from memory. Not a failure. | 409 | untouched | `SourceChoiceCard` in place of the topic box. |
 | `ProviderUnavailable` | 429/5xx/transport after one retry | 502 | released | "Unavailable right now, try again in a moment." |
 | `ProviderUnavailable` | Upstream **rate limit** — 429, or Groq's 413 + `rate_limit_exceeded` | 502 | released | "Over its rate limit. Wait a minute and try again, or ask for fewer questions." Same code, different message: the client's options are identical, the user's remedy is not (§2b). |
 | `ProviderTimeout` | Over `Ai:TimeoutSeconds`, twice | 502 | released | "Took too long — try again." |
@@ -1112,13 +1152,13 @@ Add a handful of source topics (one per format, both languages, one long enough 
 run them against the candidate model before opening the mode.
 
 **18. ~~Grounding has no wizard UI.~~ Done (2026-10-29)** — `SourceChoiceCard` answers the
-server's questions, `ImportNote` names the article, and the parser checks quotes against it (§2e).
+server's questions, `SourceNote` (once `ImportNote`) names the article, and the parser checks quotes against it (§2e).
 
-**19. Grounding can only help where Wikipedia has the article.** On the Phase 0 set the four
+**19. Grounding can only help where a source has the article.** On the Phase 0 set the four
 topics with no good article (C# 12, football rules, Python programming, Kosovo in the 20th
-century) held 11 of the 23 wrong answers, and a grounded run writes them from memory. The next
-source tiers — Microsoft Learn for .NET, the Laws of the Game — are what reach them; see the
-proposal's §4d.
+century) held 11 of the 23 wrong answers, and a grounded run writes them from memory. Microsoft
+Learn (2026-10-30) now reaches C# 12; the three Albanian ones need Albanian sources — the Laws of
+the Game in Albanian, Albanian Wikisource for literature — see the proposal's §4d.
 
 **17. The own-AI path has no material mode.** `…/ai/own` is topic-only, so the wizard in Source
 mode doesn't offer it as the way out — it offers the topic wizard instead. Nothing stops the own

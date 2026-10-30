@@ -332,8 +332,12 @@ namespace QuizAPI.Services.Ai
         }
 
         /// <summary>How a source tier is named to the model. The provider id is for logs; this is prose.</summary>
-        private static string SourceName(string provider) =>
-            string.Equals(provider, "wikipedia", StringComparison.OrdinalIgnoreCase) ? "Wikipedia" : provider;
+        private static string SourceName(string provider) => provider.ToLowerInvariant() switch
+        {
+            "wikipedia" => "Wikipedia",
+            Sources.MicrosoftLearnSourceProvider.ProviderName => "Microsoft Learn",
+            _ => provider,
+        };
 
         private static string Quoted(IEnumerable<string> values) =>
             string.Join(" | ", values.Select(v => $"\"{v}\""));

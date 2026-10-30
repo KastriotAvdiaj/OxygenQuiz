@@ -74,5 +74,20 @@ namespace QuizAPI.Services.Ai.Sources
         /// anonymous agent with HTTP 429 — which is how this was found.
         /// </summary>
         public string UserAgent { get; set; } = "OxygenQuiz/1.0 (https://oxygenquiz.com)";
+
+        /// <summary><c>Ai:Source:MicrosoftLearn</c> — the second source, for English technical topics.</summary>
+        public MicrosoftLearnOptions MicrosoftLearn { get; set; } = new();
+    }
+
+    public sealed class MicrosoftLearnOptions
+    {
+        /// <summary>
+        /// On whenever grounding is: it is searched alongside Wikipedia and only used when its
+        /// page matches the topic better. Here to switch it off on its own if Learn misbehaves.
+        /// </summary>
+        public bool Enabled { get; set; } = true;
+
+        /// <summary>Learn's MCP server — keyless and free (learn.microsoft.com/training/support/mcp).</summary>
+        public string Endpoint { get; set; } = "https://learn.microsoft.com/api/mcp";
     }
 }

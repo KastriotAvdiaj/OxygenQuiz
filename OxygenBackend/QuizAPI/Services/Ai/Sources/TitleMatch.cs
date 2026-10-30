@@ -31,6 +31,8 @@ namespace QuizAPI.Services.Ai.Sources
             // English
             "the", "of", "and", "in", "on", "for", "to", "with", "a", "an", "from", "by", "about",
             "how", "what", "why", "is", "are", "new",
+            // The "s" of "What's new in C# 12" — the tokenizer splits at the apostrophe.
+            "s",
             // Albanian, already stripped of diacritics
             "dhe", "ne", "nje", "te", "per", "nga", "e", "i", "se", "si", "me",
         };

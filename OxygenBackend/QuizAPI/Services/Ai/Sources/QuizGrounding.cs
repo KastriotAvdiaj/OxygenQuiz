@@ -55,6 +55,12 @@ namespace QuizAPI.Services.Ai.Sources
         /// <summary><see cref="GroundingStatus.Ungrounded"/>: a short machine-readable why.</summary>
         public string? Reason { get; init; }
 
+        /// <summary>
+        /// Sources that could not be reached (<see cref="IQuizSourceProvider.Name"/>) — what the
+        /// outage question names. Empty unless one was down.
+        /// </summary>
+        public IReadOnlyList<string> Unreachable { get; init; } = Array.Empty<string>();
+
         /// <summary>The article that was considered and rejected (thin), for the review to link to.</summary>
         public string? ConsideredTitle { get; init; }
 
@@ -75,8 +81,13 @@ namespace QuizAPI.Services.Ai.Sources
     /// The source couldn't be reached and the author chose to go ahead from memory rather than
     /// try again later (<see cref="GroundingStatus.SourceUnavailable"/>).
     /// </param>
+    /// <param name="ArticleProvider">
+    /// Which source <paramref name="ArticleTitle"/> is from — the candidate's provider. Null means
+    /// the first source for the language, which is how answers from before there were two read.
+    /// </param>
     public sealed record GroundingAnswers(
-        string? Language, string? ArticleTitle, bool Declined = false, bool AcceptFromMemory = false);
+        string? Language, string? ArticleTitle, bool Declined = false, bool AcceptFromMemory = false,
+        string? ArticleProvider = null);
 
     public interface IQuizGrounding
     {
@@ -92,8 +103,8 @@ namespace QuizAPI.Services.Ai.Sources
     /// <para><b>Order.</b> Language first, because it decides which edition to search. The topic's
     /// own words (<see cref="TopicLanguage"/>), then — only when they are silent — whether exactly
     /// that title exists in one edition and not the other. Either way unsure: ask. Then the
-    /// article, through the first source tier that serves the language; asking again when the
-    /// search is not confident.</para>
+    /// article, from every source that serves the language at once (<see cref="SourceRouting"/>);
+    /// asking again when the search is not confident.</para>
     ///
     /// <para><b>Never fatal.</b> A source that is thin, missing or down makes the generation
     /// ungrounded, never failed — grounding improves generation, it is not a precondition for it.
@@ -131,22 +142,38 @@ namespace QuizAPI.Services.Ai.Sources
 
             if (answers.Declined) return Ungrounded(language, "declined");
 
-            // ── Source.
-            var provider = _providers.FirstOrDefault(p => p.SupportsLanguage(language));
-            if (provider is null)
+            // ── Source. Every source that serves the language is asked at once, and
+            // SourceRouting picks between their answers; a picked article goes back to its own.
+            var providers = _providers.Where(p => p.SupportsLanguage(language)).ToList();
+            if (providers.Count == 0)
                 return Ungrounded(language, "no-source-for-language");
 
-            var lookup = string.IsNullOrWhiteSpace(answers.ArticleTitle)
-                ? await provider.LookupAsync(topic, language, ct)
-                : await provider.FetchAsync(answers.ArticleTitle, language, ct);
+            RoutedLookup routed;
+            if (string.IsNullOrWhiteSpace(answers.ArticleTitle))
+            {
+                var lookups = await Task.WhenAll(providers.Select(async p =>
+                    new SourceAnswer(p.Name, await p.LookupAsync(topic, language, ct))));
+                routed = SourceRouting.Combine(topic, lookups, _options.MaxCandidatesToOffer);
+            }
+            else
+            {
+                var provider = providers.FirstOrDefault(p =>
+                                   string.Equals(p.Name, answers.ArticleProvider, StringComparison.OrdinalIgnoreCase))
+                               ?? providers[0];
+                var fetched = await provider.FetchAsync(answers.ArticleTitle, language, ct);
+                routed = new RoutedLookup(
+                    provider.Name, fetched,
+                    fetched.Outcome == SourceOutcome.Unavailable ? new[] { provider.Name } : Array.Empty<string>());
+            }
 
+            var lookup = routed.Lookup;
             return lookup.Outcome switch
             {
                 SourceOutcome.Selected => new GroundingResult
                 {
                     Status = GroundingStatus.Grounded,
                     Language = language,
-                    Source = new GroundedSource(provider.Name, lookup.Title!, lookup.Url, lookup.Text!, language),
+                    Source = new GroundedSource(routed.Provider!, lookup.Title!, lookup.Url, lookup.Text!, language),
                 },
                 SourceOutcome.NeedsDisambiguation => new GroundingResult
                 {
@@ -156,12 +183,13 @@ namespace QuizAPI.Services.Ai.Sources
                 },
                 SourceOutcome.TooThin => Ungrounded(language, "too-thin") with { ConsideredTitle = lookup.Title },
                 SourceOutcome.Unavailable => answers.AcceptFromMemory
-                    ? Ungrounded(language, "unavailable")
+                    ? Ungrounded(language, "unavailable") with { Unreachable = routed.Unreachable }
                     : new GroundingResult
                     {
                         Status = GroundingStatus.SourceUnavailable,
                         Language = language,
                         Reason = "unavailable",
+                        Unreachable = routed.Unreachable,
                     },
                 _ => Ungrounded(language, "not-found"),
             };
@@ -178,9 +206,12 @@ namespace QuizAPI.Services.Ai.Sources
             var found = new List<string>();
             foreach (var language in SourceLanguageDetector.Supported)
             {
-                var provider = _providers.FirstOrDefault(p => p.SupportsLanguage(language));
-                if (provider is not null && await provider.HasTitleAsync(topic, language, ct))
+                foreach (var provider in _providers.Where(p => p.SupportsLanguage(language)))
+                {
+                    if (!await provider.HasTitleAsync(topic, language, ct)) continue;
                     found.Add(language);
+                    break;
+                }
             }
             return found.Count == 1 ? found[0] : null;
         }

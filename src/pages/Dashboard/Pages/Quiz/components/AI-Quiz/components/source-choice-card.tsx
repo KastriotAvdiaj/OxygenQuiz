@@ -6,7 +6,9 @@ import { LiftedButton } from "@/common/LiftedButton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/utils/cn";
 
-import type { AiGrounding } from "../../../api/generate-ai-quiz";
+import type { AiGrounding, AiSourceCandidate } from "../../../api/generate-ai-quiz";
+
+import { sourceLabel, sourceNames } from "./source-labels";
 
 export interface SourceChoiceCardProps {
   /** The server's question — a 409 `SourceNeedsChoice`. Its `status` picks what is asked. */
@@ -14,7 +16,8 @@ export interface SourceChoiceCardProps {
   /** What the author typed, quoted back so the question is about *their* topic. */
   topic: string;
   onPickLanguage: (language: string) => void;
-  onPickArticle: (title: string) => void;
+  /** The row picked. Its `key` and `provider` are what the server needs to fetch it again. */
+  onPickArticle: (article: AiSourceCandidate) => void;
   /** "None of these": write from the AI's memory instead. */
   onDecline: () => void;
   /** The source was down: ask again. */
@@ -72,9 +75,10 @@ const ChoiceRow = ({
     )}
   >
     <span className="min-w-0">
-      {/* Two lines, then an ellipsis: on a phone one line left "Historia e futb…", and the
+      {/* Then an ellipsis — but late: on a phone one line left "Historia e futb…", and two
+          still cut "Adopt a Git branching strategy" once the row also names its source. The
           title is the thing being chosen. */}
-      <span className={cn("block break-words line-clamp-2", !muted && "font-medium")}>{title}</span>
+      <span className={cn("block break-words line-clamp-3 sm:line-clamp-2", !muted && "font-medium")}>{title}</span>
       {detail && <span className="mt-0.5 block text-xs text-muted-foreground">{detail}</span>}
     </span>
     <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -83,15 +87,16 @@ const ChoiceRow = ({
 
 /**
  * Grounding's questions to the author (docs/quiz/ai-quiz-generation-flow.md §2e): which
- * language, which article, or — when Wikipedia is down — whether to go ahead from memory.
+ * language, which article — from Wikipedia, Microsoft Learn or both — or, when a source is
+ * down, whether to go ahead from memory.
  *
  * <b>Shown in the place the topic box was</b>, the same way `ConfirmDetailsCard` is, and in the
  * same frame: both are the wizard pausing to ask for one missing thing. Nothing has been spent
  * yet — the server asks before reserving any allowance — so leaving to change the topic is free,
  * and the card says so by offering it.
  *
- * <b>Why "none of these" is always on offer.</b> For some topics Wikipedia has no fitting article
- * (C# 12's new features, the rules of football in Albanian); picking the nearest wrong one would
+ * <b>Why "none of these" is always on offer.</b> For some topics no source has a fitting article
+ * (the rules of football, in Albanian; the history of Kosovo in the 20th century); picking the nearest wrong one would
  * ground the quiz in the wrong subject while every signal said it was sourced. Declining is the
  * honest answer, and its cost is stated where the choice is made.
  *
@@ -112,6 +117,13 @@ export const SourceChoiceCard = ({
 }: SourceChoiceCardProps) => {
   const quoted = topic.trim() ? `“${topic.trim()}”` : "This topic";
 
+  const articles = question.articles ?? [];
+  // One source named once in the header; two named on every row, where it tells them apart.
+  const providers = [...new Set(articles.map((a) => a.provider ?? "wikipedia"))];
+  const mixed = providers.length > 1;
+  const down = sourceNames(question.unreachable);
+  const downIsPlural = (question.unreachable?.length ?? 0) > 1;
+
   const header =
     question.status === "NeedsLanguage"
       ? {
@@ -121,11 +133,11 @@ export const SourceChoiceCard = ({
       : question.status === "NeedsArticle"
         ? {
             title: "Which article should the quiz come from?",
-            detail: `${quoted} matched more than one Wikipedia article. The questions will be written only from the one you pick.`,
+            detail: `${quoted} matched more than one ${mixed ? "" : `${sourceLabel(providers[0])} `}article. The questions will be written only from the one you pick.`,
           }
         : {
-            title: "Wikipedia isn't answering",
-            detail: `We couldn't reach Wikipedia to look up ${quoted}. It's usually back within a minute.`,
+            title: `${down} ${downIsPlural ? "aren't" : "isn't"} answering`,
+            detail: `We couldn't reach ${down === "The source" ? "the source" : down} to look up ${quoted}. It's usually back within a minute.`,
           };
 
   return (
@@ -153,20 +165,26 @@ export const SourceChoiceCard = ({
         )}
 
         {question.status === "NeedsArticle" && (
-          <div role="group" aria-label="Wikipedia articles" className="grid grid-cols-1 gap-2">
-            {(question.articles ?? []).map((article) => (
-              <div key={article.title} className="flex min-w-0 items-stretch gap-2">
+          <div role="group" aria-label="Articles" className="grid grid-cols-1 gap-2">
+            {articles.map((article) => (
+              <div
+                key={`${article.provider ?? "wikipedia"}:${article.key ?? article.title}`}
+                className="flex min-w-0 items-stretch gap-2"
+              >
                 <ChoiceRow
                   title={article.title}
                   detail={
                     <>
                       {numberFormat.format(article.words)} words
-                      {/* Every row says it and the header already names Wikipedia; on a phone
-                          the width is worth more than the repetition. */}
-                      <span className="hidden sm:inline"> · Wikipedia</span>
+                      {/* With one source the header names it, and on a phone the width is worth
+                          more than the repetition. With two it is how the rows differ — always. */}
+                      <span className={mixed ? undefined : "hidden sm:inline"}>
+                        {" · "}
+                        {sourceLabel(article.provider)}
+                      </span>
                     </>
                   }
-                  onClick={() => onPickArticle(article.title)}
+                  onClick={() => onPickArticle(article)}
                   disabled={busy}
                 />
                 {/* Beside the row, not inside it: a link inside a button is invalid HTML, and
@@ -176,8 +194,8 @@ export const SourceChoiceCard = ({
                     href={article.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label={`Open “${article.title}” on Wikipedia`}
-                    title="Open on Wikipedia"
+                    aria-label={`Open “${article.title}” on ${sourceLabel(article.provider)}`}
+                    title={`Open on ${sourceLabel(article.provider)}`}
                     className="flex w-11 shrink-0 items-center justify-center rounded-lg border-2 border-border text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
                     <ExternalLink className="h-4 w-4" aria-hidden />

@@ -42,6 +42,24 @@ type Story = StoryObj<typeof meta>;
 const wiki = (domain: "en" | "sq", title: string) =>
   `https://${domain}.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, "_"))}`;
 
+/** A Wikipedia candidate as the server sends it: the title is also what's sent back. */
+const article = (domain: "en" | "sq", title: string, words: number) => ({
+  title,
+  words,
+  url: wiki(domain, title),
+  provider: "wikipedia",
+  key: title,
+});
+
+/** A Microsoft Learn candidate: the URL is what's sent back — Learn has many pages called "Overview". */
+const learn = (title: string, words: number, url: string) => ({
+  title,
+  words,
+  url,
+  provider: "microsoft-learn",
+  key: url,
+});
+
 /**
  * "Python" exists on both Wikipedias — the programming language in English, the snake in
  * Albanian — so the topic's language can't be told and the author is asked. One click.
@@ -61,10 +79,10 @@ export const WhichArticle: Story = {
       status: "NeedsArticle",
       language: "English",
       articles: [
-        { title: "Mercury (planet)", words: 16170, url: wiki("en", "Mercury (planet)") },
-        { title: "Freddie Mercury", words: 17329, url: wiki("en", "Freddie Mercury") },
-        { title: "Mercury (element)", words: 13576, url: wiki("en", "Mercury (element)") },
-        { title: "Mercury Prize", words: 3833, url: wiki("en", "Mercury Prize") },
+        article("en", "Mercury (planet)", 16170),
+        article("en", "Freddie Mercury", 17329),
+        article("en", "Mercury (element)", 13576),
+        article("en", "Mercury Prize", 3833),
       ],
     },
   },
@@ -81,10 +99,10 @@ export const WhichArticleNoneFits: Story = {
       status: "NeedsArticle",
       language: "Albanian",
       articles: [
-        { title: "Historia e futbollit në Kosovë", words: 1473, url: wiki("sq", "Historia e futbollit në Kosovë") },
-        { title: "Historia e Prishtinës", words: 2800, url: wiki("sq", "Historia e Prishtinës") },
-        { title: "Historia e Vushtrrisë", words: 963, url: wiki("sq", "Historia e Vushtrrisë") },
-        { title: "Komuna e Prishtinës", words: 665, url: wiki("sq", "Komuna e Prishtinës") },
+        article("sq", "Historia e futbollit në Kosovë", 1473),
+        article("sq", "Historia e Prishtinës", 2800),
+        article("sq", "Historia e Vushtrrisë", 963),
+        article("sq", "Komuna e Prishtinës", 665),
       ],
     },
   },
@@ -97,7 +115,7 @@ export const WhichArticleNoneFits: Story = {
 export const WikipediaDown: Story = {
   args: {
     topic: "Rilindja Kombëtare",
-    question: { status: "SourceUnavailable", language: "Albanian", reason: "unavailable" },
+    question: { status: "SourceUnavailable", language: "Albanian", reason: "unavailable", unreachable: ["wikipedia"] },
   },
 };
 
@@ -110,4 +128,68 @@ export const WikipediaDownRetrying: Story = {
 export const WhichArticleOnMobile: Story = {
   args: WhichArticle.args,
   parameters: { viewport: { defaultViewport: "mobile1" } },
+};
+
+/**
+ * Both sources had candidates and neither was sure — real results for "Git branching" on
+ * 2026-10-30. Every row now names its source, on a phone too: it is how the rows differ.
+ */
+export const WhichArticleFromTwoSources: Story = {
+  args: {
+    topic: "Git branching",
+    question: {
+      status: "NeedsArticle",
+      language: "English",
+      articles: [
+        learn(
+          "Adopt a Git branching strategy",
+          1341,
+          "https://learn.microsoft.com/azure/devops/repos/git/git-branching-guidance?view=azure-devops",
+        ),
+        learn(
+          "About branches and branch policies",
+          1069,
+          "https://learn.microsoft.com/azure/devops/repos/git/branch-policies-overview?view=azure-devops",
+        ),
+        article("en", "Git", 7918),
+        article("en", "Branching (version control)", 1090),
+        article("en", "GitHub", 8195),
+      ],
+    },
+  },
+};
+
+export const WhichArticleFromTwoSourcesOnMobile: Story = {
+  args: WhichArticleFromTwoSources.args,
+  parameters: { viewport: { defaultViewport: "mobile1" } },
+};
+
+/**
+ * Only Microsoft Learn had candidates — "New features in C# 12 and .NET 8" spans two of its
+ * pages, and Wikipedia has neither. One source, so the header names it and the rows don't.
+ */
+export const WhichLearnPage: Story = {
+  args: {
+    topic: "New features in C# 12 and .NET 8",
+    question: {
+      status: "NeedsArticle",
+      language: "English",
+      articles: [
+        learn("What's new in C# 12", 1410, "https://learn.microsoft.com/dotnet/csharp/whats-new/csharp-12"),
+        learn(
+          "What's new in the .NET 8 runtime",
+          7172,
+          "https://learn.microsoft.com/dotnet/core/whats-new/dotnet-8/runtime",
+        ),
+      ],
+    },
+  },
+};
+
+/** Microsoft Learn didn't answer: the outage card names the source that was down. */
+export const MicrosoftLearnDown: Story = {
+  args: {
+    topic: "Azure Functions",
+    question: { status: "SourceUnavailable", language: "English", reason: "unavailable", unreachable: ["microsoft-learn"] },
+  },
 };

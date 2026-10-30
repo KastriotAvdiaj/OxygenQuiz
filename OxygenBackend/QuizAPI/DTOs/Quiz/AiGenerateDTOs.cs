@@ -74,6 +74,10 @@ namespace QuizAPI.DTOs.Quiz
         [MaxLength(300)]
         public string? SourceTitle { get; set; }
 
+        /// <summary>Which source the picked article is from — the candidate's <c>provider</c>. Absent means Wikipedia.</summary>
+        [MaxLength(50)]
+        public string? SourceProvider { get; set; }
+
         /// <summary>The author's answer "none of these" to "which article?" — generate from memory.</summary>
         public bool SourceDeclined { get; set; }
 
@@ -108,6 +112,7 @@ namespace QuizAPI.DTOs.Quiz
                 ExtraInstructions = ExtraInstructions,
                 SourceLanguage = SourceLanguage,
                 SourceTitle = SourceTitle,
+                SourceProvider = SourceProvider,
                 SourceDeclined = SourceDeclined,
                 SourceAcceptFromMemory = SourceAcceptFromMemory,
                 Ground = Ground,
@@ -140,6 +145,9 @@ namespace QuizAPI.DTOs.Quiz
         /// <summary>NeedsLanguage: the languages to choose between.</summary>
         public List<string>? Languages { get; set; }
 
+        /// <summary>SourceUnavailable, or Ungrounded "unavailable": which sources were down ("wikipedia", "microsoft-learn").</summary>
+        public List<string>? Unreachable { get; set; }
+
         public static AiGroundingDTO? From(GroundingResult g) => g.Status == GroundingStatus.Off ? null : new()
         {
             Status = g.Status.ToString(),
@@ -154,9 +162,13 @@ namespace QuizAPI.DTOs.Quiz
                 Language = g.Source.Language,
             },
             Articles = g.Status == GroundingStatus.NeedsArticle
-                ? g.Candidates.Select(c => new AiSourceCandidateDTO { Title = c.Title, Words = c.Words, Url = c.Url }).ToList()
+                ? g.Candidates.Select(c => new AiSourceCandidateDTO
+                {
+                    Title = c.Title, Words = c.Words, Url = c.Url, Provider = c.Provider, Key = c.FetchKey,
+                }).ToList()
                 : null,
             Languages = g.Status == GroundingStatus.NeedsLanguage ? g.Languages.ToList() : null,
+            Unreachable = g.Unreachable.Count > 0 ? g.Unreachable.ToList() : null,
         };
     }
 
@@ -176,6 +188,12 @@ namespace QuizAPI.DTOs.Quiz
         public string Title { get; set; } = string.Empty;
         public int Words { get; set; }
         public string? Url { get; set; }
+
+        /// <summary>"wikipedia" or "microsoft-learn" — sent back as <c>sourceProvider</c> when picked.</summary>
+        public string Provider { get; set; } = "wikipedia";
+
+        /// <summary>What to send back as <c>sourceTitle</c> when picked: the title on Wikipedia, the URL on Learn.</summary>
+        public string Key { get; set; } = string.Empty;
     }
 
     /// <summary>

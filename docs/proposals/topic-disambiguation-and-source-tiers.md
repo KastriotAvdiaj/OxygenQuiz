@@ -3,9 +3,11 @@
 **Status: accepted 2026-10-28, implementation in progress.** Rank 3 (English source → non-English
 questions) is **rejected** — see §4d. Built 2026-10-29 for Wikipedia, end to end
 (server, wizard, eval) and measured — switched off; how it works is in
-[`../quiz/ai-quiz-generation-flow.md`](../quiz/ai-quiz-generation-flow.md) §2e. **Not built:**
-the other tiers of §4d (official documentation, governing bodies), which is all that keeps this
-proposal open. **§4a bis is superseded** by a measured rule (below). Written 2026-10-28. Prerequisite for Phase 2 of
+[`../quiz/ai-quiz-generation-flow.md`](../quiz/ai-quiz-generation-flow.md) §2e. **Microsoft
+Learn built 2026-10-30** as the first official-documentation tier, and the tiers are no longer
+consulted in order — see §4d and [ADR 0038](../adr/0038-every-source-is-searched-and-the-titles-decide.md).
+**Not built:** the other tiers of §4d (other documentation sites, governing bodies, Albanian
+Wikisource), which is all that keeps this proposal open. **§4a bis is superseded** by a measured rule (below). Written 2026-10-28. Prerequisite for Phase 2 of
 [`../quiz/ai-question-accuracy-plan.md`](../quiz/ai-question-accuracy-plan.md), which assumes a
 source can be picked automatically. The measurements below say it cannot.
 
@@ -170,6 +172,21 @@ and silent about it.
 
 This is also why `SourceOptions.LanguageDomains` has no fallback entry. A missing language is a
 missing source, not a redirect to English.
+
+**Not "in priority order" (2026-10-30).** The table reads as a fixed order by category, but the
+category isn't known when the topic is typed. Every source for the language is searched at once,
+and the titles decide — [ADR 0038](../adr/0038-every-source-is-searched-and-the-titles-decide.md).
+
+**Rank 4, Microsoft Learn — built 2026-10-30.** Read through Learn's MCP server
+(`learn.microsoft.com/api/mcp`): published by Microsoft for software to read Learn, keyless, no
+charge, use under the [Learn Terms of Use](https://learn.microsoft.com/legal/termsofuse). Those
+terms restrict site content to non-commercial use *unless* a document carries its own licence,
+which then controls; the documentation repositories behind the pages — `dotnet/docs`,
+`MicrosoftDocs/azure-docs`, `sql-docs`, `PowerShell-Docs` — are CC BY 4.0 (checked 2026-10-30),
+so the page link is the attribution, as with Wikipedia. What doesn't clearly come from those is
+left out: Q&A threads (other people's posts), training modules and shows, generated API reference,
+and any other host the search returns. Re-check the licence before a paid launch — see
+[`legal-and-compliance-for-launch.md`](./legal-and-compliance-for-launch.md).
 
 ## 5. Rejected
 

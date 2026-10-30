@@ -135,7 +135,7 @@ public class AiGenerationServiceGroundingTests
 
         await h.Service.GenerateAsync(Guid.NewGuid(), TopicRequest(sourceTitle: "Fotosinteza") with { SourceLanguage = "Albanian" });
 
-        h.Grounding.Verify(g => g.GroundAsync("Fotosinteza", new GroundingAnswers("Albanian", "Fotosinteza", false, false), It.IsAny<CancellationToken>()));
+        h.Grounding.Verify(g => g.GroundAsync("Fotosinteza", new GroundingAnswers("Albanian", "Fotosinteza", false, false, null), It.IsAny<CancellationToken>()));
     }
 
     [Fact]

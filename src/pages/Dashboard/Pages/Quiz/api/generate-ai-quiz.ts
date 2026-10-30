@@ -56,7 +56,7 @@ export type AiUngroundedReason =
   | "no-source-for-language";
 
 export interface AiGroundedSource {
-  /** The source tier, e.g. "wikipedia". */
+  /** The source: "wikipedia" or "microsoft-learn". */
   provider: string;
   title: string;
   /** Carries the CC BY-SA attribution — the review links to it. */
@@ -70,6 +70,10 @@ export interface AiSourceCandidate {
   title: string;
   words: number;
   url: string | null;
+  /** Which source: "wikipedia" or "microsoft-learn". Sent back as `sourceProvider`. */
+  provider?: string;
+  /** What to send back as `sourceTitle`: the title on Wikipedia, the page's URL on Learn. */
+  key?: string;
 }
 
 export interface AiGrounding {
@@ -81,12 +85,17 @@ export interface AiGrounding {
   articles?: AiSourceCandidate[] | null;
   /** NeedsLanguage: the languages to choose between. */
   languages?: string[] | null;
+  /** An outage: which sources couldn't be reached ("wikipedia", "microsoft-learn"). */
+  unreachable?: string[] | null;
 }
 
 /** The author's answers to grounding's questions, sent back with the same request. */
 export interface AiGroundingAnswers {
   sourceLanguage?: string;
+  /** The picked article's `key`. */
   sourceTitle?: string;
+  /** The picked article's `provider`, so the server fetches it from the right source. */
+  sourceProvider?: string;
   /** "None of these" — write from memory. */
   sourceDeclined?: boolean;
   /** The source was down and the author chose not to wait. */

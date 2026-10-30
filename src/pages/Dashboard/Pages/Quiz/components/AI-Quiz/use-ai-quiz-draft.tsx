@@ -196,7 +196,7 @@ export const useAiQuizDraft = () => {
   );
 
   /**
-   * What `payload` was written from — the Wikipedia article, or why there was none
+   * What `payload` was written from — the article (Wikipedia or Microsoft Learn), or why there was none
    * (docs/quiz/ai-quiz-generation-flow.md §2e). Only ever set together with the payload, by
    * `setPayload`, so the two cannot describe different replies. The review reads it for the
    * provenance line, and the parser for the article's text to check quotes against.

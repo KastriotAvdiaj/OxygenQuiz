@@ -923,6 +923,16 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   (`ppprop=disambiguation`); choosing between real articles is not. Proposed gates, source tiers
   and rejected alternatives:
   [`proposals/topic-disambiguation-and-source-tiers.md`](../proposals/topic-disambiguation-and-source-tiers.md).
+- **P3 — A clear but general article beats a better page offered as a question (ADR 0038).**
+  "Entity Framework Core migrations" is written from Wikipedia's *Entity Framework*: two of four
+  topic words, all of the title's — clear by the rule — while Learn's *Migrations Overview* (the
+  right page) only matches through its address and is offered as a question that never gets
+  asked. Coverage ½ is what lets a title answer half a topic; raising it would also stop some
+  good matches. Measure on the eval before changing it.
+- **P3 — `TitleMatch` counts a title word twice when two of them match one topic word.**
+  "About branches and branch policies" scores two shared words with "Git branching" (both
+  *branches* and *branch* match *branching*), so its coverage can pass 1. Harmless so far — it
+  only re-orders a question — but the overlap should count topic words, not title words.
 
 Found while building slice 2.0 (topic + source-text generation via DeepSeek, server-side).
 The live register with full reasoning is

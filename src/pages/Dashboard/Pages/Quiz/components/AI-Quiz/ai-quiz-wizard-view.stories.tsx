@@ -573,9 +573,10 @@ export const FeatureDisabled: Story = {
   },
 };
 
-// ── Grounding: written from a Wikipedia article (docs/quiz/ai-quiz-generation-flow.md §2e) ──
+// ── Grounding: written from a source article (docs/quiz/ai-quiz-generation-flow.md §2e) ──
 //
-// With `Ai:Source:Enabled`, a topic is looked up on Wikipedia before the model writes. When
+// With `Ai:Source:Enabled`, a topic is looked up on Wikipedia — and, in English, Microsoft Learn —
+// before the model writes. When
 // the server can't decide something it asks — before any allowance is spent — and the card
 // below takes the topic box's place. The candidates are real search results (2026-10-29).
 
@@ -600,16 +601,75 @@ export const GroundingAsksArticle: Story = {
       status: "NeedsArticle",
       language: "English",
       articles: [
-        { title: "Mercury (planet)", words: 16170, url: "https://en.wikipedia.org/wiki/Mercury_(planet)" },
-        { title: "Freddie Mercury", words: 17329, url: "https://en.wikipedia.org/wiki/Freddie_Mercury" },
-        { title: "Mercury (element)", words: 13576, url: "https://en.wikipedia.org/wiki/Mercury_(element)" },
+        {
+          title: "Mercury (planet)",
+          words: 16170,
+          url: "https://en.wikipedia.org/wiki/Mercury_(planet)",
+          provider: "wikipedia",
+          key: "Mercury (planet)",
+        },
+        {
+          title: "Freddie Mercury",
+          words: 17329,
+          url: "https://en.wikipedia.org/wiki/Freddie_Mercury",
+          provider: "wikipedia",
+          key: "Freddie Mercury",
+        },
+        {
+          title: "Mercury (element)",
+          words: 13576,
+          url: "https://en.wikipedia.org/wiki/Mercury_(element)",
+          provider: "wikipedia",
+          key: "Mercury (element)",
+        },
       ],
     },
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: /Mercury \(planet\)/ }));
-    await expect(args.onAnswerSource).toHaveBeenCalledWith({ sourceTitle: "Mercury (planet)" });
+    await expect(args.onAnswerSource).toHaveBeenCalledWith({
+      sourceTitle: "Mercury (planet)",
+      sourceProvider: "wikipedia",
+    });
+  },
+};
+
+/**
+ * A Microsoft Learn page picked: what goes back is its address and its source, so the server
+ * fetches that page from Learn — Learn titles aren't unique.
+ */
+export const GroundingAsksLearnPage: Story = {
+  args: {
+    topic: "New features in C# 12 and .NET 8",
+    sourceChoice: {
+      status: "NeedsArticle",
+      language: "English",
+      articles: [
+        {
+          title: "What's new in C# 12",
+          words: 1410,
+          url: "https://learn.microsoft.com/dotnet/csharp/whats-new/csharp-12",
+          provider: "microsoft-learn",
+          key: "https://learn.microsoft.com/dotnet/csharp/whats-new/csharp-12",
+        },
+        {
+          title: "What's new in the .NET 8 runtime",
+          words: 7172,
+          url: "https://learn.microsoft.com/dotnet/core/whats-new/dotnet-8/runtime",
+          provider: "microsoft-learn",
+          key: "https://learn.microsoft.com/dotnet/core/whats-new/dotnet-8/runtime",
+        },
+      ],
+    },
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /What's new in C# 12/ }));
+    await expect(args.onAnswerSource).toHaveBeenCalledWith({
+      sourceTitle: "https://learn.microsoft.com/dotnet/csharp/whats-new/csharp-12",
+      sourceProvider: "microsoft-learn",
+    });
   },
 };
 
@@ -630,7 +690,7 @@ export const GroundingDeclined: Story = {
 export const GroundingWikipediaDown: Story = {
   args: {
     topic: "Rilindja Kombëtare",
-    sourceChoice: { status: "SourceUnavailable", language: "Albanian", reason: "unavailable" },
+    sourceChoice: { status: "SourceUnavailable", language: "Albanian", reason: "unavailable", unreachable: ["wikipedia"] },
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
@@ -813,7 +873,7 @@ export const ReviewFromMemoryWikipediaDown: Story = {
         result={goodResult}
         notices={
           <SourceNote
-            grounding={{ status: "Ungrounded", language: "Albanian", reason: "unavailable" }}
+            grounding={{ status: "Ungrounded", language: "Albanian", reason: "unavailable", unreachable: ["wikipedia"] }}
           />
         }
       />

@@ -5,6 +5,8 @@ import { cn } from "@/utils/cn";
 
 import type { AiGrounding } from "../../../api/generate-ai-quiz";
 
+import { sourceLabel, sourceNames } from "./source-labels";
+
 export interface SourceNoteProps {
   /**
    * What the reply was written from (docs/quiz/ai-quiz-generation-flow.md §2e). Null when
@@ -21,9 +23,10 @@ const CHECK = "Check the answers before you publish.";
  * that says it, and at most one quieter line under it.
  *
  * Three cases:
- * - **Written from an article** — named and linked, which is also the CC BY-SA attribution the
- *   content requires. Blue, like the picture notice: information, not a problem.
- * - **Wikipedia was down and the author went ahead** — amber. They were warned a step ago, but
+ * - **Written from an article** — its source, named and linked, which is also the attribution
+ *   the content's licence requires (CC BY-SA on Wikipedia, CC BY on Microsoft Learn).
+ *   Blue, like the picture notice: information, not a problem.
+ * - **A source was down and the author went ahead** — amber. They were warned a step ago, but
  *   the review is where they read the questions, so it is said again here.
  * - **From memory for another reason** — no fitting article, a stub, "none of these", no source
  *   in the language. Blue, with the reason, because "why is there no source?" is the question.
@@ -40,10 +43,10 @@ export const SourceNote = ({ grounding }: SourceNoteProps) => {
   let lead: ReactNode;
   let detail: string;
   if (grounding.status === "Grounded" && grounding.source) {
-    const { title, url } = grounding.source;
+    const { title, url, provider } = grounding.source;
     lead = (
       <>
-        Written from the Wikipedia article{" "}
+        Written from the {sourceLabel(provider)} {provider === "microsoft-learn" ? "page" : "article"}{" "}
         {url ? (
           <a
             href={url}
@@ -62,7 +65,7 @@ export const SourceNote = ({ grounding }: SourceNoteProps) => {
   } else {
     switch (grounding.reason) {
       case "unavailable":
-        lead = "Wikipedia couldn't be reached, so the AI wrote these from memory";
+        lead = `${sourceNames(grounding.unreachable)} couldn't be reached, so the AI wrote these from memory`;
         detail = "Expect more wrong answers than usual — check every one before you publish.";
         break;
       case "declined":
@@ -74,7 +77,7 @@ export const SourceNote = ({ grounding }: SourceNoteProps) => {
         detail = CHECK;
         break;
       default:
-        lead = "Written from the AI's own knowledge — no Wikipedia article fitted this topic";
+        lead = "Written from the AI's own knowledge — no article fitted this topic";
         detail = CHECK;
     }
   }

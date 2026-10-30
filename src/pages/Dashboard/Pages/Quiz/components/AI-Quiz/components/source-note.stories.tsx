@@ -59,9 +59,35 @@ export const GroundedLongTitleOnMobile: Story = {
   parameters: { viewport: { defaultViewport: "mobile1" } },
 };
 
+/** Written from a Microsoft Learn page — a "page", not an "article", and linked the same way. */
+export const GroundedOnMicrosoftLearn: Story = {
+  args: {
+    grounding: {
+      status: "Grounded",
+      language: "English",
+      source: {
+        provider: "microsoft-learn",
+        title: "What is Azure Functions?",
+        url: "https://learn.microsoft.com/azure/azure-functions/functions-overview",
+        text: "…",
+        language: "English",
+      },
+    },
+  },
+};
+
 /** Wikipedia was down and the author went ahead: the one amber notice. */
 export const FromMemoryWikipediaDown: Story = {
-  args: { grounding: { status: "Ungrounded", language: "Albanian", reason: "unavailable" } },
+  args: {
+    grounding: { status: "Ungrounded", language: "Albanian", reason: "unavailable", unreachable: ["wikipedia"] },
+  },
+};
+
+/** The same, when Microsoft Learn was the one down — the notice names it. */
+export const FromMemoryMicrosoftLearnDown: Story = {
+  args: {
+    grounding: { status: "Ungrounded", language: "English", reason: "unavailable", unreachable: ["microsoft-learn"] },
+  },
 };
 
 /** The author answered "none of these". */
