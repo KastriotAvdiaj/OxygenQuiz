@@ -7,6 +7,12 @@ import type { QuizSummaryDTO } from "@/types/quiz-types";
 // backend endpoints; each takes the same generic FilterQuery and returns a PagedResponse.
 type QuizSearchScope = "public" | "mine" | "all";
 
+/**
+ * Which part of the public catalogue (docs/media/moderation.md, "Picked and community quizzes"):
+ * quizzes picked for the main catalogue, everyone else's, or both. Only meaningful for "public".
+ */
+export type CatalogueScope = "picked" | "community" | "all";
+
 const SCOPE_URL: Record<QuizSearchScope, string> = {
   public: "/quiz/search",
   mine: "/quiz/mine/search",
@@ -15,29 +21,37 @@ const SCOPE_URL: Record<QuizSearchScope, string> = {
 
 export const searchQuizzes = (
   scope: QuizSearchScope,
-  query: FilterQuery
+  query: FilterQuery,
+  catalogue?: CatalogueScope
 ): Promise<PagedResponse<QuizSummaryDTO>> =>
-  fetchPaged<QuizSummaryDTO>(SCOPE_URL[scope], query);
+  fetchPaged<QuizSummaryDTO>(
+    SCOPE_URL[scope],
+    query,
+    scope === "public" && catalogue && catalogue !== "all" ? { scope: catalogue } : undefined
+  );
 
 export const searchQuizzesQueryOptions = (
   scope: QuizSearchScope,
-  query: FilterQuery = {}
+  query: FilterQuery = {},
+  catalogue?: CatalogueScope
 ) =>
   queryOptions({
-    queryKey: ["quizzes", "search", scope, query],
-    queryFn: () => searchQuizzes(scope, query),
+    queryKey: ["quizzes", "search", scope, query, catalogue ?? "all"],
+    queryFn: () => searchQuizzes(scope, query, catalogue),
   });
 
 export const useSearchQuizzes = ({
   scope = "public",
+  catalogue,
   query,
   queryConfig,
 }: {
   scope?: QuizSearchScope;
+  catalogue?: CatalogueScope;
   query?: FilterQuery;
   queryConfig?: QueryConfig<typeof searchQuizzesQueryOptions>;
 } = {}) =>
   useQuery({
-    ...searchQuizzesQueryOptions(scope, query),
+    ...searchQuizzesQueryOptions(scope, query, catalogue),
     ...queryConfig,
   });

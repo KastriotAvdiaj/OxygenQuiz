@@ -120,7 +120,7 @@ export const isManualQuizDraftWorthKeeping = (
   draft.questions.length > 0 ||
   hasText(draft.form.title) ||
   hasText(draft.form.description) ||
-  hasText(draft.form.imageUrl) ||
+  draft.form.cover != null ||
   draft.form.categoryId != null ||
   draft.form.languageId != null ||
   draft.form.difficultyId != null;
@@ -145,6 +145,8 @@ export interface AiQuizDraft {
   questionCount: number;
   allowedTypes: QuestionType[];
   extraInstructions: string;
+  /** "Add images". Optional so drafts saved before the switch existed still restore. */
+  addImages?: boolean;
   /** The bring-your-own-AI paste box, before it has been handed to the parser. */
   pastedReply: string;
   /** The model's reply, raw. Held by both paths once it exists. */
@@ -169,6 +171,7 @@ const aiQuizDraftSchema = z.object({
   questionCount: z.number(),
   allowedTypes: z.array(z.nativeEnum(QuestionType)),
   extraInstructions: z.string(),
+  addImages: z.boolean().optional(),
   pastedReply: z.string(),
   payload: z.string().nullable(),
   // Loose on purpose: this is the server's own response, stored and read back by us. A shape

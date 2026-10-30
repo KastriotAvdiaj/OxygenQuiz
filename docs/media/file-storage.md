@@ -1,12 +1,13 @@
-# Generic File Storage (Files entity)
+# Generic File Storage (Files entity) — avatars only
 
-This documents the **new** generic file store added for the avatar / product-photo /
-document requirements. It is intentionally simpler and more general than the image
-pipeline: **attach-on-upload**, any allowed file type, with an uploader audit trail.
+The generic file store (`FileRecord` + `FileService`): attach-on-upload, polymorphic owner, an
+uploader audit trail. It was built for avatars, product photos and documents; today **only avatars use
+it**, through `AvatarService`, and it has no HTTP endpoint of its own. Question and quiz media live in
+the media pipeline instead ([`media-pipeline.md`](media-pipeline.md)).
 
-> TL;DR — one authenticated `POST` with the file plus its owner (`entity` + `entityId`)
-> creates the file and the DB record in a single step. There is no draft phase and no
-> orphan cleanup, because the owner is known at upload time.
+> TL;DR — a feature service calls `IFileService.UploadAsync(file, entity, entityId, uploadedBy)`, which
+> checks the extension and size, writes `wwwroot/uploads/files/{guid}.{ext}` and inserts the record in
+> one step. No draft phase and no orphan cleanup, because the owner is known at upload time.
 
 ---
 
@@ -51,34 +52,27 @@ Docker the image creates `/app/wwwroot/uploads` itself and mounts a volume there
 
 ---
 
-## Endpoints (`Controllers/Files/FilesController.cs`, `[Authorize]`)
+## No public endpoints — callers reach the store through a feature service
 
-| Method | Route | Body / query | Purpose |
-|---|---|---|---|
-| `POST` | `/api/files` | `multipart`: `file`, `entity`, `entityId` | Upload + attach |
-| `GET` | `/api/files?entity=&entityId=` | — | List files for an owner |
-| `DELETE` | `/api/files/{id}` | — | Delete file + record |
+> **Status: endpoints removed (2026-10-23).** `FilesController` (`POST`/`GET`/`DELETE
+> /api/files`) is gone.
 
-Validation (in `FileService`): size ≤ **10 MB**, extension ∈ an allowlist (images +
-common documents). The uploader is taken from the JWT `sub` claim — the client never
-sends it.
+The store is a library, not an API. A feature that needs it — today only `AvatarService` —
+injects `IFileService` and decides the owner itself (`entity = "User"`, `entityId` = the caller
+from the JWT), so a client never names an owner.
 
-```mermaid
-sequenceDiagram
-    participant U as Client (authenticated)
-    participant API as FilesController
-    participant SVC as FileService
-    participant FS as Disk (wwwroot/uploads/files)
-    participant DB as Files table
+The controller that used to sit on top let any signed-in caller **delete any file by id**, **list
+any owner's files**, and upload up to 100 MB of unchecked bytes under an owner string it made
+up. Nothing in the SPA called it. Patching it with ownership checks would have meant designing
+ownership for owners that don't exist yet, so it was removed instead; question and quiz media
+get their own pipeline ([`docs/proposals/media-pipeline.md`](../proposals/media-pipeline.md)).
+`Security/FileStoreEndpointsTests.cs` fails if any controller injects `IFileService` again.
 
-    U->>API: POST /api/files (file, entity, entityId)
-    API->>API: read uploader from JWT
-    API->>SVC: UploadAsync(file, entity, entityId, uploadedBy)
-    SVC->>SVC: validate size + extension
-    SVC->>FS: write {guid}.{ext}
-    SVC->>DB: insert FileRecord
-    API-->>U: 201 { id, url, ... }
-```
+Validation (in `FileService`): extension ∈ an allowlist (images, audio, video, common
+documents), with a size cap per kind — image 5 MB, audio 20 MB, video 100 MB, document 10 MB
+(see [question-media.md](../quiz/question-media.md) §3). The extension is the only check: the
+bytes are not inspected, which is why `AvatarService` decodes the image itself before calling
+the store.
 
 ---
 
@@ -96,9 +90,19 @@ avatar-specific safety.
 - **Storage:** the file goes through `IFileService` with `entity = "User"`, `entityId = <user id>`.
   The user's `ProfileImageUrl` is set to the new file's **absolute** URL, and the **previous avatar
   is deleted** so old files don't pile up.
-- **Frontend:** a hover-to-change overlay on the profile avatar (`AvatarUploader`) with client-side
-  type/size guards and an instant local preview; on success it invalidates the `authenticated-user`
-  query so the new picture appears in the profile, header, and drawer at once.
+- **Frontend — crop before upload (since 2026-10-23):** the avatar shows a hover-to-change overlay and
+  a pencil badge (the badge is what a touch screen sees, having no hover). Picking a photo opens
+  `AvatarCropDialog` — drag to position, slider/wheel/pinch to zoom up to 3×, turn in 90° steps,
+  inside a circular mask (`react-easy-crop`). On *Apply*, `cropAvatar`
+  (`Profile/lib/crop-avatar.ts`) draws the chosen square onto a **512×512** canvas and uploads that
+  as WebP (PNG on Safari, which can't encode WebP; the file name follows the bytes, because the
+  server checks both). The circle is only a mask: the square is stored and every avatar is drawn
+  round by CSS. Before this, the picked file was uploaded whole and the round avatar squeezed it,
+  so a wide photo came out as a sliver. Because only the crop is uploaded, the client accepts a
+  source photo up to 20 MB (`MAX_AVATAR_SOURCE_BYTES`, only to spare the browser a huge decode);
+  the server's 5 MB limit applies to the 512px result and is never near. On success the
+  `authenticated-user` query is invalidated so the new picture appears in the profile, header, and
+  drawer at once; on failure the dialog stays open so the user can retry.
 
 Why not the image pipeline? Avatars don't need the draft/associate/orphan-GC dance — the user
 already exists at upload time — so attach-on-upload (this store) is the right shape. We just added
@@ -106,46 +110,14 @@ the image-content validation the generic store lacks.
 
 ---
 
-## Can both systems coexist? Yes.
+## Relationship to the media pipeline
 
-They do not collide on anything:
+Question and quiz media — images and audio — go through the **media pipeline**
+([`media-pipeline.md`](media-pipeline.md)): content-checked, re-encoded, stored once on R2, attached by
+id, swept when unused. The old image-only pipeline (`ImageAsset`, `ImageUploadController`) that used
+to sit beside this store is gone.
 
-| | Image pipeline (`ImageAsset`) | Generic store (`FileRecord`) |
-|---|---|---|
-| Table | `ImageAssets` | `Files` |
-| Routes | `/api/ImageUpload/*` | `/api/files` |
-| Disk folder | `wwwroot/uploads/` | `wwwroot/uploads/files/` |
-| Service | `ImageService` | `FileService` |
-| Owner link | `EntityType` + `int EntityId` (bookkeeping) | `Entity` + `string EntityId` |
-| Lifecycle | upload → associate → GC orphans | attach-on-upload, no GC |
-| Validation | image content + dimensions (ImageSharp) | extension allowlist + size |
-| Auth | `[Authorize]` (used inside authoring) | `[Authorize]` |
-
-Separate tables, routes, storage folders, and services means no migration or shared state
-is needed for them to run side by side.
-
----
-
-## Which one should I use?
-
-- **Quiz / question images** → keep using the **image pipeline**. You need the upload-
-  before-the-entity-exists draft flow, image-content validation, and orphan cleanup.
-- **Avatars, product photos, documents, any new attachment** → use the **Files store**.
-  The owner already exists, so attach-on-upload is the right shape, and you get the
-  uploader audit trail for free.
-
-### Required vs optional
-
-- The **image pipeline is required infrastructure** for the existing authoring features —
-  removing it would break quiz/question image handling.
-- The **Files store is additive** — it serves the new requirements and nothing depends on
-  it yet. It can grow (or absorb other use cases) without touching the image flow.
-
-### Future convergence (not now)
-
-If you ever want a single system, the clean target is: keep one **storage layer** (write
-bytes / build URL / delete) shared by both, and either (a) keep two record types for the
-two lifecycles, or (b) extend `FileRecord` with a nullable owner + status + an optional
-image-validation path + a cleanup job, then migrate `ImageAsset` rows and retire it. That
-is a deliberate, separately-tested refactor — not a prerequisite for the Files feature.
-See the storage comparison above for the moving parts involved.
+This store now serves **avatars only**. Folding avatars into the media pipeline — so they move to R2
+and are swept like everything else — needs a `User.AvatarAssetId` reference the sweep can see; it is
+deferred ([`../deployment/known-issues.md`](../deployment/known-issues.md), "Avatars still use the old
+file store"). When that lands, `FileRecord` and `FileService` have no caller left and can be removed.

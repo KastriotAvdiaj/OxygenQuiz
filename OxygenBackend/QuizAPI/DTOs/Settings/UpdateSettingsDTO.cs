@@ -21,6 +21,10 @@ namespace QuizAPI.DTOs.Settings
 
         public bool ShowTimer { get; set; }
 
+        // Nullable on purpose: PUT is a full replace, and a client built before this field existed
+        // would otherwise send nothing and quietly reset it to false. Null = leave it as it is.
+        public bool? AskBeforeRemovingQuestion { get; set; }
+
         [MaxLength(64)]
         public string AppFont { get; set; } = "Noto Sans";
 

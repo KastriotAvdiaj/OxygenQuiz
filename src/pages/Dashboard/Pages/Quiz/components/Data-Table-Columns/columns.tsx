@@ -1,3 +1,5 @@
+import { EditPencil } from "@/components/icons/edit-pencil";
+import { PlayTriangle } from "@/components/icons/play-triangle";
 import { ColumnDef } from "@tanstack/react-table";
 // import { Button } from "@/components/ui/button";
 // import { useDisclosure } from "@/hooks/use-disclosure";
@@ -18,20 +20,32 @@ import { ColumnDef } from "@tanstack/react-table";
 // } from "@/components/ui/dropdown-menu";
 import formatDate from "@/lib/date-format";
 import TitleWithDescription from "./title-description";
-import { dashboardBaseOf, useQuizEditPath } from "../../quiz-paths";
+import { dashboardBaseOf, quizViewPath, useQuizEditPath } from "../../quiz-paths";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import {
   Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui";
-import { Copy, Edit2, Eye, MoreHorizontal, Trash2 } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
+import {
+  CopySheets,
+  HiddenEye,
+  PickHand,
+  PublishArrow,
+  TrashBin,
+  ViewEye,
+} from "@/components/icons/solid-icons";
+import { useModerationAction } from "@/features/reports/api/reports";
 import { DeleteQuiz } from "../delete-quiz";
 import { Link, useLocation } from "react-router-dom";
+import { useUser } from "@/lib/Auth";
+import { quizPlayPath } from "@/pages/Quiz/quiz-play-path";
+import { useCopyQuizLink } from "../../api/use-copy-quiz-link";
+import { useSetQuizStatus } from "../../api/set-quiz-status";
+import { useNotifications } from "@/common/Notifications";
 import { QuizSummaryDTO } from "@/types/quiz-types";
 
 /**
@@ -126,7 +140,15 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
     header: "Status",
     meta: { priority: 1 },
     cell: ({ row }) => {
-      const { status, deletedAt } = row.original;
+      const { status, deletedAt, moderationHeld } = row.original;
+      if (moderationHeld && !deletedAt) {
+        // Held by a moderator (docs/media/moderation.md): whatever the status, nobody else sees it.
+        return (
+          <span className="inline-flex items-center rounded-full border border-amber-500/40 bg-amber-500/15 px-2.5 py-0.5 text-xs font-medium text-foreground">
+            Under review
+          </span>
+        );
+      }
       if (deletedAt) {
         return (
           <span className="inline-flex items-center rounded-full border border-destructive/30 bg-destructive/15 px-2.5 py-0.5 text-xs font-medium text-destructive">
@@ -182,9 +204,60 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
   const { open, isOpen, close } = useDisclosure();
   // The table is shared by both dashboards; edit within whichever one it's shown in.
   const editPath = useQuizEditPath();
-  // The single-quiz page lives in the admin dashboard only; a player opening it gets the admin
-  // area's 404, so "View" is offered only where it works (known-issues.md, Associations).
-  const canView = dashboardBaseOf(useLocation().pathname) === "/dashboard";
+  // Both dashboards have the single-quiz page now (`quizViewPath`); "View" opens it in whichever
+  // this table is shown in, and so does a click on the row (`onRowClick` where the table is used).
+  const base = dashboardBaseOf(useLocation().pathname);
+  const isAdminDashboard = base === "/dashboard";
+  // "My quizzes" lists only the viewer's own (`scope: "mine"`); the admin table lists everyone's,
+  // and a summary row carries the author's username, not an id.
+  const { data: currentUser } = useUser();
+  const isOwn = !isAdminDashboard || quiz.user === currentUser?.username;
+  // Play mirrors `QuizPlayAccess.IsPlayAuthorized` (Public, or yours). Copy link: a Public quiz's
+  // listing URL is public, so anyone may copy it; an Unlisted quiz's share link mirrors
+  // `GenerateShareTokenAsync` (yours); a Draft has no link (docs/quiz/quiz-listing.md).
+  const canPlay = !quiz.deletedAt && ((quiz.status === "Public" && !quiz.moderationHeld) || isOwn);
+  const canShare =
+    !quiz.deletedAt && !quiz.moderationHeld && (quiz.status === "Public" || (isOwn && quiz.status === "Unlisted"));
+  const shareLink = useCopyQuizLink();
+  // Publish / Unpublish from the row, without opening the quiz first. Same target rule as the
+  // quiz page's menu (Quiz.tsx `handleSetStatus`): a Draft goes Public, anything else back to
+  // Draft. The API lets the owner, or anyone with quiz:update:any (Admin, SuperAdmin), do it —
+  // and both dashboards only list quizzes the viewer is one of those for. A refused Publish (an
+  // "Unspecified" category / language / difficulty) is already toasted with the API's own
+  // message by the axios interceptor.
+  const { addNotification } = useNotifications();
+  const setStatus = useSetQuizStatus();
+  const isDraft = quiz.status === "Draft";
+  const handleToggleStatus = () =>
+    setStatus.mutate(
+      { quizId: quiz.id, status: isDraft ? "Public" : "Draft" },
+      {
+        onSuccess: () =>
+          addNotification({
+            type: "success",
+            title: isDraft ? "Quiz published" : "Quiz moved back to draft",
+          }),
+      },
+    );
+  // Pick / unpick from the admin table, so curating the catalogue doesn't mean opening every quiz.
+  // Mirrors `canPick` on the quiz page and `quiz:pick` on POST /api/moderation/quizzes/{id}/pick
+  // (Public, not held). Admin dashboard only: "My quizzes" is the author's view, not a moderator's.
+  const pickAction = useModerationAction();
+  const canPick =
+    isAdminDashboard &&
+    !quiz.deletedAt &&
+    !!currentUser &&
+    (currentUser.roles?.includes("SuperAdmin") || currentUser.permissions?.includes("quiz:pick")) &&
+    quiz.status === "Public" &&
+    !quiz.moderationHeld;
+  const togglePick = () =>
+    pickAction.mutate(
+      { kind: quiz.isPicked ? "unpick" : "pick", quizId: quiz.id },
+      {
+        onSuccess: () =>
+          addNotification({ type: "success", title: quiz.isPicked ? "Removed from picked" : "Picked for the catalogue" }),
+      },
+    );
   // Separate disclosure for the delete confirmation. It's rendered OUTSIDE the
   // dropdown (below) so closing the menu can't unmount an open dialog and leave
   // `pointer-events: none` stuck on <body>.
@@ -203,54 +276,78 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="bg-muted">
-        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-        <DropdownMenuItem
-          onClick={() =>
-            navigator.clipboard.writeText(quiz.id as unknown as string)
-          }
-        >
-          <Copy size={16} /> Copy ID
+        {/* Order: the things you do with the quiz, then admin tooling, then Delete last in red —
+            the quiz page's own ⋯ menu (QuizActionsMenu) reads the same way. No separators: they
+            fell between some items and not others and read as accidental (2026-10-20). */}
+        <DropdownMenuItem className="hover:bg-background" asChild>
+          <Link to={quizViewPath(quiz, base)} className="flex items-center gap-2">
+            <ViewEye size={16} /> View
+          </Link>
         </DropdownMenuItem>
+        {canPlay && (
+          <DropdownMenuItem className="hover:bg-background" asChild>
+            <Link to={quizPlayPath(quiz)} className="flex items-center gap-2">
+              <PlayTriangle size={16} /> Play
+            </Link>
+          </DropdownMenuItem>
+        )}
+        {canShare && (
+          <DropdownMenuItem
+            className="hover:bg-background"
+            disabled={shareLink.isPending}
+            onClick={() => shareLink.copy(quiz)}
+          >
+            <CopySheets size={16} />
+            {quiz.status === "Unlisted" ? "Copy share link" : "Copy link"}
+          </DropdownMenuItem>
+        )}
+        {!quiz.deletedAt && (
+          <DropdownMenuItem className="hover:bg-background" asChild>
+            <Link to={editPath(quiz)} className="flex items-center gap-2">
+              <EditPencil size={16} /> Edit
+            </Link>
+          </DropdownMenuItem>
+        )}
+        {!quiz.deletedAt && (
+          <DropdownMenuItem
+            className="hover:bg-background"
+            disabled={setStatus.isPending}
+            onClick={handleToggleStatus}
+          >
+            {isDraft ? <PublishArrow size={16} /> : <HiddenEye size={16} />}
+            {isDraft ? "Publish" : "Unpublish"}
+          </DropdownMenuItem>
+        )}
+        {canPick && (
+          <DropdownMenuItem className="hover:bg-background" disabled={pickAction.isPending} onClick={togglePick}>
+            <PickHand size={16} />
+            {quiz.isPicked ? "Remove from picked" : "Pick for the catalogue"}
+          </DropdownMenuItem>
+        )}
+        {/* Admin tooling only. A player never needs a quiz's database id — nothing in the
+            player's app takes one. */}
+        {isAdminDashboard && (
+          <DropdownMenuItem
+            className="hover:bg-background"
+            onClick={() => navigator.clipboard.writeText(String(quiz.id))}
+          >
+            {/* The same icon as Copy link: both copy something, and the label says what. */}
+            <CopySheets size={16} /> Copy ID
+          </DropdownMenuItem>
+        )}
         {!quiz.deletedAt && (
           <>
-            <DropdownMenuSeparator className="bg-background/60" />
             <DropdownMenuItem
-              // className="text-red-600 focus:text-red-600"
+              className="text-red-600 focus:text-red-600"
               onSelect={() => {
                 // Let the menu finish closing, then open the dialog on the next
                 // frame so the two Radix modal layers never overlap.
                 requestAnimationFrame(() => deleteDialog.open());
               }}
             >
-              <Trash2 size={16} /> Delete
+              <TrashBin size={16} /> Delete
             </DropdownMenuItem>
           </>
-        )}
-        {canView && (<>
-        <DropdownMenuSeparator className="bg-background/60" />
-        <DropdownMenuItem className="hover:bg-background">
-          <Link
-            to={`/dashboard/quiz/${quiz.id}`}
-            className="w-full h-full flex items-center gap-2"
-          >
-            <Eye size={16} />
-            View
-          </Link>
-        </DropdownMenuItem>
-        </>)}
-        {!quiz.deletedAt && (
-          <>
-        <DropdownMenuSeparator className="bg-background/60" />
-          <DropdownMenuItem className="hover:bg-background">
-            <Link
-              to={editPath(quiz)}
-              className="w-full h-full flex items-center gap-2"
-              >
-              <Edit2 size={16} />
-              Edit
-            </Link>
-          </DropdownMenuItem>
-              </>
         )}
       </DropdownMenuContent>
     </DropdownMenu>

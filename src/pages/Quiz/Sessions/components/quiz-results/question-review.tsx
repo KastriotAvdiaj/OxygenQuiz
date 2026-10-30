@@ -9,6 +9,8 @@ import {
   QuizSession,
 } from "../../../../../types/quiz-session-types";
 import { QuestionMedia } from "@/common/QuestionMedia";
+import { creditFrom } from "@/features/media/api/upload-media";
+import { ReportButton } from "@/features/reports/components/report-dialog";
 import { ExplanationNote } from "@/common/QuestionExplanation";
 import { formatDuration } from "./quiz-session-utils";
 import { cn } from "@/utils/cn";
@@ -141,6 +143,10 @@ export function QuestionReview({ session }: QuestionReviewProps) {
               <Badge variant="secondary" className="text-xs">
                 {answer.questionType}
               </Badge>
+              {/* The results screen is where a wrong answer key is noticed — "I was right!" */}
+              {answer.questionId != null && (
+                <ReportButton questionId={answer.questionId} className="ml-auto" />
+              )}
             </div>
             <h3 className="text-sm sm:text-base font-medium text-foreground">
               {answer.questionText}
@@ -159,6 +165,9 @@ export function QuestionReview({ session }: QuestionReviewProps) {
         <QuestionMedia
           mediaUrl={answer.mediaUrl}
           mediaType={answer.mediaType}
+          hidden={answer.mediaHidden}
+          questionId={answer.questionId}
+          credit={creditFrom(answer.mediaCredit, answer.mediaCreditUrl)}
           alt="Question image"
           className="!max-w-md"
         />

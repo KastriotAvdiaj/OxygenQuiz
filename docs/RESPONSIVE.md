@@ -135,12 +135,11 @@ scales *their* default, so a reader on 20px still gets 18.75px.
   put while everything around them shrinks, so a hand-tuned px cap that used to fit its content
   will start clipping it. `.minimal-input`'s `max-height` did exactly this and had to be raised.
   If a value must scale with density, express it in rem.
-- **The 16px input floor**, which must survive the knob and therefore has to be written in a
-  unit the knob cannot move. This is the trap: `.minimal-input` said `font-size: 1rem` and the
-  shared `Input` said `text-base`, both of which *were* 16px and silently became 15px the moment
-  the root moved — reintroducing the iOS focus-zoom those very lines existed to prevent. Both
-  are now literal `16px` / `text-[16px]` on phones, with the density step applied from `sm` up
-  where focus-zoom does not happen. **Any new input needs the same treatment.**
+- **The 16px input floors** (`Input`'s `text-[16px]`, `.minimal-input`'s `font-size: 16px`) are
+  written in px so the knob cannot move them. They used to be `1rem` / `text-base` and silently
+  became 15px when the root moved. They are no longer what stops iOS focus-zoom — the iOS-only
+  `maximum-scale=1` in `index.html` is (see "Inputs and iOS focus-zoom" under Layout patterns) —
+  so a `text-base` field that renders at 15px is a cosmetic difference, not a zoom bug.
 
 ## Width scales layout and display type — not control density
 
@@ -414,6 +413,13 @@ with `env(safe-area-inset-*)`. If you ever add a fixed bottom bar, pad it with
 
 ## Layout patterns
 
+- **A bar pinned to the bottom of a padded scroller sits at minus the padding.** Chrome pins a
+  `sticky` element inside the scroll container's *padding*, so `bottom-0` inside the dashboard's
+  `p-4 sm:p-6 lg:p-8` `<main>` stops 16–32px short and the page shows under the bar. Use
+  `-bottom-4 sm:-bottom-6 lg:-bottom-8 short:-bottom-4`, and don't give an ancestor a fixed
+  height (`h-full`) — sticky is bounded by its parent, and a parent shorter than its content
+  ends the bar partway down. Reference: the quiz overview's bar (`quiz-overview.tsx`).
+
 - **Breakpoints:** Tailwind defaults (`sm` 640, `md` 768, `lg` 1024, `xl` 1280,
   `2xl` 1536). Design mobile-first: base classes are the phone layout,
   `sm:`/`lg:` add space and columns (e.g. the quiz grid:
@@ -459,28 +465,27 @@ with `env(safe-area-inset-*)`. If you ever add a fixed bottom bar, pad it with
   headline rows `flex-wrap` rather than overflow.
 - **Touch targets:** interactive controls ≥ 36px tall (`h-9`), prefer 40–44px
   for primary actions on mobile.
-- **Inputs must be ≥16px on phones, and check where the size actually comes
-  from.** Below 16px, iOS Safari zooms the whole page when the field takes
-  focus, and it does not zoom back out — the page is left scrolled and
-  oversized. The shared fields handle this now: `Input`'s base classes and the
-  textarea use `text-base sm:text-sm`, `FIELD_MODERN` uses
-  `text-base sm:text-[15px]`, and `.minimal-input` is `font-size: 1rem`.
+- **Inputs and iOS focus-zoom.** Below 16px, iOS Safari zooms the whole page
+  when a field takes focus, and it does not zoom back out — the page is left
+  scrolled and oversized. **The guard is the viewport meta, not the font
+  size:** a script in `index.html` adds `maximum-scale=1` on iOS/iPadOS only.
+  That suppresses the focus-zoom for every field in the app, raw `<input>`s
+  included, while iOS (10+) still ignores it for pinch-zoom, so users can zoom
+  by hand. It is deliberately *not* in the static meta: Android Chrome honours
+  `maximum-scale` and would lose pinch-zoom, and Android never focus-zooms in
+  the first place.
 
-  > **The trap:** this rule was already written here, and `InputField` already
-  > passed `text-base` — but the login/signup fields zoomed anyway for months.
-  > They use `variant="minimal"`, whose styling is the plain `.minimal-input`
-  > rule in `global.css`. That rule sits **outside Tailwind's layers**, so its
-  > `font-size: 0.875rem` beat the utility class silently, along with the
-  > `py-*`/`max-h-none` the same call site passed. A utility class is not proof
-  > of anything if a plain-CSS rule also targets the element — check the
-  > computed style, and put the fix where the losing declaration lives.
-
-  > **The second trap:** the sweep above fixed the *shared* fields — `Input`,
-  > `Textarea`, `FIELD_MODERN`, `.minimal-input`. A raw `<input>` written
-  > inline imports none of that, so it keeps whatever `text-*` its author
-  > typed. The lobby chat composer was a bare `<input className="… text-sm">`
-  > and went on zooming for another two days. Grep for `<input` as well as for
-  > the component when auditing this.
+  > **Why not the font size:** the fix used to be "every input is ≥16px on
+  > phones", enforced field by field — `Input`'s `text-[16px] sm:text-sm`,
+  > `.minimal-input`'s `font-size: 16px`, `text-base` on the textarea and
+  > `FIELD_MODERN`. It leaked for months: a plain-CSS rule outside Tailwind's
+  > layers beat the utility on the login fields; the lobby chat composer was a
+  > raw `<input className="… text-sm">` that imported none of it; and the
+  > density knob turned every `text-base` into 15px, so the textarea and
+  > `FIELD_MODERN` were zooming again while their comments said they didn't.
+  > A per-field rule has to be right on every field forever; the meta tag is
+  > one line. The 16px floors that remain are harmless but no longer
+  > load-bearing — a new input does not need one.
 - **A zoomed page looks like a layout bug.** Once iOS has zoomed in on a focused
   field, the visual viewport is narrower than the layout viewport, so controls
   at the right-hand end of a row sit off-screen and the page scrolls
@@ -605,7 +610,7 @@ freshly fetched question.
 
 | Where | Change | Why |
 | --- | --- | --- |
-| `global.css` `.minimal-input` | `font-size` 0.875rem → **1rem**; `max-height` 2.25rem → 2.75rem | 14px made iOS Safari zoom on every login/signup field focus. The `text-base` on the call site was being silently overridden (see the trap note above); the height cap had to rise or the larger text clipped |
+| `global.css` `.minimal-input` | `font-size` 0.875rem → **1rem**; `max-height` 2.25rem → 2.75rem | 14px made iOS Safari zoom on every login/signup field focus. The `text-base` on the call site was being silently overridden (see "Why not the font size" under "Inputs and iOS focus-zoom"); the height cap had to rise or the larger text clipped |
 | `form/input.tsx`, `form/textarea.tsx`, `field-variants.ts` | `text-sm` → `text-base sm:text-sm`; `text-[15px]` → `text-base sm:text-[15px]` | Same zoom, every other field in the app. Phones get 16px, desktop keeps its denser size |
 | `ui/dialog/dialog.tsx` | `w-full` → `w-[calc(100%-2rem)] sm:w-full`; `sm:rounded-lg` → `rounded-lg`; added dvh height cap + `overflow-y-auto` | Dialogs were full-bleed square rectangles on phones |
 | `Login.tsx`, `Signup.tsx` | `px-5` → `px-6` on phones | Form ran almost edge to edge; now matches the dialog gutter |
@@ -635,7 +640,7 @@ dialog, a hand-rolled spinner.
 | `facet-section.tsx` | Exported `FACET_LIST_MAX_HEIGHT` / `…_COMPACT` (`max-h-80` + `min(20rem,48dvh)` pair; raised from 15rem/38dvh on 2026-10-11) and made it the prop default | The cap was a per-call-site string, so each variant chose its own — and one chose none. A shared constant is the only version that can't drift |
 | `quiz-filter-panel.tsx` | Sidebar/drawer/compact all pass the shared cap; the full-height sidebar no longer passes `""` | Uncapping the facets there just relocated the growth from the page into a single 25-row scroll column. Panel height is now a function of the layout, never of the row count |
 | `facet-section.tsx`, `quiz-filter-panel.tsx` | Added `overscroll-contain` to both the facet lists and the sidebar's facet column | These scroll regions nest (list → panel → drawer → app container); a flick past the end chained outward and scrolled the page behind the panel |
-| `facet-section.tsx` | Facet search input `text-sm` → `text-base sm:text-sm`; added `role="group"` + `aria-label` to each list | Another bare inline `<input>` the July 31 sweep missed — 14px, so iOS zoomed on focus (see "the second trap" above) |
+| `facet-section.tsx` | Facet search input `text-sm` → `text-base sm:text-sm`; added `role="group"` + `aria-label` to each list | Another bare inline `<input>` the July 31 sweep missed — 14px, so iOS zoomed on focus (see "Why not the font size" under "Inputs and iOS focus-zoom") |
 | `lib/Search-Input.tsx` | Row is `flex w-full items-center gap-2`; field wrapper `relative min-w-0 flex-1`; button `shrink-0` | Two nested shrink-to-fit flex boxes meant the field sized to its content and left the panel row half empty — `.minimal-input`'s `width: 100%` was resolving against the shrink-wrapped parent, not the row. `min-w-0` is what lets a long placeholder shrink instead of pushing the button out |
 | `global.css`, `lib/Search-Input.tsx` | New `.minimal-input--compact` / `--has-clear` modifiers (padding `0.75rem` → `0.5rem 0.625rem`; `font-size` 14px **only from `sm` up**) | The default minimal field is a ~44px control — right for a login form, oversized next to the filter panel's Select triggers. **The third instance of the layer trap:** a `py-2 text-sm` at the call site loses to plain-CSS `.minimal-input`, so the modifier lives next to the rule it overrides. Phones keep 16px (iOS zoom); both steps stay ≥36px |
 | `lib/Search-Input.tsx` | `LiftedButton` → plain `Button size="icon"`; `onKeyPress` → `onKeyDown`; added `enterKeyHint="search"`, `aria-label` on both icon buttons; `className` finally forwarded | The lifted style's 4px edge reads as a primary page action and made the row look misaligned. `className` was in the props type but never destructured, so the `!my-0` five call sites passed had been doing nothing — the component's own `my-4` was the spacing all along |
@@ -757,3 +762,6 @@ a field hint — not as a subtitle.
    the dashboard is `bg-muted`, and so is a plain `<Card>` in dark mode. Look at it in dark
    mode. See "Surfaces inside a dashboard". Dialogs stay on the `bg-background` default, and
    the page header is the h1 and its actions — no description paragraph under it.
+15. Anything appear, disappear, open, reorder, or push content down? Animate it, and check it
+   with reduced motion on (devtools → Rendering → emulate `prefers-reduced-motion`). Nothing
+   snaps — see [`development/motion.md`](./development/motion.md).

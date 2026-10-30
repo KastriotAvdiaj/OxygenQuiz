@@ -1,3 +1,4 @@
+import type { MediaSelection } from "@/features/media/api/upload-media";
 import { AnyQuestion, QuestionBase, QuestionCategory, QuestionDifficulty, QuestionLanguage, QuestionType } from "@/types/question-types";
 import { Control, UseFormRegister, FormState, UseFormSetValue, UseFormWatch, UseFormClearErrors } from "react-hook-form";
 import { CreateQuizInput } from "../../api/create-quiz";
@@ -54,7 +55,8 @@ export interface NewQuestionBase {
   difficultyId: number;
   categoryId: number;
   languageId: number;
-  imageUrl?: string;
+  /** The attached image or clip. Only its `assetId` is sent; the rest is for the preview. */
+  media?: MediaSelection | null;
   /** Optional "why" shown to players after they answer. Empty means none. */
   explanation?: string;
   type: QuestionType;

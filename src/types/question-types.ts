@@ -5,6 +5,10 @@ export type CategoryDTO = {
   id: number;
   name: string;
   emoji: string;
+  /** The category's colours as a JSON array of hex strings (`QuestionCategoryDTO`); read with
+   *  `parseQuizPalette`. Sent on a quiz's detail read, so a full `Quiz` can colour its own UI. */
+  colorPaletteJson?: string | null;
+  gradient?: boolean;
 };
 
 export type DifficultyDTO = {
@@ -84,7 +88,16 @@ export interface QuestionBase {
   difficulty: DifficultyDTO;
   category: CategoryDTO;
   language: LanguageDTO;
-  imageUrl: string;
+  /** The attached image or clip's asset — what an editor sends back on save. */
+  mediaAssetId?: string | null;
+  /** Written by the API from the asset; null when there's no media. */
+  mediaUrl?: string | null;
+  /** Under a moderation cover pending review (docs/media/moderation.md). */
+  mediaHidden?: boolean;
+  /** Credit for an image from Pexels or Wikimedia Commons, linked to its source page. */
+  mediaCredit?: string | null;
+  mediaCreditUrl?: string | null;
+  mediaType?: QuestionMediaType;
   /** Optional "why", shown to players after they answer. Null when the author wrote none. */
   explanation?: string | null;
   createdAt: string;

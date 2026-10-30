@@ -47,6 +47,17 @@ export const QuizPanel = ({ settings }: PanelProps) => (
         />
       }
     />
+    {/* The quiz builder's remove confirmation; its "Don't ask again" turns this off. */}
+    <Row
+      title="Ask before removing a question"
+      control={
+        <Switch
+          size="sm"
+          checked={settings.form.askBeforeRemovingQuestion ?? true}
+          onCheckedChange={(v) => settings.set("askBeforeRemovingQuestion", v)}
+        />
+      }
+    />
     <Row
       title="Default difficulty"
       soon

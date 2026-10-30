@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from "react";
-import { Pen, Trash2 } from "lucide-react";
+import { EditPencil } from "@/components/icons/edit-pencil";
+import { PickedQuestionNotice } from "@/features/reports/components/picked-edit-notice";
+import React, { useState } from "react";
+import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
 import { Separator } from "@/components/ui/separator";
 import { LiftedButton } from "@/common/LiftedButton";
-import ImageUpload from "@/utils/Image-Upload";
+import { MediaPicker } from "@/features/media/components/media-picker";
+import { selectionFrom, type MediaSelection } from "@/features/media/api/upload-media";
 import { ExplanationField } from "@/common/QuestionExplanation";
 import { useFieldArray } from "react-hook-form";
 import { DifficultySelect } from "../../Entities/Difficulty/Components/select-question-difficulty";
@@ -38,7 +41,9 @@ export const UpdateTypeAnswerQuestionForm: React.FC<
   UpdateTypeAnswerQuestionFormProps
 > = ({ question }) => {
   const { addNotification } = useNotifications();
-  const [imageUrl, setImageUrl] = useState(question.imageUrl || "");
+  const [media, setMedia] = useState<MediaSelection | null>(
+    selectionFrom(question.mediaAssetId, question.mediaUrl, question.mediaType, question.mediaCredit, question.mediaCreditUrl),
+  );
   const { queryData } = useQuizForm();
 
   const transformAcceptableAnswersForForm = (answers: string[]) => {
@@ -69,7 +74,7 @@ export const UpdateTypeAnswerQuestionForm: React.FC<
         isDone={updateQuestionMutation.isSuccess}
         triggerButton={
           <IconButtonWithTooltip
-            icon={<Pen className="size-4" />}
+            icon={<EditPencil className="size-4" />}
             tooltip="Edit Question"
             variant="icon"
           />
@@ -94,7 +99,7 @@ export const UpdateTypeAnswerQuestionForm: React.FC<
             defaultValues: {
               id: question.id,
               text: question.text,
-              imageUrl: question.imageUrl,
+              mediaAssetId: question.mediaAssetId ?? null,
               explanation: question.explanation ?? "",
               correctAnswer: question.correctAnswer,
               categoryId: question.category.id,
@@ -128,24 +133,16 @@ export const UpdateTypeAnswerQuestionForm: React.FC<
 
             const addAnswerDisabled = fields.length >= MAX_ACCEPTABLE_ANSWERS;
 
-            useEffect(() => {
-              if (imageUrl) {
-                setValue("imageUrl", imageUrl);
-              }
-            }, [imageUrl, setValue]);
 
-            const handleImageUpload = (url: string) => {
-              setImageUrl(url);
-              setValue("imageUrl", url);
-            };
-
-            const handleImageRemove = () => {
-              setImageUrl("");
-              setValue("imageUrl", "");
+            const handleMediaChange = (next: MediaSelection | null) => {
+              setMedia(next);
+              setValue("mediaAssetId", next?.assetId ?? null);
             };
 
             return (
               <>
+                {/* A shared question: saving unpicks the picked quizzes it's in (moderation.md §5). */}
+                <PickedQuestionNotice questionId={question.id} className="mb-3" />
                 <Input
                   label="Question"
                   id="questionText"
@@ -164,12 +161,7 @@ export const UpdateTypeAnswerQuestionForm: React.FC<
                 )}
 
                 {/* Image upload implementation */}
-                <ImageUpload
-                  onUpload={handleImageUpload}
-                  onRemove={handleImageRemove}
-                  initialImageUrl={imageUrl}
-                />
-                <input type="hidden" {...register("imageUrl")} />
+                <MediaPicker value={media} onChange={handleMediaChange} />
 
                 <div className="space-y-4 mt-4">
                   <div className="flex flex-col">

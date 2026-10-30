@@ -62,7 +62,10 @@ export const sharedQuizToSummary = (quiz: Quiz): QuizSummaryDTO => ({
   difficulty: quiz.difficulty?.level ?? "",
   language: quiz.language?.language ?? "",
   imageUrl: quiz.imageUrl,
-  gradient: false,
+  // The start dialog takes its colours from these. Leaving them out opened every shared quiz in
+  // the default indigo, whatever its category.
+  colorPaletteJson: quiz.category?.colorPaletteJson ?? undefined,
+  gradient: quiz.category?.gradient ?? false,
   timeLimitInSeconds: quiz.timeLimitInSeconds,
   status: quiz.status,
   format: quiz.format,

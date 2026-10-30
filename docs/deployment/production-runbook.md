@@ -161,6 +161,14 @@ backups with it.
 
 ---
 
+## Media on R2, and free images
+
+Moved to [`production-topology.md`](production-topology.md), "Media — R2 and free images": the
+live stack is configured through `.env.prod` and the root compose file, which this runbook's
+design B does not use (2026-10-26).
+
+---
+
 ## Updating later
 
 - **Backend change:** `git pull` on the server (or re-`scp`), then

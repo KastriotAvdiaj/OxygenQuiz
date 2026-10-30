@@ -48,6 +48,8 @@ namespace QuizAPI.Services.SettingsService
             settings.SoundEffectsVolume = dto.SoundEffectsVolume;
             settings.Theme = dto.Theme;
             settings.ShowTimer = dto.ShowTimer;
+            if (dto.AskBeforeRemovingQuestion is { } ask)
+                settings.AskBeforeRemovingQuestion = ask;
             settings.AppFont = dto.AppFont;
             settings.QuizFont = dto.QuizFont;
             settings.UpdatedAt = DateTime.UtcNow;
@@ -64,6 +66,7 @@ namespace QuizAPI.Services.SettingsService
             SoundEffectsVolume = s.SoundEffectsVolume,
             Theme = s.Theme,
             ShowTimer = s.ShowTimer,
+            AskBeforeRemovingQuestion = s.AskBeforeRemovingQuestion,
             AppFont = s.AppFont,
             QuizFont = s.QuizFont,
         };

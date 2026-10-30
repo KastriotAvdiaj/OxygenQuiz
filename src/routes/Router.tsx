@@ -21,6 +21,14 @@ import { Navigate, Outlet } from "react-router-dom";
 //import  {QuizSelection} from "@/pages/Quiz/Quiz-Selection";
 // import { DashboardErrorElement } from "@/pages/UtilityPages/Error/Dashboard-Error-Element";
 import { quizLoader } from "@/loaders/quiz.loader";
+import { quizEditLoader } from "@/loaders/quiz-edit.loader";
+import {
+  dashboardListLoader,
+  loadQuestionsPage,
+  loadQuizzesPage,
+  prefetchQuestionsPageData,
+  prefetchQuizzesPageData,
+} from "./dashboard-prefetch";
 import { dashboardEntryLoader } from "@/loaders/dashboardEntryLoader";
 import { quizSelectionLoader } from "@/loaders/quiz-selection.loader";
 import {
@@ -61,6 +69,11 @@ const QuizResultsRouteWrapper = lazy(() =>
   import("@/pages/Quiz/Sessions/components/quiz-results/quiz-results-route-wrapper").then(
     (module) => ({ default: module.QuizResultsRouteWrapper }),
   ),
+);
+const QuizListingPage = lazy(() =>
+  import("@/pages/Quiz/QuizListing/quiz-listing-page").then((module) => ({
+    default: module.QuizListingPage,
+  })),
 );
 const SharedQuizRouteWrapper = lazy(() =>
   import("@/pages/Quiz/Sessions/components/quiz-taking-process/shared-quiz-route-wrapper").then(
@@ -261,6 +274,17 @@ const createAppRouter = (queryClient: QueryClient) =>
       ),
     },
     {
+      // The quiz listing: the public, indexable page for one Public quiz (docs/quiz/quiz-listing.md).
+      // In production the Worker answers this path first — head tags, a body for crawlers, a 404 or
+      // a 301 — and this route replaces its markup when the app boots (ADR 0028). No auth loader:
+      // the page is the same for everyone; only Play differs, and the play route decides that.
+      path: "/q/:quizId/:slug?",
+      errorElement: <DashboardErrorElement />,
+      element: (
+        <HomeLayout headerBehavior={HeaderBehavior.DEFAULT} children={<QuizListingPage />} />
+      ),
+    },
+    {
       // The destination of `buildShareUrl`. No auth loader, but not for the reason
       // /quiz/:quizId/play has none: that route falls back to a guest attempt, this one sends
       // signed-out visitors to log in. The wrapper decides, because it must resolve the token
@@ -448,20 +472,19 @@ const createAppRouter = (queryClient: QueryClient) =>
         {
           path: "questions",
           lazy: async () => {
-            const { Questions } =
-              await import("../pages/Dashboard/Pages/Question/Questions");
+            const { Questions } = await loadQuestionsPage();
             return { Component: Questions };
           },
+          // Starts the lookups and page 1 next to the chunk; doesn't wait (dashboard-prefetch.ts).
+          loader: dashboardListLoader(queryClient, prefetchQuestionsPageData),
         },
         {
-          // Placeholder while the reporting screen is finished. The real UI is still in
-          // the tree (UserDashboard/MyReports.tsx) — swap the import back when it's ready.
-          // See docs/quiz/reports.md.
+          // The moderators' queue of viewer reports (docs/media/moderation.md). The API checks
+          // moderation:manage; the nav offers it to Admin and SuperAdmin.
           path: "reports",
           lazy: async () => {
-            const { ReportsComingSoon } =
-              await import("../pages/Dashboard/Pages/Reports/ReportsComingSoon");
-            return { Component: ReportsComingSoon };
+            const { ModerationReports } = await import("../pages/Dashboard/Pages/Reports/ModerationReports");
+            return { Component: ModerationReports };
           },
         },
         {
@@ -506,10 +529,10 @@ const createAppRouter = (queryClient: QueryClient) =>
         {
           path: "quizzes",
           lazy: async () => {
-            const { Quizzes } =
-              await import("../pages/Dashboard/Pages/Quiz/Quizzes");
+            const { Quizzes } = await loadQuizzesPage();
             return { Component: Quizzes };
           },
+          loader: dashboardListLoader(queryClient, prefetchQuizzesPageData),
         },
         {
           // The route component mounts QuizQuestionProvider itself, after reading any stored
@@ -580,6 +603,8 @@ const createAppRouter = (queryClient: QueryClient) =>
               await import("../pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/edit-quiz");
             return { Component: EditQuizRoute };
           },
+          // Fetches the quiz + questions alongside the chunk, so the editor opens filled in.
+          loader: quizEditLoader(queryClient),
         },
         {
           path: "quiz/:quizId",
@@ -694,6 +719,17 @@ const createAppRouter = (queryClient: QueryClient) =>
           },
         },
         {
+          // The owner's quiz page — the same component as the admin dashboard's `quiz/:quizId`,
+          // which links within whichever dashboard it is in (quiz-paths.ts, `quizViewPath`).
+          path: "quiz/:quizId",
+          lazy: async () => {
+            const { QuizRoute } =
+              await import("../pages/Dashboard/Pages/Quiz/Quiz");
+            return { Component: QuizRoute };
+          },
+          loader: quizLoader(queryClient),
+        },
+        {
           path: "history",
           lazy: async () => {
             const { MyQuizHistory } =
@@ -725,11 +761,12 @@ const createAppRouter = (queryClient: QueryClient) =>
           },
         },
         {
-          // Reports left the player dashboard — it's an operator concern and it isn't
-          // finished (docs/quiz/reports.md). Redirected rather than 404'd so existing
-          // links and bookmarks land somewhere real.
+          // Wrong-answer reports on the author's own content (docs/media/moderation.md).
           path: "reports",
-          element: <Navigate to="/my-dashboard/quizzes" replace />,
+          lazy: async () => {
+            const { ReceivedReports } = await import("../pages/UserDashboard/ReceivedReports");
+            return { Component: ReceivedReports };
+          },
         },
         {
           // Same as the admin dashboard's create route — see the note there.
@@ -757,8 +794,8 @@ const createAppRouter = (queryClient: QueryClient) =>
         {
           // Owners edit their own quizzes here. The admin dashboard's edit routes are admin-only
           // (its loader 404s everyone else), so until 2026-09-23 a player could create a quiz
-          // but never change it. Same components as the admin routes; the API allows only the
-          // owner to save. `quizEditPath(quiz, "/my-dashboard")` builds these links.
+          // but never change it. Same components as the admin routes; the API lets the owner
+          // (or an admin) save. `quizEditPath(quiz, "/my-dashboard")` builds these links.
           path: "quizzes/edit/:quizId",
           lazy: async () => {
             const { EditQuizRoute } = await import(
@@ -766,6 +803,7 @@ const createAppRouter = (queryClient: QueryClient) =>
             );
             return { Component: EditQuizRoute };
           },
+          loader: quizEditLoader(queryClient),
         },
         {
           path: "quizzes/edit/:quizId/board",

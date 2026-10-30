@@ -235,7 +235,7 @@ states the answer: the session DTO no longer carries the answer key mid-quiz
   an uploaded PDF, Word or text file; questions are written in the material's language, English
   or Albanian only. Opens when a vendor entry sets `AllowsSourceMode` — not `groq`, which the
   baseline above rules out. How it works: [`ai-quiz-generation-flow.md`](./ai-quiz-generation-flow.md)
-  §2d; why: [ADR 0026](../adr/0026-source-mode-writes-in-the-materials-language-and-opens-per-model.md).
+  §2d; why: [ADR 0037](../adr/0037-source-mode-writes-in-the-materials-language-and-opens-per-model.md).
   Measure it before opening it (flow doc §9.16).
 - **2b. Server and eval built 2026-10-29, switched off** — flow doc §2e. Language and article
   are chosen as [the source-tiers proposal](../proposals/topic-disambiguation-and-source-tiers.md)

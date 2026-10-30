@@ -16,6 +16,9 @@ doc comment for reasoning that only makes sense beside the code.
 Not for renames, typos, or anything a reader gets from the diff. Plan docs (`*-plan.md`)
 are transient: fold what is still true into the feature doc and delete the plan.
 
+A change to what a user can do also updates its row in `docs/FEATURES.md`, the one list of
+every feature (the README and job applications are taken from it).
+
 **Nobody has to ask for the ADR.** When a piece of work clears the three tests above, the ADR
 is part of that work, written without prompting — the same way the code is. Waiting to be
 asked is how the reasoning ends up in a code comment instead, which is failure mode one below.
@@ -92,6 +95,14 @@ Full version, including the two failure modes this project has actually hit:
     text-foreground` with `liftColor="muted"` (see the dialog footer rule below).
   - **Destructive**: `bg-red-600 text-white` with `liftColor="red-700"`.
 
+  **Every `LiftedButton` leads with an icon that says what pressing it does** — `Check` to
+  finish or confirm (*Done*, *Save*), `ArrowRight` to go on, `Plus` to create, `Play` to start,
+  `X` to cancel, `Trash2` to delete, `EditPencil` (`components/icons/edit-pencil.tsx`, not a lucide
+  pencil) to edit — on every edit action, flat buttons and menu items included. The word says it,
+  the icon makes it read as an action at a glance. lucide-react, `h-4 w-4` (`h-3.5 w-3.5` on `size="sm"`), `aria-hidden="true"`, before the
+  label, with `flex items-center gap-2` on `className`. Stated 2026-10-20; older buttons without one
+  are being brought in line, so copy a button that has one.
+
   Spacing and width go on `outerClassName` (the outer `<button>`); colour and padding on
   `className` (the face). A `className` margin lands on the face and shifts it off its edge.
 - **Dialog footers use `ConfirmationDialog`'s buttons:** the action first as a `LiftedButton`
@@ -102,6 +113,15 @@ Full version, including the two failure modes this project has actually hit:
   of grey text explaining what the page is reads as filler and pushes the content down; the
   title, the empty state and the controls carry that. Put a needed explanation where it's
   needed (an empty state, a field hint), not under the title.
+
+### Motion
+
+- **Nothing in the UI snaps.** Anything that appears, disappears, opens, closes, reorders, changes
+  view, or pushes content below it is animated — 150–300ms, and honouring
+  `prefers-reduced-motion` (arrive, don't travel). Radix `data-[state]` classes and
+  `tailwindcss-animate` for enter and open/close; `framer-motion` (`AnimatePresence`, `layout`) for
+  exits, height changes and lists. Full rule and what counts as a shift:
+  [`docs/development/motion.md`](docs/development/motion.md).
 
 ## Backend conventions (C#)
 
@@ -127,7 +147,8 @@ Full version, including the two failure modes this project has actually hit:
   decides *may this caller act*, the repository decides *on which rows* — passing
   `canUpdateAny ? null : userId` down keeps a caller from probing ids they can't touch.
 - **`Quiz` has no visibility query filter — only soft delete.** An endpoint that returns a quiz
-  checks Draft / Unlisted / ownership itself. Don't add a second `HasQueryFilter` to an entity: in
+  checks Draft / Unlisted / ownership itself — **and the moderation hold** (`ModerationHeldAt`: the
+  owner's alone, ADR 0034). Don't add a second `HasQueryFilter` to an entity: in
   EF Core 8 it replaces the first. See `docs/adr/0019-quiz-visibility-is-enforced-at-each-entry-point.md`.
 - **A new read of quizzes applies `VisibleTo(_current.IsAdmin)` / `QuizFormatAccess.IsAvailableTo`.**
   Formats in preview (Associations) are admin-only, and a read that skips it leaks them to players.
@@ -137,6 +158,12 @@ Full version, including the two failure modes this project has actually hit:
 - **Work that outlives a hub invocation takes an `IServiceScopeFactory`, never the hub's
   `IServiceProvider`** — that one is the invocation's scope, disposed when it returns. The
   disconnect grace did this and silently removed nobody (`docs/quiz/multiplayer.md` §3.5).
+- **Media is attached by asset id through `IMediaAttachmentService` — never by URL.** No write model
+  carries a URL or media type (ADR 0032, guarded by `MediaEndpointTests`); the service is the only
+  writer of `Question.MediaUrl`/`MediaType`/`MediaCredit*` and `Quiz.ImageUrl`/`CoverCredit*`, and it
+  charges the quota. An outside image (Commons, Pexels) is imported by provider and id, never by URL
+  (ADR 0035). Nothing
+  deletes a stored file directly: `MediaSweeper` removes what nothing points at (ADR 0033).
 - **Validate lookups after the ownership lookup, not before,** for the same reason: failing
   on a bad category id before checking ownership leaks whether the question exists.
 

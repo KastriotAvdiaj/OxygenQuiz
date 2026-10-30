@@ -48,6 +48,21 @@ namespace QuizAPI.Controllers.Questions
             return Ok(pagedQuestions.Items);
         }
 
+        /// <summary>
+        /// Which of these saved questions the quiz builder may edit in place for the caller
+        /// (QuestionEditRule). <c>quizId</c>: the quiz being edited; omit while creating one.
+        /// </summary>
+        [HttpGet("editability")]
+        [Authorize]
+        public async Task<IActionResult> GetEditability([FromQuery] int[] ids, [FromQuery] int? quizId)
+        {
+            var userId = _currentUserService.UserId;
+            if (userId == null) return Unauthorized();
+            if (ids.Length == 0) return Ok(Array.Empty<QuestionEditabilityDTO>());
+            if (ids.Length > 200) return BadRequest("At most 200 ids per request.");
+            return Ok(await _questionService.GetEditabilityAsync(userId.Value, ids, quizId));
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetQuestion(int id)
         {
@@ -245,7 +260,8 @@ namespace QuizAPI.Controllers.Questions
 
         [HttpPut("multiplechoice/{id}")]
         [Authorize]
-        public async Task<IActionResult> UpdateMultipleChoiceQuestion(int id, [FromBody] MultipleChoiceQuestionUM questionUM)
+        public async Task<IActionResult> UpdateMultipleChoiceQuestion(int id, [FromBody] MultipleChoiceQuestionUM questionUM,
+            [FromQuery] bool fromQuizBuilder = false, [FromQuery] int? quizId = null)
         {
             if (id != questionUM.Id)
                 return BadRequest("ID mismatch between URL and request body.");
@@ -258,6 +274,11 @@ namespace QuizAPI.Controllers.Questions
 
             if (!await _permissionService.CanActOnResourceAsync(userId.Value, ownerId.Value, "question", "update"))
                 return Forbid();
+
+            // The quiz builder edits in place only under QuestionEditRule; the Questions page has no
+            // such limit (editing everywhere is its point). 409 tells the builder to copy instead.
+            if (fromQuizBuilder)
+                await _questionService.EnsureEditableInPlaceAsync(userId.Value, id, quizId);
 
             var canUpdateAny = await _permissionService.HasPermissionAsync(userId.Value, "question:update:any");
             var result = await _questionService.UpdateMultipleChoiceQuestionAsync(questionUM, userId.Value, canUpdateAny);
@@ -271,7 +292,8 @@ namespace QuizAPI.Controllers.Questions
 
         [HttpPut("truefalse/{id}")]
         [Authorize]
-        public async Task<IActionResult> UpdateTrueFalseQuestion(int id, [FromBody] TrueFalseQuestionUM questionUM)
+        public async Task<IActionResult> UpdateTrueFalseQuestion(int id, [FromBody] TrueFalseQuestionUM questionUM,
+            [FromQuery] bool fromQuizBuilder = false, [FromQuery] int? quizId = null)
         {
             if (id != questionUM.Id)
                 return BadRequest("ID mismatch between URL and request body.");
@@ -284,6 +306,11 @@ namespace QuizAPI.Controllers.Questions
 
             if (!await _permissionService.CanActOnResourceAsync(userId.Value, ownerId.Value, "question", "update"))
                 return Forbid();
+
+            // The quiz builder edits in place only under QuestionEditRule; the Questions page has no
+            // such limit (editing everywhere is its point). 409 tells the builder to copy instead.
+            if (fromQuizBuilder)
+                await _questionService.EnsureEditableInPlaceAsync(userId.Value, id, quizId);
 
             var canUpdateAny = await _permissionService.HasPermissionAsync(userId.Value, "question:update:any");
             var result = await _questionService.UpdateTrueFalseQuestionAsync(questionUM, userId.Value, canUpdateAny);
@@ -297,7 +324,8 @@ namespace QuizAPI.Controllers.Questions
 
         [HttpPut("typetheanswer/{id}")]
         [Authorize]
-        public async Task<IActionResult> UpdateTypeTheAnswerQuestion(int id, [FromBody] TypeTheAnswerQuestionUM questionUM)
+        public async Task<IActionResult> UpdateTypeTheAnswerQuestion(int id, [FromBody] TypeTheAnswerQuestionUM questionUM,
+            [FromQuery] bool fromQuizBuilder = false, [FromQuery] int? quizId = null)
         {
             if (id != questionUM.Id)
                 return BadRequest("ID mismatch between URL and request body.");
@@ -310,6 +338,11 @@ namespace QuizAPI.Controllers.Questions
 
             if (!await _permissionService.CanActOnResourceAsync(userId.Value, ownerId.Value, "question", "update"))
                 return Forbid();
+
+            // The quiz builder edits in place only under QuestionEditRule; the Questions page has no
+            // such limit (editing everywhere is its point). 409 tells the builder to copy instead.
+            if (fromQuizBuilder)
+                await _questionService.EnsureEditableInPlaceAsync(userId.Value, id, quizId);
 
             var canUpdateAny = await _permissionService.HasPermissionAsync(userId.Value, "question:update:any");
             var result = await _questionService.UpdateTypeTheAnswerQuestionAsync(questionUM, userId.Value, canUpdateAny);

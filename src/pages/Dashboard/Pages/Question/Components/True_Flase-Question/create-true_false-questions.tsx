@@ -1,5 +1,5 @@
 import { Check } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
@@ -12,7 +12,8 @@ import {
   useCreateTrueFalseQuestion,
 } from "../../api/True_False-Question/create-true_false-question";
 import { LiftedButton } from "@/common/LiftedButton";
-import ImageUpload from "@/utils/Image-Upload";
+import { MediaPicker } from "@/features/media/components/media-picker";
+import { type MediaSelection } from "@/features/media/api/upload-media";
 import { ExplanationField } from "@/common/QuestionExplanation";
 import {
   QuestionCategory,
@@ -32,7 +33,7 @@ export const CreateTrueFalseQuestionForm: React.FC<
   CreateTrueFalseQuestionFormProps
 > = ({ categories, difficulties, languages, onSuccess, title }) => {
   const { addNotification } = useNotifications();
-  const [imageUrl, setImageUrl] = useState("");
+  const [media, setMedia] = useState<MediaSelection | null>(null);
 
   const createQuestionMutation = useCreateTrueFalseQuestion({
     mutationConfig: {
@@ -83,19 +84,10 @@ export const CreateTrueFalseQuestionForm: React.FC<
             clearErrors("correctAnswer");
           };
 
-          useEffect(() => {
-            if (imageUrl) {
-              setValue("imageUrl", imageUrl);
-            }
-          }, [imageUrl, setValue]);
 
-          const handleImageUpload = (url: string) => {
-            setImageUrl(url);
-            setValue("imageUrl", url);
-          };
-          const handleImageRemove = () => {
-            setImageUrl("");
-            setValue("imageUrl", "");
+          const handleMediaChange = (next: MediaSelection | null) => {
+            setMedia(next);
+            setValue("mediaAssetId", next?.assetId ?? null);
           };
 
           return (
@@ -112,11 +104,7 @@ export const CreateTrueFalseQuestionForm: React.FC<
                     error={formState.errors["text"]}
                     registration={register("text")}
                   />
-                  <ImageUpload
-                    onUpload={handleImageUpload}
-                    onRemove={handleImageRemove}
-                  />
-                  <input type="hidden" {...register("imageUrl")} />
+                  <MediaPicker value={media} onChange={handleMediaChange} />
                 </div>
                 <div className="space-y-4 mt-4">
                   <Label className="block text-sm font-medium text-foreground flex items-center justify-center gap-2">

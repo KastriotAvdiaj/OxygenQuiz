@@ -38,6 +38,12 @@ export type QuizSummaryDTO = {
   timeLimitInSeconds:number;
   status: QuizStatus;
   format: QuizFormat;
+  /** In the main catalogue (docs/media/moderation.md). */
+  isPicked?: boolean;
+  /** Made by staff; a picked house quiz shows no badge. */
+  isHouse?: boolean;
+  /** Under a moderation hold: out of the catalogue, "Under review" for the owner. */
+  moderationHeld?: boolean;
   createdAt: string;
   /** Always 0 for an Associations quiz — a board has no questions. Check `format` first. */
   questionCount: number;
@@ -100,7 +106,17 @@ export type Quiz = {
   id: number;
   title: string;
   description?: string;
-  imageUrl?: string; 
+  /** The cover's URL, written by the API from `coverAssetId`. */
+  imageUrl?: string;
+  /** The cover image's asset — what the edit form sends back (docs/media/media-pipeline.md). */
+  coverAssetId?: string | null;
+  /** The cover's credit when it came from Pexels or Wikimedia Commons. */
+  coverCredit?: string | null;
+  coverCreditUrl?: string | null;
+  isPicked?: boolean;
+  isHouse?: boolean;
+  /** Under a moderation hold — only the owner and admins can open it. */
+  moderationHeld?: boolean;
   user: UserBasic;
   category: CategoryDTO;
   language: LanguageDTO;

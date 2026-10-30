@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
 import {
-  initialsFromName,
   parseQuizPalette,
   readableTextColor,
 } from "../quiz-palette";
@@ -58,7 +57,6 @@ export function useQuizCardModel(quiz: QuizSummaryDTO) {
       colors,
       accent,
       onAccent: readableTextColor(accent),
-      initials: initialsFromName(quiz.user),
       // A board has no questions, so its count would read "0 questions" — the format name is the
       // honest size line instead. See docs/quiz/quiz-card.md.
       sizeLabel: quizSizeLabel({ format: quiz.format, questionCount: quiz.questionCount }),
@@ -70,7 +68,6 @@ export function useQuizCardModel(quiz: QuizSummaryDTO) {
     };
   }, [
     quiz.colorPaletteJson,
-    quiz.user,
     quiz.questionCount,
     quiz.format,
     quiz.timeLimitInSeconds,

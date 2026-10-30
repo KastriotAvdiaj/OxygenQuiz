@@ -47,7 +47,9 @@ namespace QuizAPI.DTOs.Quiz
         /// <summary>Draft / Unlisted / Public.</summary>
         public string Status { get; set; } = nameof(Models.Quiz.QuizStatus.Draft);
 
-        public string? ImageUrl { get; set; }
+        /// <summary>The cover image: an image asset from <c>POST /api/media</c>, or null for none. The
+        /// server copies its URL into <c>ImageUrl</c>; a URL can't be sent. docs/media/media-pipeline.md.</summary>
+        public Guid? CoverAssetId { get; set; }
 
         /// <summary>
         /// Solo board time. Stored in <c>Quiz.TimeLimitInSeconds</c>, which the catalogue already

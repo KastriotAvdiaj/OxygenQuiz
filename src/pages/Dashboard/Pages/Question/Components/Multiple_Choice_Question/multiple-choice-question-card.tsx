@@ -1,4 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { QuestionMedia } from "@/common/QuestionMedia";
+import { creditFrom } from "@/features/media/api/upload-media";
 import { Badge } from "@/components/ui/badge";
 import {
   Accordion,
@@ -8,6 +10,7 @@ import {
 } from "@/components/ui/accordion";
 import { CheckCircle, XCircle, ChevronDown, ImageIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { useIsAdminDashboard } from "@/pages/Dashboard/Pages/Quiz/quiz-paths";
 import { DeleteQuestion } from "../Re-Usable-Components/delete-question";
 import UpdateMultipleChoiceQuestionForm from "./update-multiple-choice-question";
 import {
@@ -27,6 +30,8 @@ export const MultipleChoiceQuestionCard = ({
   question,
   viewMode = "list",
 }: MultipleChoiceQuestionCardProps) => {
+  // Database ids are admin tooling; the player's "My Questions" doesn't show them.
+  const showId = useIsAdminDashboard();
   if (viewMode === "grid") {
     // Compact grid view - always expanded, no accordion
     return (
@@ -35,14 +40,12 @@ export const MultipleChoiceQuestionCard = ({
           <div className="flex flex-wrap items-start justify-between gap-2">
             <CardTitle className="text-sm leading-tight flex-1 font-medium">
               {question.text}
-              {question.imageUrl && (
+              {question.mediaUrl && (
                 <Badge
                   variant="outline"
                   className="ml-2 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50">
                   <ImageIcon className="h-3 w-3 mr-1" />
-                  <span className="text-blue-600 dark:text-blue-400 text-xs">
-                    Image
-                  </span>
+                  <span className="text-blue-600 dark:text-blue-400 text-xs">{question.mediaType === "Audio" ? "Audio" : "Image"}</span>
                 </Badge>
               )}
             </CardTitle>
@@ -73,15 +76,7 @@ export const MultipleChoiceQuestionCard = ({
         </CardHeader>
 
         <CardContent className="pb-2 pt-0">
-          {question.imageUrl && (
-            <div className="w-full mb-3 rounded-md overflow-hidden border dark:border-foreground/30">
-              <img
-                src={question.imageUrl}
-                alt="Question image"
-                className="w-full h-auto max-h-32 object-contain mx-auto"
-              />
-            </div>
-          )}
+          <QuestionMedia mediaUrl={question.mediaUrl} mediaType={question.mediaType} hidden={question.mediaHidden} credit={creditFrom(question.mediaCredit, question.mediaCreditUrl)} className="mb-3" />
 
           <ul className="space-y-1 mb-3">
             {question.answerOptions.map((option: AnswerOption) => (
@@ -104,9 +99,11 @@ export const MultipleChoiceQuestionCard = ({
           </ul>
 
           <section className="flex items-center justify-between">
-            <Badge variant="outline" className="text-xs">
-              ID: {question.id}
-            </Badge>
+            {showId && (
+              <Badge variant="outline" className="text-xs">
+                ID: {question.id}
+              </Badge>
+            )}
             <div className="flex items-center gap-1">
               <TestQuestionButton
                 question={question}
@@ -131,19 +128,21 @@ export const MultipleChoiceQuestionCard = ({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-lg leading-tight flex-1">
             {question.text}
-            {question.imageUrl && (
+            {question.mediaUrl && (
               <Badge
                 variant="outline"
                 className="ml-2 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50">
                 <ImageIcon className="h-3 w-3 mr-1" />
-                <span className="text-blue-600 dark:text-blue-400">Image</span>
+                <span className="text-blue-600 dark:text-blue-400">{question.mediaType === "Audio" ? "Audio" : "Image"}</span>
               </Badge>
             )}
           </CardTitle>
           <div className="flex items-center gap-2 flex-shrink-0">
-            <Badge variant="outline" className="text-xs">
-              ID: {question.id}
-            </Badge>
+            {showId && (
+              <Badge variant="outline" className="text-xs">
+                ID: {question.id}
+              </Badge>
+            )}
             <Badge
               variant="outline"
               className={cn(
@@ -185,15 +184,7 @@ export const MultipleChoiceQuestionCard = ({
             </AccordionTrigger>
             <AccordionContent>
               <div className="space-y-3">
-                {question.imageUrl && (
-                  <div className="w-full mb-3 rounded-md overflow-hidden border dark:border-foreground/30">
-                    <img
-                      src={question.imageUrl}
-                      alt="Question image"
-                      className="w-full h-auto max-h-48 object-contain mx-auto"
-                    />
-                  </div>
-                )}
+                <QuestionMedia mediaUrl={question.mediaUrl} mediaType={question.mediaType} hidden={question.mediaHidden} credit={creditFrom(question.mediaCredit, question.mediaCreditUrl)} className="mb-3" />
 
                 <ul className="space-y-2">
                   {question.answerOptions.map((option: AnswerOption) => (

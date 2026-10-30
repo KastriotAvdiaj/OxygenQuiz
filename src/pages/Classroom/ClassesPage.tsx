@@ -1,6 +1,7 @@
+import { EditPencil } from "@/components/icons/edit-pencil";
 import { useState } from "react";
-import { Pencil, Plus, Save, Trash2, Users } from "lucide-react";
-import { Button, Card, Spinner } from "@/components/ui";
+import { Plus, Save, Trash2, Users } from "lucide-react";
+import { Button, Card, BlobLoader } from "@/components/ui";
 import {
   ConfirmationDialog,
   Dialog,
@@ -41,7 +42,7 @@ export const ClassesPage = () => {
 
       {classes.isLoading ? (
         <div className="flex justify-center py-16">
-          <Spinner size="lg" />
+          <BlobLoader size="lg" />
         </div>
       ) : !classes.data?.length ? (
         <Card className="flex flex-col items-center gap-3 p-10 text-center bg-card border dark:border-foreground/30">
@@ -80,7 +81,7 @@ const ClassCard = ({ roster, onEdit }: { roster: ClassRoster; onEdit: () => void
         </div>
         <div className="flex shrink-0 gap-1">
           <Button size="icon" variant="ghost" aria-label={`Edit ${roster.name}`} onClick={onEdit}>
-            <Pencil className="h-4 w-4" />
+            <EditPencil className="h-4 w-4" />
           </Button>
           <ConfirmationDialog
             icon="danger"

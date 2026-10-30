@@ -125,7 +125,10 @@ export const GenerationInput = ({
       <div>
         <RequiredEyebrow />
         <Label htmlFor="ai-topic" className="mt-0.5 block text-xl font-medium short:text-lg">
-          What should this quiz be about?
+          {/* "What should this quiz be about?" wrapped to two lines on a phone at this size.
+              Shorter wording rather than smaller type: this is the one required thing on the
+              screen and its weight is what says so (ai-quiz-wizard-view.tsx). */}
+          What&apos;s this quiz about?
         </Label>
         <Input
           id="ai-topic"
@@ -294,13 +297,14 @@ const SourceField = ({
             <LiftedButton
               type="button"
               size="sm"
-              className="bg-muted text-foreground"
+              className="flex items-center gap-2 bg-muted text-foreground"
               liftColor="muted-foreground"
               outerClassName="shrink-0"
               disabled={locked}
               onClick={() => fileInput.current?.click()}
             >
-              <FileUp className="h-4 w-4" aria-hidden="true" />
+              {/* h-3.5 on size="sm", per the LiftedButton icon rule in CLAUDE.md. */}
+              <FileUp className="h-3.5 w-3.5" aria-hidden="true" />
               Upload a file
             </LiftedButton>
             <span className="truncate text-xs text-muted-foreground">
@@ -322,19 +326,19 @@ const SourceField = ({
       </div>
 
       {sourceFile && sourceData.length > 0 && (
-        <p className="text-xs text-muted-foreground mt-1.5">
+        <p className="animate-in fade-in-0 slide-in-from-top-1 duration-200 text-xs text-muted-foreground mt-1.5">
           Read from <span className="font-medium text-foreground">{sourceFile.name}</span>.
           {" "}Questions will be in {sourceFile.language}.
         </p>
       )}
       {sourceFile?.truncated && sourceData.length > 0 && (
-        <p className="text-amber-600 dark:text-amber-500 text-xs mt-1 flex items-start gap-1">
+        <p className="animate-in fade-in-0 slide-in-from-top-1 duration-200 text-amber-600 dark:text-amber-500 text-xs mt-1 flex items-start gap-1">
           <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
           The file was longer than {numberFormat.format(max)} characters, so only the start was kept.
         </p>
       )}
       {uploadError && (
-        <p role="alert" className="text-destructive text-xs mt-1.5 flex items-start gap-1">
+        <p role="alert" className="animate-in fade-in-0 slide-in-from-top-1 duration-200 text-destructive text-xs mt-1.5 flex items-start gap-1">
           {/* Aligned to the first line: this message often wraps to three on a phone. */}
           <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
           {uploadError}

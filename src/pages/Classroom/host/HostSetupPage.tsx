@@ -2,7 +2,7 @@ import { useState, type CSSProperties } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion, useAnimate, type Variants } from "framer-motion";
 import { AlertCircle, ArrowLeftRight, ArrowRight, FolderX, LayoutGrid, Minus, Plus, Shuffle, Users } from "lucide-react";
-import { Button, Card, Spinner } from "@/components/ui";
+import { Button, Card, BlobLoader } from "@/components/ui";
 import { Input, Label } from "@/components/ui/form";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
@@ -106,7 +106,7 @@ const BoardPicker = ({ onPick }: { onPick: (quizId: number) => void }) => {
       <div className="rounded-xl bg-muted p-2.5 sm:p-3">
         {loading ? (
           <div className="flex justify-center py-6">
-            <Spinner />
+            <BlobLoader />
           </div>
         ) : !items?.length ? (
           <div className="flex flex-col items-center gap-2 py-8 text-center">

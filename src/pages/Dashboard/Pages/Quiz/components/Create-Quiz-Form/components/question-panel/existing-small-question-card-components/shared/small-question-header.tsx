@@ -23,7 +23,7 @@ export const SmallQuestionHeader: React.FC<SmallQuestionHeaderProps> = ({
   questionId,
   hasErrors = false,
 }) => {
-  const { removeQuestionFromQuiz, addedQuestions } = useQuiz();
+  const { requestRemoveQuestion, addedQuestions } = useQuiz();
 
   const questionIndex = addedQuestions.findIndex((q) => q.id === questionId);
   const questionNumber = questionIndex !== -1 ? questionIndex + 1 : null;
@@ -53,8 +53,10 @@ export const SmallQuestionHeader: React.FC<SmallQuestionHeaderProps> = ({
         variant="ghost"
         size="icon"
         className="h-6 w-6 flex items-center justify-center rounded-full hover:bg-destructive/10 hover:text-red-500"
-        onClick={() => removeQuestionFromQuiz(questionId)}
+        // Confirms first; the panel header's Undo puts it back (Quiz-questions-context).
+        onClick={() => requestRemoveQuestion(questionId)}
         title="Remove question"
+        aria-label={questionNumber ? `Remove question ${questionNumber}` : "Remove question"}
       >
         <Trash2 size={14} />
       </Button>

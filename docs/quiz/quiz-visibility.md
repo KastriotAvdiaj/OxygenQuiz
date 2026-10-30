@@ -8,11 +8,28 @@ enforced inconsistently.
 
 | Status | Discoverable in the catalogue? | Who can play | Notes |
 |---|---|---|---|
-| **Draft** | No | Owner (and admins) only | Work in progress. Share links don't work. |
+| **Draft** | No | Owner only | Work in progress. Share links don't work. Admins can view and edit it, not play it. |
 | **Unlisted** | No | Anyone with the **share link** or invited into a **lobby** hosting it | Not listed anywhere; the token/lobby is the access grant. |
-| **Public** | Yes | Everyone (including anonymous guests) | Listed in the public catalogue and search. |
+| **Public** | Yes | Everyone (including anonymous guests) | Listed in the public catalogue and search — under *Picked* or *Community* ([moderation.md](../media/moderation.md) §5) — and has a public [listing](quiz-listing.md) at `/q/:id/:slug`, in the sitemap when picked. |
 
-The owner sets the status when creating/editing a quiz, or via `PATCH /api/quiz/{id}/status`.
+The owner — or anyone with `quiz:update:any` (Admin and SuperAdmin), on any quiz — sets the status when creating/editing a quiz, or via
+`PATCH /api/quiz/{id}/status`: the **Publish / Unpublish** item in the quiz row's ⋯ menu (both
+dashboards) and on the quiz page's ⋯ menu. Publish takes a Draft to Public; Unpublish takes a
+Public or Unlisted quiz back to Draft.
+
+## Defaults
+
+**A new quiz starts Public, with instant feedback on** — by hand or by AI (since 2026-10-17;
+before that, Draft with feedback off). Set as the builder's form defaults in `create-quiz.tsx`
+and in the AI handoff (`use-ai-quiz-draft.tsx`); a new Associations board starts Public too
+(`emptyAssociationQuizFormValues`, same day — it has no feedback setting). A restored draft keeps
+the status it was saved with. The API's own default for a missing status is still Draft — only the client changed.
+
+Two things keep this from publishing by accident:
+
+- The primary button says **Publish quiz** while the status is Public, and *Save draft* /
+  *Save quiz* otherwise ([quiz-overview.md](quiz-overview.md), "The primary action").
+- If a lookup is set to Unspecified, the publication gate below drops the status to Draft.
 
 ## Publishing requires a full classification
 
@@ -77,12 +94,21 @@ Releasing a format is removing it from that array (and from `PREVIEW_FORMATS` on
 which only decides what to offer). See [associations.md](associations.md), "Admins only, for now".
 
 ### Unlisted via share link
-- The owner calls `POST /api/quiz/{id}/share-link` to lazily generate (and thereafter reuse) an
+- The owner gets the link from **Copy share link** — in the quiz row's ⋯ menu (both dashboards) or
+  the single-quiz page's ⋯ menu (`/dashboard/quiz/:id` and, since 2026-10-18, `/my-dashboard/quiz/:id`). It
+  is offered on the owner's own Unlisted quizzes (`use-copy-quiz-link.ts`). The same item on a
+  Public quiz is **Copy link** and copies its listing URL instead — no token
+  ([`quiz-listing.md`](quiz-listing.md), "Copy link").
+- That calls `POST /api/quiz/{id}/share-link` to lazily generate (and thereafter reuse) an
   unguessable `ShareToken`. The token is only ever returned to the owner.
 - A visitor opens `/play/shared/{token}`, which resolves the quiz through
   `GET /api/quiz/shared/{token}`. That endpoint reads the quiz whatever its status
   (the token *is* the grant); it returns 404 for an unknown token or a
   Draft quiz.
+- **A link preview needs no login.** `GET /api/quiz/shared/{token}/preview` returns only the card
+  a chat app shows (title, description, image, category, format, question count) for the frontend
+  Worker to write into the page's tags; it 404s wherever the resolver would.
+  [`frontend-worker.md`](../deployment/frontend-worker.md).
 - **Login is required to play** even with a valid link — the token grants access, the account ties
   the play session to a user. Starting the session sends the token in `QuizSessionCM.ShareToken`,
   which `QuizPlayAccess.IsPlayAuthorized` (`Common/QuizPlayAccess.cs`) validates — the one rule
@@ -92,6 +118,9 @@ which only decides what to offer). See [associations.md](associations.md), "Admi
 - A host may select a quiz that is `Public` **or one they own** (any status, including Unlisted/Draft).
   `QuizHub.SelectQuiz` validates this server-side via `IQuizService.CanHostQuizAsync` — the client's
   quiz id is never trusted.
+- The lobby's quiz picker has a **Public / My quizzes** switch (`quiz-selection-dialog.tsx`). *My
+  quizzes* searches `scope: "mine"`, so it lists the host's Unlisted and Draft quizzes, each marked
+  with its status — this is how a host runs an Unlisted quiz for friends.
 - Participants who join the lobby inherit play access for that match; lobby membership is the grant,
   so no per-player token is needed. The match loads questions with `ignoreFilters: true` because it
   runs in a background scope with no current user.
@@ -137,6 +166,33 @@ only thing carrying it.
 being signed in as anyone else passes rule 4's other half, so both authenticated cases sail through
 a filter that is broken for everybody else.
 
+### Reading a quiz by id
+
+Two read endpoints take a bare id, and ids are sequential — so "you need the id" protects nothing.
+
+| Endpoint | Who gets it | Everyone else |
+|---|---|---|
+| `GET /api/quiz/{id}` — the quiz's details | Public: anyone. Draft / Unlisted: the owner, an admin, or (Unlisted only) a caller passing `?shareToken=` | 404 |
+| `GET /api/quiz/{id}/questions` — every question **with `isCorrect` on its options** | The owner or an admin, at **any** status — Public included | 404 |
+
+A third read by id is anonymous on purpose: `GET /api/quiz/{id}/listing`, the public
+[quiz listing](quiz-listing.md). It answers only for a Public quiz in a released format, for every
+caller alike, and is the same 404 as an unknown id for everything else.
+
+`/questions` is the authoring view: the quiz page and the editors read it, play never does (a
+session serves one question at a time, without the answers). Both endpoints answered 404 only for a
+Draft until 2026-10-18, which made every Public quiz's answer key one anonymous request away and
+every Unlisted quiz readable by counting ids. Pinned by `QuizAPI.Tests/Security/QuizReadAccessTests.cs`.
+404 rather than 403, so a stranger can't tell an existing id from a missing one.
+
+### A moderation hold overrides all of this
+
+A quiz a moderator (or 10 reporters) has **held** (`ModerationHeldAt`) is the owner's alone whatever
+its status: out of the catalogue, listing and sitemap, refused by id (owner and admins excepted), by
+share link, for play and for hosting. A separate column, not a status, so the owner can't republish
+it — [ADR 0034](../adr/0034-moderation-hides-media-or-holds-a-quiz-never-one-question.md), with the
+entry-point table in [`moderation.md`](../media/moderation.md) §3.
+
 ## Authorization summary
 
 | Caller | Draft | Unlisted | Public |
@@ -146,7 +202,15 @@ a filter that is broken for everybody else.
 | Other signed-in user without the token | ❌ | ❌ | ✅ |
 | Lobby participant (host owns the quiz) | ✅ (via lobby) | ✅ (via lobby) | ✅ |
 | Anonymous guest | ❌ | ❌ | ✅ |
-| Admin | ✅ | ✅ | ✅ |
+| Admin / SuperAdmin | ❌ | ❌ (✅ with the token) | ✅ |
+
+Admins play by the same rules as everyone else — they can view and edit any quiz, but not play
+someone else's Draft or Unlisted one, so their plays never land in another owner's analytics
+([user-role-management.md](../auth/user-role-management.md) §1.1). This row said "Admin ✅" for every
+status until 2026-10-21, which the API never did.
+
+The rows are about **playing**. Reading a quiz's details and its questions by id is narrower — see
+"Reading a quiz by id" above: nobody but the owner and admins reads the questions, of any status.
 
 ## Import / export
 
@@ -161,10 +225,24 @@ Done:
   enforcement surface (explicit status checks per endpoint — see ADR 0019 — session-create authorization, share-token endpoints,
   `QuizHub.SelectQuiz` validation, guest-play restriction).
 - Frontend status model: create/edit form status selector, dashboard status column + filter, and the
-  owner-side **share-link generation + copy** on the quiz detail page.
+  owner-side **share-link generation + copy** in the quiz page's and the quiz row's ⋯ menus (hidden on a Draft).
+- The `/play/shared/:token` route (`SharedQuizRouteWrapper`): sends a signed-out visitor to log in
+  and back, resolves the token, then hands off to `/choose-quiz?shared=<token>` so the recipient sees
+  the normal start dialog — in the category's colours, like the catalogue — before anything is timed. `quizPlayPath` carries the token on as
+  `?shareToken=` into session creation, for Classic and Associations alike.
+- Classroom hosting (Associations, Teacher role): the host setup page lists the host's own boards
+  (`scope: "mine"`) alongside public ones, so an Unlisted board can be hosted for a class.
+- The multiplayer lobby's picker: a Public / My quizzes switch, so a host can pick their own
+  Unlisted or Draft quiz (2026-10-17).
+- An owner's way to play their own quiz: **Play** in the quiz row's ⋯ menu and on the quiz
+  page, offered when the quiz is Public or the viewer owns it — the client copy of
+  `QuizPlayAccess.IsPlayAuthorized` (2026-10-17). No share token is needed; the owner is authorised
+  without one.
 
-Remaining client wiring:
-- The `/play/shared/:token` route that resolves a token and starts a session passing
-  `QuizSessionCM.ShareToken` (the backend contract is in place).
-- A "My quizzes" scope in the multiplayer lobby's quiz picker so a host can pick their own Unlisted
-  quiz (the hub already authorizes owned quizzes server-side).
+- A player quiz page, `/my-dashboard/quiz/:id` (2026-10-18) — the same page as the admin one, opened
+  from the row's **View** item or a click on the row; Play and Copy share link are in its ⋯ menu too.
+
+- The public quiz listing, `/q/:id/:slug`, and the sitemap (2026-10-20) — Public quizzes only;
+  Copy link on a Public quiz gives its URL ([`quiz-listing.md`](quiz-listing.md)).
+
+Nothing remaining.

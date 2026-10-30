@@ -67,6 +67,7 @@ const meta = {
   args: {
     isOpen: true,
     selectedQuiz: null,
+    scope: "public",
     searchQuery: "",
     resultCount: quizzes.length,
     filtersOpen: false,
@@ -78,6 +79,7 @@ const meta = {
     isLoading: false,
     quizzes,
     onClose: fn(),
+    onScopeChange: fn(),
     onSearchChange: fn(),
     onClearFilters: fn(),
     onFiltersOpenChange: fn(),
@@ -142,4 +144,21 @@ export const Paginated: Story = {
       hasPreviousPage: true,
     },
   },
+};
+
+/** The host's own list: non-Public quizzes carry their status, since the catalogue never shows them. */
+export const MyQuizzes: Story = {
+  args: {
+    scope: "mine",
+    quizzes: [
+      makeQuiz({ id: 11, title: "Friday Pub Quiz", status: "Unlisted" }),
+      makeQuiz({ id: 12, title: "Half-finished Football Quiz", status: "Draft", category: "Sports" }),
+      makeQuiz({ id: 13, title: "Chemistry Basics", status: "Public" }),
+    ],
+    resultCount: 3,
+  },
+};
+
+export const MyQuizzesEmpty: Story = {
+  args: { scope: "mine", quizzes: [], resultCount: 0 },
 };

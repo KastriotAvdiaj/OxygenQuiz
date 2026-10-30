@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using QuizAPI.Common;
 using QuizAPI.Data;
 using QuizAPI.Models;
 using QuizAPI.Repositories.Interfaces;
@@ -56,6 +57,38 @@ namespace QuizAPI.Repositories
 
         public Task<bool> IsUsedInAnyQuizAsync(int id, CancellationToken ct = default) =>
             _context.QuizQuestions.AnyAsync(qq => qq.QuestionId == id, ct);
+
+        // IgnoreQueryFilters on Questions: the visibility filter is about who may *read* a
+        // question, and the owner clamp below already decides that here. Live rows only
+        // (RemovedInVersion == null) in quizzes that aren't soft-deleted: a quiz that dropped the
+        // question in an earlier version no longer uses it. Any UserAnswer row counts as played —
+        // a served-but-unanswered question still has a row, and its results still show it.
+        public Task<List<QuestionEditFacts>> GetEditFactsAsync(
+            IReadOnlyCollection<int> ids, Guid ownerId, int? exceptQuizId, CancellationToken ct = default) =>
+            _context.Questions
+                .IgnoreQueryFilters()
+                .Where(q => ids.Contains(q.Id) && q.UserId == ownerId)
+                .Select(q => new QuestionEditFacts(
+                    q.Id,
+                    q.UserId,
+                    _context.QuizQuestions
+                        .Where(qq => qq.QuestionId == q.Id
+                                     && qq.RemovedInVersion == null
+                                     && qq.Quiz.DeletedAt == null
+                                     && (exceptQuizId == null || qq.QuizId != exceptQuizId))
+                        .Select(qq => qq.QuizId)
+                        .Distinct()
+                        .Count(),
+                    _context.UserAnswers.Any(a => a.QuizQuestion.QuestionId == q.Id),
+                    _context.QuizQuestions
+                        .Where(qq => qq.QuestionId == q.Id
+                                     && qq.RemovedInVersion == null
+                                     && qq.Quiz.DeletedAt == null
+                                     && qq.Quiz.IsPicked)
+                        .Select(qq => qq.QuizId)
+                        .Distinct()
+                        .Count()))
+                .ToListAsync(ct);
 
         // IgnoreQueryFilters so a soft-deleted lookup still resolves to a name — the caller needs
         // to distinguish "this row is Unspecified" from "this id doesn't exist", and a filtered-out
@@ -119,5 +152,22 @@ namespace QuizAPI.Repositories
         public void Remove(QuestionBase question) => _context.Questions.Remove(question);
 
         public Task<int> SaveChangesAsync(CancellationToken ct = default) => _context.SaveChangesAsync(ct);
+
+        public Task TouchQuizzesContainingAsync(int questionId, CancellationToken ct = default)
+        {
+            var now = DateTime.UtcNow;
+            // Soft-deleted quizzes are left alone by the query filter; they have no listing anyway.
+            return _context.Quizzes
+                .Where(q => q.QuizQuestions.Any(qq => qq.QuestionId == questionId && qq.RemovedInVersion == null))
+                .ExecuteUpdateAsync(s => s.SetProperty(q => q.UpdatedAt, now), ct);
+        }
+
+        public Task UnpickQuizzesContainingAsync(int questionId, CancellationToken ct = default) =>
+            _context.Quizzes
+                .Where(q => q.IsPicked
+                    && q.QuizQuestions.Any(qq => qq.QuestionId == questionId && qq.RemovedInVersion == null))
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(q => q.IsPicked, false)
+                    .SetProperty(q => q.PickedAt, (DateTime?)null), ct);
     }
 }

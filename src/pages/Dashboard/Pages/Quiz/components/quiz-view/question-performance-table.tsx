@@ -182,7 +182,21 @@ export const QuestionPerformanceTable = ({
         <span className="w-4" aria-hidden />
       </div>
 
-      <div className="space-y-2">
+      {/* <b>From `xl` the rows scroll in here, not the page.</b> Opening a row used to grow the
+          whole card, pushing the left column's context and the column headings off screen, and
+          the page scrolled under the reader. Now the list has its own scroll area and the
+          heading, sort control and column labels above it stay put. `overscroll-contain` stops
+          a scroll that hits the list's end from carrying on into the page.
+
+          The height is the viewport minus what sits above and below the list on this page
+          (dashboard header, gutters, breadcrumb, the headings above, the footer and the card's
+          own padding) — 27rem — and never under 16rem, so a short laptop still shows a few rows.
+          22rem was too little: the page still scrolled by a few rows' worth and the card ended
+          flush with the window's bottom edge. `pb-1` keeps the last row's border off the list's
+          own bottom edge when it is scrolled to the end. Below `xl`
+          the page is one column and scrolls as a whole: a scroll area inside a scrolling page
+          traps the thumb on a phone. docs/quiz/quiz-analytics-page.md, "Layout". */}
+      <div className="space-y-2 xl:-mr-2 xl:max-h-[max(16rem,calc(100dvh-27rem))] xl:overflow-y-auto xl:overscroll-contain xl:pb-1 xl:pr-2">
         {ordered.map((entry) => (
           <QuestionPerformanceRow
             key={entry.questionId}

@@ -111,6 +111,8 @@ export interface AiGenerateInput {
   questionCount: number;
   allowedTypes: string[];
   extraInstructions?: string;
+  /** "Add images": the model may give questions an image search phrase (docs/media/media-pipeline.md). */
+  addImages?: boolean;
 }
 
 export interface AiGenerateResult {

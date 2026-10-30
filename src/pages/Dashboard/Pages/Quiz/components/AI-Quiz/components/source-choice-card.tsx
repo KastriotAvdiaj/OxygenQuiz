@@ -209,20 +209,26 @@ export const SourceChoiceCard = ({
                 default size they dwarfed the text above them, and wrapped to two full-width
                 slabs on a phone. */}
             <div className="flex flex-wrap items-center gap-3">
-              <LiftedButton type="button" className="py-1 text-sm" onClick={onRetry} isPending={busy}>
+              <LiftedButton
+                type="button"
+                className="flex items-center gap-2 py-1 text-sm"
+                onClick={onRetry}
+                isPending={busy}
+              >
                 {/* LiftedButton draws its own spinner while pending; two would read as a glitch. */}
                 {!busy && <RotateCw className="h-4 w-4" aria-hidden />}
                 Try again
               </LiftedButton>
               <LiftedButton
                 type="button"
-                className="bg-muted py-1 text-sm text-foreground"
+                className="flex items-center gap-2 bg-muted py-1 text-sm text-foreground"
                 liftColor="muted-foreground"
                 onClick={onWriteFromMemory}
                 disabled={busy}
               >
+                {/* Icon first, like every LiftedButton (CLAUDE.md): ArrowRight is "go on". */}
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 Continue anyway
-                <ArrowRight className="h-4 w-4" aria-hidden />
               </LiftedButton>
             </div>
           </div>

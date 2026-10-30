@@ -27,10 +27,27 @@ thing continuing. Agreement by convention does not survive a fourth call site �
 |---|---|---|
 | `components/ui/page-loading.tsx` — **`PageLoading`** | Anything that holds the screen while it resolves | Owns the size, the centring and the appearance delay. `fullScreen` only for a boundary that owns the viewport before any layout exists. |
 | `pages/Quiz/Sessions/components/quiz-loading-view.tsx` — **`QuizLoadingView`** | The quiz flow's waits | A thin name over `PageLoading`. Exists so a call site can say *which* wait it is via `label`. **Change the look in `PageLoading`, not here.** |
-| `components/ui/blob-loader.tsx` — **`BlobLoader`** | In-panel waits: a tab body, a list inside a card, a drawer | The primitive: a ball crossing between two bars, fused by an SVG goo filter. `primary` by default, transparent, so it sits on either theme. Sized `sm`/`md`/`lg` in place; every size steps down on phones and up on large screens. Do not use it for a full page — that is what `PageLoading` wraps. |
-| `components/ui/loading-wave.tsx` — **`LoadingWave`** | Nothing, currently | The previous primitive (a bouncing `LOADING` wordmark). Replaced by `BlobLoader` after the landing-page redesign because it no longer fit the look; kept and storied, like `SplitFlapLoader`. |
-| `components/ui/Spinner.tsx` — **`Spinner`** | The admin dashboard | The dashboard's own idiom, used by ~18 screens. Not worth converting; just keep it centred. |
+| `components/ui/blob-loader.tsx` — **`BlobLoader`** | In-panel waits: a tab body, a list inside a card, a drawer — and, since 2026-10-17, every dashboard wait that used `Spinner` at `md`/`lg`/`xl` | The primitive: a ball crossing between two bars, fused by an SVG goo filter. `primary` by default, transparent, so it sits on either theme. Sized `sm`/`md`/`lg` in place; every size steps down on phones and up on large screens. Do not use it for a full page — that is what `PageLoading` wraps. |
+| `components/ui/loading-wave.tsx` — **`LoadingWave`** | One text effect: multiplayer's "Next question coming" line | The previous primitive (a bouncing `LOADING` wordmark). Replaced by `BlobLoader` after the landing-page redesign because it no longer fit the look; kept and storied, like `SplitFlapLoader`. |
+| `components/ui/Spinner.tsx` — **`Spinner`** | Inline busy marks only: inside a button while it submits, beside a short "Writing questions…"/"Thinking…" line, the notification bell | Was the dashboard's page and panel loader on ~25 screens; those moved to `BlobLoader` (2026-10-17), same size name, same centring. What's left is `sm`, where a 2:1 blob doesn't sit in a line of text or a button face the way a 16px ring does. |
+| `components/ui/skeleton.tsx` — **`Skeleton`**, **`SkeletonGroup`** | A page's own data wait when the page's shape is known: the admin Quizzes and Questions pages (§2.1) | `Skeleton` is one pulsing `bg-muted` block (no pulse under reduced motion). `SkeletonGroup` wraps a set of them with the 140ms appearance delay and a single `role="status"`. Page-specific shapes live beside the page — `pages/Dashboard/Components/list-page-skeletons.tsx`. |
 | `components/ui/split-flap-loader.tsx` — **`SplitFlapLoader`** | Nothing, currently | A set-piece, kept for a moment that wants one. It only animates on a phrase *change* — a single-entry `words` array renders a board that never moves. |
+
+### 2.1 Skeletons: a page's own data, never the route transition
+
+Since 2026-10-21 ([ADR 0029](../adr/0029-dashboard-list-pages-draw-skeletons-and-prefetch-on-intent.md)),
+the admin **Quizzes** and **Questions** pages draw skeletons instead of loaders. The rules:
+
+- **Only for the page's own data, once the page has mounted.** The header renders at once; each
+  part that waits (the filter panel on the lookups, the list on its page) shows a skeleton of its
+  own shape. Never a whole-page gate — the full-height `BlobLoader` these pages used to return
+  hid a header that needed nothing.
+- **Never in place of the old page during a route change.** That moment stays with the progress
+  bar (§5); a skeleton there would flash on every fast click.
+- **Same size as what replaces it.** Row count = page size, so the swap moves nothing.
+- **Same 140ms delay** (§4) — `SkeletonGroup` handles it.
+
+Every other page still uses the loaders in the table above.
 
 ## 3. The boundaries
 
@@ -46,7 +63,12 @@ away.
    leaves the header, background and account overlay mounted. **A route that renders a lazy
    element outside a layout falls through to (1) and blanks the app** — that is the failure this
    boundary exists to prevent, and the thing to check when adding a route.
-3. **`AppRoot.tsx` and `Dashboard.tsx`** — the dashboard's equivalents, using `Spinner`.
+3. **`AppRoot.tsx` and `Dashboard.tsx`** — the dashboard's equivalents, using `BlobLoader` at `xl`
+   in a centred `min-h-[60vh]` box (they were `Spinner` until 2026-10-17). Not yet `PageLoading`,
+   so they don't have its 140ms delay — the next step if the dashboard's route waits flicker.
+   Dashboard pages mostly use the router's route-level `lazy`, not `React.lazy`, so they never
+   suspend into these at all: the router holds the old page until the chunk (and any loader)
+   resolves — which is §5's gap, covered the same way.
 
 ## 4. Nothing paints for 140ms
 
@@ -66,7 +88,9 @@ that missed.
 
 `common/RouteProgressBar.tsx` is the answer: a hairline on the shell, driven by
 `useNavigation()`, rendered by `HomeLayout` outside the header (it reports the shell's state, not
-the page's, and shows even on `headerBehavior="hidden"`). It creeps toward 90% and only completes
+the page's, and shows even on `headerBehavior="hidden"`) — and by `DashboardLayout` in both its
+branches, since 2026-10-21. Before that the dashboard had none, so clicking Edit or View on a quiz
+froze the list for the chunk download with nothing on screen to say the click had landed. It creeps toward 90% and only completes
 when the navigation does — there is no percentage to report, and inventing one gets caught every
 time the server is slow.
 
@@ -93,7 +117,34 @@ Two things to copy along with it:
   failure looks like.
 
 Currently prefetched: the quiz catalogue (`quiz-selection.loader.tsx`), the user list
-(`users.loader.tsx`), and both results routes (`quiz-results.loader.tsx`).
+(`users.loader.tsx`), both results routes (`quiz-results.loader.tsx`), the dashboard quiz page's
+quiz and question list (`quiz.loader.tsx`), the Classic editor's quiz and questions on both
+dashboards (`quiz-edit.loader.ts`), and the admin Quizzes and Questions pages' lookups and first
+page (`routes/dashboard-prefetch.ts`).
+
+**Awaited or not.** The loaders above await their prefetch, so the old page stays until the new
+one can arrive whole. The two admin list pages don't: they draw skeletons (§2.1), so their
+loader only *starts* the data and lets the page show at once.
+
+**Admin-only data needs an admin check in the prefetch.** Child route loaders run in parallel
+with the dashboard's `adminAuthLoader`, and every failed request toasts. `dashboard-prefetch.ts`
+reads the cached user and does nothing unless it is an Admin or SuperAdmin.
+
+### 6.1 Prefetch on intent
+
+Hovering or focusing a link to an admin list page — the drawer's **Admin Dashboard** link, or a
+dashboard nav item — runs the same prefetch and imports the page's chunk
+(`prefetchDashboardPage` in `routes/dashboard-prefetch.ts`). The time between pointing and
+clicking is often the whole wait. A hover that doesn't turn into a click costs a request; on
+touch there is no hover, and the loader prefetch covers it.
+
+To add a page: give it a shared query builder, add its entry to `PAGES` in that file, and use
+the same chunk importer in `Router.tsx` so both warm one module.
+
+**When a skeleton instead of awaiting?** When the page's shape is known and its own data is the
+slow part — see §2.1. For a chunk plus one fast query, await the prefetch and let the progress
+bar cover it; a skeleton that shows for 300ms and then reflows is the flash §4 exists to
+prevent.
 
 ## 7. Sizing and the viewport
 

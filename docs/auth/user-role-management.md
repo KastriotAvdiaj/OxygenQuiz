@@ -65,6 +65,32 @@ account is a separate self-service flow with its own 30-day grace period —
 [`account-closure.md`](account-closure.md). Its backend exists; the settings UI that would call it
 does not yet, so today an Admin who wants to leave still has to ask another admin.
 
+### 1.1 Acting on someone else's quiz
+
+Content rules use `resource:action` permissions (`PermissionSeeder`), checked with
+`IPermissionService.HasPermissionAsync`. **A SuperAdmin passes every permission check** — hard-coded
+in `PermissionService`, whatever the permission rows say — so nothing below can lock the SuperAdmin
+out. Who else may do it is the role's permission rows, editable on the Permissions page.
+
+| Permission | Lets the caller | Seeded to |
+|---|---|---|
+| `quiz:update:any` | Edit any quiz, publish / unpublish it, save any Associations board | Admin (+ SuperAdmin) |
+| `quiz:delete:any` | Delete any quiz | Admin (+ SuperAdmin) — but `DELETE /api/quiz/{id}` still checks the Admin/SuperAdmin role, not this permission |
+| `question:update:any`, `question:delete:any` | Edit / delete any question | Admin (+ SuperAdmin) |
+
+Deliberately **not** widened to anyone, SuperAdmin included (decided 2026-10-21):
+
+- **Playing** someone else's Draft or Unlisted quiz. Admins can view and edit any quiz, which is
+  what moderation needs; a play would write a session into the owner's analytics. A
+  `quiz:play:any` permission was built and taken back out the same day for that reason. If it is
+  ever wanted, the session has to be flagged and left out of the owner's analytics and the
+  player's own stats first.
+- A quiz's **share link** (`POST /api/quiz/{id}/share-link`) stays owner-only. An Unlisted quiz's
+  audience is the owner's call, and an admin can already view and edit it without one.
+
+Until 2026-10-21 quiz update, status and board saves were owner-only, so an admin opened a full
+editor whose save always failed with a 404.
+
 ---
 
 ## 2. API

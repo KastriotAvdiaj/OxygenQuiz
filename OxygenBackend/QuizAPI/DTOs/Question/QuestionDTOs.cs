@@ -20,9 +20,15 @@ namespace QuizAPI.DTOs.Question
         public QuestionLanguageDTO Language { get; set; }
         public UserBasicDTO User { get; set; }
         public DateTime CreatedAt { get; set; }
-        public string? ImageUrl { get; set; }
+        /// <summary>The attached image or audio clip, for an editor to send back on update.</summary>
+        public Guid? MediaAssetId { get; set; }
         public string? MediaUrl { get; set; }
         public string MediaType { get; set; } = "None";
+        /// <summary>Credit for an image from Pexels or Wikimedia Commons; null for the author's own.</summary>
+        public string? MediaCredit { get; set; }
+        public string? MediaCreditUrl { get; set; }
+        /// <summary>Hidden behind a moderation cover pending review (docs/media/moderation.md).</summary>
+        public bool MediaHidden { get; set; }
         public string? Explanation { get; set; }
         public string Visibility { get; set; }
         public string Type { get; set; }
@@ -52,9 +58,11 @@ namespace QuizAPI.DTOs.Question
     {
         public string Text { get; set; } = string.Empty;
 
-        public string? ImageUrl { get; set; }
-        public string? MediaUrl { get; set; }
-        public string MediaType { get; set; } = "None";
+        /// <summary>
+        /// An asset from <c>POST /api/media</c>, or null for none. The server copies its URL and kind
+        /// onto the question; there is no way to send a URL. docs/media/media-pipeline.md.
+        /// </summary>
+        public Guid? MediaAssetId { get; set; }
         /// <summary>Optional. Trimmed, blank → null, capped by <see cref="Models.QuestionExplanation"/>.</summary>
         public string? Explanation { get; set; }
         public int DifficultyId { get; set; }
@@ -87,9 +95,11 @@ namespace QuizAPI.DTOs.Question
     {
         public int Id { get; set; }
         public string Text { get; set; } = string.Empty;
-        public string? ImageUrl { get; set; }
-        public string? MediaUrl { get; set; }
-        public string MediaType { get; set; } = "None";
+        /// <summary>
+        /// An asset from <c>POST /api/media</c>, or null for none. The server copies its URL and kind
+        /// onto the question; there is no way to send a URL. docs/media/media-pipeline.md.
+        /// </summary>
+        public Guid? MediaAssetId { get; set; }
         /// <summary>Optional. Trimmed, blank → null, capped by <see cref="Models.QuestionExplanation"/>.</summary>
         public string? Explanation { get; set; }
         public int DifficultyId { get; set; }

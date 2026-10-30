@@ -58,7 +58,9 @@ namespace QuizAPI.Data
 
         public DbSet<QuestionStatistics> QuestionStatistics { get; set; }
 
-        public DbSet<ImageAsset> ImageAssets { get; set; }
+        public DbSet<QuizAPI.Models.Media.MediaAsset> MediaAssets { get; set; }
+
+        public DbSet<QuizAPI.Models.Moderation.ContentReport> ContentReports { get; set; }
 
         public DbSet<RefreshToken> RefreshTokens { get; set; }
 
@@ -310,6 +312,50 @@ namespace QuizAPI.Data
                 .WithMany()
                 .HasForeignKey(el => el.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Question and quiz media (docs/media/media-pipeline.md). The hash is the identity of a
+            // stored file — unique, so two uploads of the same bytes are one row. The FKs restrict:
+            // only MediaSweeper deletes assets, and only ones nothing points at, so a delete that
+            // would orphan a question is a bug that should fail loudly, not null the reference.
+            modelBuilder.Entity<QuizAPI.Models.Media.MediaAsset>(e =>
+            {
+                e.HasIndex(a => a.ContentHash).IsUnique();
+                e.HasIndex(a => new { a.UploadedById, a.FirstAttachedAt });
+                e.HasIndex(a => a.UnreferencedSince);
+                e.Property(a => a.Kind).HasConversion<int>();
+                e.Property(a => a.Source).HasConversion<int>();
+            });
+            modelBuilder.Entity<QuestionBase>()
+                .HasOne(q => q.MediaAsset).WithMany()
+                .HasForeignKey(q => q.MediaAssetId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<QuestionBase>()
+                .HasIndex(q => new { q.UserId, q.MediaCountedAt });
+            modelBuilder.Entity<Quiz>()
+                .HasOne(q => q.CoverAsset).WithMany()
+                .HasForeignKey(q => q.CoverAssetId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Quiz>()
+                .HasIndex(q => new { q.UserId, q.CoverCountedAt });
+
+            // Reports (docs/media/moderation.md). One OPEN report per person per item: a question
+            // report is keyed by question, a quiz report by quiz. Deleting the target deletes its
+            // reports — a report on nothing has nothing left to decide.
+            modelBuilder.Entity<QuizAPI.Models.Moderation.ContentReport>(e =>
+            {
+                e.Property(r => r.Reason).HasConversion<int>();
+                e.Property(r => r.Status).HasConversion<int>();
+                e.Property(r => r.Outcome).HasConversion<int?>();
+                e.HasOne(r => r.Question).WithMany().HasForeignKey(r => r.QuestionId).OnDelete(DeleteBehavior.Cascade);
+                e.HasOne(r => r.Quiz).WithMany().HasForeignKey(r => r.QuizId).OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(r => new { r.ReporterId, r.QuestionId }).IsUnique()
+                    .HasFilter("\"QuestionId\" IS NOT NULL AND \"Status\" = 0")
+                    .HasDatabaseName("IX_ContentReports_OneOpenPerQuestion");
+                e.HasIndex(r => new { r.ReporterId, r.QuizId }).IsUnique()
+                    .HasFilter("\"QuestionId\" IS NULL AND \"Status\" = 0")
+                    .HasDatabaseName("IX_ContentReports_OneOpenPerQuiz");
+                e.HasIndex(r => new { r.Status, r.CreatedAt });
+            });
 
             // Generic file records: index the polymorphic owner for fast lookups.
             modelBuilder.Entity<FileRecord>()

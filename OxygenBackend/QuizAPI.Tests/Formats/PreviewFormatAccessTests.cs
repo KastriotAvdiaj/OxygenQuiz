@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using QuizAPI.Common;
-using QuizAPI.Controllers.Image.Services;
+using QuizAPI.Services.Media;
 using QuizAPI.Controllers.Quizzes;
 using QuizAPI.Controllers.Quizzes.Services.QuizServices;
 using QuizAPI.Data;
@@ -73,13 +73,13 @@ public class PreviewFormatAccessTests
 
         public QuizService Service(ApplicationDbContext ctx, bool admin) =>
             new(new QuizRepository(ctx), new Mock<IQuestionRepository>().Object,
-                NullLogger<QuizService>.Instance, new Mock<IImageService>().Object,
+                NullLogger<QuizService>.Instance, new Mock<IMediaAttachmentService>().Object,
                 new TestCurrentUserService { UserId = admin ? AdminId : PlayerId, IsAdmin = admin, IsAuthenticated = true });
 
         /// <summary>A Teacher: not an admin, but may see formats in preview (docs/auth/teacher-role.md §2.3).</summary>
         public QuizService TeacherService(ApplicationDbContext ctx) =>
             new(new QuizRepository(ctx), new Mock<IQuestionRepository>().Object,
-                NullLogger<QuizService>.Instance, new Mock<IImageService>().Object,
+                NullLogger<QuizService>.Instance, new Mock<IMediaAttachmentService>().Object,
                 new TestCurrentUserService { UserId = PlayerId, IsAdmin = false, IsTeacher = true, IsAuthenticated = true });
 
         public string TokenOf(int id)
@@ -197,7 +197,8 @@ public class PreviewFormatAccessTests
         var controller = new AssociationQuizzesController(
             service.Object,
             new TestCurrentUserService { UserId = admin ? AdminId : PlayerId, IsAdmin = admin, IsAuthenticated = true },
-            new Mock<IAuditService>().Object);
+            new Mock<IAuditService>().Object,
+            Mock.Of<QuizAPI.Services.Permissions.IPermissionService>());
         return (controller, service);
     }
 

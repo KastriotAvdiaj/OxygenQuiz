@@ -1,5 +1,5 @@
 import { Trash2 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
@@ -22,7 +22,8 @@ import {
   TooltipContent,
 } from "@/components/ui";
 import { LiftedButton } from "@/common/LiftedButton";
-import ImageUpload from "@/utils/Image-Upload";
+import { MediaPicker } from "@/features/media/components/media-picker";
+import { type MediaSelection } from "@/features/media/api/upload-media";
 import { ExplanationField } from "@/common/QuestionExplanation";
 import { QuestionCategory, QuestionDifficulty, QuestionLanguage } from "@/types/question-types";
 
@@ -38,7 +39,7 @@ export const CreateTypeAnswerQuestionForm: React.FC<
   CreateTypeAnswerQuestionFormProps
 > = ({ categories, difficulties, languages, onSuccess, title }) => {
   const { addNotification } = useNotifications();
-  const [imageUrl, setImageUrl] = useState("");
+  const [media, setMedia] = useState<MediaSelection | null>(null);
 
   const createQuestionMutation = useCreateTypeTheAnswerQuestion({
     mutationConfig: {
@@ -93,7 +94,6 @@ export const CreateTypeAnswerQuestionForm: React.FC<
             allowPartialMatch: false,
             acceptableAnswers: [],
             visibility: undefined,
-            imageUrl: "",
           },
         }}
       >
@@ -105,19 +105,10 @@ export const CreateTypeAnswerQuestionForm: React.FC<
 
           const addAnswerDisabled = fields.length >= MAX_ACCEPTABLE_ANSWERS;
 
-          useEffect(() => {
-            if (imageUrl) {
-              setValue("imageUrl", imageUrl);
-            }
-          }, [imageUrl, setValue]);
 
-          const handleImageUpload = (url: string) => {
-            setImageUrl(url);
-            setValue("imageUrl", url);
-          };
-          const handleImageRemove = () => {
-            setImageUrl("");
-            setValue("imageUrl", "");
+          const handleMediaChange = (next: MediaSelection | null) => {
+            setMedia(next);
+            setValue("mediaAssetId", next?.assetId ?? null);
           };
           return (
             <>
@@ -132,11 +123,7 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                 error={formState.errors["text"]}
                 registration={register("text")}
               />
-              <ImageUpload
-                onUpload={handleImageUpload}
-                onRemove={handleImageRemove}
-              />
-              <input type="hidden" {...register("imageUrl")} />
+              <MediaPicker value={media} onChange={handleMediaChange} />
               <div className="space-y-4 mt-4">
                 <div className="flex flex-col ">
                   <Input

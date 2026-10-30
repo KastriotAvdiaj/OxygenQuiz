@@ -47,6 +47,10 @@ the user's own fonts.
       before the chooser opens. It replaced a flat "AI" tag pinned to the corner, and before that
       a rotated, bobbing "With AI" bubble that read as a notification floating above the button
       — same words, but this one is still and anchored to the button by its tail.
+      The header's **Create** link (`common/Header.tsx`, beside Home and Play, since 2026-10-17)
+      opens the same chooser from every page; it is a text link like the other two, not a
+      button, so it never competes with a page's own primary action. What sets it apart is its
+      hover: the word and its underline fill with the primary colour from left to right.
   Size and colour carry the hierarchy: one big blue button, two small ones in quieter colours.
 
 - **Short screens** (`short:`, height ≤ 860px — a laptop): the whole pitch must fit above the fold

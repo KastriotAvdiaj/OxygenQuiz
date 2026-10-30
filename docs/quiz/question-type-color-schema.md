@@ -80,12 +80,14 @@ colors. Error on a new question also shows the existing floating `ErrorIndicator
 
 ## The image preview inherits the type hue — or falls back to `primary`
 
-`ImageUpload` (`src/utils/Image-Upload.tsx`) takes `borderColor` / `backgroundColor` as class
-strings. Inside the quiz builder, `display-base-quiz-question-card.tsx` passes the question type's
-`cardBorder` and `surface`, so an uploaded image is framed in that type's hue like everything else
-on the card.
+`MediaPicker` (`src/features/media/components/media-picker.tsx`) takes the frame's colors as one
+complete class string, `frameClassName`. Inside the quiz builder, `display-base-quiz-question-card.tsx`
+passes the question type's `cardBorder` and `surface`, so an attached image or clip is framed in that
+type's hue like everything else on the card. (Its predecessor, `utils/Image-Upload.tsx`, built
+`dark:${borderColor}` by interpolation, which the JIT never generated — CLAUDE.md, "Tailwind class
+strings stay complete literals".)
 
-The **standalone** question forms (the dashboard's Question page) don't pass either prop, so the
+The **standalone** question forms (the dashboard's Question page) don't pass `frameClassName`, so the
 component's own defaults are what shows — and those defaults are `border-primary/30` /
 `bg-primary/[0.04]`, the same shape the Multiple Choice theme uses. They used to be green, which
 broke the rule at the top of this file twice over: green isn't a type hue, and a completed upload

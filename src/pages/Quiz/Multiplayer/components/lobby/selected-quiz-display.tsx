@@ -1,5 +1,6 @@
+import { EditPencil } from "@/components/icons/edit-pencil";
 import type { ReactNode } from "react";
-import { Gamepad2, Pencil } from "lucide-react";
+import { Gamepad2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { SelectedQuiz } from "../../hooks/use-lobby-connection";
 import { isDuelPick } from "../../utils/lobby-start";
@@ -91,7 +92,7 @@ export const SelectedQuizDisplay = ({
             onClick={onBrowse}
             className="h-6 gap-1 rounded-md px-2 text-[11px] text-muted-foreground hover:text-primary"
           >
-            <Pencil className="h-3 w-3" />
+            <EditPencil className="h-3 w-3" />
             Change
           </Button>
         )}

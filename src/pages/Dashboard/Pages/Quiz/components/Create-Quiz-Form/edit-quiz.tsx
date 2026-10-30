@@ -1,7 +1,7 @@
 import { Navigate, useParams } from "react-router";
 import { useQuizEditPath } from "../../quiz-paths";
 import { Brain } from "lucide-react";
-import { Spinner } from "@/components/ui";
+import { BlobLoader } from "@/components/ui";
 import { useQuizData } from "../../api/get-quiz";
 import { useQuizQuestionsData } from "../../api/get-quiz-questions";
 import { QuizQuestionProvider } from "./Quiz-questions-context";
@@ -34,7 +34,7 @@ export const EditQuizRoute = () => {
   if (quizQuery.isLoading || questionsQuery.isLoading) {
     return (
       <div className="w-full h-64 flex items-center justify-center">
-        <Spinner size="lg" />
+        <BlobLoader size="lg" />
       </div>
     );
   }
@@ -66,6 +66,7 @@ export const EditQuizRoute = () => {
   return (
     <QuizQuestionProvider
       key={`${quiz.id}-v${quiz.version}`}
+      quizId={quiz.id}
       initialQuestions={initialQuestions}>
       <CreateQuizForm editQuiz={quiz} />
     </QuizQuestionProvider>

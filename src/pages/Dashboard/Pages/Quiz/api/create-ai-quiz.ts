@@ -21,7 +21,8 @@ export interface AiImportQuestion {
   type?: "MultipleChoice" | "TrueFalse" | "TypeTheAnswer";
   text?: string;
   difficultyId: number;
-  imageUrl?: string;
+  /** An image or clip from POST /api/media — never a URL (docs/media/media-pipeline.md). */
+  mediaAssetId?: string | null;
   /** Optional "why". The API cuts an over-long one rather than failing the import. */
   explanation?: string;
   // per-quiz settings
@@ -49,7 +50,7 @@ export interface AiQuizImportInput {
   status?: "Draft" | "Unlisted" | "Public";
   showFeedbackImmediately?: boolean;
   shuffleQuestions?: boolean;
-  imageUrl?: string;
+  coverAssetId?: string | null;
   questions: AiImportQuestion[];
 }
 

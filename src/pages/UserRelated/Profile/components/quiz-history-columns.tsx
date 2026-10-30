@@ -10,17 +10,24 @@ import { sessionResultsPath } from "@/pages/Quiz/quiz-play-path";
 const isBoard = (session: QuizSessionSummary) => session.format === "Associations";
 
 /**
- * "HH:MM:SS" / "d.HH:MM:SS" (the .NET TimeSpan wire format) → a short human duration.
+ * A .NET TimeSpan off the wire (System.Text.Json: `[d.]hh:mm:ss[.fffffff]`) → a short human duration.
  * Returns null when the session never finished, so callers can hide the field.
+ *
+ * The fraction is always there in practice — EndTime − StartTime is never whole seconds. This used
+ * to split on "." and keep the *last* piece, which assumed the dot could only separate days and so
+ * parsed the fractional seconds as the whole value: every row in the history showed "—".
  */
-const formatDuration = (duration: string | null): string | null => {
-  if (!duration) return null;
+const TIMESPAN = /^(?:(\d+)\.)?(\d+):(\d{2}):(\d{2})(?:\.\d+)?$/;
 
-  const [clock] = duration.split(".").slice(-1);
-  const parts = clock.split(":").map((p) => Math.floor(Number(p)));
-  if (parts.length < 3 || parts.some(Number.isNaN)) return null;
+export const formatSessionDuration = (duration: string | null): string | null => {
+  const match = duration ? TIMESPAN.exec(duration) : null;
+  if (!match) return null;
 
-  const [hours, minutes, seconds] = parts;
+  const [, days = "0", h, m, s] = match;
+  const hours = Number(days) * 24 + Number(h);
+  const minutes = Number(m);
+  const seconds = Number(s);
+
   if (hours > 0) return `${hours}h ${minutes}m`;
   if (minutes > 0) return `${minutes}m ${seconds}s`;
   return `${seconds}s`;
@@ -39,32 +46,25 @@ export const sessionScore = (session: QuizSessionSummary): number | null =>
     ? Math.round((session.correctAnswers / session.totalQuestions) * 100)
     : null;
 
-const StatusBadge = ({ session }: { session: QuizSessionSummary }) => {
+/**
+ * Status as coloured text, not a badge. A filled badge on every row made the status column the
+ * loudest thing in the table, which it isn't — it is a fact about the play, read after the quiz
+ * and score. Colour still carries it: primary for Completed, red for Abandoned, muted for a play
+ * that isn't a result yet.
+ */
+const StatusText = ({ session }: { session: QuizSessionSummary }) => {
   // Abandoned first: abandoned sessions are also IsCompleted = true server-side.
   if (session.abandonmentReason != null)
+    // Dark mode's --destructive is a 38%-lightness red, built for filled surfaces; as text on a
+    // dark row it all but disappears, so dark mode takes the palette's lighter red.
     return (
-      <Badge
-        variant="outline"
-        className="border-destructive bg-destructive text-destructive-foreground"
-      >
+      <span className="whitespace-nowrap font-medium text-destructive dark:text-red-400">
         Abandoned
-      </Badge>
+      </span>
     );
-  // Finished states are filled; in-progress stays outlined — it isn't a result yet.
   if (session.isCompleted)
-    return (
-      <Badge
-        variant="outline"
-        className="border-primary bg-primary text-primary-foreground"
-      >
-        Completed
-      </Badge>
-    );
-  return (
-    <Badge variant="outline" className="border-primary/40 text-primary">
-      In progress
-    </Badge>
-  );
+    return <span className="whitespace-nowrap font-medium text-primary">Completed</span>;
+  return <span className="whitespace-nowrap text-muted-foreground">In progress</span>;
 };
 
 const ScoreCell = ({
@@ -80,31 +80,19 @@ const ScoreCell = ({
   const unfinished = !session.isCompleted && session.abandonmentReason == null;
   if (score === null || unfinished) return <span className="text-muted-foreground">—</span>;
 
-  // Compact: number and bar side by side, one line tall instead of two.
-  if (compact)
-    return (
-      <div className="flex items-center gap-2.5">
-        <span className="w-12 whitespace-nowrap tabular-nums">
-          <span className="font-semibold text-foreground">{score}</span>
-          <span className="text-xs text-muted-foreground">/100</span>
-        </span>
-        <div className="h-1 w-14 overflow-hidden rounded-full bg-foreground/10" aria-hidden>
-          <div className="h-full rounded-full bg-primary" style={{ width: `${score}%` }} />
-        </div>
-      </div>
-    );
-
+  // Just the number. There used to be a thin bar beside it, but the bar restated the number
+  // and a column of mostly-zero bars read as empty progress tracks rather than results.
   return (
-    <div className="flex min-w-[88px] flex-col gap-1">
-      <span className="tabular-nums">
-        <span className="text-base font-bold text-foreground">{score}</span>
-        <span className="text-xs text-muted-foreground"> / 100</span>
+    <span className="whitespace-nowrap tabular-nums">
+      <span
+        className={
+          compact ? "font-semibold text-foreground" : "text-base font-bold text-foreground"
+        }
+      >
+        {score}
       </span>
-      {/* A thin bar makes a column of scores scannable at a glance. */}
-      <div className="h-1 w-full overflow-hidden rounded-full bg-foreground/10" aria-hidden>
-        <div className="h-full rounded-full bg-primary" style={{ width: `${score}%` }} />
-      </div>
-    </div>
+      <span className="text-xs text-muted-foreground">/100</span>
+    </span>
   );
 };
 
@@ -178,7 +166,7 @@ export const quizHistoryColumns: ColumnDef<QuizSessionSummary>[] = [
     id: "status",
     header: "Status",
     meta: { priority: 2 },
-    cell: ({ row }) => <StatusBadge session={row.original} />,
+    cell: ({ row }) => <StatusText session={row.original} />,
   },
   {
     id: "points",
@@ -197,7 +185,7 @@ export const quizHistoryColumns: ColumnDef<QuizSessionSummary>[] = [
     meta: { priority: 3 },
     cell: ({ row }) => (
       <span className="whitespace-nowrap tabular-nums text-muted-foreground">
-        {formatDuration(row.original.duration) ?? "—"}
+        {formatSessionDuration(row.original.duration) ?? "—"}
       </span>
     ),
   },

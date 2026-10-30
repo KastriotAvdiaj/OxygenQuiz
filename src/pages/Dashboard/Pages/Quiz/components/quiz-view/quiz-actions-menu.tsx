@@ -1,12 +1,13 @@
-import { Edit2, Eye, EyeOff, MoreHorizontal, Share2, Trash2 } from "lucide-react";
+import { EditPencil } from "@/components/icons/edit-pencil";
+import { PlayTriangle } from "@/components/icons/play-triangle";
+import { CopySheets, HiddenEye, PickHand, PublishArrow, TrashBin } from "@/components/icons/solid-icons";
+import { MoreHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Quiz } from "@/types/quiz-types";
@@ -14,12 +15,17 @@ import type { Quiz } from "@/types/quiz-types";
 export interface QuizActionsMenuProps {
   quiz: Quiz;
   isDraft: boolean;
+  /** Absent when the viewer may not start this quiz (see `canPlay` in Quiz.tsx). */
+  onPlay?: () => void;
   onShare: () => void;
   isSharePending: boolean;
   onSetStatus: () => void;
   isStatusPending: boolean;
   onEdit: () => void;
   onDelete: () => void;
+  /** Staff with `quiz:pick`, on a Public quiz that isn't held — docs/media/moderation.md. */
+  onTogglePick?: () => void;
+  isPickPending?: boolean;
 }
 
 /**
@@ -30,7 +36,7 @@ export interface QuizActionsMenuProps {
  * Four controls in a full-width strip above the page's own heading, and the same actions
  * written twice so the narrow layout could reach them.
  *
- * The quiz **rows** in the data table already solved this: one 32px ⋯ button, a labelled menu,
+ * The quiz **rows** in the data table already solved this: one 32px ⋯ button, a short menu,
  * destructive item in red at the bottom. Matching it means someone who has used the list knows
  * this page without learning a second pattern — and the duplication disappears, because a menu
  * is the same menu at every width.
@@ -38,19 +44,28 @@ export interface QuizActionsMenuProps {
  * The trigger deliberately copies the row's `h-8 w-8 p-0 rounded` rather than `size="icon"`,
  * which is 36px and would sit a row taller than everything it lines up with.
  *
- * <b>Not a `Tooltip` on the Publish item.</b> The button it replaced carried one explaining
- * what Unpublish costs; a menu item can say it in the item, and a tooltip inside an open
- * Radix menu fights the menu for the same hover.
+ * <b>One plain list, no separators, no sub-lines</b> (2026-10-20). It used to group the items with
+ * separators (actions / publish / delete) and give Publish a grey second line saying what it
+ * does; the separators fell between some items and not others, which read as accidental, and
+ * the second line made one item twice the height of the rest. Delete is still last and red,
+ * which is grouping enough. Not a `Tooltip` either: inside an open Radix menu it fights the
+ * menu for the same hover.
+ *
+ * <b>Every icon is solid</b> (`components/icons/solid-icons.tsx`, 2026-10-27), as on the rows:
+ * lucide outlines beside the solid Play and Edit read as two icon sets in one menu.
  */
 export const QuizActionsMenu = ({
   quiz,
   isDraft,
+  onPlay,
   onShare,
   isSharePending,
   onSetStatus,
   isStatusPending,
   onEdit,
   onDelete,
+  onTogglePick,
+  isPickPending,
 }: QuizActionsMenuProps) => (
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
@@ -64,11 +79,20 @@ export const QuizActionsMenu = ({
       </Button>
     </DropdownMenuTrigger>
 
-    <DropdownMenuContent align="end" className="w-56 bg-muted">
-      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+    {/* Sized to its items, no "Actions" heading (2026-10-22): a fixed w-56 left the menu half
+        empty, and the heading repeated what the ⋯ button already says. */}
+    <DropdownMenuContent align="end" className="bg-muted">
+
+      {/* The owner's way into their own Unlisted or Draft quiz: neither is in the catalogue, so
+          without this the only route was opening their own share link. */}
+      {onPlay && (
+        <DropdownMenuItem className="hover:bg-background" onClick={onPlay}>
+          <PlayTriangle size={16} /> Play quiz
+        </DropdownMenuItem>
+      )}
 
       <DropdownMenuItem className="hover:bg-background" onClick={onEdit}>
-        <Edit2 size={16} /> Edit quiz
+        <EditPencil size={16} /> Edit quiz
       </DropdownMenuItem>
 
       {/* Not offered on a Draft: the backend mints a token its own resolver 404s, so sharing
@@ -79,30 +103,26 @@ export const QuizActionsMenu = ({
           disabled={isSharePending}
           onClick={onShare}
         >
-          <Share2 size={16} />
-          {quiz.status === "Unlisted" ? "Copy share link" : "Share"}
+          <CopySheets size={16} />
+          {quiz.status === "Unlisted" ? "Copy share link" : "Copy link"}
         </DropdownMenuItem>
       )}
 
-      <DropdownMenuSeparator className="bg-background/60" />
-
-      {/* The label carries what the old tooltip did — "Unpublish" alone doesn't say what it
-          costs, and there is room here to say it. */}
       <DropdownMenuItem
         className="hover:bg-background"
         disabled={isStatusPending}
         onClick={onSetStatus}
       >
-        {isDraft ? <Eye size={16} /> : <EyeOff size={16} />}
-        <span className="flex flex-col">
-          <span>{isDraft ? "Publish" : "Unpublish"}</span>
-          <span className="text-xs text-muted-foreground">
-            {isDraft ? "Anyone can find and play it" : "Back to draft — only you see it"}
-          </span>
-        </span>
+        {isDraft ? <PublishArrow size={16} /> : <HiddenEye size={16} />}
+        {isDraft ? "Publish" : "Unpublish"}
       </DropdownMenuItem>
 
-      <DropdownMenuSeparator className="bg-background/60" />
+      {onTogglePick && (
+        <DropdownMenuItem className="hover:bg-background" disabled={isPickPending} onClick={onTogglePick}>
+          <PickHand size={16} />
+          {quiz.isPicked ? "Remove from picked" : "Pick for the catalogue"}
+        </DropdownMenuItem>
+      )}
 
       {/* `onSelect` + a frame's delay, not `onClick`: the confirm dialog is owned by the page
           and rendered outside this menu, and opening it while Radix is still closing the menu
@@ -112,7 +132,7 @@ export const QuizActionsMenu = ({
         className="text-red-600 focus:text-red-600"
         onSelect={() => requestAnimationFrame(onDelete)}
       >
-        <Trash2 size={16} /> Delete quiz
+        <TrashBin size={16} /> Delete quiz
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>

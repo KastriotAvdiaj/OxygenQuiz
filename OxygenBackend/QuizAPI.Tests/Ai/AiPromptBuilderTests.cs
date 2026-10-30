@@ -267,4 +267,38 @@ public class AiPromptBuilderTests
             new[] { "MultipleChoice", "TrueFalse", "TypeTheAnswer" }.OrderBy(t => t),
             AiPromptBuilder.SupportedTypes.OrderBy(t => t));
     }
+
+    // ── "Add images" (docs/media/media-pipeline.md, "AI-added images") ─────────────────────
+
+    [Fact]
+    public void Without_the_switch_no_image_is_asked_for() =>
+        Assert.DoesNotContain(AiPromptBuilder.ImageQueryField, Builder.Build(InferredRequest()));
+
+    [Fact]
+    public void With_the_switch_the_model_gives_a_search_phrase_never_a_url_on_only_the_questions_it_helps()
+    {
+        var prompt = Builder.Build(InferredRequest() with { AddImages = true });
+
+        Assert.Contains($"\"{AiPromptBuilder.ImageQueryField}\": string", prompt); // in the shape
+        Assert.Contains("Never a URL", prompt);
+        Assert.Contains($"at most {AiPromptBuilder.MaxImageQueries} questions", prompt);
+        Assert.Contains("must not give the answer away", prompt);
+    }
+
+    [Fact]
+    public void The_shape_stays_valid_json_like_with_every_optional_field_on()
+    {
+        // The shape block lists the question's fields comma-separated; adding a field must not
+        // leave a trailing comma or drop one between the last two.
+        var prompt = Builder.Build(SourceRequest() with { AddImages = true });
+        var start = prompt.IndexOf("\"type\":", StringComparison.Ordinal);
+        var end = prompt.IndexOf('}', start);
+        var fields = prompt[start..end].Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(l => l.Length > 0).ToList();
+
+        Assert.All(fields.SkipLast(1), f => Assert.EndsWith(",", f));
+        Assert.DoesNotContain(",", fields.Last()[^1..]);
+        Assert.Contains(fields, f => f.StartsWith($"\"{AiPromptBuilder.SourceQuoteField}\""));
+        Assert.Contains(fields, f => f.StartsWith($"\"{AiPromptBuilder.ImageQueryField}\""));
+    }
 }

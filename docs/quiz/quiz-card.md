@@ -13,7 +13,7 @@ from).
 ```
 src/pages/Quiz/components/quiz-card/
 ├── quiz-card.tsx    layout — what is shown, in what order, in what colour
-├── card-parts.tsx   the frame, the difficulty meter, the creator avatar
+├── card-parts.tsx   the frame, the difficulty meter
 ├── card-model.ts    derived data — palette, duration, difficulty rank
 └── index.ts         public surface: `QuizCard`
 ```
@@ -76,12 +76,13 @@ Top to bottom, and each line is a decision:
 - **A board is marked at a glance**: `BoardGlyph` and a "Board" label (`BoardMark`) where a
   Classic card shows its palette dots — so boards stand out in a mixed grid before anyone reads
   the footer. Accent as an inline `color-mix`, like the dots, never a built class name.
-- **The creator sits in the top-right corner**: `CreatorAvatar` — their photo
-  (`userProfileImageUrl`) or initials (`initials` in `card-model.ts`) on a hairline ring, with the
-  full name on hover. On a board the "Board" label sits just left of it. Dropped in the
-  2026-09-24 redesign, back on 2026-10-06. The name pops up *below* the avatar because the frame
-  is `overflow-hidden` and a popup above would be clipped.
-  Hover only — on touch there is no name, but the start dialog shows it.
+- **The creator sits in the top-right corner**: `CreatorAvatar`
+  (`src/pages/Quiz/components/creator-avatar.tsx`, shared with the start dialog since 2026-10-27)
+  — their photo (`userProfileImageUrl`) or their initials on a hairline ring, with the full name
+  on hover. On a board the "Board" label sits just left of it. Dropped in the 2026-09-24
+  redesign, back on 2026-10-06. The name pops up *below* the avatar, right-aligned, because the
+  frame is `overflow-hidden` and a popup above would be clipped.
+  Hover only — on touch there is no name, here or in the start dialog (which shows the same avatar).
 - **No description on the card.** It is read in the start dialog the card opens (which is sized
   for it, `sm:max-w-lg`); the card stays a poster (2026-09-24).
 

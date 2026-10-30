@@ -180,6 +180,17 @@ function authRequestInterceptor(config: InternalAxiosRequestConfig) {
  * then hands the caller an AxiosResponse whose `.title`, `.id`, `.prompt` are all
  * `undefined`. No error, no warning — just a page rendering "undefined".
  */
+/**
+ * The message the global toast would have shown for a failed request — for a caller that sets
+ * `skipErrorToast` and shows the failure inline instead (the media picker's "That image is too
+ * large in pixels"). Same classification as the toast, so an inline error is never more or less
+ * revealing than a toast would have been.
+ */
+export function apiErrorMessage(error: unknown): string {
+  const e = error as { response?: { status?: number; data?: unknown }; message?: string };
+  return displayMessageFor(parseApiError(e.response?.status, e.response?.data), e.message ?? GENERIC_ERROR);
+}
+
 export const api = Axios.create({
   // Base URL comes from the Vite env files (already includes the /api suffix):
   //   .env.development → https://localhost:7153/api

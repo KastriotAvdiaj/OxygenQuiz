@@ -55,7 +55,57 @@ namespace QuizAPI.Models.Quiz
 
         public int LanguageId { get; set; }
 
+        /// <summary>
+        /// The cover image's URL, copied from <see cref="CoverAsset"/> by
+        /// <c>MediaAttachmentService</c> — the only writer. Kept on the row (and named ImageUrl on
+        /// the wire) so the catalogue, listings and link previews read it without a join.
+        /// </summary>
         public string? ImageUrl { get; set; }
+
+        /// <summary>The cover's credit line when it came from Pexels or Wikimedia Commons, copied with
+        /// <see cref="ImageUrl"/>. Null for the author's own image.</summary>
+        [System.ComponentModel.DataAnnotations.MaxLength(300)]
+        public string? CoverCredit { get; set; }
+
+        /// <summary>The cover's page at its source, which the credit links to.</summary>
+        [System.ComponentModel.DataAnnotations.MaxLength(500)]
+        public string? CoverCreditUrl { get; set; }
+
+        /// <summary>The cover image (docs/media/media-pipeline.md). Images only.</summary>
+        public Guid? CoverAssetId { get; set; }
+
+        [JsonIgnore]
+        public QuizAPI.Models.Media.MediaAsset? CoverAsset { get; set; }
+
+        /// <summary>When the cover was counted against the saver's daily media quota; null when it
+        /// cost nothing (the asset was already in use in their content).</summary>
+        public DateTime? CoverCountedAt { get; set; }
+
+        /// <summary>
+        /// A moderation hold: the quiz leaves the catalogue and can't be played by anyone but its
+        /// owner, who sees an "Under review" banner. Separate from <see cref="Status"/> on purpose —
+        /// a hold the owner could lift by republishing would be no hold. Enforced at each entry point
+        /// like visibility (ADR 0019; docs/media/moderation.md, "Hiding").
+        /// </summary>
+        public DateTime? ModerationHeldAt { get; set; }
+
+        /// <summary>
+        /// In the main catalogue. Quizzes by staff or a <c>quiz:autopick</c> holder are picked when
+        /// created; any other is picked by an admin (<c>quiz:pick</c>), and leaves again when someone
+        /// without autopick edits it (<see cref="QuizAPI.Common.QuizHouse"/>). Only picked quizzes are
+        /// in the sitemap; a community quiz's listing page is <c>noindex</c>.
+        /// docs/media/moderation.md, "Picked and community quizzes".
+        /// </summary>
+        public bool IsPicked { get; set; }
+
+        public DateTime? PickedAt { get; set; }
+
+        /// <summary>
+        /// Made by staff (an Admin or SuperAdmin at creation). A picked house quiz carries no badge;
+        /// a picked community quiz shows "Oxygen Pick". Stamped once — a later role change doesn't
+        /// turn someone's old quizzes into house quizzes.
+        /// </summary>
+        public bool IsHouse { get; set; }
 
 
         [JsonIgnore]
@@ -95,6 +145,15 @@ namespace QuizAPI.Models.Quiz
         public string? ShareToken { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// When anything a quiz shows or plays last changed — the sitemap's <c>&lt;lastmod&gt;</c>.
+        /// Bumped by a quiz update, a status change, an Associations board save, and an edit to any
+        /// question live in the quiz (<c>IQuestionRepository.TouchQuizzesContainingAsync</c>).
+        /// Rows from before the column existed were backfilled from <see cref="CreatedAt"/>.
+        /// docs/quiz/quiz-listing.md, "Quiz.UpdatedAt".
+        /// </summary>
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
 
         public int Version { get; set; } = 1;

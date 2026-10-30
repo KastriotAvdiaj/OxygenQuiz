@@ -38,7 +38,9 @@ namespace QuizAPI.DTOs.Quiz
             public int DifficultyId { get; set; }
 
             public bool ShuffleQuestions { get; set; } = false;
-            public string? ImageUrl { get; set; }
+            /// <summary>The cover image: an image asset from <c>POST /api/media</c>, or null for none. The
+            /// server copies its URL into <c>ImageUrl</c>; a URL can't be sent. docs/media/media-pipeline.md.</summary>
+            public Guid? CoverAssetId { get; set; }
 
 
         [Required]
@@ -57,6 +59,12 @@ namespace QuizAPI.DTOs.Quiz
         public int TimeLimitInSeconds { get; set; }
 
         public string Status { get; set; } = string.Empty;
+        /// <summary>In the main catalogue (docs/media/moderation.md).</summary>
+        public bool IsPicked { get; set; }
+        /// <summary>Made by staff — a picked house quiz shows no badge.</summary>
+        public bool IsHouse { get; set; }
+        /// <summary>Under a moderation hold — out of the catalogue; the owner sees "Under review".</summary>
+        public bool ModerationHeld { get; set; }
 
         /// <summary>"Classic" or "Associations" (see <see cref="Models.Quiz.QuizFormat"/>).</summary>
         public string Format { get; set; } = nameof(Models.Quiz.QuizFormat.Classic);
@@ -106,9 +114,69 @@ namespace QuizAPI.DTOs.Quiz
         public int Version { get; set; }
 
         public string? ImageUrl { get; set; }
+        /// <summary>The cover's credit when it came from Pexels or Wikimedia Commons.</summary>
+        public string? CoverCredit { get; set; }
+        public string? CoverCreditUrl { get; set; }
+
+        /// <summary>The cover's asset, for the edit form to send back unchanged.</summary>
+        public Guid? CoverAssetId { get; set; }
+
+        /// <summary>In the main catalogue (docs/media/moderation.md).</summary>
+        public bool IsPicked { get; set; }
+        /// <summary>Made by staff — a picked house quiz shows no badge.</summary>
+        public bool IsHouse { get; set; }
+        /// <summary>Under a moderation hold. Only the owner and admins can read a held quiz at all.</summary>
+        public bool ModerationHeld { get; set; }
 
         public int QuestionCount { get; set; }
         /*public List<QuizQuestionDTO> Questions { get; set; } = new List<QuizQuestionDTO>();*/
+    }
+
+    /// <summary>
+    /// What a shared link's preview card shows (GET /api/quiz/shared/{token}/preview): the fields a
+    /// chat app's link preview needs and nothing else — no questions, no owner id, no token. Read
+    /// anonymously by the frontend Worker, which writes them into the page's Open Graph tags.
+    /// </summary>
+    public class SharedQuizPreviewDTO
+    {
+        public string Title { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string? ImageUrl { get; set; }
+        public string Category { get; set; } = string.Empty;
+        public string Format { get; set; } = string.Empty;
+        public int QuestionCount { get; set; }
+    }
+
+    public class QuizListingDTO
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string Category { get; set; } = string.Empty;
+        public string? ColorPaletteJson { get; set; }
+        public bool Gradient { get; set; }
+        public string Difficulty { get; set; } = string.Empty;
+        public string Language { get; set; } = string.Empty;
+        public int QuestionCount { get; set; }
+        public int TimeLimitInSeconds { get; set; }
+        public string Author { get; set; } = string.Empty;
+        public string? ImageUrl { get; set; }
+        /// <summary>The cover's credit when it came from Pexels or Wikimedia Commons.</summary>
+        public string? CoverCredit { get; set; }
+        public string? CoverCreditUrl { get; set; }
+        public string Format { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        /// <summary>The Worker serves a community quiz's listing <c>noindex</c>.</summary>
+        public bool IsPicked { get; set; }
+        public bool IsHouse { get; set; }
+    }
+
+    public class QuizListingEntryDTO
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public DateTime UpdatedAt { get; set; }
     }
 
     public class QuizUM
@@ -134,7 +202,9 @@ namespace QuizAPI.DTOs.Quiz
 
         /// <summary>Draft / Unlisted / Public (see <see cref="Models.Quiz.QuizStatus"/>).</summary>
         public string Status { get; set; } = nameof(Models.Quiz.QuizStatus.Draft);
-        public string? ImageUrl { get; set; }
+        /// <summary>The cover image: an image asset from <c>POST /api/media</c>, or null for none. The
+        /// server copies its URL into <c>ImageUrl</c>; a URL can't be sent. docs/media/media-pipeline.md.</summary>
+        public Guid? CoverAssetId { get; set; }
 
 
         public int? TimeLimitInSeconds { get; set; }

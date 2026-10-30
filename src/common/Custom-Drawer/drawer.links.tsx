@@ -11,6 +11,8 @@ import {
   Presentation,
 } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { useQueryClient } from "@tanstack/react-query";
+import { prefetchDashboardPage } from "@/routes/dashboard-prefetch";
 import { useAccountOverlay } from "@/pages/UserRelated/AccountOverlay/use-account-overlay";
 import type { OverlaySectionId } from "@/pages/UserRelated/AccountOverlay/overlay-sections";
 
@@ -57,6 +59,8 @@ type DrawerNavLinkProps = {
   close: () => void;
   /** Match this path exactly — needed for parent routes like /my-dashboard. */
   end?: boolean;
+  /** Hover / focus: start the destination's code and data early (routes/dashboard-prefetch.ts). */
+  onIntent?: () => void;
 };
 
 const DrawerNavLink = ({
@@ -65,8 +69,16 @@ const DrawerNavLink = ({
   label,
   close,
   end,
+  onIntent,
 }: DrawerNavLinkProps) => (
-  <NavLink to={to} end={end} onClick={close} className="w-full">
+  <NavLink
+    to={to}
+    end={end}
+    onClick={close}
+    onPointerEnter={onIntent}
+    onFocus={onIntent}
+    className="w-full"
+  >
     {({ isActive }) => (
       <span className={rowClasses(isActive)} aria-current={isActive ? "page" : undefined}>
         {isActive && <ActiveDecoration />}
@@ -88,6 +100,7 @@ export const DrawerLinks = ({
   canHost: boolean;
 }) => {
   const { open: openAccountOverlay } = useAccountOverlay();
+  const queryClient = useQueryClient();
 
   // Profile and Settings open the account overlay on top of the current page rather
   // than navigating into the dashboard — checking your profile shouldn't drop you into
@@ -154,6 +167,8 @@ export const DrawerLinks = ({
         icon={ShieldCheck}
         label="Admin Dashboard"
         close={close}
+        // /dashboard opens on Questions: start its code, lookups and first page on hover.
+        onIntent={() => prefetchDashboardPage("/dashboard", queryClient)}
       />
     )}
   </nav>

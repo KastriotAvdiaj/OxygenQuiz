@@ -5,6 +5,8 @@ import { QuestionDisplay } from "../question-display";
 import { QuestionType } from "@/types/question-types";
 import type { CurrentQuestion } from "@/types/quiz-session-types";
 import { useNotifications } from "@/common/Notifications";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 
 // The timer ticks audibly in its last seconds; jsdom has no audio stack and nothing here is
 // about sound.
@@ -37,7 +39,14 @@ const question = (overrides: Partial<CurrentQuestion> = {}): CurrentQuestion => 
 
 const renderQuestion = (q: CurrentQuestion) => {
   const onSubmit = vi.fn();
-  render(<QuestionDisplay question={q} onSubmit={onSubmit} isSubmitting={false} />);
+  // The Report link under the question needs a query client and a router, as in the app.
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter>
+        <QuestionDisplay question={q} onSubmit={onSubmit} isSubmitting={false} />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
   return onSubmit;
 };
 

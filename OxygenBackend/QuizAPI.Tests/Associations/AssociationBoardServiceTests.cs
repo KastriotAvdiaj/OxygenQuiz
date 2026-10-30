@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using QuizAPI.Controllers.Image.Services;
+using QuizAPI.Services.Media;
 using QuizAPI.Controllers.Quizzes.Services.QuizServices;
 using QuizAPI.Data;
 using QuizAPI.DTOs.Quiz;
@@ -67,12 +67,12 @@ public class AssociationBoardServiceTests
     {
         var quizzes = new QuizRepository(ctx);
         var quizService = new QuizService(quizzes, new Mock<IQuestionRepository>().Object,
-            NullLogger<QuizService>.Instance, new Mock<IImageService>().Object,
+            NullLogger<QuizService>.Instance, new Mock<IMediaAttachmentService>().Object,
             new TestCurrentUserService { UserId = OwnerId, IsAdmin = true });
         var rules = new Mock<IAssociationRulesProvider>();
         rules.Setup(r => r.GetRulesFor(It.IsAny<int>())).Returns(AssociationRules.Default);
         return new AssociationBoardService(quizzes, new AssociationBoardRepository(ctx), quizService,
-            rules.Object, new Mock<IImageService>().Object);
+            rules.Object, new Mock<IMediaAttachmentService>().Object);
     }
 
     internal static AssociationBoardInput Board(string suffix = "") => new()
@@ -261,6 +261,51 @@ public class AssociationBoardServiceTests
         Assert.Equal(1, board.CreatedInVersion);   // still visible to both versions
     }
 
+    /// <summary>
+    /// An edit by someone who can't auto-pick takes a picked board out of the catalogue
+    /// (docs/media/moderation.md §5). This service has no permission service, so the owner can't.
+    /// </summary>
+    [Fact]
+    public async Task Update_OfAPickedBoard_ByAnAuthorWithoutAutopick_UnpicksIt()
+    {
+        using var db = new Db();
+        var id = await CreateOne(db);
+        await using (var ctx = db.Context())
+        {
+            var quiz = ctx.Quizzes.Single();
+            quiz.IsPicked = true;
+            quiz.PickedAt = DateTime.UtcNow;
+            ctx.SaveChanges();
+        }
+
+        await using (var ctx = db.Context())
+            await Service(ctx).UpdateAsync(OwnerId, Um(db, id, version: 1, board: Board(" v2")));
+
+        await using var check = db.Context();
+        Assert.False(check.Quizzes.Single().IsPicked);
+        Assert.Null(check.Quizzes.Single().PickedAt);
+    }
+
+    /// <summary>A board save is an edit the sitemap must report (docs/quiz/quiz-listing.md, "Quiz.UpdatedAt").</summary>
+    [Fact]
+    public async Task Update_BumpsUpdatedAt()
+    {
+        using var db = new Db();
+        var id = await CreateOne(db);
+        var longAgo = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        await using (var ctx = db.Context())
+        {
+            ctx.Quizzes.Single().UpdatedAt = longAgo;
+            await ctx.SaveChangesAsync();
+        }
+
+        await using (var ctx = db.Context())
+            await Service(ctx).UpdateAsync(OwnerId, Um(db, id, version: 1, board: Board(" v2")));
+
+        await using var check = db.Context();
+        Assert.True(check.Quizzes.Single().UpdatedAt > longAgo);
+    }
+
     /// <summary>Whitespace the validator trims away isn't a change either.</summary>
     [Fact]
     public async Task Update_WithOnlyTrimmableDifferences_KeepsTheSameBoard()
@@ -301,6 +346,21 @@ public class AssociationBoardServiceTests
         await using var ctx = db.Context();
 
         Assert.Null(await Service(ctx).UpdateAsync(StrangerId, Um(db, id, version: 1, title: "Hijack")));
+    }
+
+    /// <summary>A holder of quiz:update:any can save someone else's board — the editor already opens for admins.</summary>
+    [Fact]
+    public async Task Update_ByAnAdmin_SavesSomeoneElsesBoard()
+    {
+        using var db = new Db();
+        var id = await CreateOne(db);
+
+        await using (var ctx = db.Context())
+            Assert.NotNull(await Service(ctx).UpdateAsync(StrangerId, Um(db, id, version: 1, title: "Moderated"), canUpdateAny: true));
+
+        await using var check = db.Context();
+        Assert.Equal("Moderated", check.Quizzes.Single().Title);
+        Assert.Equal(OwnerId, check.Quizzes.Single().UserId);   // still the owner's quiz
     }
 
     /// <summary>This endpoint only edits boards; a Classic quiz goes through the Classic update.</summary>

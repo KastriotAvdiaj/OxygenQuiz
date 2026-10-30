@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
+import { mediaAssetIdSchema } from "@/features/media/api/upload-media";
 import { explanationSchema } from "@/common/question-explanation";
 import { apiService } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
@@ -22,7 +23,9 @@ export const createTrueFalseQuestionInputSchema = z.object({
   categoryId: z.number().int().positive("Choose a category"),
   languageId: z.number().int().positive("Choose a language"),
   visibility: z.string().optional(),
-  imageUrl: z.string().optional(),
+  // The attached image or clip: an asset id from POST /api/media, never a URL — the API writes
+  // the URL itself (docs/media/media-pipeline.md). Mirrors QuestionBaseCM.MediaAssetId.
+  mediaAssetId: mediaAssetIdSchema,
   // Optional "why" shown after answering. The API caps and normalises it too
   // (QuestionExplanation.Normalize); this is the fast-feedback half.
   explanation: explanationSchema,

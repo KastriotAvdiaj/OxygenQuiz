@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Common;
-using QuizAPI.Controllers.Image.Services;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.Exceptions;
 using QuizAPI.Filtering;
@@ -23,24 +22,40 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         private readonly IQuizRepository _quizzes;
         private readonly IQuestionRepository _questions;
         private readonly ILogger<QuizService> _logger;
-        private readonly IImageService _imageService;
+        private readonly QuizAPI.Services.Media.IMediaAttachmentService _media;
         private readonly QuizAPI.Services.CurrentUserService.ICurrentUserService _current;
+        private readonly QuizAPI.Services.Permissions.IPermissionService? _permissions;
 
         public QuizService(
             IQuizRepository quizzes,
             IQuestionRepository questions,
             ILogger<QuizService> logger,
-            IImageService imageService,
-            QuizAPI.Services.CurrentUserService.ICurrentUserService currentUser)
+            QuizAPI.Services.Media.IMediaAttachmentService media,
+            QuizAPI.Services.CurrentUserService.ICurrentUserService currentUser,
+            QuizAPI.Services.Permissions.IPermissionService? permissions = null)
         {
+            // Optional so unit tests that don't care about picking needn't build one; DI always
+            // supplies it. Without it only staff auto-pick (QuizHouse.CanAutoPickAsync).
+            _permissions = permissions;
             // Who is asking decides which quiz *formats* exist for them (QuizFormatAccess):
             // a format still in preview is admin-only, in every read below.
             _current = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
             _quizzes = quizzes ?? throw new ArgumentNullException(nameof(quizzes));
             _questions = questions ?? throw new ArgumentNullException(nameof(questions));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _imageService = imageService ?? throw new ArgumentNullException(nameof(imageService));
+            _media = media ?? throw new ArgumentNullException(nameof(media));
         }
+
+        /// <summary>
+        /// A quiz staff create is a house quiz, and picked; so is one by a <c>quiz:autopick</c>
+        /// holder, without being house (docs/media/moderation.md, "Picked and community quizzes").
+        /// Read from the creating request; stamped once, so a later role change rewrites nothing.
+        /// </summary>
+        private async Task StampHouseAsync(Quiz quiz) =>
+            QuizHouse.Stamp(quiz, _current.IsAdmin, DateTime.UtcNow, await CanAutoPickAsync());
+
+        private Task<bool> CanAutoPickAsync() =>
+            QuizHouse.CanAutoPickAsync(_permissions, _current.UserId, _current.IsAdmin);
 
         // The name and the match live in QuizAPI.Common.LookupDefaults — one definition for the
         // three services that need it, rather than this copy and QuestionService's being "kept in
@@ -128,7 +143,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             Guid? restrictToUserId = null,
             bool publicOnly = false,
             bool includeDeleted = false,
-            CancellationToken ct = default)
+            CancellationToken ct = default,
+            string? scope = null)
         {
             IQueryable<Quiz> q = _quizzes.Query(includeDeleted).VisibleTo(_current.CanSeePreviewFormats);
 
@@ -136,7 +152,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 q = q.Where(x => x.UserId == uid);
 
             if (publicOnly)
-                q = q.Where(x => x.Status == QuizStatus.Public);
+                q = q.Where(x => x.Status == QuizStatus.Public && x.ModerationHeldAt == null)
+                    .InCatalogueScope(scope);
 
             q = FilterEngine.Apply(q, query, QuizFilterFields.Fields);
 
@@ -157,7 +174,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         {
             try
             {
-                var quizQuery = _quizzes.Query().VisibleTo(_current.CanSeePreviewFormats).Where(q => q.Status == QuizStatus.Public);
+                var quizQuery = _quizzes.Query().VisibleTo(_current.CanSeePreviewFormats)
+                    .Where(q => q.Status == QuizStatus.Public && q.ModerationHeldAt == null)
+                    .InCatalogueScope(filterParams.Scope);
                 quizQuery = ApplyQuizFilters(quizQuery, filterParams);
                 return await ToSummaryPageAsync(quizQuery, filterParams);
             }
@@ -190,6 +209,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 var quiz = await _quizzes.GetByIdAsync(id);
                 if (quiz == null || !QuizFormatAccess.IsAvailableTo(quiz.Format, _current.CanSeePreviewFormats))
                     return null;
+                // Held: only the owner (to see the banner) and admins (to review it) can open it.
+                if (quiz.ModerationHeldAt != null && !_current.IsAdmin && currentUserId != quiz.UserId)
+                    return null;
 
                 var dto = quiz.ToDto();
 
@@ -218,7 +240,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 // discovery, and the token IS the access grant. A Draft quiz is never reachable by
                 // link even if a token somehow exists.
                 var quiz = await _quizzes.GetByShareTokenAsync(shareToken);
-                if (quiz == null || quiz.Status == QuizStatus.Draft
+                if (quiz == null || quiz.Status == QuizStatus.Draft || quiz.ModerationHeldAt != null
                     || !QuizFormatAccess.IsAvailableTo(quiz.Format, _current.CanSeePreviewFormats))
                     return null;
 
@@ -230,6 +252,23 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 throw;
             }
         }
+
+        // ── The quiz listing (docs/quiz/quiz-listing.md) ───────────────────────────
+        // Eligibility is the catalogue's rule for a guest — canSeePreview: false — never the
+        // caller's: the page is one cached document for everyone, so an admin or a Teacher must get
+        // the same answer as anyone else. Soft delete is the query filter's job.
+        private IQueryable<Quiz> Listable() =>
+            _quizzes.Query().VisibleTo(canSeePreview: false)
+                .Where(q => q.Status == QuizStatus.Public && q.ModerationHeldAt == null);
+
+        // Every Public quiz has a listing page — a community one is served `noindex` by the Worker
+        // (it reads IsPicked) — but only picked quizzes are in the sitemap: search engines judge a
+        // site by what it submits. docs/media/moderation.md, "Picked and community quizzes".
+        public async Task<QuizListingDTO?> GetQuizListingAsync(int id) =>
+            await Listable().Where(q => q.Id == id).Select(QuizMappers.ProjectListing).FirstOrDefaultAsync();
+
+        public async Task<List<QuizListingEntryDTO>> GetQuizListingsAsync() =>
+            await Listable().Where(q => q.IsPicked).OrderBy(q => q.Id).Select(QuizMappers.ProjectListingEntry).ToListAsync();
 
         public async Task<List<QuizQuestionDTO>?> GetQuizQuestionsAsync(int id)
         {
@@ -274,6 +313,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 quiz.CreatedAt = DateTime.UtcNow;
                 quiz.Version = 1;
                 quiz.TimeLimitInSeconds = quizCM.Questions.Sum(q => q.TimeLimitInSeconds);
+                await StampHouseAsync(quiz);
+                await _media.ApplyToQuizCoverAsync(quiz, quizCM.CoverAssetId, userId);
 
                 await _quizzes.AddAsync(quiz);
 
@@ -289,9 +330,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 await _quizzes.AddQuizQuestionsAsync(quizQuestions);
                 await _quizzes.SaveChangesAsync();
                 await transaction.CommitAsync();
-
-                if (!string.IsNullOrEmpty(quizCM.ImageUrl))
-                    await _imageService.AssociateImageWithEntityAsync(quizCM.ImageUrl, "Quizzes", quiz.Id);
 
                 return quiz.ToDto();
             }
@@ -368,7 +406,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                     DifficultyId = importCM.DifficultyId,
                     ShowFeedbackImmediately = importCM.ShowFeedbackImmediately,
                     ShuffleQuestions = importCM.ShuffleQuestions,
-                    ImageUrl = importCM.ImageUrl,
                     Status = QuizMappers.ParseStatus(importCM.Status),
                     UserId = userId,
                     CreatedAt = DateTime.UtcNow,
@@ -377,6 +414,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                     TimeLimitInSeconds = importCM.Questions.Sum(q => q.TimeLimitInSeconds),
                 };
 
+                await StampHouseAsync(quiz);
+                await _media.ApplyToQuizCoverAsync(quiz, importCM.CoverAssetId, userId);
                 await _quizzes.AddAsync(quiz);
 
                 var order = 1;
@@ -404,6 +443,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                         // add it via its typed set so EF stamps the correct TPH type, then link it to
                         // the quiz through the navigation property — EF assigns the FK on save.
                         var question = BuildAiQuestionEntity(q, importCM, userId);
+                        await _media.ApplyToQuestionAsync(question, q.MediaAssetId, userId);
                         await AddAiQuestionAsync(question);
                         quizQuestion.Question = question;
                     }
@@ -414,9 +454,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 await _quizzes.AddQuizQuestionsAsync(quizQuestions);
                 await _quizzes.SaveChangesAsync();
                 await transaction.CommitAsync();
-
-                if (!string.IsNullOrEmpty(importCM.ImageUrl))
-                    await _imageService.AssociateImageWithEntityAsync(importCM.ImageUrl, "Quizzes", quiz.Id);
 
                 return quiz.ToDto();
             }
@@ -465,7 +502,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             };
 
             question.Text = q.Text!;
-            question.ImageUrl = q.ImageUrl;
             question.Explanation = QuestionExplanation.NormalizeAndTruncate(q.Explanation);
             question.DifficultyId = q.DifficultyId;
             question.CategoryId = quiz.CategoryId;   // inherited
@@ -497,7 +533,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             }
         }
 
-        public async Task<QuizDTO?> UpdateQuizAsync(Guid userId, QuizUM quizUM)
+        public async Task<QuizDTO?> UpdateQuizAsync(Guid userId, QuizUM quizUM, bool canUpdateAny = false)
         {
             using var transaction = await _quizzes.BeginTransactionAsync();
 
@@ -507,7 +543,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 if (quiz == null)
                     return null;
 
-                if (quiz.UserId != userId)
+                // Owners edit their own quizzes; a caller with quiz:update:any (SuperAdmin always,
+                // Admin as seeded) can edit any quiz. The caller's identity is still what gets audited.
+                if (!canUpdateAny && quiz.UserId != userId)
                 {
                     _logger.LogWarning("User {UserId} attempted to update quiz {QuizId} owned by {OwnerId}",
                         userId, quizUM.Id, quiz.UserId);
@@ -537,15 +575,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 if (!await _quizzes.AllQuestionsExistAsync(questionIds))
                     throw new InvalidOperationException("One or more questions do not exist");
 
-                quiz.Title = quizUM.Title;
-                quiz.Description = quizUM.Description;
-                quiz.CategoryId = quizUM.CategoryId;
-                quiz.LanguageId = quizUM.LanguageId;
-                quiz.DifficultyId = quizUM.DifficultyId;
-                quiz.ShowFeedbackImmediately = quizUM.ShowFeedbackImmediately;
-                quiz.ShuffleQuestions = quizUM.ShuffleQuestions;
-                quiz.Status = QuizMappers.ParseStatus(quizUM.Status);
-
+                var newStatus = QuizMappers.ParseStatus(quizUM.Status);
                 var newVersion = quiz.Version + 1;
 
                 // Copy-on-write question diff (docs/quiz/quiz-editing.md): join rows are never updated
@@ -555,12 +585,49 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 var diff = QuizQuestionVersioning.Diff(
                     quiz.QuizQuestions, quizUM.Questions.ToList(), quiz.Id, newVersion);
 
+                // A save that changes nothing is not a new version. Removing questions and putting
+                // them back with Undo, then saving, used to bump the version on every save — the
+                // number then overstated how often the quiz had changed. Blank and null
+                // descriptions are the same thing (the form sends "", the column may hold null).
+                var contentChanged =
+                    quiz.Title != quizUM.Title
+                    || (quiz.Description ?? "") != (quizUM.Description ?? "")
+                    || quiz.CategoryId != quizUM.CategoryId
+                    || quiz.LanguageId != quizUM.LanguageId
+                    || quiz.DifficultyId != quizUM.DifficultyId
+                    || quiz.ShowFeedbackImmediately != quizUM.ShowFeedbackImmediately
+                    || quiz.ShuffleQuestions != quizUM.ShuffleQuestions
+                    || quiz.CoverAssetId != quizUM.CoverAssetId
+                    || diff.HasQuestionChanges;
+                if (!contentChanged && quiz.Status == newStatus)
+                {
+                    await transaction.CommitAsync();
+                    return await GetQuizByIdAsync(quiz.Id, userId);
+                }
+
+                quiz.Title = quizUM.Title;
+                quiz.Description = quizUM.Description;
+                quiz.CategoryId = quizUM.CategoryId;
+                quiz.LanguageId = quizUM.LanguageId;
+                quiz.DifficultyId = quizUM.DifficultyId;
+                quiz.ShowFeedbackImmediately = quizUM.ShowFeedbackImmediately;
+                quiz.ShuffleQuestions = quizUM.ShuffleQuestions;
+                quiz.Status = newStatus;
+                // A content edit by someone who can't auto-pick takes a picked quiz out of the
+                // catalogue; publishing or unpublishing alone doesn't (QuizHouse.UnpickForEdit).
+                if (contentChanged)
+                    QuizHouse.UnpickForEdit(quiz, await CanAutoPickAsync());
+                // The edit form sends the cover like every other field; until 2026-10-22 this
+                // update ignored it, so changing a quiz's image while editing was silently lost.
+                await _media.ApplyToQuizCoverAsync(quiz, quizUM.CoverAssetId, userId);
+
                 foreach (var row in diff.ToRetire)
                     row.RemovedInVersion = newVersion;
 
                 await _quizzes.AddQuizQuestionsAsync(diff.ToAdd);
 
                 quiz.Version = newVersion;
+                quiz.UpdatedAt = DateTime.UtcNow;
                 quiz.TimeLimitInSeconds = quizUM.Questions.Sum(q => q.TimeLimitInSeconds);
 
                 await _quizzes.SaveChangesAsync();
@@ -576,7 +643,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             }
         }
 
-        public async Task<QuizDTO?> SetQuizStatusAsync(Guid userId, int quizId, QuizStatus status)
+        public async Task<QuizDTO?> SetQuizStatusAsync(Guid userId, int quizId, QuizStatus status, bool canUpdateAny = false)
         {
             try
             {
@@ -584,7 +651,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 if (quiz == null)
                     return null;
 
-                if (quiz.UserId != userId)
+                if (!canUpdateAny && quiz.UserId != userId)
                 {
                     _logger.LogWarning("User {UserId} attempted to change status of quiz {QuizId} owned by {OwnerId}",
                         userId, quizId, quiz.UserId);
@@ -599,6 +666,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
                 quiz.Status = status;
                 quiz.Version += 1;
+                quiz.UpdatedAt = DateTime.UtcNow;
 
                 await _quizzes.SaveChangesAsync();
 
@@ -650,7 +718,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
             // A host may run a Public quiz or any quiz they own (Draft/Unlisted included — the lobby
             // membership becomes the access grant for invited participants).
-            return quiz.Status == QuizStatus.Public || quiz.UserId == hostUserId;
+            // A held quiz is the owner's alone (docs/media/moderation.md, "Hiding").
+            return quiz.UserId == hostUserId || (quiz.Status == QuizStatus.Public && quiz.ModerationHeldAt == null);
         }
 
         public async Task<QuizFormat?> GetFormatAsync(int quizId)

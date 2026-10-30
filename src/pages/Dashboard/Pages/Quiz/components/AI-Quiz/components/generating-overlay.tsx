@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 
-import { BlobLoader } from "@/components/ui";
 import { cn } from "@/utils/cn";
 
 import type { AiGenerationMode } from "../../../api/generate-ai-quiz";
@@ -31,7 +30,7 @@ const STEPS: { after: number; label: string }[] = [
 const stepFor = (seconds: number) =>
   STEPS.reduce(
     (current, step) => (seconds >= step.after ? step : current),
-    STEPS[0]
+    STEPS[0],
   );
 
 export interface GeneratingOverlayProps {
@@ -109,47 +108,55 @@ export const GeneratingOverlay = ({
       aria-live="polite"
       aria-busy={!isDone}
       className={cn(
-        "fixed inset-0 z-40 flex flex-col items-center justify-center gap-8 bg-background/70 px-6 backdrop-blur-sm focus:outline-none",
+        "fixed inset-0 z-40 flex items-center justify-center bg-muted/60 px-4 backdrop-blur-sm focus:outline-none",
         isLeaving
           ? "animate-out fade-out-0 duration-300 fill-mode-forwards"
-          : "animate-in fade-in-0 duration-300"
+          : "animate-in fade-in-0 duration-300",
       )}
     >
-      {/* The piece runs its own transforms, so the entrance gets its own element —
+      {/* A card for the piece to sit on. Straight on the blurred page, the typewriter and its
+          copy floated over whatever the form had underneath — a card gives them one surface,
+          the dialog surface (bg-background), so the wait reads as a modal step rather than a
+          caption over the page. The layer stays the fade; the card doesn't animate itself. */}
+      <div className="flex w-full max-w-md flex-col items-center gap-8 rounded-2xl border border-border bg-background px-6 py-8 shadow-xl dark:border-foreground/30 sm:px-10 sm:py-10">
+        {/* The piece runs its own transforms, so the entrance gets its own element —
           two animations on one element would fight over `transform`. */}
-      <div
-        className={cn(
-          !isLeaving && "animate-in zoom-in-50 fade-in-0 duration-700 ease-out",
-          isLeaving && "animate-out zoom-out-95 duration-300 fill-mode-forwards"
-        )}
-      >
-        <Typewriter scale={1.6} />
-      </div>
+        <div
+          className={cn(
+            !isLeaving &&
+              "animate-in zoom-in-50 fade-in-0 duration-700 ease-out",
+            isLeaving &&
+              "animate-out zoom-out-95 duration-300 fill-mode-forwards",
+          )}
+        >
+          <Typewriter scale={1.6} />
+        </div>
 
-      {/* Both states live in the same grid cell, which is what makes the landing a
+        {/* Both states live in the same grid cell, which is what makes the landing a
           cross-fade rather than a cut: the working copy has to still be there to fade
           *out* of. Stacking them also fixes the height — the block keeps the taller
           state's height throughout, so nothing under it jumps at the moment of the
           handover. Each is hidden from assistive tech while it is the one fading. */}
-      <div
-        className={cn(
-          "grid max-w-sm place-items-center text-center",
-          !isLeaving &&
-            "animate-in fade-in-0 slide-in-from-bottom-2 duration-500",
-          isLeaving && "animate-out fade-out-0 duration-200 fill-mode-forwards"
-        )}
-      >
         <div
-          aria-hidden={isDone}
           className={cn(
-            "col-start-1 row-start-1 transition-all duration-300 ease-in",
-            isDone && "pointer-events-none -translate-x-8 opacity-0"
+            "grid max-w-sm place-items-center text-center",
+            !isLeaving &&
+              "animate-in fade-in-0 slide-in-from-bottom-2 duration-500",
+            isLeaving &&
+              "animate-out fade-out-0 duration-200 fill-mode-forwards",
           )}
         >
-          <Working mode={mode} seconds={seconds} />
-        </div>
+          <div
+            aria-hidden={isDone}
+            className={cn(
+              "col-start-1 row-start-1 transition-all duration-300 ease-in",
+              isDone && "pointer-events-none -translate-x-8 opacity-0",
+            )}
+          >
+            <Working mode={mode} seconds={seconds} />
+          </div>
 
-        {/* One line, and the only green on the screen. No tick beside it: a word that
+          {/* One line, and the only green on the screen. No tick beside it: a word that
             says the thing does not need a symbol that says it again, and the colour is
             already carrying the "good news" half. It says *ready for review* rather than
             "created" or "saved", because nothing has been — the reply is parsed in the
@@ -162,19 +169,20 @@ export const GeneratingOverlay = ({
             gesture the machine above it makes, and the reason the pair reads as one
             movement instead of two dissolves. Delayed by the length of the exit, so it
             arrives into the space the other has left rather than crossing it on the way. */}
-        <p
-          aria-hidden={!isDone}
-          className={cn(
-            "col-start-1 row-start-1 font-quiz text-lg font-semibold tracking-wide text-quiz-success transition-all duration-500 ease-out sm:text-xl",
-            isDone
-              ? "translate-x-0 opacity-100 delay-200"
-              : "translate-x-10 opacity-0"
-          )}
-        >
-          {questionCount === undefined
-            ? "Your quiz is ready for review"
-            : `${questionCount} question${questionCount === 1 ? "" : "s"} ready for review`}
-        </p>
+          <p
+            aria-hidden={!isDone}
+            className={cn(
+              "col-start-1 row-start-1 font-quiz text-lg font-semibold tracking-wide text-quiz-success transition-all duration-500 ease-out sm:text-xl",
+              isDone
+                ? "translate-x-0 opacity-100 delay-200"
+                : "translate-x-10 opacity-0",
+            )}
+          >
+            {questionCount === undefined
+              ? "Your quiz is ready for review"
+              : `${questionCount} question${questionCount === 1 ? "" : "s"} ready for review`}
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -193,20 +201,13 @@ const Working = ({
 
   return (
     <>
-      {/* The app's own wait signature beside the heading: a small `BlobLoader`, so the
-          sentence still says "still going" and the typewriter above is not doing all of
-          that work alone. It used to be the heading itself, waved letter by letter with
-          `LoadingWave`; when the blob replaced the wave as the app's loader, the heading
-          went back to being plain, readable text — a real <h2>, so there is no second
-          screen-reader copy to keep in sync. The blob's own label is blank for the same
-          reason: the heading already says what is happening.
-
-          Kept at `text-base sm:text-lg` with 0.12em tracking: a 22-character sentence
-          runs out of a 360px screen at `text-xl` (docs/RESPONSIVE.md). */}
-      <div className="flex items-center justify-center gap-3">
-        <BlobLoader size="sm" label="" />
-        <h2 className="font-quiz text-base tracking-[0.12em] sm:text-lg">{heading}</h2>
-      </div>
+      {/* Just the heading. There used to be a small `BlobLoader` in front of it as a second
+          "still going" signal, but the typewriter above is already moving and the line below
+          changes every few seconds — a third moving thing only competed with them for the eye
+          (removed 2026-10-17). */}
+      <h2 className="font-quiz text-base tracking-[0.12em] sm:text-lg">
+        {heading}
+      </h2>
       {/* Keyed so the line re-enters rather than swapping in place — the change
           is the information, and a silent text replacement reads as a glitch. It enters
           from the right like everything else on this layer: one direction of travel for
@@ -223,4 +224,3 @@ const Working = ({
     </>
   );
 };
-

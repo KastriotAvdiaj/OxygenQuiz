@@ -9,6 +9,7 @@ import { TrueOrFalseQuestion } from "@/pages/Quiz/Sessions/components/quiz-takin
 import { TypeTheAnswerQuestion } from "@/pages/Quiz/Sessions/components/quiz-taking-process/question-display-type-files/type-the-answer-question";
 import { MultipleChoiceQuestion } from "@/pages/Quiz/Sessions/components/quiz-taking-process/question-display-type-files/multiple-choice-question";
 import { QuestionMedia } from "@/common/QuestionMedia";
+import { creditFrom } from "@/features/media/api/upload-media";
 import type { useMatch, RoundQuestionView } from "../../hooks/use-match";
 import type { Participant } from "../../hooks/use-lobby-connection";
 import { FloatingAvatarCluster, type AvatarClusterPlayer } from "./floating-avatar-cluster";
@@ -164,7 +165,14 @@ export function MultiplayerQuestionView({ match, username, participants }: Multi
 
         <QuestionCard text={question.text} />
 
-        <QuestionMedia mediaUrl={currentQuestion.mediaUrl} mediaType={currentQuestion.mediaType} alt="Question image" />
+        <QuestionMedia
+          mediaUrl={currentQuestion.mediaUrl}
+          mediaType={currentQuestion.mediaType}
+          hidden={currentQuestion.mediaHidden}
+          questionId={currentQuestion.questionId}
+          credit={creditFrom(currentQuestion.mediaCredit, currentQuestion.mediaCreditUrl)}
+          alt="Question image"
+        />
 
         {hasSubmitted ? (
           <motion.div
@@ -203,8 +211,12 @@ function toCurrentQuestion(q: RoundQuestionView, secondsLeft: number): CurrentQu
   return {
     quizQuestionId: q.questionId,
     questionText: q.text,
-    mediaUrl: q.imageUrl,
-    mediaType: q.imageUrl ? "Image" : "None",
+    mediaUrl: q.mediaUrl ?? null,
+    mediaType: q.mediaType ?? "None",
+    mediaHidden: q.mediaHidden ?? false,
+    mediaCredit: q.mediaCredit ?? null,
+    mediaCreditUrl: q.mediaCreditUrl ?? null,
+    questionId: q.questionId,
     options,
     timeLimitInSeconds: q.timeLimitSeconds,
     timeRemainingInSeconds: secondsLeft,

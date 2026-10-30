@@ -1,6 +1,7 @@
 # The single-quiz page
 
-How `/dashboard/quiz/:quizId` behaves **today**. It is one continuous page — hero, stat strip,
+How `/dashboard/quiz/:quizId` — and its twin for owners, `/my-dashboard/quiz/:quizId` — behaves
+**today**. It is one continuous page — hero, stat strip,
 attempts panel, then every question with its own numbers — replacing the Overview / Questions /
 Analytics tabs. The reasoning for that shape, and the list of things deliberately not built, is in
 [`../proposals/quiz-view-redesign.md`](../proposals/quiz-view-redesign.md); this file describes
@@ -24,7 +25,7 @@ what the code does.
 |---|---|---|
 | Hero, footer | `useQuizData` | `GET /quiz/{id}` |
 | Question list (content) | `useQuizQuestionsData` | `GET /quiz/{id}/questions` |
-| Stat strip, attempts, per-question numbers | `useQuizAnalytics` | `GET /reports/quiz/{id}/analytics?mode=` |
+| Stat strip, attempts, per-question numbers | `useQuizAnalytics` | `GET /statistics/quiz/{id}/analytics?mode=` |
 
 Analytics is the only one that may legitimately be absent — it is owner-scoped with an admin
 bypass, and the query can still fail. Every consumer treats absence as "not available" and renders
@@ -266,17 +267,17 @@ player's.
   are the ones most likely to regress and the ones that matter most.
 
 **Backend**
-- `Services/Reports/ReportService.GetQuizAnalyticsAsync` — every number on the page;
+- `Services/StatisticsExport/StatisticsService.GetQuizAnalyticsAsync` — every number on the page;
   `BuildAttemptsOverTime` / `ResolveViewerZone` / `StartOfDayUtc` are the day-bucketing above.
   The per-day `Completed` counts genuine completions only, matching the headline figure —
   sessions the abandonment sweep flagged `IsCompleted` are excluded from both.
 - `DTOs/Reports/ReportDtos.cs` — `QuizAnalyticsDto`, `QuizQuestionAnalyticsRow`.
-- `Controllers/Reports/ReportsController.QuizAnalytics` — owner-scoped, admin bypass.
+- `Controllers/Statistics/StatisticsController.QuizAnalytics` — owner-scoped, admin bypass.
 
 ## Actions
 
-**Every action lives in one ⋯ menu, on the title row.** `QuizActionsMenu` holds Edit quiz,
-Share, Publish/Unpublish and Delete; the trigger is a 32px icon button right-aligned against
+**Every action lives in one ⋯ menu, on the title row.** `QuizActionsMenu` holds Play quiz, Edit
+quiz, Share, Publish/Unpublish and Delete; the trigger is a 32px icon button right-aligned against
 the `<h1>`.
 
 It is deliberately the **same pattern as the quiz rows in the data table** — same
@@ -290,16 +291,42 @@ could reach them. A menu is the same menu at every width, so that duplication is
 
 Two details worth keeping:
 
-- **Share is not offered on a Draft.** The backend mints a token its own resolver 404s, so it
-  could only produce a link that fails at the recipient's end. (The share URL is broken for a
-  separate reason; see [`quiz-visibility.md`](./quiz-visibility.md).)
+- **The link is not offered on a Draft.** A Public quiz offers *Copy link* (its listing URL,
+  [`quiz-listing.md`](quiz-listing.md)), an Unlisted one *Copy share link*; a Draft has neither —
+  the backend would mint a token its own resolver 404s. The copy itself is `useCopyQuizLink`, shared
+  with the quiz table's row menu and the start modal.
+- **Play is offered only where it would start.** Public, or the viewer owns the quiz — the API's
+  `QuizPlayAccess.IsPlayAuthorized`. An admin looking at someone else's Unlisted or Draft quiz gets
+  no Play, because the session would be refused.
+
+**A breadcrumb above the card — `Quizzes › <title>`.** The header's Back is browser history, which
+is wherever you came from (a share, a bookmark, a play), not necessarily the list. The breadcrumb
+is the way *up*. It sits outside the card, on the dashboard background and aligned with the card's
+left edge (since 2026-10-20; it had been inside, in muted grey above the title, and was easy to
+miss), in `text-foreground/70` with the current page in full `text-foreground` —
+`text-muted-foreground` is too close to the dashboard's `bg-muted` to read. The dashboard rail also keeps **Quizzes** lit on this page: the route is
+`quiz/:quizId`, a sibling of `quizzes`, so the Quizzes nav item claims it through `activeOn`
+(`dashboardNavConfig.ts`, `activeNavId`).
 - **Delete opens on the next animation frame.** The confirm dialog is owned by the page and
   rendered outside the menu — opening it while Radix is still closing the menu leaves two modal
   layers overlapping and `pointer-events: none` stuck on `<body>`. The data-table row does the
   same thing for the same reason.
 
-Publish/Unpublish carries its consequence as a sub-line in the item rather than a tooltip: a
-tooltip inside an open Radix menu fights the menu for the same hover.
+**The ⋯ menu is one plain list** (2026-10-20), here and on the quiz rows: no separators, and
+Publish/Unpublish is a single line like every other item. The separators fell between some items
+and not others, and the grey line under Unpublish ("Back to draft — only you see it") made one item
+twice as tall as the rest; Delete last and in red is grouping enough. Play uses `PlayTriangle`
+(`components/icons/play-triangle.tsx`): a solid, rounded triangle without a circle, the same family
+as the `EditPencil` beside it (since 2026-10-24; `CirclePlay` before). No tooltips inside the menu:
+a tooltip in an open Radix menu fights the menu for the same hover.
+
+**Sized to its items, no heading** (2026-10-22): the fixed `w-56` left the menu half empty and the
+"Actions" label repeated what the ⋯ button says. **Every icon is solid and rounded** (since
+2026-10-27): `PlayTriangle` and `EditPencil` (`components/icons/`, the app-wide edit icon since
+2026-10-23), and the rest from `components/icons/solid-icons.tsx` — `CopySheets` for *Copy link* /
+*Copy share link* (it copies, it doesn't open a share sheet) and, on the rows, *Copy ID* too, since
+the label already says which; `PublishArrow` / `HiddenEye`, `PickHand`, `TrashBin`. Lucide's
+outlines beside the two solid icons read as two icon sets in one menu.
 
 `BlobLoader` is the loader in all three loading states (page, analytics, questions) — not
 `Spinner`, which this page was written against before the app had its own loader. (It was
@@ -332,6 +359,17 @@ two columns inside one narrow column is how you get a 150px-wide chart.
 
 The separator between analytics and questions is `xl:hidden`: from `xl` the column gap does the
 dividing, and a horizontal rule across one column of two reads as a mistake.
+
+**From `xl`, the question rows scroll inside their own area, not the page** (2026-10-20). Opening
+a few rows used to grow the whole card, so the page scrolled and took the left column and the
+column headings with it. Now the rows list has a maximum height — the viewport minus 27rem for
+everything above and below it, never under 16rem — with `overflow-y-auto` and
+`overscroll-contain`, so reaching the end of the list doesn't carry the scroll on into the page.
+The *Questions* heading, the sort control and the column labels stay above it. If the page above
+or below the list changes height, adjust the `27rem` in `question-performance-table.tsx`. (It started at 22rem, which left the page
+scrolling by about 60px with the card flush against the window's bottom edge.)
+Below `xl` there is no inner scroll: the page is one column there, and a scroll area inside a
+scrolling page traps a thumb on a phone.
 
 ### Motion
 
@@ -383,9 +421,26 @@ resolved it as the winner and **every caller's border colour was silently discar
 mode** — including the amber edge on "Needs a look". The default now goes before `className`,
 which is what the rest of the components here do and what every caller assumes.
 
+## Two dashboards, one page
+
+The same `QuizRoute` is mounted in both dashboards (since 2026-10-18; players had no quiz page
+before). It reads which one it is in from the URL (`dashboardBaseOf`) and keeps every link inside it:
+the breadcrumb (`Quizzes` / `My Quizzes`), Edit (`quizEditPath(quiz, base)`) and where Delete lands.
+The rail keeps the Quizzes item lit on it (`activeOn: ["quiz"]`).
+
+It is reached from the quiz table in either dashboard: the row's ⋯ **View**, or a click anywhere on
+the row (`DataTable`'s `onRowClick`; clicks on the ⋯ menu, its items and the delete dialog are
+excluded — `data-table-row-click.ts`).
+
+**In the player dashboard it is for your own quizzes.** Someone else's Public quiz reads fine by id,
+but its questions, stats and board are owner-only, so the page would be all error states; it says
+"This isn't one of your quizzes" instead.
+
 ## No database ids
 
-Neither the quiz id nor the question ids appear anywhere on this page. A primary key identifies
+Neither the quiz id nor the question ids appear anywhere on this page. The same goes for the
+player dashboard as a whole (2026-10-18): the `ID: 665` badges on question cards and the quiz row's
+**Copy ID** show in the admin dashboard only (`useIsAdminDashboard` in `quiz-paths.ts`). A primary key identifies
 a row to a query; it tells the person deciding whether a question needs rewriting nothing at all.
 The card header used to read "Quiz #37" directly above an `<h1>` carrying the quiz's actual name
 — an id *and* a duplicate heading — so `ContentLayout`'s title is now optional and this page

@@ -20,8 +20,9 @@ model** until a vendor entry allows it. Topic mode can be **grounded** in a Wiki
 ## 1. Where this sits in the bigger flow
 
 The user's journey is unchanged from Phase 1 except for one step. They configure the quiz, they
-get questions, they review them in the normal builder, they save through the existing atomic
-import. The only new thing is *how the questions arrive*.
+get questions, they review them in the quiz overview — the builder's reading view, answers
+hidden until revealed ([quiz-overview.md](quiz-overview.md)) — and they save through the existing
+atomic import. The only new thing is *how the questions arrive*.
 
 ```mermaid
 flowchart LR
@@ -34,7 +35,7 @@ flowchart LR
     end
 
     S2 --> P["parse-ai-output.ts\nUNCHANGED"]
-    P --> R["Step 3 — review in\nthe normal builder\nUNCHANGED"]
+    P --> R["Step 3 — review in\nthe quiz overview\n(ADR 0026)"]
     R --> I["POST /quiz/ai-import\none transaction\nUNCHANGED"]
 ```
 
@@ -55,7 +56,7 @@ lands **pre-filled in the review step**, where the human confirms or changes it:
 | Category | Model picks from the category **names** we send. Unmatched → blank. |
 | Language | Model picks from the language **names** we send, normally matching the language the topic was typed in, and writes the questions in it. |
 | Difficulty | The median-weighted rating. Not asked for at all; changed in the builder. |
-| Count, types, extra instructions | Defaults, shown in the details form under the topic box. |
+| Count, types, extra instructions, Add pictures | Defaults (Add pictures off), shown in the details form under the topic box. |
 
 **The wizard asks for what the model needs, and nothing the builder already owns.** Title,
 description, category, language and difficulty were all fields on this form until 2026-09-16,
@@ -119,7 +120,7 @@ worst case is a wrong-but-real category on a Draft quiz that a human is looking 
 | Wizard view | `AI-Quiz/ai-quiz-wizard-view.tsx` | **Composition only.** The three screens (§3b) and which component renders in each. |
 | Shared draft | `AI-Quiz/use-ai-quiz-draft.tsx` | Everything both AI paths share: lookups, request state, reply → parse → builder handoff. |
 | Own-AI path | `AI-Quiz/own-ai-quiz.tsx` + `own-ai-quiz-view.tsx` | Copy the prompt out, paste the reply back. Its own route — [`ai-quiz-two-paths.md`](./ai-quiz-two-paths.md). |
-| View pieces | `AI-Quiz/components/*.tsx` | One block each: `generation-input`, `advanced-options`, `quota-note`, `generate-error-panel`, `confirm-details-card`, `import-note`, `question-type-options`, `question-count-stepper`. |
+| View pieces | `AI-Quiz/components/*.tsx` | One block each: `generation-input`, `advanced-options`, `quota-note`, `generate-error-panel`, `confirm-details-card`, `review-back-button`, `question-type-options`, `question-count-stepper`. |
 | Limits | `AI-Quiz/prompt.ts` | Numbers only. The prompt text lives in C# (slice 2.1). |
 | Source files | `Services/Ai/SourceFileReader.cs` | Upload → plain text: PDF, .docx, .txt, .md. Size and character limits, whitespace normalisation, a message per kind of unreadable file. §2d. |
 | Grounding | `Services/Ai/Sources/QuizGrounding.cs` | Topic mode: which language, which article, or what to ask the author. §2e. |
@@ -282,7 +283,7 @@ allowance against the more expensive language is the obvious alternative.
 
 A quiz from the user's own material instead of a topic. Route `…/ai/material`, the same wizard
 as Topic mode; the method dialog's "From my material" card leads there.
-Decision record: [ADR 0026](../adr/0026-source-mode-writes-in-the-materials-language-and-opens-per-model.md).
+Decision record: [ADR 0037](../adr/0037-source-mode-writes-in-the-materials-language-and-opens-per-model.md).
 
 **Closed until the model is good enough.** `AllowsSourceMode` on the selected `Ai:Vendors` entry
 opens it; nothing else can. `groq` leaves it off: the Phase 0 eval measured that model at 24.6%
@@ -717,7 +718,8 @@ and no change to it will help, so telling the client "bad request" sends it into
   "difficultyNames": ["Easy", "Medium", "Hard"],
   "questionCount": 10,
   "allowedTypes": ["MultipleChoice", "TrueFalse"],
-  "extraInstructions": null
+  "extraInstructions": null,
+  "addImages": false                     // "Add pictures": questions may carry an "imageQuery"
 }
 
 // 200 — the model's object, forwarded whole
@@ -731,6 +733,12 @@ and no change to it will help, so telling the client "bad request" sends it into
 // non-200
 { "code": "QuotaExceeded", "message": "...", "retryAfter": "2026-08-10T00:00:00Z", "isCustomMessage": true }
 ```
+
+**With `addImages` on**, a question in the payload may carry `"imageQuery": "Flag of Kosovo"` — a
+phrase to search for, never a URL. The browser's parser keeps it only as plain text and our own
+`POST /api/media/stock/auto` turns it into an image; see
+[`../media/media-pipeline.md`](../media/media-pipeline.md) §8. The flag is part of the request hash,
+so the same brief with and without pictures is two different requests.
 
 **No entity ids cross this boundary in either direction.** Names go out, names come back, and
 the browser resolves them against rows that already exist. That is what makes "the AI flow can

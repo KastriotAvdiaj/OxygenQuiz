@@ -211,7 +211,9 @@ and the real text goes to the console.
 
 `isCustomMessage: true` is still honoured as an explicit override, and is the one way a 5xx can
 still be shown. It is never *required*, so the `HandleFailure` contract keeps working without
-every other endpoint adopting it.
+every other endpoint adopting it. `GlobalExceptionHandler` sets it on exactly one exception:
+`ServiceUnavailableException` (503), whose message is a sentence written for the user — "Wikimedia
+Commons is busy right now, try again later" — rather than a crash.
 
 Every failure is logged with its `kind`, because "why was I shown the generic line?" is the
 question that costs the most time.

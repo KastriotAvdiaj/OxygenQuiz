@@ -40,7 +40,7 @@ namespace QuizAPI.Controllers.Users.Services.UserStatsService
                         .Any(q => q.Id == s.QuizId && q.Format == QuizFormat.Classic));
 
                 // Completed = finished the quiz; abandoned sessions carry a reason and are
-                // reported separately, matching the analytics convention in docs/quiz/reports.md.
+                // reported separately, matching the analytics convention in docs/quiz/statistics-export.md.
                 var completed = sessions.Where(s => s.IsCompleted && s.AbandonmentReason == null);
 
                 var sessionAgg = await sessions
@@ -85,7 +85,7 @@ namespace QuizAPI.Controllers.Users.Services.UserStatsService
 
                 // Average answer time is computed in memory on purpose. Npgsql can't translate
                 // TimeSpan.TotalSeconds over a DateTime difference, so the timestamps are pulled
-                // down and subtracted here — the same approach ReportService takes. Only the two
+                // down and subtracted here — the same approach StatisticsService takes. Only the two
                 // DateTime columns of this user's own answered questions are read (no entities,
                 // no navigations), so the payload stays small.
                 // If this ever becomes hot, the fix is a persisted elapsed-ms column written at

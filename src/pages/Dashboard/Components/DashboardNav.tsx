@@ -23,6 +23,8 @@ type DashboardNavProps = {
    * just a sheet with a hole in it — so the control would be a dead end.
    */
   hideCollapseToggle?: boolean;
+  /** Called with an item's id when it is hovered or focused — the layout prefetches that page. */
+  onItemIntent?: (page: string) => void;
 };
 
 type NavGroup = { name: string; items: DashboardNavItem[] };
@@ -45,11 +47,13 @@ const NavItem = ({
   isActive,
   isCollapsed,
   onSelect,
+  onIntent,
 }: {
   item: DashboardNavItem;
   isActive: boolean;
   isCollapsed: boolean;
   onSelect: () => void;
+  onIntent?: () => void;
 }) => {
   const Icon = item.icon;
 
@@ -57,6 +61,10 @@ const NavItem = ({
     <button
       type="button"
       onClick={onSelect}
+      // Pointing at an item starts its page's code and data (dashboard-prefetch.ts); the click
+      // a few hundred ms later finds them already on the way.
+      onPointerEnter={onIntent}
+      onFocus={onIntent}
       aria-current={isActive ? "page" : undefined}
       className={cn(
         "group relative flex w-full items-center rounded-lg py-2 text-sm outline-none transition-colors",
@@ -118,7 +126,7 @@ const NavItem = ({
   return (
     <Tooltip>
       <TooltipTrigger asChild>{button}</TooltipTrigger>
-      <TooltipContent side="right" className="font-medium bg-background">
+      <TooltipContent side="right">
         {item.label}
       </TooltipContent>
     </Tooltip>
@@ -132,6 +140,7 @@ export const DashboardNav: React.FC<DashboardNavProps> = ({
   isCollapsed = false,
   setIsCollapsed = () => {},
   hideCollapseToggle = false,
+  onItemIntent,
 }) => {
   const { checkAccess } = useAuthorization();
 
@@ -185,6 +194,7 @@ export const DashboardNav: React.FC<DashboardNavProps> = ({
                     isActive={activePage === item.id}
                     isCollapsed={isCollapsed}
                     onSelect={() => setActivePage(item.id)}
+                    onIntent={onItemIntent && (() => onItemIntent(item.id))}
                   />
                 ))}
               </div>

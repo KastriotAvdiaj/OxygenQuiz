@@ -82,6 +82,8 @@ namespace QuizAPI.DTOs.Quiz
 
         /// <summary><c>ai-prompt</c> only: ground the prompt as generation would. See <see cref="AiGenerationRequest.Ground"/>.</summary>
         public bool Ground { get; set; }
+        /// <summary>Ask for image search queries on the questions an image helps. Off by default.</summary>
+        public bool AddImages { get; set; }
 
         /// <summary>
         /// Maps to the service contract. Returns null when <see cref="Mode"/> is not a known mode,
@@ -109,6 +111,7 @@ namespace QuizAPI.DTOs.Quiz
                 SourceDeclined = SourceDeclined,
                 SourceAcceptFromMemory = SourceAcceptFromMemory,
                 Ground = Ground,
+                AddImages = AddImages,
             };
         }
     }

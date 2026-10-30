@@ -1,5 +1,4 @@
 using QuizAPI.Common;
-using QuizAPI.Controllers.Image.Services;
 using QuizAPI.Controllers.Quizzes.Services.QuizServices;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.Exceptions;
@@ -17,8 +16,11 @@ namespace QuizAPI.Services.Associations
         /// <summary>The full Board for the builder, or null when there is none the caller may edit.</summary>
         Task<AssociationBoardDTO?> GetForEditAsync(int quizId, Guid? userId, bool isAdmin);
 
-        /// <summary>Updates the quiz and, if its content changed, replaces the Board copy-on-write. Null = not found / not yours.</summary>
-        Task<QuizDTO?> UpdateAsync(Guid userId, AssociationQuizUM um);
+        /// <summary>
+        /// Updates the quiz and, if its content changed, replaces the Board copy-on-write. The owner,
+        /// or a holder of <c>quiz:update:any</c> for any board. Null = not found / not yours.
+        /// </summary>
+        Task<QuizDTO?> UpdateAsync(Guid userId, AssociationQuizUM um, bool canUpdateAny = false);
     }
 
     /// <summary>
@@ -42,20 +44,26 @@ namespace QuizAPI.Services.Associations
         private readonly IAssociationBoardRepository _boards;
         private readonly IQuizService _quizService;
         private readonly IAssociationRulesProvider _rules;
-        private readonly IImageService _images;
+        private readonly QuizAPI.Services.Media.IMediaAttachmentService _media;
+        private readonly QuizAPI.Services.CurrentUserService.ICurrentUserService? _current;
+        private readonly QuizAPI.Services.Permissions.IPermissionService? _permissions;
 
         public AssociationBoardService(
             IQuizRepository quizzes,
             IAssociationBoardRepository boards,
             IQuizService quizService,
             IAssociationRulesProvider rules,
-            IImageService images)
+            QuizAPI.Services.Media.IMediaAttachmentService media,
+            QuizAPI.Services.CurrentUserService.ICurrentUserService? current = null,
+            QuizAPI.Services.Permissions.IPermissionService? permissions = null)
         {
+            _permissions = permissions;
             _quizzes = quizzes;
             _boards = boards;
             _quizService = quizService;
             _rules = rules;
-            _images = images;
+            _media = media;
+            _current = current;
         }
 
         public async Task<QuizDTO> CreateAsync(Guid userId, AssociationQuizCM cm)
@@ -74,7 +82,6 @@ namespace QuizAPI.Services.Associations
                 CategoryId = cm.CategoryId,
                 LanguageId = cm.LanguageId,
                 DifficultyId = cm.DifficultyId,
-                ImageUrl = cm.ImageUrl,
                 Status = status,
                 Format = QuizFormat.Associations,
                 TimeLimitInSeconds = cm.BoardTimeInSeconds,
@@ -88,12 +95,11 @@ namespace QuizAPI.Services.Associations
             var board = AssociationBoardMapping.ToEntity(clean, quizId: 0, createdInVersion: 1);
             board.Quiz = quiz;
 
+            QuizAPI.Common.QuizHouse.Stamp(quiz, _current?.IsAdmin == true, DateTime.UtcNow, await CanAutoPickAsync());
+            await _media.ApplyToQuizCoverAsync(quiz, cm.CoverAssetId, userId);
             await _quizzes.AddAsync(quiz);
             await _boards.AddAsync(board);
             await _quizzes.SaveChangesAsync();
-
-            if (!string.IsNullOrEmpty(cm.ImageUrl))
-                await _images.AssociateImageWithEntityAsync(cm.ImageUrl, "Quizzes", quiz.Id);
 
             return quiz.ToDto();
         }
@@ -111,10 +117,13 @@ namespace QuizAPI.Services.Associations
                 : AssociationBoardMapping.ToEditDto(board, quiz.Version, quiz.TimeLimitInSeconds ?? 0);
         }
 
-        public async Task<QuizDTO?> UpdateAsync(Guid userId, AssociationQuizUM um)
+        public async Task<QuizDTO?> UpdateAsync(Guid userId, AssociationQuizUM um, bool canUpdateAny = false)
         {
             var quiz = await _quizzes.GetTrackedAsync(um.Id);
-            if (quiz is null || quiz.UserId != userId) return null;
+            // quiz:update:any may save any board: GetForEditAsync already opens the editor for admins,
+            // and an editor whose save always 404s is the bug the Classic update had
+            // (docs/quiz/quiz-editing.md).
+            if (quiz is null || (!canUpdateAny && quiz.UserId != userId)) return null;
 
             // After ownership: only the owner learns this is the wrong kind of quiz for this endpoint.
             QuizFormatGuard.EnsureFormat(quiz.Format, QuizFormat.Associations);
@@ -131,31 +140,44 @@ namespace QuizAPI.Services.Associations
             // Copy-on-write: a changed Board is a new row at the new version, and the old one is
             // retired — never edited — so games pinned to the old version keep their Board.
             var live = await _boards.GetLiveAsync(quiz.Id, track: true);
-            if (live is null || !AssociationBoardMapping.HasSameContent(live, clean))
+            var boardChanged = live is null || !AssociationBoardMapping.HasSameContent(live, clean);
+            if (boardChanged)
             {
                 if (live is not null) live.RemovedInVersion = newVersion;
                 await _boards.AddAsync(AssociationBoardMapping.ToEntity(clean, quiz.Id, newVersion));
             }
 
-            var imageChanged = !string.Equals(quiz.ImageUrl, um.ImageUrl, StringComparison.Ordinal);
+            // Publishing or unpublishing alone keeps a pick; any other change, by someone who
+            // can't auto-pick, takes the quiz out of the picked catalogue (QuizHouse.UnpickForEdit).
+            var contentChanged = boardChanged
+                || quiz.Title != um.Title.Trim()
+                || (quiz.Description ?? "") != (um.Description ?? "")
+                || quiz.CategoryId != um.CategoryId
+                || quiz.LanguageId != um.LanguageId
+                || quiz.DifficultyId != um.DifficultyId
+                || quiz.CoverAssetId != um.CoverAssetId
+                || quiz.TimeLimitInSeconds != um.BoardTimeInSeconds;
+            if (contentChanged)
+                QuizAPI.Common.QuizHouse.UnpickForEdit(quiz, await CanAutoPickAsync());
 
             quiz.Title = um.Title.Trim();
             quiz.Description = um.Description;
             quiz.CategoryId = um.CategoryId;
             quiz.LanguageId = um.LanguageId;
             quiz.DifficultyId = um.DifficultyId;
-            quiz.ImageUrl = um.ImageUrl;
+            await _media.ApplyToQuizCoverAsync(quiz, um.CoverAssetId, userId);
             quiz.Status = status;
             quiz.TimeLimitInSeconds = um.BoardTimeInSeconds;
             quiz.Version = newVersion;
+            quiz.UpdatedAt = DateTime.UtcNow;
 
             await _quizzes.SaveChangesAsync();
 
-            if (imageChanged && !string.IsNullOrEmpty(um.ImageUrl))
-                await _images.AssociateImageWithEntityAsync(um.ImageUrl, "Quizzes", quiz.Id);
-
             return quiz.ToDto();
         }
+
+        private Task<bool> CanAutoPickAsync() =>
+            QuizAPI.Common.QuizHouse.CanAutoPickAsync(_permissions, _current?.UserId, _current?.IsAdmin == true);
 
         /// <summary>The rules about the quiz itself, shared with Classic: lookups exist, and the publishing gate.</summary>
         private async Task EnsureQuizFieldsAsync(AssociationQuizCM cm, QuizStatus status, Guid? userId)

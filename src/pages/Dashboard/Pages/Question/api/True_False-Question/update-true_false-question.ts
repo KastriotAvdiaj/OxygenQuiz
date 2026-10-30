@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
+import { mediaAssetIdSchema } from "@/features/media/api/upload-media";
 import { explanationSchema } from "@/common/question-explanation";
 import { api } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
@@ -13,7 +14,9 @@ import {
 export const updateTrueFalseQuestionInputSchema = z.object({
   id: z.number().int().optional(),
   text: z.string().min(1, "Question is required"),
-  imageUrl: z.string().nullable().optional(),
+  // The attached image or clip: an asset id from POST /api/media, never a URL — the API writes
+  // the URL itself (docs/media/media-pipeline.md). Mirrors QuestionBaseCM.MediaAssetId.
+  mediaAssetId: mediaAssetIdSchema,
   // Optional "why" shown after answering. The API caps and normalises it too
   // (QuestionExplanation.Normalize); this is the fast-feedback half.
   explanation: explanationSchema,
@@ -35,11 +38,15 @@ export type UpdateTrueFalseQuestionInput = z.infer<
 export const updateTrueFalseQuestion = ({
   data,
   questionId,
+  params,
 }: {
   data: UpdateTrueFalseQuestionInput;
   questionId: number;
+  /** `fromQuizBuilder` + `quizId`: the quiz builder's in-place edit, which the API only allows
+   *  under QuestionEditRule (409 otherwise). The Questions page sends none. */
+  params?: { fromQuizBuilder: true; quizId?: number };
 }): Promise<TrueFalseQuestion> => {
-  return api.put(`/questions/truefalse/${questionId}`, data);
+  return api.put(`/questions/truefalse/${questionId}`, data, { params });
 };
 
 type UseUpdateTrueFalseQuestionOptions = {

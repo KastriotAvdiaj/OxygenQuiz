@@ -1,207 +1,61 @@
-# Question media (images, audio, video)
+# Question media — what a question carries and where it is shown
 
-How a question carries an optional media attachment, where it is stored, and how it
-travels from creation through to the quiz-taking screen.
+A question may have **one** optional image or audio clip. This doc is about the question side: the
+fields, the wire shape and every screen that renders it. How the file is uploaded, checked, stored,
+charged and swept is [`../media/media-pipeline.md`](../media/media-pipeline.md).
 
-> Status: **backend implemented**. **Frontend: images work end-to-end** — upload in the
-> question editor, dashboard cards, and both quiz-taking screens (single-player + multiplayer)
-> render the attachment via a shared `QuestionMedia` component. Remaining: the answer-**review**
-> screen (needs media on the `UserAnswer` DTO) and a dedicated audio/video upload path. See
-> [Frontend](#7-frontend).
-
----
-
-## 1. The big picture
-
-A question may have **one** optional media attachment of a single kind:
-
-| Kind  | Examples                          |
-|-------|-----------------------------------|
-| Image | jpg, png, gif, webp, svg          |
-| Audio | mp3, wav, ogg, m4a, aac           |
-| Video | mp4, webm, mov, m4v               |
-
-Two things are stored on a question:
-
-- `MediaUrl` — the URL the browser loads.
-- `MediaType` — an enum (`None` / `Image` / `Audio` / `Video`) telling the client
-  whether to render an `<img>`, `<audio>`, or `<video>`.
-
-The bytes themselves live in the **generic file entity** (`FileRecord` + `FileService`),
-not the older image-only entity. The question just keeps the resulting URL.
-
-### Why the file entity and not the image entity?
-
-There are two storage systems in the codebase:
-
-- **Image entity** (`ImageAsset` + `ImageService` + `ImageUploadController`) — older,
-  image-only (validates with ImageSharp), talks to `DbContext` directly. Cannot handle
-  audio/video.
-- **File entity** (`FileRecord` + `FileService` + `FilesController`) — newer, generic,
-  polymorphic (`Entity` + `EntityId`), repository-based. This is the one we extended.
-
-The legacy `ImageUrl` column on questions is **kept** so existing image questions keep
-working with no data migration; everything new flows through `MediaUrl` / `MediaType`.
-On read, a question that only has the old `ImageUrl` is reported as `MediaType = "Image"`.
+> **Status: images and audio implemented end to end (2026-10-24).** Video is designed for (the enum
+> value exists) but not accepted by the pipeline yet. This doc used to describe an editor that
+> uploaded images through the old `/ImageUpload` endpoint and a `/api/files` route for the other
+> kinds; both are gone.
 
 ---
 
-## 2. Data model
+## 1. On the question
 
-### `QuestionBase` (`Models/Questions/Question.cs`)
+[`QuestionBase`](../../OxygenBackend/QuizAPI/Models/Questions/Question.cs):
 
-```csharp
-public enum QuestionMediaType { None, Image, Audio, Video }
+| Field | What it is | Who writes it |
+|---|---|---|
+| `MediaAssetId` | The attached `MediaAsset`, or null | `MediaAttachmentService`, from the save's `mediaAssetId` |
+| `MediaUrl` | Copy of the asset's public URL | the same service, together with the id |
+| `MediaType` | `None` / `Image` / `Audio` (`Video` reserved) | the same service, from the asset's kind |
+| `MediaCountedAt` | When it was charged to the saver's daily quota; null when free | the same service |
 
-public abstract class QuestionBase
-{
-    public string? ImageUrl { get; set; }   // legacy, retained for back-compat
-    public string? MediaUrl  { get; set; }   // new: URL of the attachment
-    public QuestionMediaType MediaType { get; set; } = QuestionMediaType.None;
-    // ...
-}
-```
+**A client sends `mediaAssetId` and nothing else** — no URL, no type
+([ADR 0032](../adr/0032-media-is-attached-by-id-and-the-server-writes-the-url.md)). The URL and type
+are copied onto the row so every read path works without a join. The legacy `ImageUrl` column was
+dropped in the `AddMediaPipeline` migration, with the fallbacks that read it.
 
-### `FileRecord` (`Models/FileRecord.cs`)
+## 2. On the wire
 
-Gained `ContentType` (the MIME type, e.g. `video/mp4`):
+- **Read** (`QuestionBaseDTO` and subtypes): `mediaAssetId`, `mediaUrl`, `mediaType` — the editor
+  sends `mediaAssetId` back unchanged on save.
+- **Play** (`CurrentQuestionDto`, the multiplayer `RoundQuestionView`, `UserAnswerDto` on the results
+  screen): `mediaUrl`, `mediaType` only.
+- **Write** (`QuestionBaseCM`/`UM`, `AiImportQuestionCM`): `mediaAssetId`. The read projections are
+  translated to SQL, so `MediaType` is emitted with a ternary, not `enum.ToString()` (CLAUDE.md).
 
-```csharp
-[MaxLength(100)]
-public string? ContentType { get; set; }
-```
+## 3. Where it renders
 
----
+Through the shared [`QuestionMedia`](../../src/common/QuestionMedia.tsx) (`<img>` / `<audio controls>`)
+everywhere a saved question is shown:
 
-## 3. The storage pipeline (`FileService`)
+| Screen | File |
+|---|---|
+| Single-player play | `src/pages/Quiz/Sessions/components/quiz-taking-process/question-display.tsx` |
+| Multiplayer play | `src/pages/Quiz/Multiplayer/components/game/multiplayer-question-view.tsx` — until 2026-10-24 the round sent only the legacy image column, so audio and every newer image never reached a lobby |
+| Results review | `src/pages/Quiz/Sessions/components/quiz-results/question-review.tsx` |
+| Dashboard question cards and the "test question" preview | `src/pages/Dashboard/Pages/Question/Components/…` |
+| Builder: review list | `…/Create-Quiz-Form/components/overview/question-review-card.tsx` |
+| Builder: saved-question cards | `…/existing-display-quiz-question-card/display-quiz-question-image-preview.tsx` (hover preview for an image, a small player for a clip) |
 
-`Controllers/Files/Services/FileService.cs` is where uploads are validated and saved.
+Editors attach media with [`MediaPicker`](../../src/features/media/components/media-picker.tsx) — the
+six dashboard question forms and the three builder question cards; a builder copy of a saved question
+(ADR 0030) keeps pointing at the same file, which costs nothing against the quota.
 
-- **Allowlists** are grouped by kind (`ImageExtensions`, `AudioExtensions`,
-  `VideoExtensions`, `DocumentExtensions`). Adding a new supported extension is a
-  one-line change in the relevant set.
-- **Per-kind size limits** (`MaxBytesFor`): image 5 MB, audio 20 MB, video 100 MB,
-  document 10 MB.
-- The MIME type from the upload is saved to `FileRecord.ContentType`.
-- `FileDTO` exposes `ContentType` plus a derived `Kind` (`"image"` / `"audio"` /
-  `"video"` / `"file"`), computed by `KindFromContentType`, so the frontend can pick the
-  right player without parsing the URL.
+## 4. Adding a kind
 
-Files are written to `wwwroot/uploads/files/{guid}.{ext}` and served statically at
-`/uploads/files/...`. Static serving supports HTTP range requests, which audio/video
-seeking needs.
-
-`Controllers/Files/FilesController.cs` raises the per-request ceiling to 100 MB
-(`[RequestSizeLimit(100 * 1024 * 1024)]`). The actual per-kind cap is enforced in the
-service. **Note:** Kestrel’s global body limit must also be raised for video — see
-[Deployment](#6-deployment-notes).
-
----
-
-## 4. Request flow
-
-### Creating / editing a question
-
-```
-Question editor (frontend, planned)
-  1. POST /api/files   (multipart: file, entity="Question", entityId)
-       → FileService validates kind + size, stores bytes, returns FileDTO { url, kind, contentType }
-  2. POST/PUT the question with MediaUrl = FileDTO.url, MediaType = FileDTO.kind
-       → QuestionService → mappers persist MediaUrl + MediaType on the question row
-```
-
-DTO carriers: `MediaUrl` + `MediaType` were added to `QuestionBaseDTO`, `QuestionBaseCM`
-(create), and `QuestionBaseUM` (update) in `DTOs/Question/QuestionDTOs.cs`.
-
-### Playing a quiz
-
-```
-GET next question (QuizSessionService)
-  → QuizQuestion.ToCurrentQuestionDto()  (Mapping/EntityMappers.cs)
-       → CurrentQuestionDto { MediaUrl, MediaType, ... }
-  → frontend renders <img>/<audio>/<video> based on MediaType   (planned)
-```
-
-`CurrentQuestionDto` (`DTOs/Quiz/QuizSession-UserAnswerDTO.cs`) previously carried no
-media at all — this was the gap that kept images out of the quiz-taking screen.
-
----
-
-## 5. Files changed (backend)
-
-| File | Change |
-|------|--------|
-| `Models/Questions/Question.cs` | `QuestionMediaType` enum; `MediaUrl` + `MediaType` on `QuestionBase` |
-| `Models/FileRecord.cs` | `ContentType` column |
-| `DTOs/Files/FileDTO.cs` | `ContentType` + derived `Kind` |
-| `Controllers/Files/Services/FileService.cs` | kind-based allowlists, per-kind size limits, stores content type, derives kind |
-| `Controllers/Files/FilesController.cs` | upload size ceiling 10 MB → 100 MB |
-| `DTOs/Question/QuestionDTOs.cs` | `MediaUrl` + `MediaType` on base DTO / create / update models |
-| `DTOs/Quiz/QuizSession-UserAnswerDTO.cs` | `MediaUrl` + `MediaType` on `CurrentQuestionDto` |
-| `Mapping/EntityMappers.cs` | media in read projections, create/update mappers, and `ToCurrentQuestionDto`; `ParseMediaType` helper |
-
-### Mapper details worth knowing
-
-- The question **read projections** (`ProjectBase`, `ProjectMultipleChoice`, …) are used
-  directly in `query.Select(...)`, i.e. **translated to SQL**. So media type is emitted
-  with a `CASE`-style ternary (not `enum.ToString()`, which SQL can’t translate):
-
-  ```csharp
-  MediaType =
-      q.MediaType == QuestionMediaType.Image ? "Image" :
-      q.MediaType == QuestionMediaType.Audio ? "Audio" :
-      q.MediaType == QuestionMediaType.Video ? "Video" :
-      (q.ImageUrl != null ? "Image" : "None"),
-  ```
-
-- `ParseMediaType(string?)` converts the wire string back to the enum on create/update.
-
----
-
-## 6. Database migration
-
-The model changes require a migration (run locally — generated migrations are safer than
-hand-written ones):
-
-```bash
-cd OxygenBackend/QuizAPI
-dotnet ef migrations add AddQuestionAndFileMedia
-dotnet ef database update
-```
-
-This adds `Questions.MediaUrl`, `Questions.MediaType` (int, default `0` = `None`), and
-`Files.ContentType`. No backfill is needed — legacy `ImageUrl` is read with a fallback.
-
----
-
-## 7. Frontend
-
-**Done:**
-
-- **Upload** in the question editor — the create/update forms attach an image via the legacy
-  `imageUrl` upload (`@/utils/Image-Upload`).
-- **Dashboard cards** render the image (`multiple-choice-question-card.tsx`, etc.).
-- **Quiz-taking screens** render the attachment via the shared **`QuestionMedia`** component
-  (`src/common/QuestionMedia.tsx`): single-player `question-display.tsx` and multiplayer
-  `MultiplayerGame.tsx` both use it. It renders `<img>` / `<audio controls>` / `<video controls>`
-  from `mediaType`, falling back to an image for legacy URL-only questions.
-- `mediaUrl` / `mediaType` added to the live `CurrentQuestion` type, plus a shared
-  `QuestionMediaType` string union in `question-types.ts`.
-
-**Remaining:**
-
-- The answer-**review** screen doesn't show media yet — the `UserAnswer` DTO would need
-  `MediaUrl` / `MediaType` (a backend mapper change) before the UI can render it.
-- A dedicated **audio/video** upload path in the editor. Today's editor uploads images via the
-  legacy endpoint; the generic `POST /api/files` route already supports the other kinds, so the
-  remaining work is the picker UI + setting `MediaUrl`/`MediaType` from the returned `FileDTO`.
-
----
-
-## 8. How to extend
-
-- **Allow a new file extension:** add it to the matching set in `FileService`.
-- **Change a size limit:** edit the `*MaxBytes` constants in `FileService` (and the
-  controller `[RequestSizeLimit]` / Kestrel limit if raising the video cap).
-- **Add a new media kind:** add a value to `QuestionMediaType`, a branch in the mapper
-  ternary + `KindFromContentType`, and a renderer on the frontend.
+Video, when it comes: accept it in `MediaProcessor` (and decide transcoding), add a `MediaKind`, map it
+in `MediaAttachmentService` to `QuestionMediaType.Video`, and `QuestionMedia` already renders
+`<video controls>`.

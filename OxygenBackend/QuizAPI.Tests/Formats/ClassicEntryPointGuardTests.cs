@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using QuizAPI.Common;
-using QuizAPI.Controllers.Image.Services;
+using QuizAPI.Services.Media;
 using QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices;
 using QuizAPI.Controllers.Quizzes.Services.QuizServices;
 using QuizAPI.Controllers.Quizzes.Services.QuizSessionServices;
@@ -213,7 +213,7 @@ public class ClassicEntryPointGuardTests
         new(new QuizRepository(ctx),
             new Mock<IQuestionRepository>().Object,
             NullLogger<QuizService>.Instance,
-            new Mock<IImageService>().Object,
+            new Mock<IMediaAttachmentService>().Object,
             // Admin: these tests are about the Classic guards, which must hold even for someone
             // who can see an Associations quiz. The preview gate has its own tests.
             new TestCurrentUserService { UserId = OwnerId, IsAdmin = true });
@@ -262,6 +262,28 @@ public class ClassicEntryPointGuardTests
         });
 
         Assert.Null(result);
+    }
+
+    /// <summary>
+    /// An admin is not a stranger: their update gets past the ownership check (a superadmin
+    /// editing someone else's quiz used to get null → 404 → "Failed to save changes"), so here
+    /// it is the format guard that refuses — proof the ownership check let them through.
+    /// </summary>
+    [Fact]
+    public async Task ClassicUpdate_ByAnAdmin_PassesOwnership_AndReachesTheFormatGuard()
+    {
+        await using var ctx = NewContext();
+        var quiz = AddBoardQuiz(ctx);
+
+        var ex = await Assert.ThrowsAsync<AppValidationException>(() =>
+            QuizServiceFor(ctx).UpdateQuizAsync(StrangerId, new QuizUM
+            {
+                Id = quiz.Id,
+                Title = "Admin edit",
+                Version = 1,
+            }, canUpdateAny: true));
+
+        Assert.Equal(BoardRefusal, ex.Message);
     }
 
     // ── Lobby ───────────────────────────────────────────────────────────────

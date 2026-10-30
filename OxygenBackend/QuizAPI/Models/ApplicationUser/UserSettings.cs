@@ -20,6 +20,10 @@ namespace QuizAPI.Models
         // Show the countdown timer while taking a quiz
         public bool ShowTimer { get; set; } = true;
 
+        // Quiz builder: confirm before removing a question from the quiz. Turned off by the
+        // dialog's "Don't ask again", back on in Settings > Quiz. Removals can be undone either way.
+        public bool AskBeforeRemovingQuestion { get; set; } = true;
+
         // Font family names (must be one the client preloads). Two zones:
         // AppFont = dashboard/UI body, QuizFont = quiz experience.
         public string AppFont { get; set; } = "Baloo 2";

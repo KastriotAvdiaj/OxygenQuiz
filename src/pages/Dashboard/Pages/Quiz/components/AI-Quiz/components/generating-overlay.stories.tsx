@@ -26,7 +26,7 @@ const withMockedWizard: Decorator = (Story) => (
     <div className="mx-auto w-full max-w-3xl px-4 py-6">
       <h1 className="mb-6 text-2xl font-bold">Create a quiz with AI</h1>
       <div className="space-y-4 rounded-xl border-2 border-primary/30 bg-background p-6">
-        <p className="text-sm font-medium">What should this quiz be about?</p>
+        <p className="text-sm font-medium">What&apos;s this quiz about?</p>
         <div className="rounded-lg border border-border bg-card p-3 text-sm text-muted-foreground">
           The French Revolution
         </div>

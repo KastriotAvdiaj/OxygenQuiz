@@ -46,7 +46,7 @@ export const getQuizAnalytics = ({
   quizId: number;
   mode?: AnalyticsMode;
 }): Promise<QuizAnalytics> => {
-  return apiService.get(`/reports/quiz/${quizId}/analytics`, {
+  return apiService.get(`/statistics/quiz/${quizId}/analytics`, {
     params: { ...viewerClock(), mode },
   });
 };

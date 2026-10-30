@@ -18,7 +18,7 @@ Verified against the live server on 2026-08-29 (`docker ps`, `systemctl status n
       ┌─────────────────┴──────────────────┐
       │                                    │
   oxygenquiz.com                    api.oxygenquiz.com
-  www.oxygenquiz.com                        │
+  (www.* → 301 to apex)                     │
       │                                     │
   Cloudflare Workers                   Hetzner VPS
   (worker name: "oxygenquiz")               │
@@ -43,6 +43,7 @@ Facts that pin this down, so a future reader can re-verify rather than trust the
 | Backend port | `127.0.0.1:5000 -> 8080` — localhost only, never exposed publicly |
 | TLS / reverse proxy | **nginx**, installed on the host as a system package (`systemctl status nginx`), *not* in Docker. Caddy is not installed at all. |
 | Frontend host | **Cloudflare Workers**, not the VPS. The VPS serves no static files. |
+| `www.oxygenquiz.com` | **301 to the apex**, query string kept — a Cloudflare Redirect Rule ("Redirect from WWW to root", `https://www.*` → `https://${1}`), since 2026-10-20. The DNS record is a proxied `CNAME → oxygenquiz.com` and must stay proxied: the rule only sees proxied traffic, and there is no origin behind it (the apex's Worker custom domain covers the apex only — without the rule, `www` answers 522). |
 | Frontend → API | `VITE_API_URL=https://api.oxygenquiz.com/api`, baked into the bundle at build time (`.env.production`) |
 
 Because the frontend is on Workers and the API is on the VPS, **every browser call is
@@ -84,6 +85,12 @@ ln -s .env.prod ~/OxygenQuiz/.env
 Every compose command then resolves the secrets with or without the flag, and the warnings stop.
 `.env` is in `.gitignore`, so the link is never committed.
 
+**This link is in place** (checked on the server 2026-10-26: `.env -> .env.prod`, created
+2026-09-03), so `.env` and `.env.prod` are one file — edit either name. The `--env-file .env.prod`
+in the commands here is kept as a belt-and-braces habit, not a requirement. The `.env.development`
+and `.env.production` beside them are the **frontend's** Vite files, tracked in git; Compose never
+reads them.
+
 ### What is tracked, and what is not
 
 As of `64f399e8` (2026-08-31) the live compose file **is in version control**, at the repo root as
@@ -104,6 +111,97 @@ ssh deploy@89.167.23.147 'cd ~/OxygenQuiz && git status --short docker-compose.p
 ```
 
 ---
+
+## Locking the edge — real client IP, and the origin firewall
+
+Two separate jobs, done in this order. The first is what makes the rate limiter and the audit log see
+real visitors ([ADR 0027](../adr/0027-the-client-ip-is-resolved-at-nginx.md)); the second keeps
+everything except Cloudflare off the box.
+
+### 1. Real client IP (Nginx) — before the backend that needs it
+
+The backend from 2026-10-17 reads the visitor's address from what Nginx hands it. **Reload Nginx
+first, then rebuild the backend.** In the other order the backend reads an old Nginx's appended
+`X-Forwarded-For`, takes the last hop — a Cloudflare edge — and puts many visitors in one bucket.
+
+```bash
+ssh deploy@89.167.23.147
+cd ~/OxygenQuiz && git pull
+
+# a. The Cloudflare ranges snippet (writes /etc/nginx/snippets/cloudflare-real-ip.conf, tests, reloads)
+sudo mkdir -p /etc/nginx/snippets
+sudo bash deploy/nginx/update-cloudflare-ips.sh
+
+# b. The site config that includes it and overwrites X-Forwarded-For
+sudo cp deploy/nginx/api.oxygenquiz.com.conf /etc/nginx/sites-available/api.oxygenquiz.com
+sudo nginx -t && sudo systemctl reload nginx
+
+# c. Only now, the backend
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+```
+
+**Check:** do something audited (e.g. edit a quiz) and look at the newest audit-log entry. It should
+show your own public IP, not a Cloudflare address (`104.16–31.x`, `172.64–71.x`, `162.158–159.x`, …).
+
+Cloudflare's ranges change rarely, with notice. Re-run step **a** after an announcement, or add the
+monthly cron line at the top of `update-cloudflare-ips.sh`. It refuses to write a short list.
+
+### 2. Origin firewall (Hetzner Cloud Firewall)
+
+**Done 2026-10-18** (`firewall-1`, rules below). Before that, 80/443 accepted anyone, so the API
+answered at its bare IP and skipped Cloudflare's protection. To test it from Windows: In **PowerShell, `curl` is an alias for `Invoke-WebRequest`** and doesn't take
+curl's flags, so call the real binary, `curl.exe`:
+
+```powershell
+curl.exe -k -i -m 10 https://89.167.23.147/ -H "Host: api.oxygenquiz.com"
+```
+
+Any HTTP response (even a 404) means the origin is reachable directly. After the lockdown it should
+time out.
+
+Use the **Hetzner Cloud Firewall**, not `ufw`: it filters before traffic reaches the VM, so nothing
+on the box (Docker's own iptables rules included) can open a hole in it.
+
+Hetzner Console → **Firewalls** → the firewall attached to this server → **Inbound rules**:
+
+| Rule | Protocol / port | Source |
+|---|---|---|
+| SSH | TCP 22 | Any IPv4, Any IPv6 (key-only login; narrow to your IP if it's static) |
+| HTTPS | TCP 443 | Cloudflare's ranges — every line of https://www.cloudflare.com/ips-v4 and /ips-v6 |
+| HTTP | TCP 80 | The same Cloudflare ranges |
+
+Remove any other 80/443 rule that allows *Any*. Port 80 stays, Cloudflare-only: in Full (strict) mode
+Cloudflare reaches the origin with the scheme the visitor used, so an `http://` request reaches 80
+unless **SSL/TLS → Edge Certificates → Always Use HTTPS** is on.
+
+**Always Use HTTPS is on (2026-10-18).** Before it, `http://oxygenquiz.com` was served over plain
+HTTP with a 200 — the Worker has no redirect of its own — while `http://api…` was redirected by
+Nginx's port-80 block. Now Cloudflare answers every `http://` request in the zone with a 301 to
+`https://` at the edge, and Nginx's redirect is never reached. Its dashboard warning about redirect
+loops doesn't apply here: a loop needs SSL mode **Flexible** (Cloudflare → origin over HTTP, origin
+redirects to HTTPS, repeat). This zone is **Full (strict)** — keep it that way; switching to Flexible
+with this on is what would produce `ERR_TOO_MANY_REDIRECTS`. Check: `curl.exe -I http://oxygenquiz.com`
+→ `301`, `Location: https://oxygenquiz.com/`.
+
+**Check:** the `curl.exe` above now times out, `https://api.oxygenquiz.com` still works, the site logs
+in, and a multiplayer match connects (WebSockets). SSH still works because 22 is untouched. If
+something is wrong, the Hetzner Console's own web console reaches the server regardless of the
+firewall.
+
+When Cloudflare announces new ranges, update this rule as well as the Nginx snippet.
+
+### 3. Optional: a rate-limiting rule at Cloudflare
+
+Drops floods on the login endpoints before they reach the VPS. Cloudflare dashboard →
+**Security → WAF → Rate limiting rules** → Create:
+
+- **If incoming requests match:** hostname equals `api.oxygenquiz.com` *and* URI path starts with
+  `/api/Authentication/` (Cloudflare compares case-sensitively; this is the casing the API routes use)
+- **Counting characteristic:** IP
+- **Rate:** 30 requests per 10 seconds → **Block** for 10 seconds (the free plan's fixed period)
+
+The app's own `auth` policy (20 a minute per IP) stays — this is the outer layer, sized to catch
+floods, not to replace it.
 
 ## The unadopted stack (design B) — `deploy/`
 
@@ -209,6 +307,71 @@ docker compose -f docker-compose.prod.yml logs backend | grep '\[AI\]'
 off because …` names the key to fix. The auth-provider guards still fail startup outright — an
 enabled provider with a blank `ClientId` will not boot — so the two behave differently on purpose;
 `docs/adr/0004-ai-misconfiguration-disables-the-feature.md` explains which failures earn which.
+
+## Media — R2 and free images
+
+Question and quiz media ([`../media/media-pipeline.md`](../media/media-pipeline.md)). The root
+compose file already has every media line, each with a default, so **a deploy with nothing new in
+`.env.prod` still starts**: files go to the `uploads` volume and are served from the API's own
+origin, Wikimedia Commons runs without a token, Pexels is off. Turning each part on is `.env.prod`
+only.
+
+### Moving storage to R2 (once)
+
+1. **Bucket.** Cloudflare dashboard → R2 → create `oxygenquiz-media-prod` (and
+   `oxygenquiz-media-dev` for development). Location hint: Europe.
+2. **Public domain.** Bucket → Settings → Custom Domains → `media.oxygenquiz.com`. It must not be the
+   API's host: a file served from the API's origin could act as the API.
+3. **CSAM scanning.** The zone → Caching → Configuration → CSAM Scanning Tool → enable, with an email
+   for notifications. Free; it blocks a match with a 451. The legal floor for hosting user images —
+   do it before opening uploads to the public.
+4. **API token.** R2 → Manage API tokens → *Object Read & Write*, scoped to the bucket. Note the
+   Access Key ID, the Secret Access Key and the account id.
+5. **`~/OxygenQuiz/.env.prod`:**
+   ```
+   MEDIA_STORAGE=R2
+   R2_ACCOUNT_ID=<account id>
+   R2_ACCESS_KEY_ID=<access key id>
+   R2_SECRET_ACCESS_KEY=<secret>
+   ```
+   (`R2_BUCKET` only if the bucket isn't `oxygenquiz-media-prod`.) **With `MEDIA_STORAGE=R2` a blank
+   R2 value stops the API at startup** — on purpose; read `docker compose … logs backend`.
+6. Deploy and verify:
+   ```bash
+   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+   docker compose -f docker-compose.prod.yml exec backend printenv | grep Media__Storage
+   ```
+   Then add an image to a question in the builder and save: its URL must start with
+   `https://media.oxygenquiz.com/images/`.
+
+Files uploaded while storage was Disk stay on the `uploads` volume and keep working; only new
+uploads go to R2.
+
+### Free images (Wikimedia Commons, Pexels)
+
+- **Wikimedia token** (optional; set it if the picker says "Wikimedia Commons is busy"): create an
+  owner-only OAuth 2.0 consumer for Wikimedia Commons with *Basic rights* only at
+  meta.wikimedia.org → `Special:OAuthConsumerRegistration/propose/oauth2`, and put its **access
+  token** in `.env.prod` as `WIKIMEDIA_ACCESS_TOKEN=…`. Use a separate consumer for development
+  (user-secrets `Media:Stock:WikimediaAccessToken`), so either can be revoked alone.
+- **Pexels key:** `PEXELS_API_KEY=…` from pexels.com/api. *As of 2026-10-25 Pexels has paused new
+  keys;* without one the picker and AI pictures use Commons only. Once you have a key, Pexels lifts
+  its 200-an-hour limit after seeing the credit — send screenshots of an imported image's credit in
+  the editor and of the ⓘ open at play time.
+
+Both take effect on the next `up -d` with `--env-file .env.prod`.
+
+### Old image files
+
+The `AddMediaPipeline` migration cleared every pre-pipeline media URL. The old files are dead
+weight on the `uploads` volume — remove them once, not `files/` (avatars) or `media/` (the new
+Disk storage):
+
+```bash
+docker compose -f docker-compose.prod.yml exec backend sh -c 'find /app/wwwroot/uploads -maxdepth 1 -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.gif" \) -print -delete'
+```
+
+---
 
 ## Migrating to design B, if you ever do
 

@@ -1,5 +1,6 @@
+import { EditPencil } from "@/components/icons/edit-pencil";
 import { ColumnDef } from "@tanstack/react-table";
-import { Edit } from "lucide-react";
+
 import { DeleteQuestionDifficulty } from "./delete-question-difficulty";
 import formatDate from "@/lib/date-format";
 import { Authorization, ROLES } from "@/lib/authorization";
@@ -35,7 +36,7 @@ export const difficultyColumns: ColumnDef<QuestionDifficulty>[] = [
         <div className="flex items-center space-x-2">
           <Authorization allowedRoles={[ROLES.SuperAdmin]}>
             <LiftedButton variant="icon">
-              <Edit size={16} />
+              <EditPencil size={16} />
             </LiftedButton>
             <DeleteQuestionDifficulty id={difficulty.id} />
           </Authorization>

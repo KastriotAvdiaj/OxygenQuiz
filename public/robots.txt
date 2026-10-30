@@ -1,0 +1,19 @@
+# Which parts of oxygenquiz.com search engines may crawl. docs/deployment/frontend-worker.md
+#
+# /play/shared/ is NOT listed: link-preview crawlers that obey robots.txt (Twitterbot, Slackbot)
+# would stop showing previews. Shared links are kept out of search by an X-Robots-Tag: noindex
+# header instead, which the Worker adds.
+#
+# /q/ (the public quiz listings) is NOT listed either: those pages are meant to be indexed. The
+# Worker serves the sitemap (docs/quiz/quiz-listing.md).
+
+User-agent: *
+Disallow: /dashboard
+Disallow: /my-dashboard
+Disallow: /settings
+Disallow: /quiz/
+Disallow: /associations/
+Disallow: /multiplayer
+Disallow: /screen
+
+Sitemap: https://oxygenquiz.com/sitemap.xml

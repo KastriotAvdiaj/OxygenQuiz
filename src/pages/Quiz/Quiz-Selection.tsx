@@ -44,6 +44,7 @@ import { scrollAppToTop } from "@/lib/app-scroll";
 import { quizPlayPath } from "./quiz-play-path";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useFormatAvailable } from "../Dashboard/Pages/Quiz/format-access";
+import { CatalogueScopeSwitch, type CatalogueChoice } from "./components/catalogue-scope-switch";
 import { useCanSelectUnspecifiedLookup } from "@/pages/Dashboard/Pages/Question/Entities/lookup-visibility";
 
 /** The catalogue's format filter. "all" sends no rule; the others filter server-side (QuizFilterFields: format). */
@@ -162,6 +163,16 @@ export function QuizSelection() {
   // while the format is in preview that is admins (format-access.ts); for anyone else the server
   // returns no boards anyway, so the control would have nothing to separate.
   const boardsAvailable = useFormatAvailable("Associations");
+
+  // Picked (the main catalogue) or community quizzes — docs/media/moderation.md.
+  const [catalogue, setCatalogue] = useState<CatalogueChoice>("picked");
+  const handleCatalogueChange = useCallback(
+    (next: CatalogueChoice) => {
+      setCatalogue(next);
+      resetPage();
+    },
+    [resetPage]
+  );
   const [formatFilter, setFormatFilter] = useState<FormatFilter>("all");
   const handleFormatChange = useCallback(
     (next: FormatFilter) => {
@@ -182,7 +193,7 @@ export function QuizSelection() {
       boardsAvailable && formatFilter !== "all" ? [...filters, rule.eq("format", formatFilter)] : filters,
   };
 
-  const { data: quizData, isLoading } = useSearchQuizzes({ scope: "public", query });
+  const { data: quizData, isLoading } = useSearchQuizzes({ scope: "public", catalogue, query });
 
   /**
    * The arrival's category exists but has no public quizzes: drop the filter and say so,
@@ -340,6 +351,18 @@ export function QuizSelection() {
     </QuizFilterPanel>
   );
 
+  // One button, two places: the Back row below lg, the top of the sticky sidebar from lg up.
+  const backButton = (
+    <button
+      onClick={() => navigate("/choose-mode")}
+      className="group inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground shadow-sm transition-colors hover:border-foreground/25"
+    >
+      <ArrowLeft className="h-4 w-4 text-muted-foreground transition-transform group-hover:-translate-x-0.5" />
+      <span className="hidden sm:inline">Back to Mode Selection</span>
+      <span className="sm:hidden">Back</span>
+    </button>
+  );
+
   return (
     // font-app: clean sans body text everywhere on the page (the layout defaults
     // to the playful display font, which we reserve for hero headings).
@@ -356,16 +379,10 @@ export function QuizSelection() {
             cleaner, content-first header. */}
         {/* Back on the left, Filters on the right (below lg, where the sidebar becomes a drawer).
             The two are the same chip — height, padding, type — so the row reads as one line of
-            controls rather than a small link beside a bigger button. */}
-        <div className="mb-5 flex items-center justify-between gap-2 sm:mb-6">
-          <button
-            onClick={() => navigate("/choose-mode")}
-            className="group inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground shadow-sm transition-colors hover:border-foreground/25"
-          >
-            <ArrowLeft className="h-4 w-4 text-muted-foreground transition-transform group-hover:-translate-x-0.5" />
-            <span className="hidden sm:inline">Back to Mode Selection</span>
-            <span className="sm:hidden">Back</span>
-          </button>
+            controls rather than a small link beside a bigger button. From lg up the row is gone:
+            Filters is the sidebar, and Back moves to the top of it so it stays in reach. */}
+        <div className="mb-5 flex items-center justify-between gap-2 sm:mb-6 lg:hidden">
+          {backButton}
           <Sheet>
             <SheetTrigger asChild>
               <button
@@ -397,22 +414,25 @@ export function QuizSelection() {
           {/* Sticky sidebar: self-start so it hugs its content instead of
               stretching to the row; the panel caps its own height and scrolls
               internally, so it stays pinned in view and never spills onto the
-              footer. */}
-          <aside className="hidden lg:block w-64 xl:w-72 shrink-0 sticky top-6 self-start">
+              footer. Back rides at its top, so it scrolls with the filters instead of away. */}
+          <aside className="hidden lg:flex lg:flex-col lg:gap-6 w-64 xl:w-72 shrink-0 sticky top-6 self-start">
+            {/* The div takes the column's width; the button inside keeps its own. */}
+            <div>{backButton}</div>
             {renderFilterPanel()}
           </aside>
 
           <div className="min-w-0 flex-1">
-            {boardsAvailable && (
-              <div className="mb-3">
+            <div className="mb-3 flex flex-wrap items-center gap-3">
+              <CatalogueScopeSwitch value={catalogue} onValueChange={handleCatalogueChange} />
+              {boardsAvailable && (
                 <SegmentedControl
                   aria-label="Format"
                   value={formatFilter}
                   onValueChange={handleFormatChange}
                   options={FORMAT_OPTIONS}
                 />
-              </div>
-            )}
+              )}
+            </div>
             {/* Toolbar — search + sort; facets live in the sidebar/drawer */}
             <div className="mb-4 sm:mb-5">
               <QuizToolbar
@@ -498,7 +518,7 @@ export function QuizSelection() {
                 // the container (re)mounts. Without this, swapping in cached results (e.g.
                 // rapidly toggling filters) mounts the new cards in the "hidden" variant and
                 // leaves them permanently invisible.
-                key={`${debouncedSearch}|${selectionKey}|${sortBy}|${pageNumber}`}
+                key={`${catalogue}|${debouncedSearch}|${selectionKey}|${sortBy}|${pageNumber}`}
                 // auto-rows-fr + h-full wrappers stretch every card to its
                 // row's height, so cards with short titles/descriptions don't
                 // end up shorter than their neighbours.

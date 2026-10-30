@@ -174,7 +174,6 @@ export const AiQuizWizard = () => {
       sourceChoice={sourceChoice}
       onAnswerSource={handleAnswerSource}
       onDismissSourceChoice={handleDismissSourceChoice}
-      grounding={draft.grounding}
       onCategoryIdChange={draft.setCategoryId}
       onLanguageIdChange={draft.setLanguageId}
       questionCount={draft.questionCount}
@@ -183,6 +182,8 @@ export const AiQuizWizard = () => {
       onToggleType={draft.toggleType}
       extraInstructions={draft.extraInstructions}
       onExtraInstructionsChange={draft.setExtraInstructions}
+      addImages={draft.addImages}
+      onAddImagesChange={draft.setAddImages}
       onGenerate={handleGenerate}
       isGenerating={generateMutation.isPending}
       generateError={generateError}
@@ -195,8 +196,6 @@ export const AiQuizWizard = () => {
       onStartOver={handleStartOver}
       parseResult={draft.parseResult}
       builderSlot={draft.builderSlot}
-      restoredDraftSavedAt={draft.restoredAt}
-      onDiscardDraft={draft.discardDraft}
       showLeaveDialog={showLeaveDialog}
       onConfirmLeave={confirmNavigation}
       onCancelLeave={cancelNavigation}

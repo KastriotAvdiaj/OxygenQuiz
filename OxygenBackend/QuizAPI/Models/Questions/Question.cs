@@ -38,16 +38,48 @@ namespace QuizAPI.Models
         public string Text { get; set; } = string.Empty;
 
         /// <summary>
-        /// Legacy image URL. Superseded by <see cref="MediaUrl"/> + <see cref="MediaType"/>,
-        /// but retained so existing image questions keep working without a data migration.
+        /// The question's optional image or audio clip (docs/media/media-pipeline.md). The only
+        /// writer is <c>MediaAttachmentService</c>, which also sets <see cref="MediaUrl"/> and
+        /// <see cref="MediaType"/> from it — a client sends an asset id, never a URL.
         /// </summary>
-        public string? ImageUrl { get; set; }
+        public Guid? MediaAssetId { get; set; }
 
-        /// <summary>URL of an optional media attachment (image, audio, or video) shown with the question.</summary>
+        [JsonIgnore]
+        public QuizAPI.Models.Media.MediaAsset? MediaAsset { get; set; }
+
+        /// <summary>
+        /// Copy of the asset's URL, kept on the row so every read path — SQL projections, the
+        /// in-memory play DTO, multiplayer rounds — gets it without a join. Written only together
+        /// with <see cref="MediaAssetId"/>.
+        /// </summary>
         public string? MediaUrl { get; set; }
 
         /// <summary>Which kind of media <see cref="MediaUrl"/> points to. None when there is no attachment.</summary>
         public QuestionMediaType MediaType { get; set; } = QuestionMediaType.None;
+
+        /// <summary>The credit line of an image from Pexels or Wikimedia Commons, copied from the
+        /// asset with <see cref="MediaUrl"/> (<c>MediaCredits.Line</c>). Null for the author's own.</summary>
+        [System.ComponentModel.DataAnnotations.MaxLength(300)]
+        public string? MediaCredit { get; set; }
+
+        /// <summary>The image's page at its source, which the credit links to.</summary>
+        [System.ComponentModel.DataAnnotations.MaxLength(500)]
+        public string? MediaCreditUrl { get; set; }
+
+        /// <summary>
+        /// When this attachment was counted against its saver's daily media quota. Null when the
+        /// asset was already in use elsewhere in the saver's content (a copy, a reused image),
+        /// which costs nothing. docs/media/media-pipeline.md, "Quota counts what you save".
+        /// </summary>
+        public DateTime? MediaCountedAt { get; set; }
+
+        /// <summary>
+        /// Set when the media is hidden behind a cover pending review — automatically at 10
+        /// distinct "inappropriate image or audio" reports, or by a moderator. Play DTOs then carry
+        /// no URL; a signed-in player can still choose Show anyway. Cleared when a moderator rejects
+        /// the reports. docs/media/moderation.md, "Hiding".
+        /// </summary>
+        public DateTime? MediaHiddenAt { get; set; }
 
         /// <summary>
         /// Optional "why" shown to a player after they answer. Null for every question written

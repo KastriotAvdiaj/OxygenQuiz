@@ -224,6 +224,13 @@ namespace QuizAPI.DTOs.Quiz
         public string QuestionText { get; set; } = string.Empty;
         public string? MediaUrl { get; set; }
         public string MediaType { get; set; } = "None";
+        /// <summary>Credit for an outside image, shown behind an ⓘ (docs/media/media-pipeline.md).</summary>
+        public string? MediaCredit { get; set; }
+        public string? MediaCreditUrl { get; set; }
+        /// <summary>The media is under a moderation cover; <c>MediaUrl</c> is null. docs/media/moderation.md.</summary>
+        public bool MediaHidden { get; set; }
+        /// <summary>The question itself (not the quiz-question row) — what a report and "Show anyway" name.</summary>
+        public int QuestionId { get; set; }
         [JsonConverter(typeof(JsonStringEnumConverter))] // Ensures the enum is sent as a string
         public QuestionType QuestionType { get; set; }
         public int TimeLimitInSeconds { get; set; }
@@ -263,6 +270,13 @@ namespace QuizAPI.DTOs.Quiz
         public string QuestionText { get; set; } = string.Empty;
         public string? MediaUrl { get; set; }
         public string MediaType { get; set; } = "None";
+        /// <summary>Credit for an outside image, shown behind an ⓘ (docs/media/media-pipeline.md).</summary>
+        public string? MediaCredit { get; set; }
+        public string? MediaCreditUrl { get; set; }
+        /// <summary>The media is under a moderation cover; <c>MediaUrl</c> is null. docs/media/moderation.md.</summary>
+        public bool MediaHidden { get; set; }
+        /// <summary>The question itself (not the quiz-question row) — what a report and "Show anyway" name.</summary>
+        public int QuestionId { get; set; }
         public List<AnswerOptionForQuizPlaying> Options { get; set; } = new();
         public int TimeLimitInSeconds { get; set; }
         public int TimeRemainingInSeconds { get; set; }

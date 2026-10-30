@@ -278,6 +278,10 @@ to the caller.
 - Only the host can `SelectQuiz`. The id is validated server-side via
   `IQuizService.CanHostQuizAsync` (Public, or owned by the host) — the title/category/difficulty in
   the payload are **display labels only** and are never trusted.
+- **The picker has two lists** — *Public* and *My quizzes* (`quiz-selection-dialog.tsx`). The
+  second is `scope: "mine"`: the host's own quizzes at any status, which is the only place an
+  Unlisted or Draft quiz can be picked. Non-Public ones show their status badge. Players in the lobby
+  need no token — lobby membership is the grant ([`quiz-visibility.md`](./quiz-visibility.md)).
 - **The pick carries its format.** `SelectQuiz` fills `SelectedQuizView.Format` (`Classic` /
   `Associations`) from the quiz itself, overwriting whatever the client sent — the lobby's rules
   follow from it, so it can't be the client's to choose. It reaches late joiners with the rest of the

@@ -1,5 +1,7 @@
-import { Pen, Trash2 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { EditPencil } from "@/components/icons/edit-pencil";
+import { PickedQuestionNotice } from "@/features/reports/components/picked-edit-notice";
+import { Trash2 } from "lucide-react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
@@ -17,7 +19,8 @@ import { DifficultySelect } from "../../Entities/Difficulty/Components/select-qu
 import { LanguageSelect } from "../../Entities/Language/components/select-question-language";
 import { VisibilitySelect } from "../../Entities/select-visibility";
 import { LiftedButton } from "@/common/LiftedButton";
-import ImageUpload from "@/utils/Image-Upload";
+import { MediaPicker } from "@/features/media/components/media-picker";
+import { selectionFrom, type MediaSelection } from "@/features/media/api/upload-media";
 import { ExplanationField } from "@/common/QuestionExplanation";
 import { MultipleChoiceQuestion } from "@/types/question-types";
 import { IconButtonWithTooltip } from "../Re-Usable-Components/icon-button-with-tooltip";
@@ -31,7 +34,9 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
   UpdateMultipleChoiceQuestionFormProps
 > = ({ question }) => {
   const { addNotification } = useNotifications();
-  const [imageUrl, setImageUrl] = useState(question.imageUrl || "");
+  const [media, setMedia] = useState<MediaSelection | null>(
+    selectionFrom(question.mediaAssetId, question.mediaUrl, question.mediaType, question.mediaCredit, question.mediaCreditUrl),
+  );
   const { queryData } = useQuizForm();
 
   const updateQuestionMutation = useUpdateMultipleChoiceQuestion({
@@ -51,7 +56,7 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
         isDone={updateQuestionMutation.isSuccess}
         triggerButton={
           <IconButtonWithTooltip
-            icon={<Pen className="size-4" />}
+            icon={<EditPencil className="size-4" />}
             tooltip="Edit Question"
             variant="icon"
           />
@@ -76,7 +81,7 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
             defaultValues: {
               id: question.id,
               text: question.text,
-              imageUrl: question.imageUrl || null,
+              mediaAssetId: question.mediaAssetId ?? null,
               explanation: question.explanation ?? "",
               categoryId: question.category.id,
               difficultyId: question.difficulty.id,
@@ -133,23 +138,16 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
               }
             };
 
-            const handleImageUpload = (url: string) => {
-              setImageUrl(url);
-              setValue("imageUrl", url);
-            };
-            const handleImageRemove = () => {
-              setImageUrl("");
-              setValue("imageUrl", "");
+            const handleMediaChange = (next: MediaSelection | null) => {
+              setMedia(next);
+              setValue("mediaAssetId", next?.assetId ?? null);
             };
 
-            useEffect(() => {
-              if (imageUrl) {
-                setValue("imageUrl", imageUrl);
-              }
-            }, [imageUrl, setValue]);
 
             return (
               <>
+                {/* A shared question: saving unpicks the picked quizzes it's in (moderation.md §5). */}
+                <PickedQuestionNotice questionId={question.id} className="mb-3" />
                 <Input
                   variant="minimal"
                   id="questionText"
@@ -157,11 +155,7 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
                   error={formState.errors["text"]}
                   registration={register("text")}
                 />
-                <ImageUpload
-                  initialImageUrl={imageUrl}
-                  onUpload={handleImageUpload}
-                  onRemove={handleImageRemove}
-                />
+                <MediaPicker value={media} onChange={handleMediaChange} />
                 <div className="flex items-center space-x-2 mt-4">
                   <Switch
                     id="allowMultipleSelections"

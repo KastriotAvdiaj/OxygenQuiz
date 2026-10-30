@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { DataTable, Card, Spinner } from "@/components/ui";
+import { DataTable, Card } from "@/components/ui";
+import { FilterPanelSkeleton, TableSkeleton } from "../../Components/list-page-skeletons";
 import { LiftedButton } from "@/common/LiftedButton";
 import { quizColumns } from "./components/Data-Table-Columns/columns";
 import { useSearchQuizzes } from "./api/search-quizzes";
-import { rule, type FilterQuery, type FilterRule } from "@/lib/filtering";
+import { ADMIN_QUIZZES_PAGE_SIZE, buildAdminQuizzesQuery } from "./api/admin-quizzes-query";
 import { useDebounce } from "@/hooks/use-debounce";
 import { PaginationControls } from "@/components/ui/pagination-control";
 import { pagedResponseToPagination } from "@/lib/pagination-query";
@@ -19,11 +20,16 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Filter } from "lucide-react";
+import { cn } from "@/utils/cn";
 import { QuizFiltersPanel } from "./components/Quiz-Filter";
 import { CreateQuizMethodDialog } from "./components/create-quiz-method-dialog";
+import { HEADER_ACTION_FACE } from "./components/header-action-face";
+import { quizViewPath } from "./quiz-paths";
+import { useNavigate } from "react-router-dom";
 // import { DataTransferControls } from "@/components/data-transfer/DataTransferControls";
 
 export const Quizzes = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [categoryIds, setCategoryIds] = useState<number[]>([]);
@@ -34,7 +40,6 @@ export const Quizzes = () => {
   const [createdFrom, setCreatedFrom] = useState("");
   const [createdTo, setCreatedTo] = useState("");
   const [pageNumber, setPageNumber] = useState(1);
-  const [pageSize] = useState(10);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
 
@@ -43,25 +48,20 @@ export const Quizzes = () => {
   const languagesQuery = useQuestionLanguageData({});
   const usersQuery = useUserData({});
 
-  const filters: FilterRule[] = [];
-  if (categoryIds.length) filters.push(rule.in("categoryId", categoryIds));
-  if (difficultyIds.length)
-    filters.push(rule.in("difficultyId", difficultyIds));
-  if (languageIds.length) filters.push(rule.in("languageId", languageIds));
-  if (statuses.length) filters.push(rule.in("status", statuses));
-  if (authorIds.length) filters.push(rule.in("userId", authorIds));
-  if (createdFrom && createdTo)
-    filters.push(rule.between("createdAt", createdFrom, createdTo));
-  else if (createdFrom) filters.push(rule.gte("createdAt", createdFrom));
-  else if (createdTo) filters.push(rule.lte("createdAt", createdTo));
-
-  const query: FilterQuery = {
-    page: pageNumber,
-    pageSize,
-    search: debouncedSearchTerm || undefined,
-    filters,
-    includeDeleted: showDeleted,
-  };
+  // Built by the same function the route's prefetch uses (api/admin-quizzes-query.ts), so the
+  // first page is already in the cache when the page mounts.
+  const query = buildAdminQuizzesQuery({
+    pageNumber,
+    search: debouncedSearchTerm,
+    categoryIds,
+    difficultyIds,
+    languageIds,
+    statuses,
+    authorIds,
+    createdFrom,
+    createdTo,
+    showDeleted,
+  });
 
   const quizData = useSearchQuizzes({ scope: "all", query });
 
@@ -84,13 +84,10 @@ export const Quizzes = () => {
     difficultiesQuery.isLoading ||
     languagesQuery.isLoading;
 
-  if (isFilterDataLoading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
+  // <b>No full-page gate.</b> This used to return a full-height BlobLoader until the three lookups
+  // had loaded, so the header and the table — which don't need them — waited too. Now only the
+  // filter panel waits (with its own skeleton), and the table shows its own while the page of
+  // quizzes loads. See docs/development/loading-states.md §2.1.
 
   const activeFilterCount =
     categoryIds.length +
@@ -152,14 +149,13 @@ export const Quizzes = () => {
           {/* Same lifted treatment as the Questions page — see the note there for why
               `lg:hidden` sits on `outerClassName` and what `liftColor` controls.
 
-              No `text-*` here, deliberately: this has to stand exactly as tall as the
-              "+ Create Quiz" button beside it, and both faces are `py-2` around one line of
-              text, so the height is decided entirely by the font-size. The two are siblings
-              in this row, so inheriting rather than declaring is what keeps them equal —
-              a `text-sm` here made this button 2px shorter than its neighbour. */}
+              The text size comes from `HEADER_ACTION_FACE`, the same string the
+              "+ Create Quiz" trigger uses: both faces are `py-2` around one line, so height
+              is decided by font-size alone, and a size on one but not the other made this
+              button 2px shorter than its neighbour. */}
           <LiftedButton
             outerClassName="w-fit lg:hidden"
-            className="gap-2 bg-background font-medium text-foreground"
+            className={cn("gap-2 bg-background font-medium text-foreground", HEADER_ACTION_FACE)}
             liftColor="muted"
             onClick={() => setFiltersOpen(true)}
           >
@@ -194,12 +190,18 @@ export const Quizzes = () => {
                 Failed to load quizzes. Please try again later.
               </p>
             ) : quizData.isLoading ? (
-              <div className="flex justify-center items-center py-16">
-                <Spinner size="lg" />
-              </div>
+              <TableSkeleton rows={ADMIN_QUIZZES_PAGE_SIZE} />
             ) : (
               <>
-                <DataTable data={quizzes} columns={quizColumns} />
+                {/* A click anywhere on the row opens the quiz; the ⋯ menu keeps its own clicks.
+                    Not for a soft-deleted row (shown with "show deleted"): it has no page. */}
+                <DataTable
+                  data={quizzes}
+                  columns={quizColumns}
+                  onRowClick={(quiz) => {
+                    if (!quiz.deletedAt) navigate(quizViewPath(quiz));
+                  }}
+                />
                 <div className="mt-6">
                   <PaginationControls
                     pagination={
@@ -220,7 +222,7 @@ export const Quizzes = () => {
 
         {/* Sticky scrollable sidebar for desktop */}
         <aside className="hidden lg:block w-80 xl:w-[350px] shrink-0 sticky top-6 self-start max-h-[calc(100vh-3rem)] overflow-y-auto pl-1">
-          <QuizFiltersPanel {...filterPanelProps} />
+          {isFilterDataLoading ? <FilterPanelSkeleton /> : <QuizFiltersPanel {...filterPanelProps} />}
         </aside>
       </div>
 
@@ -233,7 +235,7 @@ export const Quizzes = () => {
           <SheetHeader className="mb-4">
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>
-          <QuizFiltersPanel {...filterPanelProps} />
+          {isFilterDataLoading ? <FilterPanelSkeleton /> : <QuizFiltersPanel {...filterPanelProps} />}
         </SheetContent>
       </Sheet>
     </div>

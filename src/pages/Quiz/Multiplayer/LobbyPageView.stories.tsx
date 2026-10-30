@@ -90,6 +90,8 @@ const closedQuizSelectionDialog = (
     isOpen={false}
     onClose={fn()}
     selectedQuiz={null}
+    scope="public"
+    onScopeChange={fn()}
     searchQuery=""
     onSearchChange={fn()}
     resultCount={quizzes.length}
@@ -115,6 +117,8 @@ const openQuizSelectionDialog = (
     isOpen
     onClose={fn()}
     selectedQuiz={null}
+    scope="public"
+    onScopeChange={fn()}
     searchQuery=""
     onSearchChange={fn()}
     resultCount={quizzes.length}

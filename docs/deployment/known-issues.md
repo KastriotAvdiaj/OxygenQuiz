@@ -16,7 +16,49 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
 
 ---
 
+## Open exploits
+
+None open in code. The fix below is live only once the backend is rebuilt on the VPS.
+
+
+- ~~**P1 — Answer keys and Unlisted quizzes are readable anonymously by id (found 2026-10-18).**~~
+  **Fixed 2026-10-18** — `/questions` is owner/admin only at any status, `/{id}` opens a non-Public
+  quiz only to its owner, an admin or its share token; both answer 404 otherwise
+  (`QuizReadAccessTests`, `quiz-visibility.md` "Reading a quiz by id"). Live once the backend is
+  rebuilt. Was:
+  `GET /api/quiz/{id}` and `GET /api/quiz/{id}/questions` refuse only a **Draft** to non-owners.
+  Verified in production: `/api/quiz/20/questions`, signed out, returns every question with
+  `answerOptions[].isCorrect` — the answer key of any Public quiz. And because ids are sequential, the
+  same two calls hand anyone the title, description and full content of every **Unlisted** quiz,
+  which defeats "only people with the link". Playing is not affected (`QuizPlayAccess` still needs
+  the token). The only client of `/questions` is the owner/admin quiz page.
+  → `OxygenBackend/QuizAPI/Controllers/Quizzes/QuizzesController.cs` (`GetQuizById`,
+  `GetQuizQuestions`)
+
+- ~~**P1 — Any signed-in user could delete or list anyone's files (found 2026-10-23).**~~
+  **Fixed 2026-10-23** — `FilesController` (`/api/files`) removed; nothing called it. Live once
+  the backend is rebuilt. Was: `DELETE /api/files/{id}` with no ownership check, `GET` listing any
+  owner's files, and `POST` writing up to 100 MB of extension-checked bytes under any owner name.
+  Guarded by `Security/FileStoreEndpointsTests.cs`; see
+  [`../media/file-storage.md`](../media/file-storage.md), "No public endpoints".
+  → `OxygenBackend/QuizAPI/Controllers/Files/FilesController.cs` (deleted)
+
 ## Security hardening (defense-in-depth — no known active exploit)
+
+- ~~**P2 — The origin answers on its bare IP (found 2026-10-17).**~~ **Fixed 2026-10-18** — Hetzner
+  firewall `firewall-1` allows 80/443 from Cloudflare's ranges only (22 open, key-only); the bare-IP
+  `curl.exe -k` now times out, and the API still answers through Cloudflare. Was: 80/443 accepted anyone, so
+  `curl -k https://89.167.23.147 -H "Host: api.oxygenquiz.com"` reaches the API without Cloudflare.
+  The rate limiter no longer trusts headers a direct caller could forge (ADR 0027), so this is now a
+  "keeps floods and scanners off the box" item rather than a limiter bypass. Fix: the Hetzner Cloud
+  Firewall steps in `production-topology.md`, "Locking the edge".
+  → Hetzner Console (no code)
+- **P3 — No per-account login throttle (found 2026-10-17).** The `auth` policy bounds attempts per
+  IP; the limiter can't see the email in the body, so guesses spread across many IPs against one
+  account aren't slowed. Deferred: needs a failed-attempt counter per account in
+  `AuthenticationService.LoginAsync` (with a lockout that can't be used to lock someone else out).
+  The Cloudflare edge rule narrows it meanwhile.
+  → `OxygenBackend/QuizAPI/Services/AuthenticationService/AuthenticationService.cs`
 
 - ~~**P1 — `UserAnswersController` had no authorization at all.**~~ **Fixed 2026-09-26.** No
   `[Authorize]` on the class and no global fallback policy, so `GET /api/useranswers/session/{id}`
@@ -82,7 +124,7 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
   global `X-Content-Type-Options: nosniff` response header, so a browser can't
   MIME-sniff an export into something executable.
   → `OxygenBackend/QuizAPI/Program.cs` (nosniff middleware),
-  `OxygenBackend/QuizAPI/Controllers/Reports/ReportsController.cs`,
+  `OxygenBackend/QuizAPI/Controllers/Statistics/StatisticsController.cs`,
   `OxygenBackend/QuizAPI/Controllers/DataTransfer/DataTransferController.cs`
 - ~~**P2 — Signup password policy has no complexity requirement.**~~
   **Fixed (2026-06-23).** Minimum length raised to 12 (from 8), and signup now
@@ -197,12 +239,41 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
   `Mapping/EntityMappers.cs` (`ProjectMultipleChoice`),
   `DTOs/Question/QuestionDTOs.cs` (`AnswerOptionDTO.IsCorrect`),
   `src/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/components/question-select/`
-- **P3 — Image upload allow-list drifted from `FileService`'s.** `ImageUploadController`
-  maintains its own separate format allow-list (still includes GIF) rather than
-  sharing `FileService`'s. Not a vulnerability on its own, but two allow-lists
-  for the same concern will eventually disagree.
-  _Fix:_ consolidate on one allow-list/service.
-  → `OxygenBackend/QuizAPI/Controllers/Image/ImageUploadController.cs`
+- **Proposal — one media pipeline for quizzes and questions.** Phase 1 (pipeline, R2, uploads,
+  quotas, sweep) is built — [`../media/media-pipeline.md`](../media/media-pipeline.md) — and phase 2
+  (reports, moderation, picked catalogue) — [`../media/moderation.md`](../media/moderation.md) — and
+  phase 3 (the Wikimedia/Pexels picker) and phase 4 (AI-added images) — media-pipeline.md §7–8. Video
+  is the one part left for later. See
+  [`../proposals/media-pipeline.md`](../proposals/media-pipeline.md).
+- ~~**P3 — Image upload allow-list drifted from `FileService`'s.**~~ **Fixed 2026-10-24** — there is
+  one pipeline now; `ImageUploadController` is gone and question/quiz media is decided from the bytes
+  by `MediaProcessor` ([`../media/media-pipeline.md`](../media/media-pipeline.md)).
+- **P3 — Avatars still use the old file store, on the VPS disk** (2026-10-24). `AvatarService` writes
+  through `FileService` to `wwwroot/uploads/files`, not through the media pipeline to R2, so avatars
+  stay on one machine and aren't swept. Folding them in needs a `User.AvatarAssetId` reference (the
+  sweep only sees question and quiz references) and a moderation path for an avatar (there is no
+  report on a user yet) — deliberately left out of the media proposal's phases.
+  → `OxygenBackend/QuizAPI/Controllers/Users/Services/AvatarService.cs`
+- **P3 — A credited quiz cover shows without its credit in link previews** (2026-10-24). A cover
+  from Wikimedia Commons is the `og:image` of the quiz's listing and share link, and WhatsApp, Discord
+  and X render it with no room for a credit line. The page the preview links to carries it (under
+  the cover), which is the usual reading of CC BY for a thumbnail; a stricter reading would leave
+  credited covers out of `og:image`. → `worker/preview.js`
+- **P3 — Pexels not yet run against the live service** (2026-10-24). Commons was checked live: its
+  search answers, licences and authors are as the provider expects, and resized images now come from
+  `thumb.wikimedia.org` — which the first version didn't allow, so the picker showed one result in
+  twenty-four and imports were refused until the host was added. Pexels is tested against recorded
+  responses only; there's no key on the build machine. First thing after adding the key: one search
+  and one import (production-topology.md, "Free images").
+- **P3 — AI pictures share the hourly upload limit** (2026-10-24). Each picture the wizard finds is an
+  import, and imports count towards the 30-an-hour upload limit (`media-upload`). Two or three
+  picture-heavy generations in an hour can reach it; the rest of that quiz's pictures then come back
+  as "none found" rather than "try later". Raise the limit, or give `stock/auto` its own, if authors
+  hit it. → `RateLimitingExtensions.cs`, `StockImagesController.Auto`
+- **P3 — Pre-pipeline image files are still on the uploads volume** (2026-10-24). The
+  `AddMediaPipeline` migration cleared every URL pointing at them; the files in
+  `wwwroot/uploads/*.{png,jpg,gif}` (not `uploads/files/`, which holds avatars) are dead weight.
+  Remove by hand once — [`production-topology.md`](production-topology.md), "Old image files".
 - **P3 — Speed-bonus latency credit is a fixed 2s a client can under-report into.**
   Scoring trusts a client-reported think time (`ClientElapsedMs`) when it's within
   `MaxLatencyCreditSeconds` of the server's own window — see
@@ -245,6 +316,12 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   → `src/routes/Router.tsx` (the `users` child of `/dashboard/*`), `src/lib/Auth.tsx`
 
 ## Code quality / cleanup
+
+- **P3 — About half the `LiftedButton`s have no icon (2026-10-20).** The rule since 2026-10-20 is that
+  every one leads with an icon naming its action (`CLAUDE.md`, Styling). A rough count found 51 of 97
+  without one. Bring them in line when touching each screen, or in one sweep. Also: the email-change
+  confirmation's *Done* (`IdentityEditors.tsx`) and the invite-code dialog's *Done*
+  (`InviteCodes.tsx`) are flat `Button`s, against the user-facing-button rule.
 
 - ~~**P2 — `UserAnswer.ToDtoList()` silently drops multiple-choice options.**~~ **Fixed 2026-09-26:**
   `GetSessionAnswersAsync` now projects in SQL with `ProjectUserAnswer`, and the compiled twin is
@@ -505,6 +582,46 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   `* text=auto eol=lf`, then renormalize once (`git add --renormalize .`).
 
 ## Operations / deployment
+
+- ~~**P2 — No page per quiz for search engines (found 2026-10-18).**~~ **Fixed 2026-10-20** — every
+  Public quiz has a listing at `/q/:id/:slug`, rendered by the Worker for crawlers, plus
+  `/sitemap.xml` ([`quiz-listing.md`](../quiz/quiz-listing.md), ADR 0028). Was: nothing was
+  indexable per quiz: `/quiz/:id/play` starts a game and the catalogue is one URL.
+- ~~**P3 — Hashed build files aren't cached long-term (2026-10-18).**~~ **Fixed 2026-10-18** — the
+  build writes to `dist/_app/` (`build.assetsDir`) and `public/_headers` caches `/_app/*` for a year,
+  `immutable`; `/assets/*` and `index.html` still revalidate (`frontend-worker.md`, "Caching";
+  `build-cache.test.ts`). Was: Vite's hashed output and `public/assets/` (unhashed images) shared
+  `dist/assets/`, so an `immutable` rule there would have frozen a replaced image for a year.
+- **P3 — A rollback can leave a stale tab's browser holding HTML at a chunk URL (2026-10-18).** A
+  missing `/_app/` file is answered with `index.html` *and* the immutable header (the SPA fallback
+  answers every unknown path; `run_worker_first` as a path list turns off its navigation-only mode).
+  Harmless while that chunk name stays dead. If a version containing it is promoted again, a browser
+  that asked for it in between keeps getting HTML for it — the page shows `StaleVersionNotice`, and a
+  reload doesn't help until the browser's cache is cleared. Deferred: the fix is answering `/_app/`
+  misses with a 404 through the Worker, which bills every asset request; the case needs a rollback
+  *and* a tab that stayed open across the deploy. → `wrangler.jsonc`, `worker/index.js`
+- ~~**P2 — `www.oxygenquiz.com` is down (found 2026-10-20).**~~ **Fixed 2026-10-20** — a Cloudflare
+  Redirect Rule ("Redirect from WWW to root" template: `https://www.*` → `https://${1}`, 301, query
+  string preserved) sends every `www` URL to the apex; checked with
+  `www.oxygenquiz.com/choose-quiz?category=History` landing on the apex with the filter applied. Was: It answers Cloudflare **522** (Cloudflare
+  reached for an origin server and got no answer), so `www` is not served by the Worker as
+  `production-topology.md` used to say. Its DNS record is a proxied `CNAME www → oxygenquiz.com`
+  (checked 2026-10-20), but the apex is a Worker *custom domain*, which answers for that exact
+  hostname only — so Cloudflare follows the CNAME, finds no origin behind it, and times out. Anyone
+  typing `www.` sees an error page, and search engines see two hosts.
+  Fix (dashboard, no code): a **Redirect Rule** sending `www.oxygenquiz.com/*` to
+  `https://oxygenquiz.com/${1}` with a 301, keeping the query string (Rules → Redirect Rules, the
+  "Redirect from WWW to root" template). It runs at Cloudflare's edge before any origin is asked,
+  so the dead target stops mattering; keep the CNAME proxied (orange cloud) or the rule never sees
+  the request. Deploying the rule warns that `www` "may not be proxied" — a false alarm with this
+  CNAME: choose *Ignore and deploy rule anyway*, not *Create a new proxied DNS record*. Then check `curl -sI https://www.oxygenquiz.com/choose-quiz` returns
+  `301` with `location: https://oxygenquiz.com/choose-quiz`. The quiz listing's canonical URLs are
+  on the apex, so this also settles which host search engines index.
+  → Cloudflare dashboard (oxygenquiz.com zone)
+- **P3 — Wrangler isn't pinned (2026-10-18).** It isn't in `package.json`, so Workers Builds' `npx
+  wrangler deploy` uses whatever is latest. `assets.run_worker_first` as a path list needs a 2025+
+  Wrangler; `wrangler deploy --dry-run` with 4.151 accepts it. Pin it as a devDependency the next
+  time `package-lock.json` is touched.
 
 - ~~**P2 — Frontend deploys never activated (stale bundle served).**~~ **Root-caused + fixed
   (2026-07-04).** Every `wrangler deploy` uploaded the new assets but then **errored at the final step**
@@ -993,6 +1110,19 @@ and tightening `ClockSkew`. All **P3**.
 
 ## Quiz editing (2026-07-02 — see docs/quiz/quiz-editing.md)
 
+- ~~**P3 — Editing a saved question as a copy leaves the original behind.**~~ **Fixed
+  (2026-10-21, ADR 0031).** Your own question that no other quiz uses and nobody has answered is
+  now edited in place; only the rest are copied.
+- **P2 — The Questions page edits a played question in place (found 2026-10-21).** The builder
+  refuses this (ADR 0031), but `PUT /api/questions/{type}/{id}` from the Questions page doesn't: a
+  question players have answered can be reworded or have its correct option changed, and their
+  results then show the new version. Removing an option an answer points at goes through
+  `SyncAnswerOptionsAsync`'s delete. Fix: refuse (or copy-on-write) a played question's content
+  edit there too, or version question content the way quiz membership is versioned.
+- **P3 — Quiz delete still checks the role, not `quiz:delete:any` (2026-10-21).** Update, status and
+  board saves moved to `quiz:update:any`; `DeleteQuizAsync` still takes `_currentUser.IsAdmin`. Same
+  people today (Admin and SuperAdmin both hold the permission), so it only matters once someone edits
+  Admin's permissions. See docs/auth/user-role-management.md §1.1.
 - ~~**P1 — Editing a played quiz threw an FK violation / edits leaked into live games.**~~
   **Fixed (2026-07-02).** `UpdateQuizAsync` used to delete every `QuizQuestion` row and
   re-insert — but `UserAnswer.QuizQuestionId` / `QuizSession.CurrentQuizQuestionId` FK
@@ -1098,7 +1228,7 @@ redesign means a scroll regression could have come from either.
   offset fallback takes over — correct except across a DST boundary. Worth grepping for once
   after the first deploy. The decision, and the three clocks it chose between, are in
   [`../adr/0017-attempts-are-bucketed-in-the-viewers-timezone.md`](../adr/0017-attempts-are-bucketed-in-the-viewers-timezone.md).
-  → `OxygenBackend/QuizAPI/Services/Reports/ReportService.cs`,
+  → `OxygenBackend/QuizAPI/Services/StatisticsExport/StatisticsService.cs`,
     `src/pages/Dashboard/Pages/Quiz/api/get-quiz-analytics.ts`
 
 - **P3 — An answer can sit `Pending` forever, and nothing surfaces it to an operator.**
@@ -1131,17 +1261,17 @@ redesign means a scroll regression could have come from either.
 
 - **P3 — `GetQuestionAnalyticsAsync` still counts `Pending` answers in its correct-rate
   denominator.** The same bug that was fixed in `GetQuizAnalyticsAsync` above, in the sibling
-  report. Left alone on purpose: the reports screen is not shipped
-  ([`../quiz/reports.md`](../quiz/reports.md)), `QuestionAnalyticsRow` has no `GradedCount` field
+  report. Left alone on purpose: the statistics-export screen is not shipped
+  ([`../quiz/statistics-export.md`](../quiz/statistics-export.md)), `QuestionAnalyticsRow` has no `GradedCount` field
   to expose, and the fix belongs with whatever work makes that screen reachable. Two lines when
   someone is next in that file.
-  → `OxygenBackend/QuizAPI/Services/Reports/ReportService.cs`
+  → `OxygenBackend/QuizAPI/Services/StatisticsExport/StatisticsService.cs`
 
 - ~~**P3 — `AttemptsByDayPoint.Completed` counts abandoned sessions; the headline `Completed`
   does not.**~~ **Fixed (2026-09-12)**, alongside the timezone bucketing in the same method —
   the per-day count is now `IsCompleted && !Abandoned`, matching the headline figure. It had only
   ever been visible on quizzes past the trend threshold, where the chart is drawn.
-  → `OxygenBackend/QuizAPI/Services/Reports/ReportService.cs`
+  → `OxygenBackend/QuizAPI/Services/StatisticsExport/StatisticsService.cs`
 
 - **P3 — `User/Components/stats-cards.tsx` is fake and has no call sites.** Four hard-coded
   literals with invented deltas ("+2.5% from last month") and its data hook commented out. It looks
@@ -1160,35 +1290,28 @@ fixed; these were left.
   React Router's own `lazy: async () => ({ Component })` rather than `React.lazy`. That is
   resolved as part of the navigation instead of by a suspending render, so **no Suspense
   fallback ever fires** — the current page simply sits there until the chunk arrives. The two
-  `Spinner` boundaries in `AppRoot.tsx` and `Dashboard.tsx` catch other things, not this.
+  Suspense boundaries in `AppRoot.tsx` and `Dashboard.tsx` catch other things, not this.
   `RouteProgressBar` would cover the stall, but it is rendered by `HomeLayout` only;
   `DashboardLayout` does not render it, so the admin side has no navigation feedback of any
   kind. Deferred because it is a change to how ~15 routes are declared, not a fix.
   → `src/routes/Router.tsx`, `src/layouts/dashboard-layout.tsx`
-- **P3 — Two visual languages for a wait.** The public app waits with `PageLoading` /
-  `BlobLoader`; the admin dashboard waits with `Spinner`, across ~18 screens plus the
-  in-button loader. Both are internally consistent and nothing crosses between them, so this
-  is cosmetic — but it is the reason the sizing rule in
-  [`../development/loading-states.md`](../development/loading-states.md) has to name two
-  components instead of one. Converting the dashboard is a visual decision, not a cleanup.
-  → `src/components/ui/Spinner.tsx`
 - **P3 — `SplitFlapLoader` has no call sites.** Kept deliberately (ADR 0015 context, and
   `docs/quiz/quiz-playing-architecture.md` § 3b explains why it stopped being the quiz
   loader), storied, and dead. Listed so it is not rediscovered as an oversight.
   → `src/components/ui/split-flap-loader.tsx`
-- **P3 — `LoadingWave` has no call sites.** Replaced by `BlobLoader` as the app's loader after
-  the landing-page redesign (it no longer fit the look). Kept deliberately and storied, same as
-  `SplitFlapLoader`; its `loading-wave` keyframe in `global.css` stays with it.
+- **P3 — `LoadingWave` has one call site left.** Replaced by `BlobLoader` as the app's loader
+  after the landing-page redesign (it no longer fit the look), but still used as a *text* effect:
+  the multiplayer game's "Next question coming" line (`MultiplayerGame.tsx`) — a waving sentence,
+  not a loader in the sense above. Kept and storied; its `loading-wave` keyframe in `global.css`
+  stays with it.
   → `src/components/ui/loading-wave.tsx`
 
 ## Quiz card (2026-09-18 — see docs/quiz/quiz-card.md)
 
-- **P3 — The card no longer shows its creator, and the code for it is still there.** The
-  redesign has no author slot. `CreatorAvatar` in `card-parts.tsx` and `initials` in
-  `card-model.ts` are both unreferenced, kept because attribution on a public catalogue is a
-  decision that gets revisited rather than a feature that was removed. If it stays out, delete
-  both together; neither is useful alone.
-  → `src/pages/Quiz/components/quiz-card/`
+- **P3 — A creator's name can't be read on touch.** The catalogue card and the start dialog both
+  show the creator as `CreatorAvatar`, whose name appears on hover only. On a phone there is no
+  hover, so the name is never shown — only the photo or initials.
+  → `src/pages/Quiz/components/creator-avatar.tsx`
 - **P3 — No stories and no tests for the card.** The only visual check is the admin palette
   preview in `color-palette-input.tsx`, which exercises exactly one palette shape. The cases
   that matter are the ones the catalogue will not show on demand — two-colour and five-colour
@@ -1212,14 +1335,17 @@ fixed; these were left.
   2026-09-23.** The player dashboard mounts the editors at `/my-dashboard/quizzes/edit/:id` (and
   `…/board`); the shared table links within its own dashboard (`useQuizEditPath`). Only an owner
   can save — unchanged, that was always the API's rule. See docs/quiz/quiz-editing.md.
-- **P3 — Players have no single-quiz page.** `/dashboard/quiz/:id` (stats, board preview) is in the
+- ~~**P3 — Players have no single-quiz page.**~~ **Fixed 2026-10-18** — `/my-dashboard/quiz/:id`
+  mounts the same page; View and a row click open it ([`quiz-analytics-page.md`](../quiz/quiz-analytics-page.md),
+  "Two dashboards, one page"). Was: `/dashboard/quiz/:id` (stats, board preview) is in the
   admin dashboard only, so "My quizzes" hides the table's View item rather than link to a 404. An
   owner-facing version would need the analytics endpoint's owner scoping (it has it) and a
-  player-dashboard route.
+  player-dashboard route. Until then the row menu carries **Play** and **Copy share link**
+  (2026-10-17), the two things an owner of an Unlisted quiz couldn't otherwise reach.
   → `src/pages/Dashboard/Pages/Quiz/components/Data-Table-Columns/columns.tsx`
-- **P3 — No image on a Board quiz in the builder.** The API accepts `imageUrl` on create and
-  update; the builder has no upload field, matching the Classic builder, whose `ImageUpload` is
-  commented out.
+- **P3 — No cover image on a Board quiz in the builder.** The API accepts `coverAssetId` on create
+  and update (an asset from `POST /api/media`); the board builder has no `MediaPicker` yet. The
+  Classic builder's cover field is back (2026-10-24, media pipeline phase 1).
 - ~~**P3 — The lobby's quiz picker lists Boards to admins**~~ **Fixed 2026-09-25** by making the
   pick valid: a Board in a lobby is played as a Duel (docs/quiz/associations.md §10).
 - **P3 — "Play again" and "Start over" drop an Unlisted board's share token** (2026-09-23). Both call
@@ -1358,3 +1484,24 @@ limits, matrices) can't be displayed, and a quiz author typing LaTeX by hand see
 Deferred: a renderer (KaTeX) has to be added to every surface that shows question text, and
 `TypeTheAnswer` needs a rule for comparing a typed answer against a formula. See
 `docs/quiz/ai-quiz-creation-plan.md` §5.
+
+## Quiz overview (2026-10-17 — see docs/quiz/quiz-overview.md)
+
+- **P3 — A long multiple-choice option is cut off in the editor.** Option text fields are still
+  one-line inputs; the question text became a growing textarea, the options didn't. Rarely
+  matters (options are short), but an AI option of a full sentence can't be read whole while
+  editing — the overview card itself shows it in full.
+  → `new-display-quiz-question-card/multiple-choice-question-form.tsx`
+- **P3 — `field-sizing: content` isn't in every browser.** Where it's missing (older Safari) the
+  question field is two rows that scroll instead of growing.
+
+## Typography: a readable face for small text (2026-10-17 — proposal, not applied)
+
+- **P3 — Small explanatory text in a display font is hard to read.** The app font is the user's
+  choice, and some options are display faces (DynaPuff, Baloo 2, Fredoka, Barriecito) built for
+  headings: at 11–13px their heavy, rounded shapes close up. Proposal: keep the chosen font for
+  headings, labels, buttons and quiz content (questions, answers), and set *secondary* text —
+  hints, field descriptions, helper lines — in a fixed readable face (Noto Sans, the default), via
+  one shared token rather than per screen. Deliberately not applied: test it on one screen first
+  (the question editor is the candidate) with a display font selected, and decide then. See
+  docs/TYPOGRAPHY.md for the current font rules.

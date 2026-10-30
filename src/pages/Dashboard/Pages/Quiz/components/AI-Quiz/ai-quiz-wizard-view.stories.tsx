@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { Decorator, Meta, StoryObj } from "@storybook/react";
 import { expect, fn, userEvent, within } from "@storybook/test";
 import { MemoryRouter } from "react-router-dom";
@@ -13,6 +14,7 @@ import {
   parse,
 } from "./__fixtures__/ai-quiz.fixtures";
 import { AiQuizWizardView } from "./ai-quiz-wizard-view";
+import { SourceNote } from "./components/source-note";
 import type { ParseResult } from "./parse-ai-output";
 import { AI_QUESTION_LIMITS, DEFAULT_QUESTION_COUNT } from "./prompt";
 
@@ -164,8 +166,14 @@ const UNKNOWN_DIFFICULTY_REPLY = JSON.stringify({
  * provider (that's why it's a slot prop, not part of the view). Listing what the parser
  * produced makes these stories a readable check on the handoff payload.
  */
-const BuilderStandIn = ({ result }: { result: ParseResult }) => (
-  <div className="mx-auto w-full max-w-[1600px] rounded-xl border-2 border-dashed border-border p-5">
+/**
+ * `notices` stands in for the builder's `reviewNotices` slot, where the real overview shows the
+ * import report and the grounding note above the questions (use-ai-quiz-draft.tsx).
+ */
+const BuilderStandIn = ({ result, notices }: { result: ParseResult; notices?: ReactNode }) => (
+  <div className="flex flex-col gap-3">
+    {notices}
+    <div className="mx-auto w-full max-w-[1600px] rounded-xl border-2 border-dashed border-border p-5">
     <p className="text-sm font-semibold">
       [ builderSlot ] — CreateQuizForm renders here, prefilled and in aiImportMode
     </p>
@@ -179,6 +187,7 @@ const BuilderStandIn = ({ result }: { result: ParseResult }) => (
         </li>
       ))}
     </ol>
+    </div>
   </div>
 );
 
@@ -771,28 +780,44 @@ export const ReviewGrounded: Story = {
   args: {
     topic: "Kuzhina tradicionale shqiptare",
     parseResult: goodResult,
-    builderSlot: <BuilderStandIn result={goodResult} />,
-    grounding: {
-      status: "Grounded",
-      language: "Albanian",
-      source: {
-        provider: "wikipedia",
-        title: "Kuzhina shqiptare",
-        url: "https://sq.wikipedia.org/wiki/Kuzhina_shqiptare",
-        text: "…",
-        language: "Albanian",
-      },
-    },
+    builderSlot: (
+      <BuilderStandIn
+        result={goodResult}
+        notices={
+          <SourceNote
+            grounding={{
+              status: "Grounded",
+              language: "Albanian",
+              source: {
+                provider: "wikipedia",
+                title: "Kuzhina shqiptare",
+                url: "https://sq.wikipedia.org/wiki/Kuzhina_shqiptare",
+                text: "…",
+                language: "Albanian",
+              },
+            }}
+          />
+        }
+      />
+    ),
   },
 };
 
-/** The review after going ahead while Wikipedia was down: the one amber line. */
+/** The review after going ahead while Wikipedia was down: the one amber notice. */
 export const ReviewFromMemoryWikipediaDown: Story = {
   args: {
     topic: "Rilindja Kombëtare",
     parseResult: goodResult,
-    builderSlot: <BuilderStandIn result={goodResult} />,
-    grounding: { status: "Ungrounded", language: "Albanian", reason: "unavailable" },
+    builderSlot: (
+      <BuilderStandIn
+        result={goodResult}
+        notices={
+          <SourceNote
+            grounding={{ status: "Ungrounded", language: "Albanian", reason: "unavailable" }}
+          />
+        }
+      />
+    ),
   },
 };
 
@@ -805,14 +830,6 @@ export const LoadingEntities: Story = {
 // dialog: the work is already restored, so this reports it rather than asking permission.
 // The generate path is where it matters most — a restored draft here carries the model's
 // reply, which cost the user quota.
-
-export const RestoredFromDraft: Story = {
-  args: {
-    topic: "The French Revolution",
-    restoredDraftSavedAt: Date.now() - 4 * 60 * 1000,
-    onDiscardDraft: () => {},
-  },
-};
 
 // ── Responsive checks (docs/RESPONSIVE.md: verify at 360/390px) ────────────────────────
 

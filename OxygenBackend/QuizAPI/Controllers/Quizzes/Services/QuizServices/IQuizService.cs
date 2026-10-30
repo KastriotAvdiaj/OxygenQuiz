@@ -22,7 +22,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             Guid? restrictToUserId = null,
             bool publicOnly = false,
             bool includeDeleted = false,
-            CancellationToken ct = default);
+            CancellationToken ct = default,
+            string? scope = null);
 
         /// <summary>
         /// Get quizzes created by a specific user
@@ -49,6 +50,16 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         /// Draft quiz.
         /// </summary>
         Task<QuizDTO?> GetQuizByShareTokenAsync(string shareToken);
+
+        /// <summary>
+        /// A quiz's public listing, or null unless the catalogue would show it to a guest: Public and
+        /// a released format. Evaluated as an anonymous caller whoever asks, so every reason for null
+        /// looks the same. docs/quiz/quiz-listing.md.
+        /// </summary>
+        Task<QuizListingDTO?> GetQuizListingAsync(int id);
+
+        /// <summary>Every quiz that has a listing, by id — the sitemap's source.</summary>
+        Task<List<QuizListingEntryDTO>> GetQuizListingsAsync();
 
         /// <summary>
         /// Get quiz questions with full question details
@@ -78,17 +89,19 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         /// </summary>
         /// <param name="userId">ID of the user updating the quiz</param>
         /// <param name="quizUM">Quiz update model</param>
+        /// <param name="canUpdateAny">The caller holds <c>quiz:update:any</c>: may update any quiz, not just their own</param>
         /// <returns>Updated quiz or null if not found or user doesn't have permission</returns>
-        Task<QuizDTO?> UpdateQuizAsync(Guid userId, QuizUM quizUM);
+        Task<QuizDTO?> UpdateQuizAsync(Guid userId, QuizUM quizUM, bool canUpdateAny = false);
 
         /// <summary>
-        /// Sets a quiz's status (Draft / Unlisted / Public). Owner-only.
+        /// Sets a quiz's status (Draft / Unlisted / Public). The owner, or a holder of <c>quiz:update:any</c>.
         /// </summary>
         /// <param name="userId">ID of the user changing the status</param>
         /// <param name="quizId">ID of the quiz</param>
         /// <param name="status">The new status</param>
+        /// <param name="canUpdateAny">The caller holds <c>quiz:update:any</c>: may change the status of any quiz</param>
         /// <returns>Updated quiz or null if not found or user doesn't have permission</returns>
-        Task<QuizDTO?> SetQuizStatusAsync(Guid userId, int quizId, QuizStatus status);
+        Task<QuizDTO?> SetQuizStatusAsync(Guid userId, int quizId, QuizStatus status, bool canUpdateAny = false);
 
         /// <summary>
         /// Lazily generates (or returns the existing) share token for an owned quiz so the owner can

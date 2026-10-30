@@ -20,11 +20,18 @@ same defaults:
   the panel renders as a left sidebar on desktop and a slide-in drawer on mobile
   (below `lg`). In the drawer the panel is `frameless` — no card; the drawer is its surface
   (2026-10-11). The drawer's "Filters" button sits on the Back row, opposite Back, the two the
-  same chip. Below `sm` the sort menu leaves the toolbar (`hideSortOnPhones`) and appears in
+  same chip. From `lg` up there is no Back row: Back sits at the top of the sticky sidebar, so
+  it stays on screen while the grid scrolls (2026-10-17). Below `sm` the sort menu leaves the toolbar (`hideSortOnPhones`) and appears in
   the drawer as "Sort by" (`QuizSortSelect`, the same control), so the toolbar is one row.
 - **Multiplayer** — the lobby's quiz picker dialog
   (`src/pages/Quiz/Multiplayer/components/lobby/quiz-selection-dialog.tsx`);
   the panel sits behind a "Filters" toggle in its compact variant
+
+**Picked or community.** Above the grid on `/choose-quiz` a switch picks the half of the catalogue:
+*Picked* (the default — house quizzes and community quizzes the team chose) or *Community*, the
+first switch behind a one-time notice (`catalogue-scope-switch.tsx`, sent as `scope=` to
+`/quiz/search`). The lobby's picker shows both halves: a host chooses for people they know. See
+[`../media/moderation.md`](../media/moderation.md) §5.
 
 ### Getting to the pickers
 

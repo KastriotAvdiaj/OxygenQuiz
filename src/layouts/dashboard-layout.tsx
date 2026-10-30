@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { DashboardHeader } from "@/pages/Dashboard/Components/DashboardHeader";
 import { DashboardNav } from "@/pages/Dashboard/Components/DashboardNav";
@@ -6,6 +6,11 @@ import { DashboardIsland } from "@/pages/Dashboard/Components/DashboardIsland";
 import type { DashboardNavItem } from "@/pages/Dashboard/Components/dashboardNavConfig";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/utils/cn";
+import { RouteProgressBar } from "@/common/RouteProgressBar";
+import { useQueryClient } from "@tanstack/react-query";
+import { prefetchDashboardPage } from "@/routes/dashboard-prefetch";
+import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
+import { activeNavId } from "./active-nav-id";
 
 /**
  * The shell's height. `h-screen` is `100vh`, which on mobile is the viewport *without* the
@@ -64,6 +69,11 @@ export const DashboardLayout = ({
   focusPaths = [],
 }: DashboardLayoutProps) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  // Hovering a nav item starts its page's chunk and first screen of data. Only the admin list
+  // pages have anything to warm; every other id is a no-op (routes/dashboard-prefetch.ts).
+  const prefetchNavPage = (page: string) =>
+    prefetchDashboardPage(`${basePath}/${page}`, queryClient);
   const location = useLocation();
   const [isNavCollapsed, setIsNavCollapsed] = useState(false);
   // The island's overflow drawer. Phones only — the rail is the navigation from `lg` up.
@@ -91,7 +101,7 @@ export const DashboardLayout = ({
     setActivePage(page);
   };
 
-  const activePage = location.pathname.split("/").pop() || "";
+  const activePage = activeNavId(location.pathname, basePath, navItems);
   // Exact match, or prefix match for parameterised paths (e.g. .../edit-quiz/:quizId).
   const matchesPath = (paths: string[]) =>
     paths.some(
@@ -109,6 +119,7 @@ export const DashboardLayout = ({
   if (isFullWidth) {
     return (
       <div className={cn("text-foreground flex flex-col", SHELL_HEIGHT)}>
+        <RouteProgressBar />
         {/* No header in focus mode. The page owns the whole viewport and provides its
             own way back — see the `focusPaths` doc comment and ADR 0002. */}
         {!isFocusMode && (
@@ -122,7 +133,7 @@ export const DashboardLayout = ({
             and none of the `short:` work done on the wizard itself could reach it
             (docs/RESPONSIVE.md, "Short viewports"). */}
         <main className="flex-1 overflow-y-auto bg-muted p-4 sm:p-6 lg:p-8 short:p-4">
-          {children}
+          <PageEnter pathname={location.pathname}>{children}</PageEnter>
         </main>
       </div>
     );
@@ -130,6 +141,11 @@ export const DashboardLayout = ({
 
   return (
     <div className={cn("text-foreground flex flex-col", SHELL_HEIGHT)}>
+      {/* Every dashboard page is a route-level `lazy` chunk, and some have loaders, so React
+          Router holds the current page frozen until both resolve. This hairline is the only
+          thing that says the click landed (ADR 0015) — it was mounted in the public layout
+          only, so Edit / View in the dashboard looked like nothing had happened. */}
+      <RouteProgressBar />
       <header className="flex-none">
         <DashboardHeader />
       </header>
@@ -155,6 +171,7 @@ export const DashboardLayout = ({
             activePage={activePage}
             isCollapsed={isNavCollapsed}
             setIsCollapsed={setIsNavCollapsed}
+            onItemIntent={prefetchNavPage}
           />
         </aside>
 
@@ -172,7 +189,7 @@ export const DashboardLayout = ({
             "min-w-0 flex-1 overflow-y-auto bg-muted p-4 sm:p-6 lg:p-10 short:p-4",
             ISLAND_CLEARANCE
           )}>
-          {children}
+          <PageEnter pathname={location.pathname}>{children}</PageEnter>
         </main>
       </div>
 
@@ -201,6 +218,7 @@ export const DashboardLayout = ({
             activePage={activePage}
             isCollapsed={false}
             hideCollapseToggle
+            onItemIntent={prefetchNavPage}
           />
         </SheetContent>
       </Sheet>
@@ -209,3 +227,54 @@ export const DashboardLayout = ({
 };
 
 export default DashboardLayout;
+
+/**
+ * A 200ms fade-in each time the dashboard's route changes, so moving between pages — Back out
+ * of the AI review, publishing a quiz and landing on the list — arrives instead of cutting
+ * (docs/development/motion.md, "Page changes").
+ *
+ * Enter only. A route exit would need the old page kept mounted after the router has already
+ * swapped it — `AnimatePresence` around a frozen `<Outlet>` — and that holds two pages in the
+ * DOM, doubles their queries for 200ms and fights every page that does its own exit. A fade
+ * in is the 90% of the effect for none of that.
+ *
+ * Opacity only, through the Web Animations API rather than a keyed remount: a `key` would
+ * throw away the page's state on any path change, even a param, and a `transform` (which
+ * `animate-in` sets) would make this div the containing block for every `fixed` layer inside
+ * it for the length of the animation. `h-full` because pages size themselves with `min-h-full`
+ * against `main`, and this div sits between them now. The animation is an outside system,
+ * hence the Effect; reduced motion skips it.
+ */
+const PageEnter = ({
+  pathname,
+  children,
+}: {
+  pathname: string;
+  children: ReactNode;
+}) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const reducedMotion = usePrefersReducedMotion();
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || reducedMotion) return;
+    // The browser's own `element.animate`, with no fill: while it runs it overrides opacity,
+    // and the moment it ends *or is cancelled* the element is back to its stylesheet opacity,
+    // 1. framer's `animate()` was the first version, and its `stop()` writes the value it
+    // stopped at into an inline style — so a fade interrupted early (Strict Mode's double
+    // effect in development, a quick second navigation) could leave the page stuck washed out.
+    const fade = el.animate([{ opacity: 0 }, { opacity: 1 }], {
+      duration: 200,
+      easing: "ease-out",
+    });
+    return () => fade.cancel();
+    // `reducedMotion` is read, not watched: turning it on shouldn't replay the fade.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  return (
+    <div ref={ref} className="h-full">
+      {children}
+    </div>
+  );
+};

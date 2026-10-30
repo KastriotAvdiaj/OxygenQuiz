@@ -1,72 +1,147 @@
+import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Eye, EyeOff, Info, Loader2 } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { useUser } from "@/lib/Auth";
 import type { QuestionMediaType } from "@/types/question-types";
+import { fetchHiddenMedia } from "@/features/reports/api/reports";
+import type { CreditLine } from "@/features/media/api/upload-media";
+import { MediaCreditLine } from "@/features/media/components/media-credit";
 
 interface QuestionMediaProps {
-  /** Absolute URL of the attachment (already includes the API origin). */
+  /** Absolute URL of the attachment. Null when there is none — or when it is hidden and this is a
+   *  play screen, which is never sent a hidden file's URL. */
   mediaUrl?: string | null;
-  /** What to render. Defaults to an image when a URL exists but the type is missing/None,
-   *  so legacy image-only questions (which only carry a URL) still display. */
   mediaType?: QuestionMediaType | null;
+  /** Under a moderation cover pending review (docs/media/moderation.md, "Hiding"). */
+  hidden?: boolean;
+  /** Needed for "Show anyway" when the URL wasn't sent (play screens). */
+  questionId?: number;
+  /** An outside image's credit (Pexels, Wikimedia Commons) — behind an ⓘ so it doesn't compete
+   *  with the question. docs/media/media-pipeline.md, "Outside sources". */
+  credit?: CreditLine | null;
   alt?: string;
   className?: string;
 }
 
 /**
- * Renders a question's optional media attachment (image / audio / video) based on its type.
- * Returns `null` when there's nothing to show, so callers can drop it in unconditionally.
+ * Renders a question's image or audio clip. Returns `null` when there's nothing to show, so callers
+ * can drop it in unconditionally. Shared by every screen that shows a question.
  *
- * Shared across the quiz-taking screens so every place that shows a question renders media the
- * same way. Image is the common case today; audio/video are handled for parity with the backend.
+ * Hidden media sits under a cover. A signed-in viewer can choose **Show anyway** — the convention
+ * on every large platform, and what keeps a false report from ruining a question; a guest, who may
+ * be a minor, can't. The server enforces that half: play responses carry no hidden URL, and
+ * fetching it needs an account.
  */
-export function QuestionMedia({
-  mediaUrl,
-  mediaType,
-  alt = "Question media",
-  className,
-}: QuestionMediaProps) {
-  if (!mediaUrl) return null;
+export function QuestionMedia({ mediaUrl, mediaType, hidden = false, questionId, credit, alt = "Question media", className }: QuestionMediaProps) {
+  const user = useUser();
+  const [creditOpen, setCreditOpen] = useState(false);
+  const [revealed, setRevealed] = useState<{ url: string; kind: QuestionMediaType } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
 
-  // A URL with no explicit (or "None") type is a legacy image-only question.
-  const kind: QuestionMediaType =
-    mediaType && mediaType !== "None" ? mediaType : "Image";
+  if (!hidden && !mediaUrl) return null;
 
-  if (kind === "Audio") {
+  if (hidden && !revealed) {
+    const canReveal = !!user.data && (!!mediaUrl || questionId != null);
+    const reveal = async () => {
+      if (mediaUrl) {
+        setRevealed({ url: mediaUrl, kind: mediaType && mediaType !== "None" ? mediaType : "Image" });
+        return;
+      }
+      if (questionId == null) return;
+      setLoading(true);
+      setFailed(false);
+      try {
+        const media = await fetchHiddenMedia(questionId);
+        setRevealed({ url: media.mediaUrl, kind: media.mediaType });
+      } catch {
+        setFailed(true);
+      } finally {
+        setLoading(false);
+      }
+    };
     return (
-      <audio
-        controls
-        src={mediaUrl}
-        className={cn("mx-auto w-full max-w-md", className)}
-      />
-    );
-  }
-
-  if (kind === "Video") {
-    return (
-      <video
-        controls
-        src={mediaUrl}
+      <div
         className={cn(
-          "mx-auto max-h-72 w-full rounded-xl border-2 border-primary/20 bg-background object-contain",
-          className
+          "mx-auto flex w-full max-w-md flex-col items-center gap-2 rounded-xl border-2 border-dashed border-muted-foreground/30 bg-muted/40 px-4 py-6 text-center",
+          className,
         )}
-      />
+      >
+        <EyeOff className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
+        <p className="text-sm font-medium text-foreground">
+          {mediaType === "Audio" ? "Audio" : "Image"} hidden — reported as inappropriate
+        </p>
+        <p className="text-xs text-muted-foreground">It's being reviewed.</p>
+        {canReveal && (
+          <button
+            type="button"
+            onClick={reveal}
+            disabled={loading}
+            className="mt-1 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-primary hover:underline disabled:opacity-60"
+          >
+            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Eye className="h-3.5 w-3.5" aria-hidden="true" />}
+            Show anyway
+          </button>
+        )}
+        {failed && <p className="text-xs text-red-600">It couldn't be loaded — it may have been removed.</p>}
+      </div>
     );
   }
+
+  const url = revealed?.url ?? mediaUrl!;
+  const kind: QuestionMediaType = revealed?.kind ?? (mediaType && mediaType !== "None" ? mediaType : "Image");
 
   return (
-    <div
-      className={cn(
-        "mx-auto w-fit max-w-full overflow-hidden rounded-xl border-2 border-primary/20 bg-background p-1.5",
-        className
-      )}
-    >
-      <img
-        src={mediaUrl}
-        alt={alt}
-        loading="lazy"
-        className="mx-auto max-h-64 w-auto rounded-lg object-contain"
-      />
-    </div>
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={url}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.2 }}
+        className={cn(kind === "Image" ? "mx-auto w-fit max-w-full" : "mx-auto w-full max-w-md", className)}
+      >
+        {kind === "Audio" ? (
+          <audio controls src={url} className="w-full" />
+        ) : kind === "Video" ? (
+          <video
+            controls
+            src={url}
+            className="mx-auto max-h-72 w-full rounded-xl border-2 border-primary/20 bg-background object-contain"
+          />
+        ) : (
+          <div className="relative overflow-hidden rounded-xl border-2 border-primary/20 bg-background p-1.5">
+            <img src={url} alt={alt} loading="lazy" className="mx-auto max-h-64 w-auto rounded-lg object-contain" />
+            {credit && (
+              <button
+                type="button"
+                onClick={() => setCreditOpen((o) => !o)}
+                aria-expanded={creditOpen}
+                aria-label={creditOpen ? "Hide image credit" : "Image credit"}
+                className="absolute bottom-2.5 right-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-background/85 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <Info className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+            )}
+          </div>
+        )}
+        {/* The credit of an outside image: on demand during play (the ⓘ), never omitted. */}
+        <AnimatePresence initial={false}>
+          {credit && creditOpen && kind === "Image" && (
+            <motion.div
+              key="credit"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.18 }}
+              className="overflow-hidden"
+            >
+              <MediaCreditLine credit={credit} className="pt-1 text-center" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 

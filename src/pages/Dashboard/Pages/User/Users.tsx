@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Spinner } from "@/components/ui/Spinner";
+import { BlobLoader } from "@/components/ui/blob-loader";
 import { LiftedButton } from "@/common/LiftedButton";
 import { columns } from "./Components/columns";
 import { DataTable } from "@/components/ui/data-table";
@@ -137,7 +137,7 @@ export const Users = () => {
               </p>
             ) : usersQuery.isLoading ? (
               <div className="flex justify-center items-center py-16">
-                <Spinner size="lg" />
+                <BlobLoader size="lg" />
               </div>
             ) : (
               <>

@@ -148,7 +148,7 @@ How ready each perk is:
 | Quiz limit | **Small** | One counting helper, called from the three create paths |
 | Lobby size | **Small server, medium UI** | Hub clamp is a few lines; the roster UI and SignalR are only proven at ≤10, so 20/40 needs a layout pass and a load test |
 | Classes limit | **Small** | One count in `ClassService` |
-| Reports | **Small** | Built but unshipped ([`reports.md`](../quiz/reports.md)) — a route change plus a gate |
+| Statistics export | **Small** | Built but unshipped ([`statistics-export.md`](../quiz/statistics-export.md)) — a route change plus a gate |
 | Hosted-game history limit + export | **Medium** | New query limit and export; the export framework (`IDataExportService`) exists |
 
 **Why these numbers.** Competitors' annual teacher plans cluster at €35–€65: Quizlet Plus for

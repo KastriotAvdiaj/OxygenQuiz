@@ -31,6 +31,15 @@ namespace QuizAPI.Repositories.Interfaces
         Task<bool> IsUsedInAnyQuizAsync(int id, CancellationToken ct = default);
 
         /// <summary>
+        /// The facts <see cref="QuizAPI.Common.QuestionEditRule"/> needs, for those of
+        /// <paramref name="ids"/> that <paramref name="ownerId"/> owns (other ids are simply absent —
+        /// nothing about someone else's question is read). <paramref name="exceptQuizId"/> is the
+        /// quiz being edited, not counted as "another quiz"; null while a quiz is being created.
+        /// </summary>
+        Task<List<QuizAPI.Common.QuestionEditFacts>> GetEditFactsAsync(
+            IReadOnlyCollection<int> ids, Guid ownerId, int? exceptQuizId, CancellationToken ct = default);
+
+        /// <summary>
         /// Display names of the referenced category and language; either is null when that id
         /// doesn't exist. The service uses this to reject the seeded "Unspecified" rows **by name**
         /// rather than by a hard-coded id, matching the frontend's `isUnspecifiedLookup` — row
@@ -55,5 +64,21 @@ namespace QuizAPI.Repositories.Interfaces
         Task AddTypeTheAnswerAsync(TypeTheAnswerQuestion question, CancellationToken ct = default);
         void Remove(QuestionBase question);
         Task<int> SaveChangesAsync(CancellationToken ct = default);
+
+        /// <summary>
+        /// Sets <c>UpdatedAt</c> to now on every quiz this question is live in
+        /// (<c>RemovedInVersion IS NULL</c>), whoever owns those quizzes — one <c>UPDATE</c>. A
+        /// question is shared across quizzes, so an edit from the question bank changes them all.
+        /// Not supported by the InMemory provider (ExecuteUpdate); tests mock this.
+        /// docs/quiz/quiz-listing.md, "Quiz.UpdatedAt".
+        /// </summary>
+        Task TouchQuizzesContainingAsync(int questionId, CancellationToken ct = default);
+
+        /// <summary>
+        /// Takes every picked quiz this question is live in out of the picked catalogue — one
+        /// <c>UPDATE</c>, whoever owns them. For an edit by someone without <c>quiz:autopick</c>
+        /// (<see cref="QuizAPI.Common.QuizHouse"/>). Not supported by the InMemory provider; tests mock this.
+        /// </summary>
+        Task UnpickQuizzesContainingAsync(int questionId, CancellationToken ct = default);
     }
 }

@@ -8,6 +8,8 @@ export type UserSettings = {
   soundEffectsVolume: number; // 0..100
   theme: ThemePreference;
   showTimer: boolean;
+  /** Quiz builder: confirm before removing a question. Off after "Don't ask again". */
+  askBeforeRemovingQuestion: boolean;
   appFont: string; // dashboard / UI body font family
   quizFont: string; // quiz experience font family
 };

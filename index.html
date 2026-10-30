@@ -5,6 +5,20 @@
     <!-- viewport-fit=cover: lets the app extend under notches/rounded corners; the
          app shell pads content back in with env(safe-area-inset-*) (docs/RESPONSIVE.md) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- iOS only: maximum-scale=1 stops Safari zooming the page when an input under 16px takes
+         focus. iOS ignores it for pinch-zoom (since iOS 10), so users can still zoom by hand.
+         Not set for everyone because Android Chrome *does* honour it and would lose pinch-zoom —
+         and Android never focus-zooms anyway. iPadOS reports itself as a Mac, hence the touch
+         check. See docs/RESPONSIVE.md, "Inputs and iOS focus-zoom". -->
+    <script>
+      (function () {
+        var ua = navigator.userAgent;
+        var isIOS = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+        if (!isIOS) return;
+        var meta = document.querySelector('meta[name="viewport"]');
+        if (meta) meta.setAttribute("content", meta.getAttribute("content") + ", maximum-scale=1");
+      })();
+    </script>
     <!-- Favicon. The href is a Vite HTML env replacement resolved at build/serve time from
          .env.<mode>, so dev and production get different icons and you can tell the two
          running apps apart in the tab strip:
@@ -32,6 +46,22 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=Poppins:wght@300;400;500;600;700&family=Nunito:wght@300..800&family=Fredoka:wght@400..600&family=Baloo+2:wght@400..700&display=swap"
       rel="stylesheet" />
     <title>Oxygen Quiz</title>
+    <!-- Link previews and search snippets. Site-wide defaults: chat apps and crawlers read these
+         from the HTML and never run the app. On a shared link (/play/shared/:token) the Worker
+         swaps in that quiz's own title, description and image — it rewrites these exact tags, so
+         keep their name/property attributes as they are. docs/deployment/frontend-worker.md -->
+    <meta name="description" content="Play, create and host quizzes: solo, live with friends in a lobby, or for a whole class." />
+    <meta property="og:site_name" content="Oxygen Quiz" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Oxygen Quiz" />
+    <meta property="og:description" content="Play, create and host quizzes: solo, live with friends in a lobby, or for a whole class." />
+    <meta property="og:image" content="https://oxygenquiz.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Oxygen Quiz" />
+    <meta name="twitter:description" content="Play, create and host quizzes: solo, live with friends in a lobby, or for a whole class." />
+    <meta name="twitter:image" content="https://oxygenquiz.com/og-image.png" />
   </head>
   <body>
     <div id="root"></div>

@@ -34,4 +34,11 @@
     <ProjectReference Include="..\QuizAPI\QuizAPI.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Real audio/video files made with ffmpeg, so the audio rules are tested against real
+         containers rather than hand-built headers. Regenerate with the commands in
+         Media/MediaProcessorTests.cs. -->
+    <None Update="Media/Fixtures/**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

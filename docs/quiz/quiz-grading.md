@@ -248,7 +248,7 @@ Anything added to a question that gives the answer away follows the same rule â€
   `UserAnswer` with `SubmittedTime = null` via `CreateTimedOutAnswer`.
 - Idle sessions are auto-abandoned (`IsSessionAbandonedAsync`) â€” flagged `IsCompleted = true` with
   an `AbandonedAt` timestamp and an `AbandonmentReason`. **Abandoned sessions are not counted as
-  completions** in analytics/reports (see [reports.md](reports.md)).
+  completions** in analytics/reports (see [statistics-export.md](statistics-export.md)).
 
 ## Key files
 

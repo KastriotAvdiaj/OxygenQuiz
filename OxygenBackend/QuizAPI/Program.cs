@@ -13,7 +13,6 @@ using Microsoft.IdentityModel.Tokens;
 // driver package and source files are kept for the future chat system.
 // To re-enable, see docs/data/mongodb.md.
 // using MongoDB.Driver;
-using QuizAPI.Controllers.Image.Services;
 using QuizAPI.Controllers.Questions.Services;
 using QuizAPI.Controllers.Questions.Services.AnswerOptions;
 using QuizAPI.Controllers.Questions.TestQuestions.Services;
@@ -269,9 +268,47 @@ builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<QuizAPI.Services.SettingsService.ISettingsService, QuizAPI.Services.SettingsService.SettingsService>();
 
-// Image Services (ImageCleanUpService without interface as requested)
-builder.Services.AddScoped<IImageService, ImageService>();
-builder.Services.AddScoped<ImageCleanUpService>();
+// Question and quiz media (docs/media/media-pipeline.md). Storage is chosen once at startup:
+// Disk unless Media:Storage is R2. An incomplete R2 section fails here, at boot, not on the first
+// upload.
+builder.Services.Configure<QuizAPI.Services.Media.MediaOptions>(
+    builder.Configuration.GetSection(QuizAPI.Services.Media.MediaOptions.Section));
+if (string.Equals(builder.Configuration[$"{QuizAPI.Services.Media.MediaOptions.Section}:Storage"], "R2", StringComparison.OrdinalIgnoreCase))
+    builder.Services.AddSingleton<QuizAPI.Services.Media.IMediaStorage, QuizAPI.Services.Media.R2MediaStorage>();
+else
+    builder.Services.AddSingleton<QuizAPI.Services.Media.IMediaStorage, QuizAPI.Services.Media.DiskMediaStorage>();
+builder.Services.AddScoped<QuizAPI.Repositories.Interfaces.IMediaRepository, QuizAPI.Repositories.MediaRepository>();
+builder.Services.AddScoped<QuizAPI.Services.Media.IMediaQuotaPolicy, QuizAPI.Services.Media.RoleMediaQuotaPolicy>();
+builder.Services.AddScoped<QuizAPI.Services.Media.IMediaService, QuizAPI.Services.Media.MediaService>();
+builder.Services.AddScoped<QuizAPI.Services.Media.IMediaAttachmentService, QuizAPI.Services.Media.MediaAttachmentService>();
+builder.Services.AddScoped<QuizAPI.Services.Media.MediaSweeper>();
+
+// Outside image sources for the picker (docs/media/media-pipeline.md, "Outside sources"). Pexels is
+// off until Media:Stock:PexelsApiKey is set; Wikimedia needs no key. The download client follows no
+// redirects: the import only ever fetches from the provider's own image host.
+builder.Services.Configure<QuizAPI.Services.Media.Stock.StockImageOptions>(
+    builder.Configuration.GetSection(QuizAPI.Services.Media.Stock.StockImageOptions.Section));
+builder.Services.AddHttpClient<QuizAPI.Services.Media.Stock.PexelsProvider>(QuizAPI.Services.Media.Stock.PexelsProvider.Configure);
+builder.Services.AddHttpClient<QuizAPI.Services.Media.Stock.WikimediaProvider>((sp, client) =>
+    QuizAPI.Services.Media.Stock.WikimediaProvider.Configure(client,
+        sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<QuizAPI.Services.Media.Stock.StockImageOptions>>().Value));
+builder.Services.AddTransient<QuizAPI.Services.Media.Stock.IStockImageProvider>(sp => sp.GetRequiredService<QuizAPI.Services.Media.Stock.WikimediaProvider>());
+builder.Services.AddTransient<QuizAPI.Services.Media.Stock.IStockImageProvider>(sp => sp.GetRequiredService<QuizAPI.Services.Media.Stock.PexelsProvider>());
+builder.Services.AddHttpClient(QuizAPI.Services.Media.Stock.StockImageService.DownloadClient, (sp, client) =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(20);
+        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",
+            $"OxygenQuiz/1.0 ({sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<QuizAPI.Services.Media.Stock.StockImageOptions>>().Value.WikimediaContact})");
+    })
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+builder.Services.AddScoped<QuizAPI.Services.Media.Stock.IStockImageService, QuizAPI.Services.Media.Stock.StockImageService>();
+
+// Reports and moderation (docs/media/moderation.md).
+builder.Services.Configure<QuizAPI.Services.Moderation.ModerationOptions>(
+    builder.Configuration.GetSection(QuizAPI.Services.Moderation.ModerationOptions.Section));
+builder.Services.AddScoped<QuizAPI.Repositories.Interfaces.IModerationRepository, QuizAPI.Repositories.ModerationRepository>();
+builder.Services.AddScoped<QuizAPI.Services.Moderation.IContentReportService, QuizAPI.Services.Moderation.ContentReportService>();
+builder.Services.AddScoped<QuizAPI.Services.Moderation.IModerationService, QuizAPI.Services.Moderation.ModerationService>();
 
 // Generic file upload service
 builder.Services.AddScoped<QuizAPI.Controllers.Files.Services.IFileService, QuizAPI.Controllers.Files.Services.FileService>();
@@ -285,7 +322,7 @@ builder.Services.AddSingleton<QuizAPI.Services.DataTransfer.IDataExportService, 
 builder.Services.AddSingleton<QuizAPI.Services.DataTransfer.IDataImportService, QuizAPI.Services.DataTransfer.DataImportService>();
 
 // Dynamic reports (quiz performance, question analytics) — scoped, reads the DbContext.
-builder.Services.AddScoped<QuizAPI.Services.Reports.IReportService, QuizAPI.Services.Reports.ReportService>();
+builder.Services.AddScoped<QuizAPI.Services.StatisticsExport.IStatisticsService, QuizAPI.Services.StatisticsExport.StatisticsService>();
 
 // --- In-app AI quiz generation (docs/quiz/ai-quiz-generation-plan.md) ---
 // Bind the section, resolve the vendor, and decide whether AI can work at all — once, eagerly,
@@ -485,7 +522,13 @@ var forwardedOptions = new ForwardedHeadersOptions
     ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor
                      | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
 };
-// Nginx is the only ingress and runs on a trusted host, so trust the whole chain.
+// Trust X-Forwarded-For from any peer, because only Nginx can be a peer: the container publishes
+// 5000 on 127.0.0.1 alone (docker-compose.prod.yml), and Docker's NAT presents Nginx's connections
+// from the bridge gateway rather than loopback, so the default loopback-only KnownProxies would
+// ignore them. Nginx writes X-Forwarded-For as exactly one value — the visitor's address, already
+// resolved from CF-Connecting-IP for Cloudflare's ranges only (deploy/nginx/cloudflare-real-ip.conf)
+// — so RemoteIpAddress below this line is the visitor. The rate limiter and the audit log both read
+// it. docs/adr/0027-the-client-ip-is-resolved-at-nginx.md.
 forwardedOptions.KnownNetworks.Clear();
 forwardedOptions.KnownProxies.Clear();
 app.UseForwardedHeaders(forwardedOptions);
@@ -627,10 +670,17 @@ static string EveryNMinutes(int minutes) =>
 using (var scope = app.Services.CreateScope())
 {
     var recurringJobs = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
-    recurringJobs.AddOrUpdate<ImageCleanUpService>(
-        "image-cleanup-daily",
-        service => service.RunCleanupAsync(),
-        Cron.Daily(2) // 2 AM every day
+    // The old image pipeline's nightly cleanup. Its job class is gone; recurring jobs live in the
+    // database, so without this a production box would keep trying to run it.
+    recurringJobs.RemoveIfExists("image-cleanup-daily");
+
+    // Deletes media nothing points at: never-saved uploads after 24 hours, once-used files 7 days
+    // after the last reference went (docs/media/media-pipeline.md). Hourly, so the 24 hours is
+    // really 24–25.
+    recurringJobs.AddOrUpdate<QuizAPI.Services.Media.MediaSweeper>(
+        "media-sweep",
+        service => service.RunJobAsync(),
+        Cron.Hourly()
     );
 
     // Frees quota slots held by generations that never finished (crash, dropped connection).

@@ -151,11 +151,14 @@ export function toAssociationQuizFormValues(
   };
 }
 
-/** A blank board for the create form. */
+/**
+ * A blank board for the create form. Starts Public, like every new quiz
+ * (docs/quiz/quiz-visibility.md, "Defaults"); the schema's own default stays Draft, as the API's does.
+ */
 export const emptyAssociationQuizFormValues = (): Partial<AssociationQuizFormValues> => ({
   title: "",
   description: "",
-  status: "Draft",
+  status: "Public",
   boardTimeInMinutes: BOARD_MINUTES.default,
   columns: Array.from({ length: 4 }, () => ({ tiles: ["", "", "", ""], solution: "", otherSpellings: "" })),
   finalSolution: "",

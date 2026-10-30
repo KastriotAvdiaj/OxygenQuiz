@@ -14,6 +14,7 @@ import {
   GraduationCap,
   Presentation,
   School,
+  Flag,
 } from "lucide-react";
 
 export type DashboardNavItem = {
@@ -43,6 +44,13 @@ export type DashboardNavItem = {
    * so an item the viewer can't reach never takes a slot.
    */
   island?: boolean;
+  /**
+   * Other first path segments that belong to this item, so a page *under* a section keeps that
+   * section lit — `/dashboard/quiz/37` is the Quizzes section, though its URL says `quiz`.
+   * The active item is the one whose `id` or `activeOn` matches the first segment after the
+   * dashboard root (`activeNavId` in dashboard-layout.tsx).
+   */
+  activeOn?: string[];
 };
 
 // Admin / SuperAdmin dashboard (/dashboard)
@@ -60,6 +68,8 @@ export const adminDashboardNavButtons: DashboardNavItem[] = [
     icon: Folder,
     group: "Overview",
     island: true,
+    // The single-quiz page is `quiz/:quizId`, a sibling of `quizzes` rather than under it.
+    activeOn: ["quiz"],
   },
   {
     id: "questions",
@@ -69,12 +79,12 @@ export const adminDashboardNavButtons: DashboardNavItem[] = [
     island: true,
   },
   {
-    // Placeholder. The reports UI is built (MyReports.tsx) but unfinished, so the route
-    // renders a coming-soon page rather than shipping a half-done feature — see
-    // docs/quiz/reports.md.
+    // Viewer reports of questions and quizzes — the moderation queue (docs/media/moderation.md).
+    // The owner statistics this slot once held are parked as StatisticsExport.tsx
+    // (docs/quiz/statistics-export.md).
     id: "reports",
     label: "Reports",
-    icon: LineChart,
+    icon: Flag,
     roles: ["Admin", "SuperAdmin"],
     group: "Overview",
   },
@@ -142,9 +152,8 @@ export const adminDashboardNavButtons: DashboardNavItem[] = [
 // (docs/development/account-overlay.md), reachable from the header drawer on any page. The
 // dashboard keeps only what is genuinely a workspace — your content, and your play history.
 //
-// Reports used to sit here. It was unfinished and not something a player needs, so it was
-// pulled from this nav; the page now lives behind a coming-soon placeholder on the admin
-// dashboard. See docs/quiz/reports.md.
+// "Reports" here is the author's inbox of wrong-answer reports (docs/media/moderation.md) —
+// not the statistics screen that once sat in this slot (docs/quiz/statistics-export.md).
 export const userDashboardNavButtons: DashboardNavItem[] = [
   {
     id: "quizzes",
@@ -152,6 +161,8 @@ export const userDashboardNavButtons: DashboardNavItem[] = [
     icon: Folder,
     group: "Overview",
     island: true,
+    // The owner's quiz page, `quiz/:quizId` — same as the admin nav's Quizzes item.
+    activeOn: ["quiz"],
   },
   {
     id: "questions",
@@ -167,6 +178,12 @@ export const userDashboardNavButtons: DashboardNavItem[] = [
     icon: History,
     group: "Overview",
     island: true,
+  },
+  {
+    id: "reports",
+    label: "Reports",
+    icon: Flag,
+    group: "Overview",
   },
   // Teachers and SuperAdmins — HOST_ROLES (docs/auth/teacher-role.md §1.1). Hosting starts here
   // or from a board's start dialog.

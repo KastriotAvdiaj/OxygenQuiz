@@ -71,7 +71,7 @@ export const DEFAULT_NEW_MULTIPLE_CHOICE: NewMultipleChoiceQuestion = {
   difficultyId: UnspecifiedIds.difficultyId,
   categoryId: UnspecifiedIds.categoryId,
   languageId: UnspecifiedIds.languageId,
-  imageUrl: "",
+  media: null,
   type: QuestionType.MultipleChoice,
   answerOptions: [
     { id: -1, text: "", isCorrect: false },
@@ -89,7 +89,7 @@ export const DEFAULT_NEW_TRUE_FALSE: NewTrueFalseQuestion = {
 difficultyId: UnspecifiedIds.difficultyId,
   categoryId: UnspecifiedIds.categoryId,
   languageId: UnspecifiedIds.languageId,
-  imageUrl: "",
+  media: null,
   type: QuestionType.TrueFalse,
   correctAnswer: true,
 };
@@ -101,7 +101,7 @@ export const DEFAULT_NEW_TYPE_ANSWER: NewTypeTheAnswerQuestion = {
   difficultyId: UnspecifiedIds.difficultyId,
   categoryId: UnspecifiedIds.categoryId,
   languageId: UnspecifiedIds.languageId,
-  imageUrl: "",
+  media: null,
   type: QuestionType.TypeTheAnswer,
   correctAnswer: "",
   isCaseSensitive: false,

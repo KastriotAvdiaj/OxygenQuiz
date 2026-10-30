@@ -33,7 +33,8 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     if (variant === "minimal") {
       return (
         <FieldWrapper label={label} error={error}>
-          <div className="minimal-input-wrapper">
+          {/* The error underline, as Input's minimal variant draws it (minimal-input-error). */}
+          <div className={cn("minimal-input-wrapper", error && "minimal-input-error")}>
             <textarea
               className={cn("minimal-input", className)}
               ref={ref}

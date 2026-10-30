@@ -193,14 +193,6 @@ export const LoadingEntities: Story = {
 // docs/quiz/quiz-draft-persistence.md, and ADR 0009 for why this is a notice and not a
 // dialog: the work is already restored, so this reports it rather than asking permission.
 
-export const RestoredFromDraft: Story = {
-  args: {
-    topic: "The French Revolution",
-    restoredDraftSavedAt: Date.now() - 4 * 60 * 1000,
-    onDiscardDraft: () => {},
-  },
-};
-
 // ── Responsive check (docs/RESPONSIVE.md: verify at 360/390px) ─────────────────────────
 
 export const OnMobile: Story = {
