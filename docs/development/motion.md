@@ -38,6 +38,23 @@ waiting.
 **Direction means something.** Going deeper (list → detail, step 1 → step 2) enters from the right
 or bottom; going back reverses it. Don't pick a direction per screen by taste.
 
+## Lists
+
+A list counts its *whole* entrance against the ~300ms budget — the stagger included. 12 cards
+at 50ms apart with a 300ms fade take 850ms to settle, which is how `/choose-quiz` felt slow
+with every request behind it done in ~250ms (fixed 2026-10-30). So:
+
+- **No entrance on the page's first paint.** The data is already there (the loader prefetched
+  it; `loading-states.md` §6), and fading it in is holding it back. Pass `initial={false}` to the
+  first render's list.
+- **When the results change** (another page, a filter), the new set enters: ≤ 200ms per item and
+  ≤ ~20ms between items, so the last one has settled by ~350ms. Reduced motion: fade only.
+- **Key the list on what it shows** (its item ids), not on the query that asked for it — see
+  `loading-states.md` §6.2. framer-motion variants only run when the container mounts; new
+  children under an already-`visible` container stay at `hidden` forever.
+
+`Quiz-Selection.tsx` is the reference.
+
 ## What not to animate
 
 - **`backdrop-filter`.** A blurred backdrop faded in makes the browser re-blur the page every

@@ -48,6 +48,15 @@ Full version, including the two failure modes this project has actually hit:
 
 ### Data fetching and forms
 
+- **A route loader prefetches the exact query the page reads.** One query-options builder,
+  imported by both — a nearly matching key warms a cache entry nobody reads, and the page then
+  fetches cold anyway (`/choose-quiz` did this until 2026-10-30). `prefetchQuery`, not
+  `ensureQueryData`. If the element is `React.lazy`, the loader also starts its chunk from
+  `routes/route-chunks.ts`, or the chunk only downloads after the loader finishes. See
+  `docs/development/loading-states.md` §6.
+- **A list that pages, filters or searches uses `placeholderData: keepPreviousData`.** The
+  current results stay on screen, dimmed, until the next arrive; a loader only when there is
+  nothing to show. §6.2 of the same doc.
 - **Mutations invalidate the broad roots in `src/lib/query-keys.ts`** (`questionKeys.all`,
   `myQuestionKeys.all`, …). Prefix matching covers every list variant — admin search, typed
   search, user dashboard — so enumerating them invites the one you forgot.
@@ -120,7 +129,8 @@ Full version, including the two failure modes this project has actually hit:
   view, or pushes content below it is animated — 150–300ms, and honouring
   `prefers-reduced-motion` (arrive, don't travel). Radix `data-[state]` classes and
   `tailwindcss-animate` for enter and open/close; `framer-motion` (`AnimatePresence`, `layout`) for
-  exits, height changes and lists. Full rule and what counts as a shift:
+  exits, height changes and lists. A list's whole entrance, stagger included, fits ~350ms, and
+  nothing animates in on a page's first paint. Full rule and what counts as a shift:
   [`docs/development/motion.md`](docs/development/motion.md).
 
 ## Backend conventions (C#)

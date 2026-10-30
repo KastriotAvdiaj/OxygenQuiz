@@ -52,8 +52,10 @@ today — it was built for the landing page's old sample question, which is gone
 that wants a category-filtered list; build those with `categoryListPath()` from
 `quiz-filters/category-param.ts`.
 
-- The loader prefetches the categories whenever the param is present, so the page can resolve
-  the name on its first render and start with the filter already applied.
+- The loader prefetches the categories (always, since 2026-10-30 — the filter panel needs them
+  anyway), so the page can resolve the name on its first render and start with the filter
+  already applied. With the param the first query has a filter, so the loader's page-1 prefetch
+  doesn't match it and the page fetches its first results itself.
 - **No category by that name**, or **the category has no public quizzes** → the list shows
   every quiz with a note ("No Mythology & Folklore quizzes yet — here's everything else.")
   instead of an empty page. The empty case is detected from the filtered result and cleared
@@ -73,9 +75,20 @@ never stack into a scrolling panel; the compact multiplayer variant keeps them
 independent because it lays them side by side.
 
 Both pickers default to the `Mixed Categories` sort option (`DEFAULT_SORT = "variety"` in
-`quiz-header.tsx`). Users can still switch to Newest/Oldest/A–Z; the variety option is
-just the landing default. Because the two pickers send identical default queries, they
-share the same React-Query cache entry.
+`quiz-sort.ts`, re-exported by `quiz-header.tsx`). Users can still switch to Newest/Oldest/A–Z;
+the variety option is just the landing default. The two pickers do **not** share a cache
+entry: `/choose-quiz` asks for the Picked half and the lobby for both (`scope`), so their keys
+differ.
+
+### How `/choose-quiz` loads
+
+The route loader (`loaders/quiz-selection.loader.tsx`) starts page 1, the three filter lookups
+and the page's chunks together, and the page arrives with all of them cached — no loader of its
+own. The query is built in one place, `pages/Quiz/catalogue-query.ts`, by both the page and the
+loader, so they can't drift onto different keys (they did until 2026-10-30; see
+[`../development/loading-states.md`](../development/loading-states.md) §6). Changing page, filter,
+sort or search keeps the current cards on screen, dimmed, until the next ones arrive
+(`keepPreviousData`, §6.2 there); only then does the new set fade in.
 
 ## How it works
 
@@ -117,7 +130,9 @@ test asserts).
 |---|---|
 | `OxygenBackend/QuizAPI/Controllers/Quizzes/QuizVarietyOrdering.cs` | `IsRequested` + the ordering itself. Pure LINQ, EF-translatable. |
 | `OxygenBackend/QuizAPI/Controllers/Quizzes/Services/QuizServices/QuizService.cs` | Special-cases the pseudo field in `SearchQuizzesAsync`. |
-| `src/pages/Quiz/components/quiz-header.tsx` | `SortOption "variety"`, `DEFAULT_SORT`, the "Mixed Categories" label. |
+| `src/pages/Quiz/components/quiz-sort.ts` | `SortOption "variety"`, `DEFAULT_SORT`, `SORT_RULES`. |
+| `src/pages/Quiz/components/quiz-header.tsx` | The "Mixed Categories" label and the sort menu. |
+| `src/pages/Quiz/catalogue-query.ts` | `/choose-quiz`'s query, shared by the page and its route loader. |
 | `OxygenBackend/QuizAPI.Tests/Discovery/QuizVarietyOrderingTests.cs` | Interleave, single-category fallback, determinism, `IsRequested` parsing. |
 
 ## Trade-offs & future ideas

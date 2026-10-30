@@ -1286,7 +1286,11 @@ redesign means a scroll regression could have come from either.
 Found while collapsing the double loading screen on quiz completion. The public shell was
 fixed; these were left.
 
-- **P2 — Dashboard routes show no loading state at all.** The dashboard's child routes use
+- ~~**P2 — Dashboard routes show no loading state at all.**~~ **Fixed 2026-10-21** —
+  `DashboardLayout` renders `RouteProgressBar` in both branches, and `PageEnter` fades the new
+  page in (loading-states.md §5, motion.md "Page changes"). That the route-level `lazy` never
+  fires a Suspense fallback is now the intended shape (loading-states.md §3). Was:
+  The dashboard's child routes use
   React Router's own `lazy: async () => ({ Component })` rather than `React.lazy`. That is
   resolved as part of the navigation instead of by a suspending render, so **no Suspense
   fallback ever fires** — the current page simply sits there until the chunk arrives. The two
@@ -1305,6 +1309,28 @@ fixed; these were left.
   not a loader in the sense above. Kept and storied; its `loading-wave` keyframe in `global.css`
   stays with it.
   → `src/components/ui/loading-wave.tsx`
+
+Found 2026-10-30 while fixing the slow quiz catalogue (`/choose-quiz` now follows all of these —
+loading-states.md §6, §6.2):
+
+- **P3 — Five list screens swap their results for a loader on every page, filter or search
+  change.** No `placeholderData: keepPreviousData`, so each new query key is `isLoading` and the
+  results collapse and come back (loading-states.md §6.2). The lobby's quiz picker
+  (`quiz-selection-dialog.tsx`), the classroom board picker (`HostSetupPage.tsx`), My Quizzes
+  (`UserDashboard/MyQuizzes.tsx`), the admin Quizzes list (`Dashboard/Pages/Quiz/Quizzes.tsx`) and
+  the admin Questions tabs (`QuestionsTabContent.tsx`). Each is a one-line query change plus
+  dimming the stale results; the admin two also need their skeleton limited to the first load.
+- **P3 — `users.loader.tsx` uses `ensureQueryData`.** A failed user-list fetch throws into the
+  route's `errorElement` instead of the page's own error state — the thing §6 says a prefetch
+  must not do. It also carries two old TODOs (pagination; data visible after sign-out).
+  → `src/loaders/users.loader.tsx`
+- **P3 — `GET /api/quiz/public` has no client.** The catalogue's loader was its last caller;
+  everything now goes through `/quiz/search`. The endpoint and `QuizService.GetPublicQuizzesAsync`
+  can go once nothing outside the SPA is found to use it. Its frontend wrapper was deleted.
+  → `OxygenBackend/QuizAPI/Controllers/Quizzes/QuizzesController.cs`
+- **P3 — Only the catalogue and results routes start their chunk in the loader.** Every other
+  public route without a loader still loads `HomeLayout` and its page chunk one after the other
+  (route-chunks.ts). Cheap where it matters: a route that gets a loader should get this with it.
 
 ## Quiz card (2026-09-18 — see docs/quiz/quiz-card.md)
 

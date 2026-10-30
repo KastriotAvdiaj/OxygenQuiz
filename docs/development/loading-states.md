@@ -98,26 +98,42 @@ time the server is slow.
 
 A page that loads its chunk and *then* starts a query from cold shows two waits in a row, however
 well the two loaders match. The fix is not a better loader; it is starting the request earlier.
-Give the route a loader that warms the query, so the fetch overlaps the chunk download and the
-component's `useQuery` is never `isLoading`:
+Give the route a loader that warms the query — and, for a `React.lazy` page, starts the chunk
+too — so data and code download side by side and the component's `useQuery` is never
+`isLoading`:
 
 ```ts
 // loaders/quiz-results.loader.tsx
 await queryClient.prefetchQuery(sessionResultsQueryOptions(sessionId));
 ```
 
-Two things to copy along with it:
+Three things to copy along with it:
 
 - **Define the query in one place.** `sessionResultsQueryOptions` is shared by the loader and the
   hook. A loader that warms a *nearly* matching key fills the cache with something the component
-  never reads, and the only symptom is the loader coming back.
+  never reads, and the only symptom is the loader coming back. This happened: until 2026-10-30
+  the catalogue's loader awaited `/quiz/public` while `/choose-quiz` read `/quiz/search`, so
+  every visit waited one round trip for data that was thrown away and then fetched cold anyway.
+  For a page whose query is built from state (search, filters, sort, page), put the builder in
+  its own module and have the page and the loader both call it — `pages/Quiz/catalogue-query.ts`
+  is the reference, pinned by `loaders/__tests__/quiz-selection.loader.test.ts`. Keep that module
+  free of UI imports, or the loader drags the page's components into the entry bundle.
 - **`prefetchQuery`, not `ensureQueryData`.** `ensureQueryData` rejects, so a failed fetch throws
   out of the loader into the route's `errorElement` and past whatever error state the component
   already has. The loader's job is to start the request early, not to take over deciding what
-  failure looks like.
-
-Currently prefetched: the quiz catalogue (`quiz-selection.loader.tsx`), the user list
-(`users.loader.tsx`), both results routes (`quiz-results.loader.tsx`), the dashboard quiz page's
+  failure looks like. The one deliberate exception is `quiz.loader.tsx`, which `fetchQuery`s the
+  quiz itself so a missing quiz is the route's 404. `users.loader.tsx` still uses
+  `ensureQueryData` without such a reason (known-issues.md, "Loading states").
+- **Start the chunk, when the element is `React.lazy`.** React Router renders the element only
+  after the loader resolves, and `React.lazy` only starts downloading when it renders — so on
+  its own the chunk queues *behind* the loader's request. Measured on `/choose-quiz` (2026-10-30):
+  the page chunks started 2ms after the loader's request ended. Put the route's importers in
+  `routes/route-chunks.ts`, build the lazy component from them in `Router.tsx`, and await
+  `preloadChunks(...)` in the loader beside the prefetch. Routes using the router's own `lazy`
+  (the dashboards) don't need this: the router already runs `lazy` and `loader` in parallel.
+Currently prefetched: the quiz catalogue — page 1, the three filter lookups, and the layout and
+page chunks (`quiz-selection.loader.tsx`) — the user list (`users.loader.tsx`), both results
+routes with their chunks (`quiz-results.loader.tsx`), the dashboard quiz page's
 quiz and question list (`quiz.loader.tsx`), the Classic editor's quiz and questions on both
 dashboards (`quiz-edit.loader.ts`), and the admin Quizzes and Questions pages' lookups and first
 page (`routes/dashboard-prefetch.ts`).
@@ -145,6 +161,34 @@ the same chunk importer in `Router.tsx` so both warm one module.
 slow part — see §2.1. For a chunk plus one fast query, await the prefetch and let the progress
 bar cover it; a skeleton that shows for 300ms and then reflows is the flash §4 exists to
 prevent.
+
+### 6.2 When the page changes what it shows: keep the old results
+
+The loader covers arriving. Inside a page — the next page of a list, a filter, a sort, a search —
+the new query key is cold, and a plain `useQuery` is `isLoading` again: the results collapse into
+a loader and come back, and the content below jumps twice. Keep what is on screen instead:
+
+```ts
+const { data, isLoading, isPlaceholderData } = useQuery({
+  ...catalogueQueryOptions(state),
+  placeholderData: keepPreviousData,
+});
+```
+
+- **`isLoading` now means "nothing to show at all"** — the first load with no prefetch. That is
+  the only time a loader replaces the results.
+- **Say that the shown results are stale**: dim them (`opacity-60` with a `transition-opacity`)
+  and set `aria-busy` while `isPlaceholderData`. Not a loader on top.
+- **Animate the change of results, not the change of query.** With `keepPreviousData` the query
+  changes first and the results a moment later; key the animated list on what it shows (the
+  `/choose-quiz` grid is keyed by its quiz ids), or the entrance plays on the stale results and
+  not on the new ones. See `motion.md`, "Lists".
+
+Doing this: `/choose-quiz`, the play history (`get-user-sessions.ts`), match history
+(`Multiplayer/api/matches.ts`). Not yet: the lobby's quiz picker, the classroom board picker, My
+Quizzes, and the admin Quizzes and Questions lists (known-issues.md, "Loading states"). The admin
+lists draw a skeleton per page (§2.1) — the same rule applies when they change pages: the
+skeleton is for the page's first data, not for every page after it.
 
 ## 7. Sizing and the viewport
 

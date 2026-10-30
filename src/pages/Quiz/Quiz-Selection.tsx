@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { QuizCard } from "./components/quiz-card";
 import {
   QuizToolbar,
-  SORT_RULES,
   QuizSortSelect,
   DEFAULT_SORT,
   type SortOption,
@@ -18,8 +18,7 @@ import {
 import { QuizSummaryDTO } from "@/types/quiz-types";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { useDebounce } from "@/hooks/use-debounce";
-import { useSearchQuizzes } from "../Dashboard/Pages/Quiz/api/search-quizzes";
-import { rule, type FilterQuery } from "@/lib/filtering";
+import { rule } from "@/lib/filtering";
 import { pagedResponseToPagination } from "@/lib/pagination-query";
 import { PaginationControls } from "@/components/ui/pagination-control";
 import { BlobLoader } from "@/components/ui";
@@ -45,6 +44,9 @@ import { quizPlayPath } from "./quiz-play-path";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useFormatAvailable } from "../Dashboard/Pages/Quiz/format-access";
 import { CatalogueScopeSwitch, type CatalogueChoice } from "./components/catalogue-scope-switch";
+import { DEFAULT_CATALOGUE, catalogueQueryOptions } from "./catalogue-query";
+import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
+import { cn } from "@/utils/cn";
 import { useCanSelectUnspecifiedLookup } from "@/pages/Dashboard/Pages/Question/Entities/lookup-visibility";
 
 /** The catalogue's format filter. "all" sends no rule; the others filter server-side (QuizFilterFields: format). */
@@ -55,31 +57,23 @@ const FORMAT_OPTIONS: { value: FormatFilter; label: string }[] = [
   { value: "Associations", label: "Boards" },
 ];
 
-// Number of quiz cards shown per page.
-const PAGE_SIZE = 12;
-
+/**
+ * How a new set of results arrives: a short fade with a slight rise, the cards 15ms apart, so a
+ * full page of 12 has settled in about 350ms (docs/development/motion.md: past ~300ms an
+ * animation reads as waiting). The first paint doesn't animate at all — the loader has the
+ * cards ready, and holding them back to fade in is what made the page feel slow: the old
+ * 50ms stagger with a 300ms fade took ~850ms to show page one, longer than every request
+ * behind it combined.
+ */
 const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      duration: 0.3,
-      staggerChildren: 0.05,
-    },
-  },
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.015 } },
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.3,
-      ease: "easeOut",
-    },
-  },
-};
+const itemVariants = (reduceMotion: boolean) => ({
+  hidden: { opacity: 0, y: reduceMotion ? 0 : 8 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.18, ease: "easeOut" } },
+});
 
 // Single-player only: multiplayer hosts pick their quiz inside the lobby
 // (Multiplayer/components/lobby/quiz-selection-dialog.tsx), which shares the
@@ -153,7 +147,6 @@ export function QuizSelection() {
     clear: clearFacets,
     filters,
     activeCount: facetCount,
-    selectionKey,
   } = useQuizFilterState(
     resetPage,
     arrival?.id != null ? { categoryIds: [arrival.id] } : undefined
@@ -165,7 +158,7 @@ export function QuizSelection() {
   const boardsAvailable = useFormatAvailable("Associations");
 
   // Picked (the main catalogue) or community quizzes — docs/media/moderation.md.
-  const [catalogue, setCatalogue] = useState<CatalogueChoice>("picked");
+  const [catalogue, setCatalogue] = useState<CatalogueChoice>(DEFAULT_CATALOGUE);
   const handleCatalogueChange = useCallback(
     (next: CatalogueChoice) => {
       setCatalogue(next);
@@ -182,18 +175,27 @@ export function QuizSelection() {
     [resetPage]
   );
 
-  // Build the server-side query: search + filters + sort + paging, all handled by
-  // the public quiz catalogue endpoint (/quiz/search, scope "public").
-  const query: FilterQuery = {
-    page: pageNumber,
-    pageSize: PAGE_SIZE,
-    search: debouncedSearch || undefined,
-    sort: [SORT_RULES[sortBy]],
-    filters:
-      boardsAvailable && formatFilter !== "all" ? [...filters, rule.eq("format", formatFilter)] : filters,
-  };
-
-  const { data: quizData, isLoading } = useSearchQuizzes({ scope: "public", catalogue, query });
+  // Search + filters + sort + paging, all server-side (/quiz/search, scope "public"). Built by
+  // catalogue-query.ts, which the route loader uses too — so page 1 is already cached on arrival.
+  //
+  // keepPreviousData: while another page / filter / sort loads, the current cards stay on
+  // screen, dimmed, instead of being swapped for a loader and back. `isLoading` is then only
+  // true when there is nothing to show at all (a failed prefetch, or a `?category=` arrival).
+  const {
+    data: quizData,
+    isLoading,
+    isPlaceholderData,
+  } = useQuery({
+    ...catalogueQueryOptions({
+      page: pageNumber,
+      search: debouncedSearch,
+      sortBy,
+      filters:
+        boardsAvailable && formatFilter !== "all" ? [...filters, rule.eq("format", formatFilter)] : filters,
+      catalogue,
+    }),
+    placeholderData: keepPreviousData,
+  });
 
   /**
    * The arrival's category exists but has no public quizzes: drop the filter and say so,
@@ -223,6 +225,21 @@ export function QuizSelection() {
 
   const quizzes = quizData?.items ?? [];
   const pagination = quizData ? pagedResponseToPagination(quizData) : undefined;
+
+  /**
+   * The grid is keyed by the cards it shows, so it remounts — and its entrance runs — exactly
+   * when the visible set changes, not when the query does (with keepPreviousData the query
+   * changes first and the cards a moment later). Remounting is also what keeps framer-motion's
+   * variants working: new children under an already-"visible" container would stay hidden.
+   *
+   * No entrance on the first paint (motion.md: don't hold content back on load). Set during
+   * render, the "adjust state while rendering" pattern, so there is no frame of the wrong value.
+   */
+  const reduceMotion = usePrefersReducedMotion();
+  const resultsKey = quizzes.map((q) => q.id).join(",");
+  const [firstResultsKey] = useState(resultsKey);
+  const [resultsChanged, setResultsChanged] = useState(false);
+  if (!resultsChanged && resultsKey !== firstResultsKey) setResultsChanged(true);
 
   const hasActiveFilters = Boolean(searchQuery) || facetCount > 0;
   const activeFilterCount = (searchQuery ? 1 : 0) + facetCount;
@@ -457,7 +474,7 @@ export function QuizSelection() {
                 <>
                   <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-primary/60 dark:border-primary/70 bg-background px-3 py-1 text-xs font-header font-semibold text-primary shadow-[0_2px_0_0_var(--primary-edge)] whitespace-nowrap tabular-nums">
                     <ListFilter className="h-3.5 w-3.5" />
-                    {isLoading
+                    {isLoading || isPlaceholderData
                       ? "Searching…"
                       : `${resultCount.toLocaleString()} ${
                           resultCount === 1 ? "match" : "matches"
@@ -514,23 +531,24 @@ export function QuizSelection() {
               </motion.div>
             ) : (
               <motion.div
-                // Re-key per query: framer-motion only propagates "hidden" → "visible" when
-                // the container (re)mounts. Without this, swapping in cached results (e.g.
-                // rapidly toggling filters) mounts the new cards in the "hidden" variant and
-                // leaves them permanently invisible.
-                key={`${catalogue}|${debouncedSearch}|${selectionKey}|${sortBy}|${pageNumber}`}
+                key={resultsKey}
                 // auto-rows-fr + h-full wrappers stretch every card to its
                 // row's height, so cards with short titles/descriptions don't
-                // end up shorter than their neighbours.
-                className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 xl:grid-cols-3 2xl:grid-cols-4 auto-rows-fr"
+                // end up shorter than their neighbours. Dimmed while the next
+                // results load over these (keepPreviousData).
+                className={cn(
+                  "grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 xl:grid-cols-3 2xl:grid-cols-4 auto-rows-fr transition-opacity duration-200 motion-reduce:transition-none",
+                  isPlaceholderData && "opacity-60"
+                )}
+                aria-busy={isPlaceholderData}
                 variants={containerVariants}
-                initial="hidden"
+                initial={resultsChanged ? "hidden" : false}
                 animate="visible"
               >
                 {quizzes.map((quiz) => (
                   <motion.div
                     key={quiz.id}
-                    variants={itemVariants}
+                    variants={itemVariants(reduceMotion)}
                     layout={false}
                     className="h-full"
                   >

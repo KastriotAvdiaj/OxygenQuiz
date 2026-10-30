@@ -764,4 +764,15 @@ a field hint — not as a subtitle.
    the page header is the h1 and its actions — no description paragraph under it.
 15. Anything appear, disappear, open, reorder, or push content down? Animate it, and check it
    with reduced motion on (devtools → Rendering → emulate `prefers-reduced-motion`). Nothing
-   snaps — see [`development/motion.md`](./development/motion.md).
+   snaps — see [`development/motion.md`](./development/motion.md). A list's whole entrance,
+   stagger included, fits ~350ms, and nothing animates in on the page's first paint
+   (motion.md, "Lists").
+16. A page that fetches on arrival? Give its route a loader that prefetches the **same query
+   options** the page reads — one builder, imported by both, no UI imports in it — and, if the
+   element is `React.lazy`, starts its chunk from `routes/route-chunks.ts`. `prefetchQuery`, not
+   `ensureQueryData`. Check it in the network panel: the page's own request should not appear
+   after the chunk, and nothing the loader fetched should go unread. See
+   [`development/loading-states.md`](./development/loading-states.md) §6.
+17. A list the user pages, filters, sorts or searches? `placeholderData: keepPreviousData`; a
+   loader only when there is nothing to show; dim the stale results while
+   `isPlaceholderData`. See loading-states.md §6.2.

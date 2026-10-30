@@ -3,6 +3,12 @@ import { LoaderFunction, LoaderFunctionArgs } from "react-router-dom";
 import { userAuthLoader } from "@/lib/Auth";
 import { sessionResultsQueryOptions } from "@/pages/Quiz/Sessions/api/get-quiz-session";
 import { guestSessionResultsQueryOptions } from "@/pages/Quiz/Sessions/api/guest-quiz-session";
+import {
+  loadGuestQuizResults,
+  loadHomeLayout,
+  loadQuizResults,
+  preloadChunks,
+} from "@/routes/route-chunks";
 
 /**
  * Warm the finished session before the results route renders.
@@ -13,8 +19,10 @@ import { guestSessionResultsQueryOptions } from "@/pages/Quiz/Sessions/api/guest
  * and the component had mounted). Two sequential waits, each announcing itself.
  *
  * Starting the request here collapses them. React Router runs this before the route renders,
- * so the fetch overlaps the chunk download instead of queueing behind it, and by the time the
- * component mounts `useQuery` reads the same cache entry and is never `isLoading` at all.
+ * and the loader starts the route's chunks too (route-chunks.ts) — the element is a
+ * `React.lazy` component, which on its own would only start downloading *after* this loader
+ * resolved. So data and code download side by side, and by the time the component mounts
+ * `useQuery` reads the same cache entry and is never `isLoading` at all.
  *
  * ## Why prefetchQuery and not ensureQueryData
  *
@@ -35,9 +43,10 @@ export const quizResultsLoader =
     if (auth instanceof Response) return auth;
 
     const { sessionId } = args.params;
-    if (sessionId) {
-      await queryClient.prefetchQuery(sessionResultsQueryOptions(sessionId));
-    }
+    await Promise.all([
+      sessionId ? queryClient.prefetchQuery(sessionResultsQueryOptions(sessionId)) : undefined,
+      preloadChunks(loadHomeLayout, loadQuizResults),
+    ]);
 
     return auth;
   };
@@ -54,10 +63,11 @@ export const guestQuizResultsLoader =
   (queryClient: QueryClient): LoaderFunction =>
   async ({ params }: LoaderFunctionArgs) => {
     const { sessionId } = params;
-    if (sessionId) {
-      await queryClient.prefetchQuery(
-        guestSessionResultsQueryOptions(sessionId),
-      );
-    }
+    await Promise.all([
+      sessionId
+        ? queryClient.prefetchQuery(guestSessionResultsQueryOptions(sessionId))
+        : undefined,
+      preloadChunks(loadHomeLayout, loadGuestQuizResults),
+    ]);
     return null;
   };

@@ -32,21 +32,26 @@ import {
 import { dashboardEntryLoader } from "@/loaders/dashboardEntryLoader";
 import { quizSelectionLoader } from "@/loaders/quiz-selection.loader";
 import {
+  loadGuestQuizResults,
+  loadHomeLayout,
+  loadQuizResults,
+  loadQuizSelection,
+} from "./route-chunks";
+import {
   guestQuizResultsLoader,
   quizResultsLoader,
 } from "@/loaders/quiz-results.loader";
 import { MultiplayerLobbyPage } from "@/pages/Quiz/Multiplayer/MultiplayerLobbyPage";
-const HomeLayout = lazy(() => {
-  console.log("Loading HomeLayout chunk...");
-  return import("@/layouts/layout").then((module) => ({
-    default: module.HomeLayout,
-  }));
-});
+// Public routes with a loader share their chunk importer with it (route-chunks.ts), so the
+// chunk downloads alongside the loader's data instead of after it.
+const HomeLayout = lazy(() =>
+  loadHomeLayout().then((module) => ({ default: module.HomeLayout })),
+);
 const AppRoot = lazy(() =>
   import("../pages/AppRoot").then((module) => ({ default: module.AppRoot })),
 );
 const QuizSelection = lazy(() =>
-  import("@/pages/Quiz/Quiz-Selection").then((module) => ({
+  loadQuizSelection().then((module) => ({
     default: module.QuizSelection,
   })),
 );
@@ -66,9 +71,7 @@ const QuizPageRouteWrapper = lazy(() =>
   ),
 );
 const QuizResultsRouteWrapper = lazy(() =>
-  import("@/pages/Quiz/Sessions/components/quiz-results/quiz-results-route-wrapper").then(
-    (module) => ({ default: module.QuizResultsRouteWrapper }),
-  ),
+  loadQuizResults().then((module) => ({ default: module.QuizResultsRouteWrapper })),
 );
 const QuizListingPage = lazy(() =>
   import("@/pages/Quiz/QuizListing/quiz-listing-page").then((module) => ({
@@ -105,9 +108,7 @@ const AssociationResultsPage = lazy(() =>
 );
 
 const GuestQuizResultsRouteWrapper = lazy(() =>
-  import("@/pages/Quiz/Sessions/components/quiz-results/guest-quiz-results-route-wrapper").then(
-    (module) => ({ default: module.GuestQuizResultsRouteWrapper }),
-  ),
+  loadGuestQuizResults().then((module) => ({ default: module.GuestQuizResultsRouteWrapper })),
 );
 const CreateQuizRoute = lazy(() =>
   import(

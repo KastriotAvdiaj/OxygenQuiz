@@ -16,6 +16,13 @@
 
 ## Current state
 
+> **This section is the state *before* the design was implemented (June 2026)**, kept for the
+> reasoning below it. Today, in `src/routes/Router.tsx`: both multiplayer routes run
+> `userAuthLoader`; `/multiplayer/create` is gone (the create-lobby dialog replaced it,
+> 2026-07-14); `/quiz/results/:sessionId[/review]` runs `quizResultsLoader` (auth plus the
+> results prefetch) and `/quiz/results-guest/:sessionId` runs `guestQuizResultsLoader`; and
+> `/choose-quiz`'s loader only prefetches (data and chunks — `development/loading-states.md` §6).
+
 ### Route gating (`src/routes/Router.tsx`)
 
 | Route | Component | Loader | Gated? |
