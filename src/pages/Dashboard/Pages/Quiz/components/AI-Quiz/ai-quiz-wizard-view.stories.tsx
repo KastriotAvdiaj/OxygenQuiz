@@ -625,7 +625,7 @@ export const GroundingWikipediaDown: Story = {
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("button", { name: /Write from memory anyway/ }));
+    await userEvent.click(canvas.getByRole("button", { name: /Continue anyway/ }));
     await expect(args.onAnswerSource).toHaveBeenCalledWith({ sourceAcceptFromMemory: true });
   },
 };

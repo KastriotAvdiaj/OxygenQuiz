@@ -1,4 +1,6 @@
-import { AlertTriangle, ArrowLeft, ChevronRight, ExternalLink, RotateCw } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, ChevronRight, ExternalLink, RotateCw } from "lucide-react";
+
+import type { ReactNode } from "react";
 
 import { LiftedButton } from "@/common/LiftedButton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -46,7 +48,7 @@ const ChoiceRow = ({
   muted = false,
 }: {
   title: string;
-  detail?: string;
+  detail?: ReactNode;
   onClick: () => void;
   disabled?: boolean;
   muted?: boolean;
@@ -57,7 +59,10 @@ const ChoiceRow = ({
     disabled={disabled}
     className={cn(
       // The question-type rows' measurements: 44px, docs/RESPONSIVE.md's band for primary choices.
-      "flex min-h-11 w-full flex-1 items-center justify-between gap-3 rounded-lg border-2 px-3 py-2.5",
+      // `min-w-0`: a flex item's minimum width is its content's by default, so a long title
+      // ("Historia e futbollit në Kosovë") held the row at full text width on a phone and pushed
+      // it, and the link beside it, out past the card. With it, `truncate` below gets to work.
+      "flex min-h-11 w-full min-w-0 flex-1 items-center justify-between gap-3 rounded-lg border-2 px-3 py-2.5",
       "text-left text-sm leading-tight transition-colors",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
       "disabled:cursor-not-allowed disabled:opacity-60",
@@ -67,7 +72,9 @@ const ChoiceRow = ({
     )}
   >
     <span className="min-w-0">
-      <span className={cn("block truncate", !muted && "font-medium")}>{title}</span>
+      {/* Two lines, then an ellipsis: on a phone one line left "Historia e futb…", and the
+          title is the thing being chosen. */}
+      <span className={cn("block break-words line-clamp-2", !muted && "font-medium")}>{title}</span>
       {detail && <span className="mt-0.5 block text-xs text-muted-foreground">{detail}</span>}
     </span>
     <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -148,10 +155,17 @@ export const SourceChoiceCard = ({
         {question.status === "NeedsArticle" && (
           <div role="group" aria-label="Wikipedia articles" className="grid grid-cols-1 gap-2">
             {(question.articles ?? []).map((article) => (
-              <div key={article.title} className="flex items-stretch gap-2">
+              <div key={article.title} className="flex min-w-0 items-stretch gap-2">
                 <ChoiceRow
                   title={article.title}
-                  detail={`${numberFormat.format(article.words)} words · Wikipedia`}
+                  detail={
+                    <>
+                      {numberFormat.format(article.words)} words
+                      {/* Every row says it and the header already names Wikipedia; on a phone
+                          the width is worth more than the repetition. */}
+                      <span className="hidden sm:inline"> · Wikipedia</span>
+                    </>
+                  }
                   onClick={() => onPickArticle(article.title)}
                   disabled={busy}
                 />
@@ -191,19 +205,24 @@ export const SourceChoiceCard = ({
                 publish.
               </span>
             </p>
+            {/* `py-1 text-sm`: a pair of actions inside a card, not a page's primary call — at the
+                default size they dwarfed the text above them, and wrapped to two full-width
+                slabs on a phone. */}
             <div className="flex flex-wrap items-center gap-3">
-              <LiftedButton type="button" onClick={onRetry} isPending={busy}>
-                <RotateCw className="h-4 w-4" aria-hidden />
+              <LiftedButton type="button" className="py-1 text-sm" onClick={onRetry} isPending={busy}>
+                {/* LiftedButton draws its own spinner while pending; two would read as a glitch. */}
+                {!busy && <RotateCw className="h-4 w-4" aria-hidden />}
                 Try again
               </LiftedButton>
               <LiftedButton
                 type="button"
-                className="bg-muted text-foreground"
+                className="bg-muted py-1 text-sm text-foreground"
                 liftColor="muted-foreground"
                 onClick={onWriteFromMemory}
                 disabled={busy}
               >
-                Write from memory anyway
+                Continue anyway
+                <ArrowRight className="h-4 w-4" aria-hidden />
               </LiftedButton>
             </div>
           </div>
