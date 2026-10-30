@@ -14,6 +14,13 @@ namespace QuizAPI.Services.Ai
         /// </summary>
         string BuildPrompt(AiGenerationRequest request);
 
+        /// <summary>
+        /// The prompt, grounded when <see cref="AiGenerationRequest.Ground"/> asks for it. Prompt is
+        /// null when grounding needs the author to choose first — the result says what to ask.
+        /// </summary>
+        Task<(string? Prompt, Sources.GroundingResult Grounding)> BuildPromptAsync(
+            AiGenerationRequest request, CancellationToken ct = default);
+
         Task<AiQuotaStatus> GetQuotaStatusAsync(Guid userId, CancellationToken ct = default);
 
         /// <summary>
@@ -34,5 +41,12 @@ namespace QuizAPI.Services.Ai
         /// rather than let someone press it into a 503.
         /// </summary>
         Task<bool> IsAvailableAsync(CancellationToken ct = default);
+
+        /// <summary>
+        /// <see cref="IsAvailableAsync"/>, and the configured model is allowed to write from a
+        /// user's own material (<c>AiVendorOptions.AllowsSourceMode</c>). False means a Source-mode
+        /// generation or an upload would be refused, so the UI shows the option as not yet available.
+        /// </summary>
+        Task<bool> IsSourceModeAvailableAsync(CancellationToken ct = default);
     }
 }

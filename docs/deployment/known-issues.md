@@ -906,6 +906,24 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
 
 ## AI quiz generation — Phase 2 (2026-08-09 — see docs/quiz/ai-quiz-generation-flow.md)
 
+- **P2 — Source mode has never been measured (§9.16).** Built and closed: no vendor entry sets
+  `AllowsSourceMode`. Before one does, add source topics to `eval/` and run them against that
+  model — the decision should rest on a number, as Topic mode's did.
+- **P3 — The own-AI path has no material mode (§9.17).** Topic-only today; the prompt already
+  supports `sourceText`.
+
+- ~~**P2 — Grounding has no wizard UI (flow doc §9.18).**~~ **Done 2026-10-29.** Grounding is
+  complete and switched off; turning it on is `Ai:Source:Enabled`.
+- ~~**P2 — Grounding has no safe way to pick a source yet.**~~ **Addressed 2026-10-29** by title
+  matching (flow doc §2e); the original finding, kept for the record: Phase 2b assumes "the first
+  non-disambiguation hit" is the right Wikipedia article. Measured 2026-10-28, it is the wrong
+  article in 3 of 5 English cases (`Human respiratory system` → *Human body*), and Albanian
+  coverage is uneven enough that `Historia e Kosovës` is a 276-word stub — short enough to look
+  grounded and too short to carry ten questions. Disambiguation itself *is* reliably detectable
+  (`ppprop=disambiguation`); choosing between real articles is not. Proposed gates, source tiers
+  and rejected alternatives:
+  [`proposals/topic-disambiguation-and-source-tiers.md`](../proposals/topic-disambiguation-and-source-tiers.md).
+
 Found while building slice 2.0 (topic + source-text generation via DeepSeek, server-side).
 The live register with full reasoning is
 [`ai-quiz-generation-flow.md`](../quiz/ai-quiz-generation-flow.md) §9 — this section is the

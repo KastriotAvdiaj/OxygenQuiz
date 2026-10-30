@@ -1,5 +1,7 @@
-import { AlertTriangle } from "lucide-react";
+import { useRef } from "react";
+import { AlertTriangle, FileUp, Loader2 } from "lucide-react";
 
+import { LiftedButton } from "@/common/LiftedButton";
 import { Input, Label, Textarea } from "@/components/ui/form";
 import { cn } from "@/utils/cn";
 
@@ -35,6 +37,23 @@ const RequiredEyebrow = () => (
   </p>
 );
 
+/** What the server read out of an uploaded file — shown under the box while it holds that text. */
+export interface SourceFileInfo {
+  name: string;
+  /** "English" or "Albanian": the language the questions will be written in. */
+  language: string;
+  /** Only the first `AI_QUESTION_LIMITS.maxSourceChars` characters were kept. */
+  truncated: boolean;
+}
+
+/**
+ * What the file picker offers. Mirrors the extensions `SourceFileReader` accepts on the server,
+ * which is the gate — a file that slips past this (renamed, dropped) is refused there by name.
+ */
+const ACCEPTED_FILES = ".pdf,.docx,.txt,.md";
+
+const numberFormat = new Intl.NumberFormat();
+
 export interface GenerationInputProps {
   mode: AiGenerationMode;
   topic: string;
@@ -60,6 +79,17 @@ export interface GenerationInputProps {
    * the material they are pasting.
    */
   onSubmit?: () => void;
+  /**
+   * Source mode: read a file into the box. The text replaces whatever was there — one source
+   * per quiz, and appending to a half-pasted note would be a guess about what the user meant.
+   */
+  onUploadFile?: (file: File) => void;
+  /** A file is being read on the server; the box and the button wait for it. */
+  isReadingFile?: boolean;
+  /** The file the box's text came from, or null when it was typed or pasted. */
+  sourceFile?: SourceFileInfo | null;
+  /** Why the last file couldn't be used — the server's message, which names the fix. */
+  uploadError?: string;
 }
 
 /**
@@ -85,6 +115,10 @@ export const GenerationInput = ({
   disabled,
   error,
   onSubmit,
+  onUploadFile,
+  isReadingFile = false,
+  sourceFile = null,
+  uploadError,
 }: GenerationInputProps) => (
   <>
     {mode === "Topic" ? (
@@ -131,11 +165,90 @@ export const GenerationInput = ({
         <FieldError error={error} />
       </div>
     ) : (
-      <div>
-        <RequiredEyebrow />
-        <Label htmlFor="ai-source" className="mt-0.5 block text-xl font-medium short:text-lg">
-          Your material
-        </Label>
+      <SourceField
+        sourceData={sourceData}
+        onSourceDataChange={onSourceDataChange}
+        disabled={disabled}
+        error={error}
+        onUploadFile={onUploadFile}
+        isReadingFile={isReadingFile}
+        sourceFile={sourceFile}
+        uploadError={uploadError}
+      />
+    )}
+  </>
+);
+
+/**
+ * The material box: paste, or upload a file and review what was read from it.
+ *
+ * **One box for both.** An upload fills the textarea with the extracted text rather than
+ * showing a file chip, because what the model reads is that text, not the file — a PDF can
+ * come out with a header on every page or a table flattened into a run of numbers, and the
+ * place to notice is before spending a generation. The user can trim it right there.
+ *
+ * **The 40,000-character limit is a hard stop** (`maxLength`), mirroring `Ai:MaxSourceChars`.
+ * The server cuts anything longer anyway, and a counter that turns amber near the end says so
+ * before the user finds out from the questions. An upload over the limit arrives already cut,
+ * with a line saying it was.
+ *
+ * **Language is said up front.** Only English and Albanian are accepted, and questions come
+ * out in the material's own language — the hint under the label says both, so nobody pastes a
+ * German article and learns the rule from an error. Uploads are checked on read; pasted text
+ * is checked when Generate is pressed, before anything is spent.
+ */
+const SourceField = ({
+  sourceData,
+  onSourceDataChange,
+  disabled,
+  error,
+  onUploadFile,
+  isReadingFile,
+  sourceFile,
+  uploadError,
+}: Pick<
+  GenerationInputProps,
+  | "sourceData"
+  | "onSourceDataChange"
+  | "disabled"
+  | "error"
+  | "onUploadFile"
+  | "isReadingFile"
+  | "sourceFile"
+  | "uploadError"
+>) => {
+  // A DOM handle for the hidden <input type="file">, not state: the button only forwards a click.
+  const fileInput = useRef<HTMLInputElement>(null);
+  const locked = disabled || isReadingFile;
+  const max = AI_QUESTION_LIMITS.maxSourceChars;
+  const nearLimit = sourceData.length >= max * 0.9;
+
+  const takeFile = (file: File | undefined) => {
+    if (file && onUploadFile && !locked) onUploadFile(file);
+  };
+
+  return (
+    <div>
+      <RequiredEyebrow />
+      <Label htmlFor="ai-source" className="mt-0.5 block text-xl font-medium short:text-lg">
+        Your material
+      </Label>
+      <p id="ai-source-hint" className="text-muted-foreground text-xs mt-0.5">
+        In English or Albanian — the questions are written in the same language.
+      </p>
+      <div
+        className="relative"
+        // Dropping a file on the box reads it like the button does. preventDefault on dragover
+        // is what makes the box a drop target at all; without it the browser opens the file.
+        onDragOver={(e) => {
+          if (onUploadFile && e.dataTransfer.types.includes("Files")) e.preventDefault();
+        }}
+        onDrop={(e) => {
+          if (!onUploadFile) return;
+          e.preventDefault();
+          takeFile(e.dataTransfer.files[0]);
+        }}
+      >
         <Textarea
           id="ai-source"
           variant="settings"
@@ -143,21 +256,95 @@ export const GenerationInput = ({
             "mt-1 min-h-[180px] short:min-h-[132px]",
             error && "border-destructive focus-visible:ring-destructive/40",
           )}
-          placeholder="Paste notes, an article, a transcript..."
+          placeholder={
+            onUploadFile
+              ? "Paste notes, an article, a transcript — or drop a file here..."
+              : "Paste notes, an article, a transcript..."
+          }
           value={sourceData}
+          maxLength={max}
           onChange={(e) => onSourceDataChange(e.target.value)}
-          disabled={disabled}
+          disabled={locked}
           aria-invalid={Boolean(error)}
-          aria-describedby={error ? "ai-input-error" : undefined}
+          aria-describedby={["ai-source-hint", "ai-source-count", error && "ai-input-error"]
+            .filter(Boolean)
+            .join(" ")}
         />
-        {sourceData.length > AI_QUESTION_LIMITS.sourceWarningLength && (
-          <p className="text-amber-600 dark:text-amber-500 text-xs mt-1 flex items-center gap-1">
-            <AlertTriangle className="h-3 w-3" />
-            That's very long — we'll use the first part of it.
-          </p>
+        {isReadingFile && (
+          <div className="absolute inset-0 mt-1 flex items-center justify-center gap-2 rounded-md bg-background/70 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            Reading your file…
+          </div>
         )}
-        <FieldError error={error} />
       </div>
-    )}
-  </>
-);
+
+      <div className="mt-2 flex items-center justify-between gap-3">
+        {onUploadFile ? (
+          <div className="flex min-w-0 items-center gap-2">
+            <input
+              ref={fileInput}
+              type="file"
+              accept={ACCEPTED_FILES}
+              className="sr-only"
+              tabIndex={-1}
+              aria-hidden="true"
+              onChange={(e) => {
+                takeFile(e.target.files?.[0]);
+                // Cleared so choosing the same file again (after editing it) fires a change.
+                e.target.value = "";
+              }}
+            />
+            <LiftedButton
+              type="button"
+              size="sm"
+              className="flex items-center gap-2 bg-muted text-foreground"
+              liftColor="muted-foreground"
+              outerClassName="shrink-0"
+              disabled={locked}
+              onClick={() => fileInput.current?.click()}
+            >
+              {/* h-3.5 on size="sm", per the LiftedButton icon rule in CLAUDE.md. */}
+              <FileUp className="h-3.5 w-3.5" aria-hidden="true" />
+              Upload a file
+            </LiftedButton>
+            <span className="truncate text-xs text-muted-foreground">
+              PDF, Word or text, up to 10 MB
+            </span>
+          </div>
+        ) : (
+          <span />
+        )}
+        <span
+          id="ai-source-count"
+          className={cn(
+            "shrink-0 text-xs tabular-nums",
+            nearLimit ? "text-amber-600 dark:text-amber-500" : "text-muted-foreground",
+          )}
+        >
+          {numberFormat.format(sourceData.length)} / {numberFormat.format(max)}
+        </span>
+      </div>
+
+      {sourceFile && sourceData.length > 0 && (
+        <p className="animate-in fade-in-0 slide-in-from-top-1 duration-200 text-xs text-muted-foreground mt-1.5">
+          Read from <span className="font-medium text-foreground">{sourceFile.name}</span>.
+          {" "}Questions will be in {sourceFile.language}.
+        </p>
+      )}
+      {sourceFile?.truncated && sourceData.length > 0 && (
+        <p className="animate-in fade-in-0 slide-in-from-top-1 duration-200 text-amber-600 dark:text-amber-500 text-xs mt-1 flex items-start gap-1">
+          <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
+          The file was longer than {numberFormat.format(max)} characters, so only the start was kept.
+        </p>
+      )}
+      {uploadError && (
+        <p role="alert" className="animate-in fade-in-0 slide-in-from-top-1 duration-200 text-destructive text-xs mt-1.5 flex items-start gap-1">
+          {/* Aligned to the first line: this message often wraps to three on a phone. */}
+          <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
+          {uploadError}
+        </p>
+      )}
+      <FieldError error={error} />
+    </div>
+  );
+};

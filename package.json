@@ -16,7 +16,12 @@
     "typecheck:e2e": "tsc -p e2e/tsconfig.json",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "chromatic": "npx chromatic --project-token=chpt_cf4e4fa48d1e026"
+    "chromatic": "npx chromatic --project-token=chpt_cf4e4fa48d1e026",
+    "eval:generate": "vite-node -c eval/vite.config.ts eval/src/generate.ts --",
+    "eval:parse": "vite-node -c eval/vite.config.ts eval/src/parse.ts --",
+    "eval:score": "vite-node -c eval/vite.config.ts eval/src/score.ts --",
+    "eval:label": "vite-node -c eval/vite.config.ts eval/src/label.ts --",
+    "eval:repair-labels": "vite-node -c eval/vite.config.ts eval/src/repair-labels.ts --"
   },
   "dependencies": {
     "@azure/msal-browser": "^4.13.0",

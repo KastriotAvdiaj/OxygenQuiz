@@ -46,5 +46,20 @@ namespace QuizAPI.Services.Ai
 
         /// <summary>Cache-miss output rate. Must be greater than zero, for the reason above.</summary>
         public decimal OutputCostPerMillionUsd { get; set; }
+
+        /// <summary>
+        /// Whether this model may write quizzes from a user's own material (Source mode: pasted
+        /// text or an uploaded file). <b>Off unless an entry says otherwise.</b>
+        ///
+        /// <para>A property of the model, not of the deployment, which is why it lives in the
+        /// entry: Source mode asks for verbatim quotes, long inputs and writing in the source's
+        /// language, and a weak model fails all three in ways a user blames on their material.
+        /// The Phase 0 baseline measured the free Groq model at 24.6% wrong in Albanian with
+        /// fluency 3.12/4 (docs/quiz/ai-question-accuracy-plan.md), and its free tier's
+        /// tokens-per-minute ceiling is below what a full 40,000-character source costs — so the
+        /// <c>groq</c> entry leaves this off. Selecting a stronger vendor whose entry sets it is
+        /// how the mode opens; no code change, no frontend flag.</para>
+        /// </summary>
+        public bool AllowsSourceMode { get; set; }
     }
 }

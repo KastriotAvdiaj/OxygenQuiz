@@ -160,6 +160,15 @@ public class AiPromptBuilderTests
     }
 
     [Fact]
+    public void BothModes_AskForRealDistractors_NotInventedWords()
+    {
+        // The Phase 0 baseline found made-up Albanian distractors that were both wrong Albanian
+        // and gave the answer away. Nothing in question-checks.ts can catch that.
+        foreach (var prompt in new[] { Builder.Build(InferredRequest()), Builder.Build(SourceRequest()) })
+            Assert.Contains("never an invented or nonsense word", prompt);
+    }
+
+    [Fact]
     public void TopicMode_SteersAwayFromKnowledgeThatGoesStale()
     {
         // The model is recalling facts here, so the confident-wrong answer is the failure mode.

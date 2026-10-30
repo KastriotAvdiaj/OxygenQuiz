@@ -24,17 +24,20 @@ namespace QuizAPI.Controllers.Quizzes
     public class AiQuizController : BaseApiController
     {
         private readonly IAiGenerationService _generation;
+        private readonly ISourceFileReader _sourceFiles;
         private readonly ICurrentUserService _currentUser;
         private readonly IAuditService _audit;
         private readonly ILogger<AiQuizController> _logger;
 
         public AiQuizController(
             IAiGenerationService generation,
+            ISourceFileReader sourceFiles,
             ICurrentUserService currentUser,
             IAuditService audit,
             ILogger<AiQuizController> logger)
         {
             _generation = generation ?? throw new ArgumentNullException(nameof(generation));
+            _sourceFiles = sourceFiles ?? throw new ArgumentNullException(nameof(sourceFiles));
             _currentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
             _audit = audit ?? throw new ArgumentNullException(nameof(audit));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -97,6 +100,7 @@ namespace QuizAPI.Controllers.Quizzes
                 QuotaRemaining = outcome.QuotaRemaining,
                 InputTokens = outcome.Usage.InputTokens,
                 OutputTokens = outcome.Usage.OutputTokens,
+                Grounding = AiGroundingDTO.From(outcome.Grounding),
             });
         }
 
@@ -109,7 +113,7 @@ namespace QuizAPI.Controllers.Quizzes
         [HttpPost("ai-prompt")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public IActionResult GetPrompt([FromBody] AiGenerateCM request)
+        public async Task<IActionResult> GetPrompt([FromBody] AiGenerateCM request, CancellationToken ct)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
@@ -121,7 +125,16 @@ namespace QuizAPI.Controllers.Quizzes
                     Message = $"'{request.Mode}' is not a valid generation mode.",
                 });
 
-            return Ok(new { prompt = _generation.BuildPrompt(serviceRequest) });
+            var (prompt, grounding) = await _generation.BuildPromptAsync(serviceRequest, ct);
+            if (prompt is null)
+                return StatusCode(StatusCodes.Status409Conflict, new AiGenerateErrorResponse
+                {
+                    Code = AiErrorCodes.SourceNeedsChoice,
+                    Message = AiGenerationOutcome.NeedsChoice(grounding).Message!,
+                    Grounding = AiGroundingDTO.From(grounding),
+                });
+
+            return Ok(new { prompt, grounding = AiGroundingDTO.From(grounding) });
         }
 
         /// <summary>
@@ -158,8 +171,64 @@ namespace QuizAPI.Controllers.Quizzes
                 ResetsAt = status.ResetsAtUtc,
                 // Only when a generation would actually be attempted: see the DTO.
                 Model = enabled ? _generation.ModelId : null,
+                SourceModeEnabled = enabled && await _generation.IsSourceModeAvailableAsync(ct),
             });
         }
+
+        /// <summary>
+        /// Reads an uploaded file into the text Source mode generates from. Creates nothing,
+        /// spends no quota and calls no model; the user reviews the text and then generates.
+        ///
+        /// <para>On the <c>ai</c> rate-limit policy, unlike the other free endpoints: parsing an
+        /// untrusted PDF is real CPU, and an upload is a step on the way to a generation, so it
+        /// shares that budget rather than opening a cheaper route to load the server.</para>
+        /// </summary>
+        [HttpPost("ai-source")]
+        [EnableRateLimiting(RateLimitingExtensions.AiPolicy)]
+        [Consumes("multipart/form-data")]
+        // A fixed ceiling above Ai:MaxSourceFileBytes, so an oversized body is cut off by the
+        // server before it is buffered; the configured limit is checked with a proper message.
+        [RequestSizeLimit(MaxUploadRequestBytes)]
+        [RequestFormLimits(MultipartBodyLengthLimit = MaxUploadRequestBytes)]
+        [ProducesResponseType(typeof(AiSourceResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(AiGenerateErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(AiGenerateErrorResponse), StatusCodes.Status503ServiceUnavailable)]
+        public async Task<IActionResult> ReadSource(IFormFile? file, CancellationToken ct)
+        {
+            if (!await _generation.IsSourceModeAvailableAsync(ct))
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new AiGenerateErrorResponse
+                {
+                    Code = AiErrorCodes.FeatureDisabled,
+                    Message = "Creating a quiz from your own material isn't available yet.",
+                });
+
+            if (file is null)
+                return BadRequest(new AiGenerateErrorResponse
+                {
+                    Code = AiErrorCodes.EmptySource,
+                    Message = "Choose a file to upload.",
+                });
+
+            await using var stream = file.OpenReadStream();
+            var result = await _sourceFiles.ReadAsync(stream, file.FileName, file.Length, ct);
+
+            if (!result.Success)
+                return BadRequest(new AiGenerateErrorResponse
+                {
+                    Code = result.ErrorCode!,
+                    Message = result.Message!,
+                });
+
+            return Ok(new AiSourceResponse
+            {
+                Text = result.Text!,
+                Truncated = result.Truncated,
+                Language = result.Language!,
+            });
+        }
+
+        /// <summary>Hard request ceiling for uploads: 12 MB, above the 10 MB <c>Ai:MaxSourceFileBytes</c> default.</summary>
+        private const long MaxUploadRequestBytes = 12 * 1024 * 1024;
 
         /// <summary>
         /// The one place a failure code becomes a status code. Kept as an explicit switch rather
@@ -173,6 +242,7 @@ namespace QuizAPI.Controllers.Quizzes
                 Code = outcome.ErrorCode ?? "Unknown",
                 Message = outcome.Message ?? "Quiz generation failed.",
                 RetryAfter = outcome.RetryAfterUtc,
+                Grounding = AiGroundingDTO.From(outcome.Grounding),
             };
 
             switch (outcome.ErrorCode)
@@ -187,6 +257,12 @@ namespace QuizAPI.Controllers.Quizzes
 
                 case AiErrorCodes.EmailNotVerified:
                     return StatusCode(StatusCodes.Status403Forbidden, body);
+
+                // Not an error: a question for the author. 409 because the request can't proceed
+                // as sent and the body says exactly what to add — and no 4xx the client already
+                // treats as "fix your input" is a better fit.
+                case AiErrorCodes.SourceNeedsChoice:
+                    return StatusCode(StatusCodes.Status409Conflict, body);
 
                 case AiErrorCodes.FeatureDisabled:
                     return StatusCode(StatusCodes.Status503ServiceUnavailable, body);
@@ -203,6 +279,7 @@ namespace QuizAPI.Controllers.Quizzes
                 case AiErrorCodes.EmptySource:
                 case AiErrorCodes.SourceTooLarge:
                 case AiErrorCodes.UnreadableSource:
+                case AiErrorCodes.UnsupportedLanguage:
                 default:
                     return BadRequest(body);
             }

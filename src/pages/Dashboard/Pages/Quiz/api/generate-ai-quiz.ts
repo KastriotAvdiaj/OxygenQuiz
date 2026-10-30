@@ -25,11 +25,73 @@ export type AiGenerateErrorCode =
   | "EmptySource"
   | "SourceTooLarge"
   | "UnreadableSource"
+  | "UnsupportedLanguage"
+  // Grounding asking the author something (409): a language, an article, or whether to go ahead
+  // from memory while the source is down. Not a failure — the wizard shows `SourceChoiceCard`.
+  | "SourceNeedsChoice"
   | "ProviderUnavailable"
   | "ProviderTimeout"
   | "ModelOutputInvalid";
 
 export type AiGenerationMode = "Topic" | "Source";
+
+/**
+ * What grounding concluded (docs/quiz/ai-quiz-generation-flow.md §2e). `Grounded` and
+ * `Ungrounded` arrive with a result; the other three arrive as a 409 `SourceNeedsChoice` —
+ * a question for the author, asked before any of their allowance is spent.
+ */
+export type AiGroundingStatus =
+  | "Grounded"
+  | "Ungrounded"
+  | "NeedsLanguage"
+  | "NeedsArticle"
+  | "SourceUnavailable";
+
+/** Why a Topic quiz was written from memory. Mirrors the server's `GroundingResult.Reason`. */
+export type AiUngroundedReason =
+  | "too-thin"
+  | "not-found"
+  | "unavailable"
+  | "declined"
+  | "no-source-for-language";
+
+export interface AiGroundedSource {
+  /** The source tier, e.g. "wikipedia". */
+  provider: string;
+  title: string;
+  /** Carries the CC BY-SA attribution — the review links to it. */
+  url: string | null;
+  /** What the model read. The parser checks every `sourceQuote` against it. */
+  text: string;
+  language: string;
+}
+
+export interface AiSourceCandidate {
+  title: string;
+  words: number;
+  url: string | null;
+}
+
+export interface AiGrounding {
+  status: AiGroundingStatus;
+  language?: string | null;
+  reason?: AiUngroundedReason | string | null;
+  source?: AiGroundedSource | null;
+  /** NeedsArticle: the articles to choose between, best match first. */
+  articles?: AiSourceCandidate[] | null;
+  /** NeedsLanguage: the languages to choose between. */
+  languages?: string[] | null;
+}
+
+/** The author's answers to grounding's questions, sent back with the same request. */
+export interface AiGroundingAnswers {
+  sourceLanguage?: string;
+  sourceTitle?: string;
+  /** "None of these" — write from memory. */
+  sourceDeclined?: boolean;
+  /** The source was down and the author chose not to wait. */
+  sourceAcceptFromMemory?: boolean;
+}
 
 export interface AiGenerateInput {
   mode: AiGenerationMode;
@@ -68,6 +130,8 @@ export interface AiGenerateResult {
   quotaRemaining: number | null;
   inputTokens: number;
   outputTokens: number;
+  /** What the questions were written from. Null when grounding is switched off. */
+  grounding?: AiGrounding | null;
 }
 
 export interface AiQuotaStatus {
@@ -100,6 +164,27 @@ export interface AiQuotaStatus {
    * this value.
    */
   model: string | null;
+  /**
+   * Whether "from my material" is offered: `enabled`, and the configured model is allowed to
+   * write from a user's own material (`AllowsSourceMode` on the server's vendor entry). False
+   * shows that option as "Coming soon". The server refuses Source-mode generations and uploads
+   * on its own — this only stops the UI offering one.
+   */
+  sourceModeEnabled: boolean;
+}
+
+/** `POST /quiz/ai-source`: an uploaded file, read on the server. */
+export interface AiSourceResult {
+  /**
+   * The file's text, whitespace-normalised and cut to `AI_QUESTION_LIMITS.maxSourceChars`.
+   * It goes into the material box as-is and is sent back unchanged as `sourceText`, so the
+   * model, the quote check and the user all see one string.
+   */
+  text: string;
+  /** The file held more than the limit and only its start was kept. */
+  truncated: boolean;
+  /** "English" or "Albanian" — what the questions will be written in. */
+  language: string;
 }
 
 /**
@@ -114,6 +199,8 @@ export class AiGenerateError extends Error {
     public readonly code: AiGenerateErrorCode | "Unknown",
     message: string,
     public readonly retryAfter?: string,
+    /** `SourceNeedsChoice`: the question to put to the author. */
+    public readonly grounding?: AiGrounding,
   ) {
     super(message);
     this.name = "AiGenerateError";
@@ -139,12 +226,15 @@ const AI_TIMEOUTS_MS = {
   prompt: 15_000,
   generate: 120_000,
   quota: 10_000,
+  // Upload plus parsing a long PDF on the server. No model call, but a slow uplink matters.
+  source: 60_000,
 } as const;
 
 interface ServerErrorBody {
   code?: string;
   message?: string;
   retryAfter?: string;
+  grounding?: AiGrounding | null;
 }
 
 const toAiGenerateError = (error: unknown): AiGenerateError => {
@@ -155,6 +245,7 @@ const toAiGenerateError = (error: unknown): AiGenerateError => {
       body.code as AiGenerateErrorCode,
       body.message ?? "Quiz generation failed.",
       body.retryAfter,
+      body.grounding ?? undefined,
     );
   }
 
@@ -181,7 +272,9 @@ const toAiGenerateError = (error: unknown): AiGenerateError => {
  * `Promise<T>` compiles and then hands every caller an object whose fields are all
  * `undefined`. See the warning on the `api` export in `src/lib/Api-client.ts`.
  */
-export const generateAiQuiz = (data: AiGenerateInput): Promise<AiGenerateResult> =>
+export const generateAiQuiz = (
+  data: AiGenerateInput & AiGroundingAnswers,
+): Promise<AiGenerateResult> =>
   apiService
     .post<AiGenerateResult>("/quiz/ai-generate", data, {
       // The wizard renders its own error panel, which says what to do next per code —
@@ -233,6 +326,31 @@ export const getAiPrompt = (data: AiGenerateInput): Promise<{ prompt: string }> 
       throw toAiGenerateError(error);
     });
 
+/**
+ * Reads an uploaded file into text. Creates nothing and spends no generation — the text comes
+ * back for the user to look over, then goes out again with `generateAiQuiz`. Failures carry
+ * the same codes as generation (`UnreadableSource`, `SourceTooLarge`, `UnsupportedLanguage`),
+ * each with a message that names the fix.
+ */
+export const readAiSource = (file: File): Promise<AiSourceResult> => {
+  const body = new FormData();
+  body.append("file", file);
+  return apiService
+    .post<AiSourceResult>("/quiz/ai-source", body, {
+      // As the other uploads do (upload-file.ts): axios fills in the boundary.
+      headers: { "Content-Type": "multipart/form-data" },
+      // Shown beside the upload button instead; the interceptor's toast would be a second copy.
+      skipErrorToast: true,
+      timeout: AI_TIMEOUTS_MS.source,
+    })
+    .catch((error) => {
+      throw toAiGenerateError(error);
+    });
+};
+
+/** No invalidation: reading a file changes nothing on the server. */
+export const useReadAiSource = () => useMutation({ mutationFn: readAiSource });
+
 export const getAiQuota = (): Promise<AiQuotaStatus> =>
   apiService.get<AiQuotaStatus>("/quiz/ai-quota", {
     timeout: AI_TIMEOUTS_MS.quota,
@@ -254,10 +372,13 @@ export const getAiQuota = (): Promise<AiQuotaStatus> =>
  * the path a user needs when the AI service is having a bad day. See
  * docs/development/error-handling.md, "When to opt out".
  */
-export const useAiQuota = () =>
+export const useAiQuota = ({ enabled = true }: { enabled?: boolean } = {}) =>
   useQuery({
     queryKey: ["ai-quota"],
     queryFn: getAiQuota,
+    // `enabled: false` for callers that render where nobody may be signed in — the create-quiz
+    // dialog opens from the landing page — since the endpoint answers 401 to a visitor.
+    enabled,
     retry: false,
     throwOnError: false,
     staleTime: 30_000,

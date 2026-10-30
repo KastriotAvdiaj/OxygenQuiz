@@ -138,12 +138,21 @@ namespace QuizAPI.Services.Ai
             var askForLanguage = string.IsNullOrWhiteSpace(request.LanguageName)
                                  && request.LanguageNames.Count > 0;
 
-            var isTopic = request.Mode == AiGenerationMode.Topic;
+            // Three shapes, two prompts. A grounded Topic request (an article was found for the
+            // topic — docs/quiz/ai-quiz-generation-flow.md §2e) is written exactly like Source
+            // mode: from the material only, with a verbatim quote per question, so the parser's
+            // quote check works on it. Only the opening differs, because the author asked about a
+            // subject and the article may cover more than that.
+            var grounding = request.Mode == AiGenerationMode.Topic ? request.Grounding : null;
+            var isTopic = request.Mode == AiGenerationMode.Topic && grounding is null;
+            var material = grounding?.Text ?? request.SourceText;
 
             var sb = new StringBuilder();
             sb.AppendLine(isTopic
                 ? $"You are a quiz-generation engine. Produce EXACTLY {request.QuestionCount} quiz question(s) about the SUBJECT given at the end of this message."
-                : $"You are a quiz-generation engine. Read the SOURCE MATERIAL at the end of this message and produce EXACTLY {request.QuestionCount} quiz question(s) based ONLY on it.");
+                : grounding is not null
+                    ? $"You are a quiz-generation engine. The author asked for a quiz about \"{request.Topic?.Trim()}\". Read the SOURCE MATERIAL at the end of this message — the opening of the {SourceName(grounding.Provider)} article \"{grounding.Title}\" — and produce EXACTLY {request.QuestionCount} quiz question(s) about that subject based ONLY on it."
+                    : $"You are a quiz-generation engine. Read the SOURCE MATERIAL at the end of this message and produce EXACTLY {request.QuestionCount} quiz question(s) based ONLY on it.");
             sb.AppendLine();
             sb.AppendLine("OUTPUT RULES — follow these precisely:");
             sb.AppendLine();
@@ -157,7 +166,7 @@ namespace QuizAPI.Services.Ai
 
             sb.AppendLine(isTopic ? "SUBJECT:" : "SOURCE MATERIAL:");
             sb.AppendLine("\"\"\"");
-            sb.AppendLine(((isTopic ? request.Topic : request.SourceText) ?? string.Empty).Trim());
+            sb.AppendLine(((isTopic ? request.Topic : material) ?? string.Empty).Trim());
             sb.Append("\"\"\"");
 
             return sb.ToString();
@@ -244,14 +253,21 @@ namespace QuizAPI.Services.Ai
                 + "Write it in the same language as the question. "
                 + (isTopic
                     ? "Only state facts you are confident of."
-                    : "Use only facts from the SOURCE MATERIAL."));
+                    // Players never see the material, so "according to the text" explains nothing
+                    // to them. The 2026-10-29 grounded eval run found it in about ten rows, in both
+                    // languages ("sipas materialit", "the result section confirms").
+                    : "Use only facts from the SOURCE MATERIAL, but state the fact itself: players never see the material, so never refer to it — no \"the text says\", \"according to the source\", \"the article\" or \"the material\", in any language."));
 
             // Structural mistakes weaker models make often and reviewers miss easily. Each one is
             // also checked in code (question-checks.ts) — this rule lowers how many get dropped,
-            // it is not what catches them.
+            // it is not what catches them. The exception is the real-distractor sentence: the
+            // Phase 0 baseline found invented Albanian distractors ("Marrëzë", "Petëqengë") that
+            // no code check can see; Phase 3's verifier is meant to flag them
+            // (docs/quiz/ai-question-accuracy-plan.md).
             rules.Add(
                 "Every question must be unambiguous: whatever you mark correct must be the only defensible answer. "
                 + "Wrong options must be clearly wrong, not partly true or true under another reading. "
+                + "Every wrong option must still be a real, correctly spelled term of the same kind as the answer (another real dish, another real writer, another real year) — never an invented or nonsense word, which makes the question trivial. "
                 + "All options must be different from each other. "
                 + "Never write the answer, or an obvious hint to it, in the question text. "
                 + "Avoid \"all of the above\", \"none of the above\" and questions phrased with NOT or EXCEPT.");
@@ -314,6 +330,10 @@ namespace QuizAPI.Services.Ai
             sb.Append('}');
             return sb.ToString();
         }
+
+        /// <summary>How a source tier is named to the model. The provider id is for logs; this is prose.</summary>
+        private static string SourceName(string provider) =>
+            string.Equals(provider, "wikipedia", StringComparison.OrdinalIgnoreCase) ? "Wikipedia" : provider;
 
         private static string Quoted(IEnumerable<string> values) =>
             string.Join(" | ", values.Select(v => $"\"{v}\""));

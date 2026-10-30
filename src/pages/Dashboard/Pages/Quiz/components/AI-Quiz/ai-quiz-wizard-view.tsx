@@ -15,6 +15,8 @@ import type {
 import type {
   AiGenerateError,
   AiGenerationMode,
+  AiGrounding,
+  AiGroundingAnswers,
   AiQuotaStatus,
 } from "../../api/generate-ai-quiz";
 import type { ParseResult } from "./parse-ai-output";
@@ -26,7 +28,11 @@ import { GenerateErrorPanel } from "./components/generate-error-panel";
 import { GeneratingOverlay } from "./components/generating-overlay";
 import { useGenerationWait } from "./components/use-generation-wait";
 import { LeaveGenerationDialog } from "./components/leave-generation-dialog";
-import { GenerationInput } from "./components/generation-input";
+import {
+  GenerationInput,
+  type SourceFileInfo,
+} from "./components/generation-input";
+import { SourceChoiceCard } from "./components/source-choice-card";
 import { QuotaNote } from "./components/quota-note";
 import { WizardButton } from "./components/wizard-button";
 
@@ -63,6 +69,29 @@ export interface AiQuizWizardViewProps {
   onTopicChange: (value: string) => void;
   sourceData: string;
   onSourceDataChange: (value: string) => void;
+  /** Source mode: read an uploaded file into the material box (`POST /quiz/ai-source`). */
+  onUploadFile?: (file: File) => void;
+  isReadingFile?: boolean;
+  /** The file the material box's text came from; null when it was typed or pasted. */
+  sourceFile?: SourceFileInfo | null;
+  uploadError?: string;
+  /**
+   * The topic-mode wizard. Source mode's way out when material mode is unavailable — the
+   * own-AI page is topic-only, so sending someone there with a document in hand loses it.
+   */
+  topicPath?: string;
+
+  // ── Grounding (docs/quiz/ai-quiz-generation-flow.md §2e) ──
+  /**
+   * The server's question, when grounding needs the author before it can go on: which
+   * language, which article, or whether to go ahead from memory while Wikipedia is down.
+   * Shown in place of the form, like `ConfirmDetailsCard`. Asked before anything is spent.
+   */
+  sourceChoice?: AiGrounding | null;
+  /** An answer to `sourceChoice`. An empty object is "try again" — the same question, re-asked. */
+  onAnswerSource?: (answer: AiGroundingAnswers) => void;
+  /** Back to the form without answering. */
+  onDismissSourceChoice?: () => void;
 
   // ── Advanced. All optional: null category/language means "let the AI suggest". ─
   /**
@@ -161,6 +190,14 @@ export const AiQuizWizardView = ({
   onTopicChange,
   sourceData,
   onSourceDataChange,
+  onUploadFile,
+  isReadingFile = false,
+  sourceFile = null,
+  uploadError,
+  topicPath,
+  sourceChoice = null,
+  onAnswerSource,
+  onDismissSourceChoice,
   onCategoryIdChange,
   onLanguageIdChange,
   questionCount,
@@ -249,7 +286,15 @@ export const AiQuizWizardView = ({
    * Generation is unavailable rather than merely having failed, so there's no point
    * offering the button. The fallback opens itself in this state.
    */
+  /**
+   * Material mode is closed until the configured model is strong enough for it
+   * (`AllowsSourceMode` on the server). The method dialog won't offer it then, so this is
+   * someone arriving by URL or a bookmark.
+   */
+  const sourceModeClosed = mode === "Source" && quota?.sourceModeEnabled === false;
+
   const generationBlocked =
+    sourceModeClosed ||
     quota?.enabled === false ||
     generateError?.code === "FeatureDisabled" ||
     generateError?.code === "EmailNotVerified" ||
@@ -278,7 +323,11 @@ export const AiQuizWizardView = ({
     succeeded: parseResult?.ok === true || needsConfirmation,
     // The request failed, or it came back and the parser could make nothing of it.
     // Either way the next thing on screen is a panel explaining it, not a quiz.
-    failed: generateError !== null || (parseResult !== null && !parseResult.ok),
+    // A question from grounding counts too: the next thing on screen is the card asking it.
+    failed:
+      generateError !== null ||
+      sourceChoice !== null ||
+      (parseResult !== null && !parseResult.ok),
   });
 
   /**
@@ -431,6 +480,22 @@ export const AiQuizWizardView = ({
             onStartOver={onStartOver}
           />
         </div>
+      ) : sourceChoice && resultsMayShow && onAnswerSource ? (
+        // Grounding needs one answer before it can go on. Same slot, same reason as the
+        // confirm card above: the wizard pausing to ask for one thing, with nothing spent.
+        <div className={arriving}>
+          <SourceChoiceCard
+            question={sourceChoice}
+            topic={topic}
+            busy={isGenerating}
+            onPickLanguage={(language) => onAnswerSource({ sourceLanguage: language })}
+            onPickArticle={(title) => onAnswerSource({ sourceTitle: title })}
+            onDecline={() => onAnswerSource({ sourceDeclined: true })}
+            onRetry={() => onAnswerSource({})}
+            onWriteFromMemory={() => onAnswerSource({ sourceAcceptFromMemory: true })}
+            onEditTopic={() => onDismissSourceChoice?.()}
+          />
+        </div>
       ) : (
         // No CardHeader: it existed to hold the mode tabs, and the tinted strip left behind
         // after they moved to the method dialog was a band of colour heading nothing. What
@@ -448,6 +513,11 @@ export const AiQuizWizardView = ({
                 onTopicChange={onTopicChange}
                 sourceData={sourceData}
                 onSourceDataChange={onSourceDataChange}
+                // No upload while the mode is closed: the server would refuse the file anyway.
+                onUploadFile={sourceModeClosed ? undefined : onUploadFile}
+                isReadingFile={isReadingFile}
+                sourceFile={sourceFile}
+                uploadError={uploadError}
                 disabled={isGenerating}
                 error={showValidation ? (topicMessage ?? undefined) : undefined}
                 // The same wrapper the button uses, so Enter cannot skip validation.
@@ -510,14 +580,29 @@ export const AiQuizWizardView = ({
                 {generationBlocked && (
                   <>
                     <p className="text-muted-foreground text-xs">
-                      Generating in the app isn't available right now.
+                      {sourceModeClosed
+                        ? "Creating a quiz from your own material isn't available yet."
+                        : "Generating in the app isn't available right now."}
                     </p>
-                    <Link
-                      to={ownAiPath}
-                      className="block text-sm font-medium text-primary hover:underline"
-                    >
-                      Use your own AI instead (free)
-                    </Link>
+                    {/* The own-AI page is topic-only; offering it in Source mode would drop the
+                        material, so the way out there is the topic wizard. */}
+                    {mode === "Source" ? (
+                      topicPath && (
+                        <Link
+                          to={topicPath}
+                          className="block text-sm font-medium text-primary hover:underline"
+                        >
+                          Create from a topic instead
+                        </Link>
+                      )
+                    ) : (
+                      <Link
+                        to={ownAiPath}
+                        className="block text-sm font-medium text-primary hover:underline"
+                      >
+                        Use your own AI instead (free)
+                      </Link>
+                    )}
                   </>
                 )}
               </div>
@@ -525,11 +610,14 @@ export const AiQuizWizardView = ({
               <WizardButton
                 type="button"
                 className="shrink-0"
-                disabled={isGenerating || generationBlocked}
+                // Not while a file is being read: Generate would send the text it is about to replace.
+                disabled={isGenerating || generationBlocked || isReadingFile}
                 title={
-                  generationBlocked
-                    ? "Generating in the app isn't available right now — use your own AI below."
-                    : undefined
+                  sourceModeClosed
+                    ? "Creating a quiz from your own material isn't available yet."
+                    : generationBlocked
+                      ? "Generating in the app isn't available right now — use your own AI below."
+                      : undefined
                 }
                 onClick={runWhenValid(onGenerate)}
               >

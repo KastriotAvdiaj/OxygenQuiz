@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using QuizAPI.Services.Ai;
+using QuizAPI.Services.Ai.Sources;
 
 namespace QuizAPI.DTOs.Quiz
 {
@@ -65,6 +66,22 @@ namespace QuizAPI.DTOs.Quiz
         [MaxLength(500)]
         public string? ExtraInstructions { get; set; }
 
+        /// <summary>The author's answer to "English or Albanian?" (grounding, <c>SourceNeedsChoice</c>).</summary>
+        [MaxLength(100)]
+        public string? SourceLanguage { get; set; }
+
+        /// <summary>The author's answer to "which article?" (grounding, <c>SourceNeedsChoice</c>).</summary>
+        [MaxLength(300)]
+        public string? SourceTitle { get; set; }
+
+        /// <summary>The author's answer "none of these" to "which article?" — generate from memory.</summary>
+        public bool SourceDeclined { get; set; }
+
+        /// <summary>The source was down; the author chose to write from memory rather than wait.</summary>
+        public bool SourceAcceptFromMemory { get; set; }
+
+        /// <summary><c>ai-prompt</c> only: ground the prompt as generation would. See <see cref="AiGenerationRequest.Ground"/>.</summary>
+        public bool Ground { get; set; }
         /// <summary>Ask for image search queries on the questions an image helps. Off by default.</summary>
         public bool AddImages { get; set; }
 
@@ -89,9 +106,76 @@ namespace QuizAPI.DTOs.Quiz
                 QuestionCount = QuestionCount,
                 AllowedTypes = AllowedTypes,
                 ExtraInstructions = ExtraInstructions,
+                SourceLanguage = SourceLanguage,
+                SourceTitle = SourceTitle,
+                SourceDeclined = SourceDeclined,
+                SourceAcceptFromMemory = SourceAcceptFromMemory,
+                Ground = Ground,
                 AddImages = AddImages,
             };
         }
+    }
+
+    /// <summary>
+    /// What grounding concluded, on every response that went through it
+    /// (docs/quiz/ai-quiz-generation-flow.md §2e). Absent when grounding is off.
+    /// </summary>
+    public class AiGroundingDTO
+    {
+        /// <summary>"Grounded", "Ungrounded", "NeedsLanguage", "NeedsArticle" or "SourceUnavailable".</summary>
+        public string Status { get; set; } = string.Empty;
+
+        /// <summary>The language settled on, when one was.</summary>
+        public string? Language { get; set; }
+
+        /// <summary>Ungrounded: "too-thin", "not-found", "unavailable", "declined" or "no-source-for-language".</summary>
+        public string? Reason { get; set; }
+
+        /// <summary>Grounded: the article. Its text is what the browser checks each <c>sourceQuote</c> against.</summary>
+        public AiGroundedSourceDTO? Source { get; set; }
+
+        /// <summary>NeedsArticle: the articles to choose between, best first.</summary>
+        public List<AiSourceCandidateDTO>? Articles { get; set; }
+
+        /// <summary>NeedsLanguage: the languages to choose between.</summary>
+        public List<string>? Languages { get; set; }
+
+        public static AiGroundingDTO? From(GroundingResult g) => g.Status == GroundingStatus.Off ? null : new()
+        {
+            Status = g.Status.ToString(),
+            Language = g.Language,
+            Reason = g.Reason,
+            Source = g.Source is null ? null : new AiGroundedSourceDTO
+            {
+                Provider = g.Source.Provider,
+                Title = g.Source.Title,
+                Url = g.Source.Url,
+                Text = g.Source.Text,
+                Language = g.Source.Language,
+            },
+            Articles = g.Status == GroundingStatus.NeedsArticle
+                ? g.Candidates.Select(c => new AiSourceCandidateDTO { Title = c.Title, Words = c.Words, Url = c.Url }).ToList()
+                : null,
+            Languages = g.Status == GroundingStatus.NeedsLanguage ? g.Languages.ToList() : null,
+        };
+    }
+
+    public class AiGroundedSourceDTO
+    {
+        /// <summary>The source tier, e.g. "wikipedia".</summary>
+        public string Provider { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        /// <summary>Carries the CC BY-SA attribution; the review links to it.</summary>
+        public string? Url { get; set; }
+        public string Text { get; set; } = string.Empty;
+        public string Language { get; set; } = string.Empty;
+    }
+
+    public class AiSourceCandidateDTO
+    {
+        public string Title { get; set; } = string.Empty;
+        public int Words { get; set; }
+        public string? Url { get; set; }
     }
 
     /// <summary>
@@ -115,6 +199,9 @@ namespace QuizAPI.DTOs.Quiz
 
         public int InputTokens { get; set; }
         public int OutputTokens { get; set; }
+
+        /// <summary>What grounding concluded; null when grounding is off.</summary>
+        public AiGroundingDTO? Grounding { get; set; }
     }
 
     /// <summary>
@@ -131,6 +218,9 @@ namespace QuizAPI.DTOs.Quiz
 
         /// <summary>Kept so the shared axios error interceptor surfaces the message verbatim.</summary>
         public bool IsCustomMessage { get; set; } = true;
+
+        /// <summary><c>SourceNeedsChoice</c>: the question to put to the author.</summary>
+        public AiGroundingDTO? Grounding { get; set; }
     }
 
     public class AiQuotaResponse
@@ -163,5 +253,29 @@ namespace QuizAPI.DTOs.Quiz
         /// call would be a claim, not information. The client treats null as "say nothing".</para>
         /// </summary>
         public string? Model { get; set; }
+
+        /// <summary>
+        /// Whether "from my material" is offered: <see cref="Enabled"/> and the configured model
+        /// is allowed to write from a user's own material (<c>AiVendorOptions.AllowsSourceMode</c>).
+        /// False shows the option as "Coming soon". The generate and upload endpoints refuse it
+        /// independently — this only stops the UI offering something that would be refused.
+        /// </summary>
+        public bool SourceModeEnabled { get; set; }
+    }
+
+    /// <summary>
+    /// <c>POST /api/quiz/ai-source</c>: an uploaded file, read. The browser shows <see cref="Text"/>
+    /// for review and sends it back unchanged as <c>sourceText</c>, so generation and the quote
+    /// check see exactly what the user saw.
+    /// </summary>
+    public class AiSourceResponse
+    {
+        public string Text { get; set; } = string.Empty;
+
+        /// <summary>The file held more than <c>Ai:MaxSourceChars</c>; only the start was kept.</summary>
+        public bool Truncated { get; set; }
+
+        /// <summary>"English" or "Albanian" — the language the questions will be written in.</summary>
+        public string Language { get; set; } = string.Empty;
     }
 }

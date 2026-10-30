@@ -554,12 +554,15 @@ const createAppRouter = (queryClient: QueryClient) =>
         {
           // AI-assisted creation, topic mode. The wizard mounts QuizQuestionProvider itself
           // once the generated questions are parsed, so it can seed them as initialQuestions.
-          //
-          // Its sibling `ai/material` is deliberately not registered yet: `useAiQuizDraft`
-          // already reads Source mode off that segment, but the mode users asked for is file
-          // upload (slice 2.3), so the chooser shows it as "Soon" rather than routing here.
-          // See AI_MATERIAL_MODE_ENABLED in create-quiz-method-dialog.tsx.
           path: "quizzes/create-quiz/ai/topic",
+          element: <AiQuizWizard />,
+        },
+        {
+          // The same wizard in Source mode — `useAiQuizDraft` reads the mode off this segment.
+          // Registered whether or not the server allows the mode: when it doesn't, the page
+          // says so and offers the topic wizard, which beats a 404 for an old bookmark. The
+          // method dialog only offers it when it's open (`sourceModeEnabled` on ai-quota).
+          path: "quizzes/create-quiz/ai/material",
           element: <AiQuizWizard />,
         },
         {
@@ -777,6 +780,11 @@ const createAppRouter = (queryClient: QueryClient) =>
         },
         {
           path: "quizzes/create/ai/topic",
+          element: <AiQuizWizard />,
+        },
+        {
+          // Source mode — see the note on the admin dashboard's twin.
+          path: "quizzes/create/ai/material",
           element: <AiQuizWizard />,
         },
         {

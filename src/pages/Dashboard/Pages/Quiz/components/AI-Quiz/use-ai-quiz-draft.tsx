@@ -11,6 +11,7 @@ import { CreateQuizInput } from "../../api/create-quiz";
 import type {
   AiGenerateInput,
   AiGenerationMode,
+  AiGrounding,
 } from "../../api/generate-ai-quiz";
 import CreateQuizForm from "../Create-Quiz-Form/create-quiz";
 import { QuizQuestionProvider } from "../Create-Quiz-Form/Quiz-questions-context";
@@ -32,6 +33,7 @@ import {
 } from "./parse-ai-output";
 import { AI_QUESTION_LIMITS, DEFAULT_QUESTION_COUNT } from "./prompt";
 import { ImportNotices } from "./components/import-notices";
+import { SourceNote } from "./components/source-note";
 import { AutoImageNotice, AutoImagesProgress } from "./components/auto-images";
 import { useAutoImages } from "./use-auto-images";
 import { describeDraftAge } from "../draft-notices";
@@ -194,6 +196,16 @@ export const useAiQuizDraft = () => {
   );
 
   /**
+   * What `payload` was written from — the Wikipedia article, or why there was none
+   * (docs/quiz/ai-quiz-generation-flow.md §2e). Only ever set together with the payload, by
+   * `setPayload`, so the two cannot describe different replies. The review reads it for the
+   * provenance line, and the parser for the article's text to check quotes against.
+   */
+  const [grounding, setGrounding] = useState<AiGrounding | null>(
+    draft?.grounding ?? null,
+  );
+
+  /**
    * Replacing the reply also retires the "picked up where you left off" notice, because
    * the work that notice describes has just been thrown away.
    *
@@ -204,8 +216,9 @@ export const useAiQuizDraft = () => {
    * a set of questions it had nothing to do with, still offering to bring back work that
    * no longer existed.
    */
-  const setPayload = (next: string | null) => {
+  const setPayload = (next: string | null, nextGrounding: AiGrounding | null = null) => {
     setStoredPayload(next);
+    setGrounding(next === null ? null : nextGrounding);
     setRestoredAt(null);
   };
 
@@ -303,9 +316,10 @@ export const useAiQuizDraft = () => {
       languageId: effectiveLanguageId!,
       quizDifficultyId: effectiveDifficultyId!,
       difficulties,
-      // Lets the parser drop a question whose `sourceQuote` isn't in the material. Topic mode
-      // has no material, so the check is skipped there (question-checks.ts).
-      sourceText: mode === "Source" ? sourceData : null,
+      // Lets the parser drop a question whose `sourceQuote` isn't in the material: the user's
+      // own in Source mode, the article in a grounded Topic generation. Topic mode from memory
+      // has nothing to check against, so the check is skipped there (question-checks.ts).
+      sourceText: mode === "Source" ? sourceData : (grounding?.source?.text ?? null),
     });
   }, [
     payload,
@@ -317,6 +331,7 @@ export const useAiQuizDraft = () => {
     difficulties,
     mode,
     sourceData,
+    grounding,
   ]);
 
   /**
@@ -416,6 +431,7 @@ export const useAiQuizDraft = () => {
         addImages,
         pastedReply,
         payload,
+        grounding,
       };
       // `null` for an untouched wizard: storing one would offer to restore work nobody did.
       return isAiQuizDraftWorthKeeping(candidate) ? candidate : null;
@@ -491,6 +507,8 @@ export const useAiQuizDraft = () => {
           }}
           reviewNotices={
             <>
+              {/* Grounding: what the questions came from. First, because it frames the rest. */}
+              <SourceNote grounding={grounding} />
               <ImportNotices result={parseResult} />
               <AutoImageNotice requested={autoImages.requested} notFound={autoImages.notFound} />
             </>
@@ -562,6 +580,8 @@ export const useAiQuizDraft = () => {
     buildInput,
     payload,
     setPayload,
+    /** What the current reply was written from; null when grounding is off or nothing is held. */
+    grounding,
     /** Discards the questions and returns to the input. Containers add their own resets. */
     resetPayload: () => setPayload(null),
     parseResult,

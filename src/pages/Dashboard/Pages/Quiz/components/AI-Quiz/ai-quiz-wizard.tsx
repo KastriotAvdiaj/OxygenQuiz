@@ -5,8 +5,12 @@ import { useNavigationGuard } from "@/hooks/use-navigation-guard";
 import {
   useGenerateAiQuiz,
   useAiQuota,
+  useReadAiSource,
   AiGenerateError,
+  type AiGrounding,
+  type AiGroundingAnswers,
 } from "../../api/generate-ai-quiz";
+import type { SourceFileInfo } from "./components/generation-input";
 
 import { AiQuizWizardView } from "./ai-quiz-wizard-view";
 import { useAiQuizDraft } from "./use-ai-quiz-draft";
@@ -33,6 +37,36 @@ export const AiQuizWizard = () => {
 
   const generateMutation = useGenerateAiQuiz();
   const quotaQuery = useAiQuota();
+  const readSource = useReadAiSource();
+
+  /**
+   * Which file the material box's text came from. Wizard-only state: the own-AI page has no
+   * material mode, and nothing about the file outlives this screen — the text does, in the
+   * draft, and that is all generation needs.
+   */
+  const [sourceFile, setSourceFile] = useState<SourceFileInfo | null>(null);
+  const [uploadError, setUploadError] = useState<string | undefined>();
+
+  /**
+   * Reads the file on the server and puts its text in the box. Replaces what was there: one
+   * source per quiz. A refused file leaves the box as it was, so a bad pick costs nothing.
+   */
+  const handleUploadFile = (file: File) => {
+    setUploadError(undefined);
+    readSource.mutate(file, {
+      onSuccess: (result) => {
+        draft.setSourceData(result.text);
+        setSourceFile({ name: file.name, language: result.language, truncated: result.truncated });
+        // A generation error about the *previous* text no longer describes what's in the box.
+        setGenerateError(null);
+      },
+      onError: (error) => {
+        setUploadError(
+          error instanceof AiGenerateError ? error.message : "That file couldn't be read.",
+        );
+      },
+    });
+  };
 
   /**
    * The request is in flight and the page owns it — there is no job id to come back to, so
@@ -54,16 +88,33 @@ export const AiQuizWizard = () => {
     cancelNavigation,
   } = useNavigationGuard(generateMutation.isPending);
 
-  const handleGenerate = () => {
+  /**
+   * Grounding's question, while one is open, and the author's answers so far. Answers
+   * accumulate — a language, then an article — and go out with every retry of the same request,
+   * because the server asks one thing at a time and must not ask the first again.
+   * docs/quiz/ai-quiz-generation-flow.md §2e.
+   */
+  const [sourceChoice, setSourceChoice] = useState<AiGrounding | null>(null);
+  const [sourceAnswers, setSourceAnswers] = useState<AiGroundingAnswers>({});
+
+  const runGeneration = (answers: AiGroundingAnswers) => {
     setGenerateError(null);
     draft.setPayload(null);
 
-    generateMutation.mutate(draft.buildInput(), {
+    generateMutation.mutate({ ...draft.buildInput(), ...answers }, {
       onSuccess: (result) => {
-        draft.setPayload(result.payload);
+        setSourceChoice(null);
+        draft.setPayload(result.payload, result.grounding ?? null);
         void quotaQuery.refetch();
       },
       onError: (error) => {
+        // Not a failure: grounding needs the author. Nothing was spent — the server asks
+        // before reserving — so there is no quota to refresh and no error to show.
+        if (error instanceof AiGenerateError && error.code === "SourceNeedsChoice" && error.grounding) {
+          setSourceChoice(error.grounding);
+          return;
+        }
+        setSourceChoice(null);
         // State, not a toast. The inline panel is the better surface: it persists, it sits
         // beside the button that failed, and it changes what it offers per error code. A
         // toast saying the same thing is a third copy of one message — the request already
@@ -77,10 +128,30 @@ export const AiQuizWizard = () => {
     });
   };
 
+  /** A fresh press of Generate: any earlier answers belonged to an earlier topic. */
+  const handleGenerate = () => {
+    setSourceAnswers({});
+    runGeneration({});
+  };
+
+  /** One answer to grounding's question, added to the ones already given, and asked again. */
+  const handleAnswerSource = (answer: AiGroundingAnswers) => {
+    const answers = { ...sourceAnswers, ...answer };
+    setSourceAnswers(answers);
+    runGeneration(answers);
+  };
+
+  /** Back to the form from a question. Nothing was spent, so nothing to undo but the answers. */
+  const handleDismissSourceChoice = () => {
+    setSourceChoice(null);
+    setSourceAnswers({});
+  };
+
   /** Discards the questions and returns to the topic box. */
   const handleStartOver = () => {
     draft.resetPayload();
     setGenerateError(null);
+    handleDismissSourceChoice();
   };
 
   return (
@@ -95,6 +166,14 @@ export const AiQuizWizard = () => {
       onTopicChange={draft.setTopic}
       sourceData={draft.sourceData}
       onSourceDataChange={draft.setSourceData}
+      onUploadFile={handleUploadFile}
+      isReadingFile={readSource.isPending}
+      sourceFile={sourceFile}
+      uploadError={uploadError}
+      topicPath={draft.paths.generate}
+      sourceChoice={sourceChoice}
+      onAnswerSource={handleAnswerSource}
+      onDismissSourceChoice={handleDismissSourceChoice}
       onCategoryIdChange={draft.setCategoryId}
       onLanguageIdChange={draft.setLanguageId}
       questionCount={draft.questionCount}

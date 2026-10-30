@@ -198,6 +198,75 @@ public class AiConfigurationResolverTests
         Assert.True(result.UseFakeProvider);
     }
 
+    // ── Source mode is the vendor entry's call ──────────────────────────────────────────────
+
+    [Fact]
+    public void Source_mode_stays_closed_unless_the_vendor_entry_opens_it()
+    {
+        // The groq entry ships without it: the baseline measured that model too weak, and a full
+        // source does not fit its free tier (AiVendorOptions.AllowsSourceMode).
+        var options = Configured();
+
+        Resolve(options);
+
+        Assert.False(options.SourceModeEnabled);
+    }
+
+    [Fact]
+    public void A_vendor_entry_that_allows_source_mode_opens_it()
+    {
+        var options = Configured();
+        options.Vendors["groq"].AllowsSourceMode = true;
+
+        Resolve(options);
+
+        Assert.True(options.SourceModeEnabled);
+    }
+
+    [Fact]
+    public void A_flat_source_mode_setting_is_ignored()
+    {
+        // Only a vendor entry may open it, so an Ai__SourceModeEnabled=true left in some .env
+        // cannot put a weak model on the material path. The flat vendor form is the case that
+        // matters: with an entry selected, the entry overwrites the flag anyway.
+        var options = new AiOptions
+        {
+            Enabled = true,
+            ApiKey = "key",
+            BaseUrl = "https://api.groq.com/openai/v1",
+            Model = "openai/gpt-oss-120b",
+            InputCostPerMillionUsd = 0.15m,
+            OutputCostPerMillionUsd = 0.60m,
+            SourceModeEnabled = true,
+        };
+
+        Resolve(options);
+
+        Assert.False(options.SourceModeEnabled);
+    }
+
+    [Fact]
+    public void The_stub_offers_source_mode_so_the_flow_can_be_tried_locally()
+    {
+        var options = Configured();
+        options.Provider = "Fake";
+
+        Resolve(options, isProduction: false, isDevelopment: true);
+
+        Assert.True(options.SourceModeEnabled);
+    }
+
+    [Fact]
+    public void Source_mode_is_closed_whenever_ai_is()
+    {
+        var options = Configured(enabled: false);
+        options.Vendors["groq"].AllowsSourceMode = true;
+
+        Resolve(options);
+
+        Assert.False(options.SourceModeEnabled);
+    }
+
     // ── Switched off on purpose is not an error ─────────────────────────────────────────────
 
     [Fact]

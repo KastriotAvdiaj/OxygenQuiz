@@ -3,6 +3,7 @@ import { z } from "zod";
 import { QuestionType } from "@/types/question-types";
 
 import type { AssociationQuizFormValues } from "../api/association-quiz";
+import type { AiGrounding } from "../api/generate-ai-quiz";
 import { CreateQuizInput, createQuizInputSchema } from "../api/create-quiz";
 
 import type { QuestionSettings, QuizQuestion } from "./Create-Quiz-Form/types";
@@ -150,6 +151,13 @@ export interface AiQuizDraft {
   pastedReply: string;
   /** The model's reply, raw. Held by both paths once it exists. */
   payload: string | null;
+  /**
+   * What the reply was written from (docs/quiz/ai-quiz-generation-flow.md §2e). Kept with the
+   * payload because both are needed to rebuild the review after a refresh: the article's text
+   * for the quote check, and the provenance line above the questions. Optional — older drafts,
+   * and every reply generated with grounding off, have none.
+   */
+  grounding?: AiGrounding | null;
 }
 
 const aiQuizDraftSchema = z.object({
@@ -166,11 +174,33 @@ const aiQuizDraftSchema = z.object({
   addImages: z.boolean().optional(),
   pastedReply: z.string(),
   payload: z.string().nullable(),
+  // Loose on purpose: this is the server's own response, stored and read back by us. A shape
+  // drift should cost the provenance line, not the whole draft — so it falls to null below.
+  grounding: z
+    .object({
+      status: z.string(),
+      language: z.string().nullish(),
+      reason: z.string().nullish(),
+      source: z
+        .object({
+          provider: z.string(),
+          title: z.string(),
+          url: z.string().nullable(),
+          text: z.string(),
+          language: z.string(),
+        })
+        .nullish(),
+    })
+    .passthrough()
+    .nullish()
+    .catch(null),
 });
 
 export const parseAiQuizDraft = (raw: unknown): AiQuizDraft | null => {
   const result = aiQuizDraftSchema.safeParse(raw);
-  return result.success ? result.data : null;
+  // The grounding schema checks the fields the review reads and lets the status through as a
+  // string; the cast narrows it back to the union it was stored as.
+  return result.success ? (result.data as AiQuizDraft) : null;
 };
 
 /**

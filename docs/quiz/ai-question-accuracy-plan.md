@@ -1,10 +1,11 @@
 # Plan: Accurate AI Question Generation
 
-Status: **Phases 1 and 1b implemented** (deterministic checks, prompt hardening, question
-explanations). Phases 2–5 proposed.
+Status: **Phases 0, 1 and 1b implemented** (eval harness, deterministic checks, prompt hardening,
+question explanations), the **baseline is measured** (Phase 0, below), and **2a is built but
+closed** on the current model. The rest of Phase 2, and 3–5, proposed.
 Transient plan doc — fold what ships into [`ai-quiz-generation-flow.md`](./ai-quiz-generation-flow.md)
 and [`ai-quiz-architecture.md`](./ai-quiz-architecture.md), then delete this file.
-Last updated: 2026-09-26
+Last updated: 2026-10-29
 
 ---
 
@@ -78,15 +79,132 @@ Topic ──► 2. Source (Wikipedia) ─┐            (Source mode: the user's
 
 ## Phases
 
-### Phase 0 — Eval set (before anything else is judged)
+### Phase 0 — Eval set (before anything else is judged) ✅ implemented
 
-- ~200 questions across 20 topics, current setup, labelled correct / wrong / ambiguous /
-  time-sensitive. 50 is too few: 2 errors in 50 is "4%" with a 95% interval of roughly 0.5–14%.
-- Label without knowing which pipeline produced a question.
-- Store under `eval/` with a script that runs the pipeline against the topic list and prints, per
-  stage, how many were dropped and why — plus **yield** (kept ÷ requested).
-- Close gap §9.8 of the flow doc while here: `QuestionsReturned` counts array elements, not
-  survivors, so the ledger's quality metric is optimistic.
+Built as `eval/`; how it works and why, in
+[`../development/ai-eval.md`](../development/ai-eval.md). It came in at 12 topics × 10 questions
+rather than 20 × 10 — the sample-size argument below is right, and 200 hand-labelled items is
+also how the harness never gets used once. Widen `topics.json` when a run proves worth repeating.
+Two things the plan did not anticipate: the run is **blind** (shuffled rows, the key in a separate
+file), and it carries a `--language-mode` flag, because there is no language picker on the
+generate form and the model currently infers the language from the topic string. The baseline
+settled that: 0 of 116 questions came back in the wrong language, so **the picker is not
+needed — do not build it** on accuracy grounds.
+
+Against the original list:
+
+- **Done** — blind labelling; `eval/` with a script that runs the topic list and prints, per
+  stage, how many were dropped and why, plus **yield** (kept ÷ requested); every rate carries a
+  95% Wilson interval, because the sample-size worry below is real.
+- **Reduced** — 12 topics × 10 questions (120), not 20 × 10 (200). Widen `topics.json` once a
+  run has proved worth repeating.
+- **Still open** — gap §9.8 of the flow doc. The harness now reports *returned* and *kept*
+  separately, so a run shows the difference; the `QuestionsReturned` **column** still counts
+  array elements, so the ledger's own quality metric remains optimistic. Fixing it is a
+  backend change the harness does not need.
+- **Done** — baseline run and hand-labelled, 2026-10-29. Below.
+
+#### Baseline (2026-10-29)
+
+Run `2026-10-28T23-41-01-324Z-inferred`: `openai/gpt-oss-120b` on Groq, reasoning effort low,
+temperature 0, seed 20261017, language mode **inferred** (what production does), 116 of 116 kept
+questions labelled. The full report lives in `eval/runs/<id>/report.md`, which is gitignored —
+these numbers are the copy that survives.
+
+| measure | value |
+|---|---|
+| yield | 116 / 120 requested (122 returned; the parser dropped 6) |
+| parser drops | all 6 for one rule (answer given away in the question); **none** of the 46 defects |
+| wrong | 19.8% (23/116, 95% CI 13.6–28.0%) |
+| ambiguous | 19.8% (23/116, 95% CI 13.6–28.0%) |
+| time-sensitive | 0% (0/116) |
+| **defective** (wrong + ambiguous) | **39.7%** (46/116) |
+| wrong language | 0 / 116 |
+
+| language | kept | wrong | mean fluency (1–4) |
+|---|---:|---:|---:|
+| Albanian | 57 | 14 (24.6%) | 3.12 |
+| English | 59 | 9 (15.3%) | 3.97 |
+
+| type | labelled | wrong |
+|---|---:|---:|
+| MultipleChoice | 50 | 26.0% (95% CI 15.9–39.6%) |
+| TrueFalse | 39 | 15.4% (95% CI 7.2–29.7%) |
+| TypeTheAnswer | 27 | 14.8% (95% CI 5.9–32.5%) |
+
+| topic | labelled | wrong | ambiguous | defective |
+|---|---:|---:|---:|---:|
+| sq-03 Rilindja literature | 11 | 4 | 6 | **90.9%** |
+| en-05 C# 12 / .NET 8 | 9 | 5 | 2 | **77.8%** |
+| en-06 2024 Olympics | 10 | 3 | 2 | 50.0% |
+| sq-05 football rules | 10 | 2 | 3 | 50.0% |
+| sq-01 Kosovo, 20th c. | 8 | 4 | 0 | 50.0% |
+| sq-04 Albanian cuisine | 8 | 2 | 2 | 50.0% |
+| sq-02 geography | 10 | 2 | 2 | 40.0% |
+| en-03 WWII in the Balkans | 10 | 0 | 3 | 30.0% |
+| en-01 photosynthesis | 10 | 0 | 2 | 20.0% |
+| en-04 Mercury | 10 | 1 | 0 | 10.0% |
+| sq-06 Python basics | 10 | 0 | 1 | 10.0% |
+| en-02 respiratory system | 10 | 0 | 0 | 0.0% |
+
+What it says:
+
+- **Errors concentrate by subject**, which is what a knowledge gap looks like. That is the case
+  for Phase 2. English errors are 5 in en-05 (staleness), 3 in en-06 (recency) and 1 in en-04;
+  en-01/02/03 have none.
+- **en-05 is a staleness failure that Wikipedia will not fix.** Its five wrong answers misdate
+  C# features (C# 10/11 features keyed as C# 12) or invent APIs. The topic note already says
+  official docs are the source here; Phase 2b alone will not move this row.
+- **The Mercury ambiguity trap did not fire.** All ten questions picked the planet; the one error
+  is arithmetic (a 3:2 resonance keyed as "3"), so en-04 measured nothing about disambiguation.
+- **Explanations are unreliable even when the key is right.** In three rows the explanation
+  argues for a different answer than the key (`b3a1c913ff`, `1814680e2f`, `aa27ca3364`); in
+  others the key is right and the explanation states something false (`e777dea758`,
+  `e1604a1051`, `064d463ee1`). Players read the explanation, so this needs checking; see Phase 3.
+- **MultipleChoice is the weak type**, and partly because of fabricated distractors: nonsense
+  words such as "Marrëzë", "Kokërr" and "Petëqengë" are both wrong Albanian and make the question
+  trivial (`6fb5b3f6b8`, `67a1d0d103`). Albanian fluency (3.12) is also clearly below English
+  (3.97); many "correct" Albanian rows carry grammar notes.
+
+**What a change has to beat.** By the harness's own rule, a difference is shown only when the
+intervals do not overlap: the after-run's *upper* bound has to fall below this run's lower bound
+of 13.6%. At ~116 labelled questions that means **at most 8 wrong (≈6.9%, CI 3.5–13.0%)**, with
+yield reported next to it. A wrong rate of, say, 12% would be an encouraging sign, not a result.
+
+**Changes since the baseline that the next run will also measure** — list them here so an
+after-run is not credited to one change when it carries several:
+
+- 2026-10-29: the quality rule asks for real, correctly spelled distractors of the same kind as
+  the answer (`AiPromptBuilder`). Too small to measure alone (about 2 affected rows of 116).
+- 2026-10-29: Source mode (Phase 2a) exists but cannot affect a Topic-mode run — the eval only
+  runs topics, and the mode is closed on the baseline's model.
+
+#### First grounded run (2026-10-29) — grounding works on the topics it reaches
+
+Run `2026-10-29T17-25-10-002Z-inferred-grounded`: same model, seed and topics, `--grounding`, 121
+of 121 labelled blind. Eight topics grounded (en-01/02/03/04/06, sq-02/03/04); four had no good
+Wikipedia article and were written from memory (en-05, sq-01, sq-05, sq-06). Compared with
+`eval:score --compare`:
+
+| cut | baseline | grounded run | Fisher exact |
+|---|---|---|---|
+| **grounded topics — wrong** | 15.2% (12/79, CI 8.9–24.7) | **3.6%** (3/84, CI 1.2–10.0) | p = 0.014 |
+| **grounded topics — wrong + ambiguous** | 36.7% (29/79, CI 26.9–47.7) | **11.9%** (10/84, CI 6.6–20.5) | p = 0.0002 |
+| memory topics — wrong (the control) | 11/37 | 13/37 | p = 0.80 |
+| whole run — wrong | 19.8% (23/116) | 13.2% (16/121) | p = 0.22 |
+
+- **Wrong + ambiguous clears the harness's own bar** (intervals don't overlap); wrong alone misses
+  it by a hair (10.0 against 8.9) but is significant by an exact test.
+- **The control held still**, so the gain is grounding's, not the run's or the distractor rule's.
+- **Albanian fluency rose from 3.12 to 3.55**, and wrong answers in Albanian from 14/57 to 9/62.
+- **The whole run can't show it** — as predicted, the four memory topics hold most of what's left.
+- **Every grounded question carried a quote; 83 of 84 were verbatim** and the 84th a correct
+  ellipsis splice. The quote check dropped nothing because there was nothing to drop.
+- **New defect: explanations that cite the source** — "sipas materialit", "the text confirms" —
+  in about ten grounded rows. Players never see the source, so the explanation must state the
+  fact. A prompt rule fixes it.
+- **The model returns one question too many** on some topics (four here, two in the baseline).
+  Yield "of requested" counts them, so it reads 100.8%; capped per topic it is 97.5%.
 
 ### Phase 1 — Deterministic checks ✅ implemented
 
@@ -113,8 +231,18 @@ states the answer: the session DTO no longer carries the answer key mid-quiz
 
 ### Phase 2 — Grounding
 
-- **2a.** Register `/ai/material` — Source mode already works server-side. Cheapest grounded path.
-- **2b.** `WikipediaSourceProvider` for Topic mode. Search API → first non-disambiguation hit →
+- **2a. ✅ Built 2026-10-29, closed on the current model.** `/ai/material` takes pasted text or
+  an uploaded PDF, Word or text file; questions are written in the material's language, English
+  or Albanian only. Opens when a vendor entry sets `AllowsSourceMode` — not `groq`, which the
+  baseline above rules out. How it works: [`ai-quiz-generation-flow.md`](./ai-quiz-generation-flow.md)
+  §2d; why: [ADR 0037](../adr/0037-source-mode-writes-in-the-materials-language-and-opens-per-model.md).
+  Measure it before opening it (flow doc §9.16).
+- **2b. Server and eval built 2026-10-29, switched off** — flow doc §2e. Language and article
+  are chosen as [the source-tiers proposal](../proposals/topic-disambiguation-and-source-tiers.md)
+  says, except that the article is matched by title (the "first hit" below picked the wrong one on
+  seven of the twelve eval topics). Next: an eval run with `--grounding`, compared on the grounded
+  topics; then the wizard UI. The original sketch, for the record:
+  `WikipediaSourceProvider` for Topic mode. Search API → first non-disambiguation hit →
   plain-text extract, from `sq.wikipedia.org` when the quiz language is Albanian, falling back to
   English. The server then builds the **Source-mode** prompt from it.
 - The generate response gains `sourceText` (what the model saw, after truncation) and
@@ -130,8 +258,15 @@ states the answer: the session DTO no longer carries the answer key mid-quiz
   options **shuffled** and **no key**, and answers each one. A weak model is far better at reading
   comprehension than recall, so this doesn't reject hard-but-correct questions the way a
   memory-only verifier does — which would quietly skew every quiz toward easy.
-- Same call returns flags per question: `multipleDefensible`, `notSupported`, `timeSensitive`.
+- Same call returns flags per question: `multipleDefensible`, `notSupported`, `timeSensitive`,
+  `explanationContradictsKey`, `implausibleDistractor`.
   Critic and answerer are one call, not two.
+- **Explanation–key consistency**, in the same call: does the explanation support the keyed
+  answer, and is it supported by the source? The baseline has explanations that argue for another
+  answer, and false explanations under a correct key (Phase 0). Contradiction → drop, like a
+  disagreement; an unsupported explanation → **Check this**.
+- **Implausible distractors** (MultipleChoice): a flag for options that are not real words or not
+  members of the asked-for category — the baseline's fabricated Albanian distractors. Flag only.
 - Disagreement with the key → drop. A flag alone → keep with **Check this**.
 - TrueFalse: agreement is 50% by chance, so for this type only a *disagreement* counts. 
   TypeTheAnswer: compare with the existing `TypeTheAnswerMatcher`, not string equality.
@@ -197,8 +332,15 @@ report volumes, and if it comes, hide from *new* sessions only, with a threshold
 
 ## Open questions
 
-- Language: grounded Albanian quizzes depend on sq.wikipedia coverage — measure in Phase 0 before
-  promising it.
+- ~~Language: grounded Albanian quizzes depend on sq.wikipedia coverage — measure in Phase 0~~
+  **Partly answered (2026-10-28).** sq.wikipedia holds 106,477 articles and the coverage is
+  uneven: `Rilindja Kombëtare Shqiptare` is 6,157 words, `Historia e Kosovës` is **276**. A
+  stub that short is worse than no source — it looks grounded and cannot carry ten questions.
+  So Wikipedia alone is not enough for Albanian, and Phase 2b's source rule does not survive
+  contact with the search index either. See
+  [`../proposals/topic-disambiguation-and-source-tiers.md`](../proposals/topic-disambiguation-and-source-tiers.md).
+  Question quality is now measured too (Phase 0 baseline): Albanian is 24.6% wrong against
+  English's 15.3%, and fluency 3.12 against 3.97.
 - Should a grounded generation cost the same quota slot as today? It is up to two calls instead of
   one.
 - Is a "no article found" fallback to ungrounded generation acceptable, or should Topic mode

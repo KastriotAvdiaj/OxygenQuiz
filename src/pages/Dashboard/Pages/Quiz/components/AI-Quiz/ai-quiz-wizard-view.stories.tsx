@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { Decorator, Meta, StoryObj } from "@storybook/react";
 import { expect, fn, userEvent, within } from "@storybook/test";
 import { MemoryRouter } from "react-router-dom";
@@ -13,6 +14,7 @@ import {
   parse,
 } from "./__fixtures__/ai-quiz.fixtures";
 import { AiQuizWizardView } from "./ai-quiz-wizard-view";
+import { SourceNote } from "./components/source-note";
 import type { ParseResult } from "./parse-ai-output";
 import { AI_QUESTION_LIMITS, DEFAULT_QUESTION_COUNT } from "./prompt";
 
@@ -164,8 +166,14 @@ const UNKNOWN_DIFFICULTY_REPLY = JSON.stringify({
  * provider (that's why it's a slot prop, not part of the view). Listing what the parser
  * produced makes these stories a readable check on the handoff payload.
  */
-const BuilderStandIn = ({ result }: { result: ParseResult }) => (
-  <div className="mx-auto w-full max-w-[1600px] rounded-xl border-2 border-dashed border-border p-5">
+/**
+ * `notices` stands in for the builder's `reviewNotices` slot, where the real overview shows the
+ * import report and the grounding note above the questions (use-ai-quiz-draft.tsx).
+ */
+const BuilderStandIn = ({ result, notices }: { result: ParseResult; notices?: ReactNode }) => (
+  <div className="flex flex-col gap-3">
+    {notices}
+    <div className="mx-auto w-full max-w-[1600px] rounded-xl border-2 border-dashed border-border p-5">
     <p className="text-sm font-semibold">
       [ builderSlot ] — CreateQuizForm renders here, prefilled and in aiImportMode
     </p>
@@ -179,6 +187,7 @@ const BuilderStandIn = ({ result }: { result: ParseResult }) => (
         </li>
       ))}
     </ol>
+    </div>
   </div>
 );
 
@@ -190,6 +199,7 @@ const quotaAvailable = {
   remaining: 2,
   resetsAt: "2026-08-10T00:00:00Z",
   model: "deepseek-v4-flash",
+  sourceModeEnabled: true,
 };
 
 // ── Meta ───────────────────────────────────────────────────────────────────────────────
@@ -249,6 +259,9 @@ const meta = {
     parseResult: null,
     onTopicChange: fn(),
     onSourceDataChange: fn(),
+    onUploadFile: fn(),
+    onAnswerSource: fn(),
+    onDismissSourceChoice: fn(),
     onCategoryIdChange: fn(),
     onLanguageIdChange: fn(),
     onQuestionCountChange: fn(),
@@ -388,10 +401,9 @@ export const ValidationOnShortSource: Story = {
 
 // ── Source mode ────────────────────────────────────────────────────────────────────────
 //
-// `/ai/material` is not a registered route yet — the method dialog shows that option as
-// "Soon" (AI_MATERIAL_MODE_ENABLED in create-quiz-method-dialog.tsx). These stories stay:
-// the view renders whichever field its `mode` asks for, and they are the only place the
-// material screen can be reviewed until slice 2.3 registers the route.
+// `/ai/material`: paste, or upload a PDF, Word or text file that the server reads into the
+// box. Open only when the server's vendor entry allows it (`sourceModeEnabled`); see
+// docs/quiz/ai-quiz-generation-flow.md, "Source mode".
 
 export const SourceModeEmpty: Story = {
   args: { mode: "Source" },
@@ -401,13 +413,69 @@ export const SourceModeReady: Story = {
   args: { mode: "Source", sourceData: SOURCE_MATERIAL },
 };
 
-/** Past the soft cap — an amber warning, not a block; the server truncates. */
-export const SourceModeTooLong: Story = {
+/** At the 40,000-character limit: the box stops taking input and the counter turns amber. */
+export const SourceModeAtLimit: Story = {
   args: {
     mode: "Source",
     sourceData: SOURCE_MATERIAL.repeat(
-      Math.ceil(AI_QUESTION_LIMITS.sourceWarningLength / SOURCE_MATERIAL.length) + 1,
+      Math.ceil(AI_QUESTION_LIMITS.maxSourceChars / SOURCE_MATERIAL.length) + 1,
+    ).slice(0, AI_QUESTION_LIMITS.maxSourceChars),
+  },
+};
+
+/** The server is reading an uploaded file; the box and Generate wait for it. */
+export const SourceModeReadingFile: Story = {
+  args: { mode: "Source", isReadingFile: true },
+};
+
+/** An upload read: its text is in the box, and the line under it says where from and in what language. */
+export const SourceModeFromFile: Story = {
+  args: {
+    mode: "Source",
+    sourceData: SOURCE_MATERIAL,
+    sourceFile: { name: "photosynthesis-notes.pdf", language: "English", truncated: false },
+  },
+};
+
+/** A file longer than the limit arrives already cut, and says so. */
+export const SourceModeFileTruncated: Story = {
+  args: {
+    mode: "Source",
+    sourceData: SOURCE_MATERIAL,
+    sourceFile: { name: "biology-textbook.pdf", language: "English", truncated: true },
+  },
+};
+
+/** A refused file leaves the box as it was; the message names the fix. */
+export const SourceModeUploadRefused: Story = {
+  args: {
+    mode: "Source",
+    uploadError:
+      "We couldn't find any text in that PDF. If it's a scan, it holds pictures of text rather than text — paste the text instead.",
+  },
+};
+
+/** Pasted material in another language: refused at Generate, before anything is spent. */
+export const SourceModeUnsupportedLanguage: Story = {
+  args: {
+    mode: "Source",
+    sourceData: SOURCE_MATERIAL,
+    generateError: new AiGenerateError(
+      "UnsupportedLanguage",
+      "Your material needs to be in English or Albanian. The questions are written in the same language as the material.",
     ),
+  },
+};
+
+/**
+ * Reached by URL while the configured model isn't allowed to write from material. No upload,
+ * Generate disabled, and the way out is the topic wizard — the own-AI page is topic-only.
+ */
+export const SourceModeClosed: Story = {
+  args: {
+    mode: "Source",
+    quota: { ...quotaAvailable, sourceModeEnabled: false },
+    topicPath: "/dashboard/quizzes/create-quiz/ai/topic",
   },
 };
 
@@ -457,6 +525,7 @@ export const QuotaUnlimitedForStaff: Story = {
       remaining: null,
       resetsAt: "2026-08-10T00:00:00Z",
       model: "deepseek-v4-flash",
+      sourceModeEnabled: true,
     },
   },
 };
@@ -501,6 +570,72 @@ export const FeatureDisabled: Story = {
   args: {
     topic: "The French Revolution",
     quota: { ...quotaAvailable, enabled: false },
+  },
+};
+
+// ── Grounding: written from a Wikipedia article (docs/quiz/ai-quiz-generation-flow.md §2e) ──
+//
+// With `Ai:Source:Enabled`, a topic is looked up on Wikipedia before the model writes. When
+// the server can't decide something it asks — before any allowance is spent — and the card
+// below takes the topic box's place. The candidates are real search results (2026-10-29).
+
+/** "Python": both Wikipedias have it, so the language is asked. */
+export const GroundingAsksLanguage: Story = {
+  args: {
+    topic: "Python",
+    sourceChoice: { status: "NeedsLanguage", languages: ["English", "Albanian"] },
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /Albanian · shqip/ }));
+    await expect(args.onAnswerSource).toHaveBeenCalledWith({ sourceLanguage: "Albanian" });
+  },
+};
+
+/** "Mercury": a disambiguation page. Picking an article generates from it. */
+export const GroundingAsksArticle: Story = {
+  args: {
+    topic: "Mercury",
+    sourceChoice: {
+      status: "NeedsArticle",
+      language: "English",
+      articles: [
+        { title: "Mercury (planet)", words: 16170, url: "https://en.wikipedia.org/wiki/Mercury_(planet)" },
+        { title: "Freddie Mercury", words: 17329, url: "https://en.wikipedia.org/wiki/Freddie_Mercury" },
+        { title: "Mercury (element)", words: 13576, url: "https://en.wikipedia.org/wiki/Mercury_(element)" },
+      ],
+    },
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /Mercury \(planet\)/ }));
+    await expect(args.onAnswerSource).toHaveBeenCalledWith({ sourceTitle: "Mercury (planet)" });
+  },
+};
+
+/** "None of these" is always offered, and says what it costs. */
+export const GroundingDeclined: Story = {
+  args: GroundingAsksArticle.args,
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /None of these/ }));
+    await expect(args.onAnswerSource).toHaveBeenCalledWith({ sourceDeclined: true });
+  },
+};
+
+/**
+ * Wikipedia is down. Not a silent fallback: the author is told what writing from memory costs
+ * and chooses — try again, or go ahead.
+ */
+export const GroundingWikipediaDown: Story = {
+  args: {
+    topic: "Rilindja Kombëtare",
+    sourceChoice: { status: "SourceUnavailable", language: "Albanian", reason: "unavailable" },
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /Continue anyway/ }));
+    await expect(args.onAnswerSource).toHaveBeenCalledWith({ sourceAcceptFromMemory: true });
   },
 };
 
@@ -637,6 +772,54 @@ export const ReviewHandoffWithDifficultyFallbacks: Story = {
 // ── Lookup query states ────────────────────────────────────────────────────────────────
 // Only loading. A lookup *failure* throws to the route's error element, so there is no
 // in-view state to story — see docs/development/error-handling.md.
+
+// ── Grounding, in the review ──
+
+/** The review, grounded: the article is named and linked above the questions. */
+export const ReviewGrounded: Story = {
+  args: {
+    topic: "Kuzhina tradicionale shqiptare",
+    parseResult: goodResult,
+    builderSlot: (
+      <BuilderStandIn
+        result={goodResult}
+        notices={
+          <SourceNote
+            grounding={{
+              status: "Grounded",
+              language: "Albanian",
+              source: {
+                provider: "wikipedia",
+                title: "Kuzhina shqiptare",
+                url: "https://sq.wikipedia.org/wiki/Kuzhina_shqiptare",
+                text: "…",
+                language: "Albanian",
+              },
+            }}
+          />
+        }
+      />
+    ),
+  },
+};
+
+/** The review after going ahead while Wikipedia was down: the one amber notice. */
+export const ReviewFromMemoryWikipediaDown: Story = {
+  args: {
+    topic: "Rilindja Kombëtare",
+    parseResult: goodResult,
+    builderSlot: (
+      <BuilderStandIn
+        result={goodResult}
+        notices={
+          <SourceNote
+            grounding={{ status: "Ungrounded", language: "Albanian", reason: "unavailable" }}
+          />
+        }
+      />
+    ),
+  },
+};
 
 export const LoadingEntities: Story = {
   args: { isLoadingEntities: true },

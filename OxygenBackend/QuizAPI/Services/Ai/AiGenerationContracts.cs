@@ -1,3 +1,5 @@
+using QuizAPI.Services.Ai.Sources;
+
 namespace QuizAPI.Services.Ai
 {
     /// <summary>How the user asked for the quiz. Recorded on every usage row.</summary>
@@ -6,7 +8,10 @@ namespace QuizAPI.Services.Ai
         /// <summary>Generated from a subject line alone — the model recalls the facts (plan §8).</summary>
         Topic = 0,
 
-        /// <summary>Generated from user-supplied material (pasted text today; files in 2.3).</summary>
+        /// <summary>
+        /// Generated from user-supplied material, pasted or extracted from an uploaded file.
+        /// Offered only when the vendor entry allows it (<see cref="AiOptions.SourceModeEnabled"/>).
+        /// </summary>
         Source = 1,
 
         /// <summary>
@@ -68,7 +73,23 @@ namespace QuizAPI.Services.Ai
         /// <summary>The user gave the model nothing to work from — no topic, or too little source text.</summary>
         public const string EmptySource = "EmptySource";
         public const string SourceTooLarge = "SourceTooLarge";
+
+        /// <summary>An uploaded file whose text could not be read: wrong format, encrypted, or a scan with no text layer.</summary>
         public const string UnreadableSource = "UnreadableSource";
+
+        /// <summary>
+        /// The material is not in a language Source mode writes in — English or Albanian
+        /// (<see cref="SourceLanguageDetector"/>). Refused before quota is touched.
+        /// </summary>
+        public const string UnsupportedLanguage = "UnsupportedLanguage";
+
+        /// <summary>
+        /// Not a failure: grounding needs the author to pick the topic's language or the article
+        /// (<see cref="AiGenerationOutcome.Grounding"/> holds the options). Asked before quota is
+        /// reserved, so it costs nothing. The client answers with <c>sourceLanguage</c> or
+        /// <c>sourceTitle</c> and sends the request again.
+        /// </summary>
+        public const string SourceNeedsChoice = "SourceNeedsChoice";
         public const string ProviderUnavailable = "ProviderUnavailable";
         public const string ProviderTimeout = "ProviderTimeout";
         public const string ModelOutputInvalid = "ModelOutputInvalid";
@@ -120,6 +141,34 @@ namespace QuizAPI.Services.Ai
         public string? ExtraInstructions { get; init; }
 
         /// <summary>
+        /// Topic mode, grounding on: the language the author picked after being asked
+        /// (<see cref="GroundingStatus.NeedsLanguage"/>). Separate from <see cref="LanguageName"/>
+        /// so an answer to "which language?" is never mistaken for a standing choice elsewhere.
+        /// </summary>
+        public string? SourceLanguage { get; init; }
+
+        /// <summary>Topic mode, grounding on: the article the author picked after being asked (<see cref="GroundingStatus.NeedsArticle"/>).</summary>
+        public string? SourceTitle { get; init; }
+
+        /// <summary>Topic mode, grounding on: the author answered "none of these" — write from memory.</summary>
+        public bool SourceDeclined { get; init; }
+
+        /// <summary>Topic mode, grounding on: the source was down and the author chose to write from memory anyway.</summary>
+        public bool SourceAcceptFromMemory { get; init; }
+
+        /// <summary>
+        /// <c>POST /ai-prompt</c> only: build the prompt grounded, as generation would. Off by
+        /// default so the own-AI page keeps today's prompt until it can show the questions grounding
+        /// may ask; the eval sets it. Generation grounds whenever <c>Ai:Source:Enabled</c> is on.
+        /// </summary>
+        public bool Ground { get; init; }
+
+        /// <summary>
+        /// Set by <see cref="AiGenerationService"/>, never by a caller: the article the prompt is
+        /// written from. Null means a from-memory Topic prompt.
+        /// </summary>
+        public GroundedSource? Grounding { get; init; }
+        /// <summary>
         /// The wizard's "Add images" switch, off by default (docs/media/media-pipeline.md, "AI-added
         /// images"). On, the model may give a question an image <b>search query</b> — never a URL;
         /// the browser resolves it through our own Commons/Pexels import.
@@ -169,6 +218,13 @@ namespace QuizAPI.Services.Ai
         /// </summary>
         public int? QuotaRemaining { get; init; }
 
+        /// <summary>
+        /// What grounding concluded for this request: the article written from, the reason there
+        /// is none, or — with <see cref="AiErrorCodes.SourceNeedsChoice"/> — the question to put to
+        /// the author. <see cref="GroundingResult.Off"/> when grounding is switched off.
+        /// </summary>
+        public GroundingResult Grounding { get; init; } = GroundingResult.Off;
+
         // The model's quiz-level title / category / language are NOT pulled out here. They ride
         // inside PayloadJson and the browser reads them with `extractQuizSuggestions`, because
         // that is the one place both the generated and the pasted reply pass through. Doing it
@@ -178,13 +234,31 @@ namespace QuizAPI.Services.Ai
         public static AiGenerationOutcome Ok(
             string payloadJson,
             AiTokenUsage usage,
-            int? quotaRemaining) =>
+            int? quotaRemaining,
+            GroundingResult? grounding = null) =>
             new()
             {
                 Success = true,
                 PayloadJson = payloadJson,
                 Usage = usage,
                 QuotaRemaining = quotaRemaining,
+                Grounding = grounding ?? GroundingResult.Off,
+            };
+
+        public static AiGenerationOutcome NeedsChoice(GroundingResult grounding) =>
+            new()
+            {
+                Success = false,
+                ErrorCode = AiErrorCodes.SourceNeedsChoice,
+                Message = grounding.Status switch
+                {
+                    GroundingStatus.NeedsLanguage =>
+                        "Is this quiz in English or Albanian? Pick one and we'll find a source in that language.",
+                    GroundingStatus.SourceUnavailable =>
+                        "Wikipedia can't be reached right now. Try again in a minute, or let the AI write from memory — those questions are much more likely to contain mistakes.",
+                    _ => "That topic could mean more than one thing. Pick the article the quiz should come from.",
+                },
+                Grounding = grounding,
             };
 
         public static AiGenerationOutcome Fail(string code, string message, DateTime? retryAfterUtc = null) =>
