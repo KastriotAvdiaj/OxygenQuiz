@@ -173,9 +173,11 @@ and silent about it.
 This is also why `SourceOptions.LanguageDomains` has no fallback entry. A missing language is a
 missing source, not a redirect to English.
 
-**Not "in priority order" (2026-10-30).** The table reads as a fixed order by category, but the
-category isn't known when the topic is typed. Every source for the language is searched at once,
-and the titles decide — [ADR 0038](../adr/0038-every-source-is-searched-and-the-titles-decide.md).
+**Not "in priority order" by category (2026-10-30).** The table reads as a fixed order by
+category, but the category isn't known when the topic is typed. Wikipedia is asked first, the
+next tier only when Wikipedia isn't sure, and the titles decide between what came back —
+[ADR 0038](../adr/0038-every-source-is-searched-and-the-titles-decide.md) for the combining,
+[ADR 0039](../adr/0039-microsoft-learn-is-asked-only-when-wikipedia-isnt-sure.md) for who is asked.
 
 **Rank 4, Microsoft Learn — built 2026-10-30.** Read through Learn's MCP server
 (`learn.microsoft.com/api/mcp`): published by Microsoft for software to read Learn, keyless, no
@@ -209,6 +211,11 @@ The tiered allowlist keeps the set small enough to check deliberately.
   with a model strong at translation, and measure it before trusting it.
 - ~~The close-contest ratio (§4a bis).~~ Replaced by title matching; its thresholds (coverage ½,
   precision ¾) are fitted the same way, and the eval's ask rate is what tests them.
+- **A quiz from several articles.** Grounding is one article per quiz, so "C# 12 and .NET 8" or
+  "comparing programming languages" is grounded in whichever one article the author picks. Letting
+  the author tick several — some questions from a Learn page, some from Wikipedia — is a prompt and
+  card change, but splits the free tier's 6,000-character budget between them; worth it with a
+  vendor that allows more.
 - Does a grounded generation cost the same quota slot? It is up to two calls instead of one.
 - Caching. Two HTTP 429s came back inside a dozen probe requests, so the plan's
   `IMemoryCache` by (language, title) is load-bearing, not an optimisation.

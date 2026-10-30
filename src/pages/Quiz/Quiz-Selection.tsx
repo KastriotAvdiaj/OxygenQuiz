@@ -344,7 +344,7 @@ export function QuizSelection() {
       {inDrawer && (
         <div className="space-y-3 pb-3 pt-8 sm:hidden">
           {/* The same heading as "Filters" above: two sections of one drawer. */}
-          <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Sort by</h3>
+          <h3 className="font-quiz text-sm font-bold uppercase tracking-wider text-muted-foreground">Sort by</h3>
           <QuizSortSelect value={sortBy} onValueChange={handleSortChange} />
         </div>
       )}

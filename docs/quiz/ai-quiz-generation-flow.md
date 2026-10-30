@@ -372,10 +372,13 @@ half the topic's words, and three-quarters of the title's own. Anything weaker i
 On the twelve eval topics plus 29 shorter ones it uses the expected article on 31, asks on 10,
 and picks no wrong one; the snake article is no longer used for "Bazat e programimit në Python".
 
-**More than one source (2026-10-30).** English topics are searched on Wikipedia and Microsoft
-Learn at the same time; Albanian ones on Wikipedia only (Learn has no Albanian, and translating is
-rejected). Each source applies the title rule above on its own, and `SourceRouting` combines the
-answers ([ADR 38](../adr/0038-every-source-is-searched-and-the-titles-decide.md)):
+**More than one source (2026-10-30).** Wikipedia is asked first. Microsoft Learn — English only;
+it has no Albanian, and translating is rejected — is asked **only when Wikipedia isn't sure**:
+no clear title match, a stub, nothing, or Wikipedia unreachable. A clear match or a disambiguation
+page settles it without Learn ([ADR 39](../adr/0039-microsoft-learn-is-asked-only-when-wikipedia-isnt-sure.md);
+the topic is never classified — Wikipedia's own uncertainty is the signal). Each source applies
+the title rule above on its own, and `SourceRouting` combines what came back
+([ADR 38](../adr/0038-every-source-is-searched-and-the-titles-decide.md)):
 
 1. A Wikipedia **disambiguation page** asks, even if Learn was sure — "Azure" is a colour too.
 2. **One** source sure → that page. **Two** sure → the better title; equally good → ask.
@@ -392,19 +395,26 @@ counts as a second title, like a Wikipedia redirect ("Entity Framework Core migr
 called *Migrations Overview* under `/ef/core/`). Only documentation pages pass — no Q&A, training
 modules, API reference or other hosts; why is in the proposal's §4d.
 
-**Time.** The searches run in parallel, so a lookup costs the slower source, not the sum:
-measured 2026-10-30 on fifteen English topics, 0.5–1.3 s each, and 3.2 s for the one that fetched
-four Learn pages — against 10–40 s in the model. What the router chose on them:
+**Time.** A topic Wikipedia settles costs one source. One that reaches Learn costs Wikipedia then
+Learn, one after the other: measured 2026-10-30, a Learn lookup is 1–2.5 s (a search, then up to
+four page reads in parallel) — against 10–40 s in the model. What the router chose on fifteen
+English topics, and which reached Learn:
 
-| Topic | Chosen / asked |
-|---|---|
-| Photosynthesis, The human respiratory system, World War II in the Balkans, PowerShell, Kubernetes, TypeScript, Visual Studio Code | Wikipedia, its article |
-| Azure Functions | Learn, *What is Azure Functions?* |
-| SQL Server indexes | Learn, *Creating SQL Server Indexes* — an OLE DB page; *Indexes* scores lower on title |
-| New features in C# 12 and .NET 8 | asks: Learn's *What's new in C# 12* and *…the .NET 8 runtime* first, Wikipedia's *.NET* after |
-| Git branching | asks: two Learn pages, three Wikipedia articles |
-| Python, Mercury, Azure | asks — Wikipedia's meanings first |
-| Entity Framework Core migrations | Wikipedia's *Entity Framework* — too general; see known issues |
+| Topic | Learn asked | Chosen / asked |
+|---|---|---|
+| Photosynthesis, The human respiratory system, World War II in the Balkans, PowerShell, Kubernetes, TypeScript, Visual Studio Code | no | Wikipedia, its article |
+| Mercury | no | asks — Wikipedia's disambiguation page |
+| Entity Framework Core migrations | no | Wikipedia's *Entity Framework* — too general; see known issues |
+| Azure Functions | yes | Learn, *What is Azure Functions?* |
+| SQL Server indexes | yes | Learn, *Creating SQL Server Indexes* — an OLE DB page; *Indexes* scores lower on title |
+| New features in C# 12 and .NET 8 | yes | asks: Learn's *What's new in C# 12* and *…the .NET 8 runtime* first, Wikipedia's *.NET* after |
+| Git branching | yes | asks: two Learn pages, three Wikipedia articles |
+| Python, Azure | yes | asks — Wikipedia's meanings first |
+
+**One article per quiz.** A quiz is written from one article, so a topic spanning several
+("C# 12 *and* .NET 8", "comparing programming languages") is asked about and grounded in the one
+picked. Several articles in one prompt — some questions from Learn, some from Wikipedia — is open
+in the proposal's §6; the free tier's 6,000-character budget would have to be split between them.
 
 **Why ask about language at all.** Ungrounded, the model infers it while writing, and never got it
 wrong in Phase 0 (0 of 116) — which is why there is no language picker. Grounding needs it first,

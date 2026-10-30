@@ -214,22 +214,38 @@ export const SourceChoiceCard = ({
         )}
 
         {question.status === "SourceUnavailable" && (
-          <div className="space-y-4">
-            <p className="flex items-start gap-2 text-sm text-amber-600 dark:text-amber-500">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-              <span>
-                Without an article the AI writes from memory, and those questions are far more
-                likely to have a wrong answer. If you go ahead, check every one before you
-                publish.
-              </span>
-            </p>
-            {/* `py-1 text-sm`: a pair of actions inside a card, not a page's primary call — at the
-                default size they dwarfed the text above them, and wrapped to two full-width
-                slabs on a phone. */}
-            <div className="flex flex-wrap items-center gap-3">
+          <p className="flex items-start gap-2 text-sm text-amber-600 dark:text-amber-500">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+            <span>
+              Without an article the AI writes from memory, and those questions are far more
+              likely to have a wrong answer. If you go ahead, check every one before you
+              publish.
+            </span>
+          </p>
+        )}
+
+        {/* The way back on the left, the actions bottom right — where a dialog's footer puts
+            them. On a phone the row wraps with the buttons on top (wrap-reverse), still right. */}
+        <div className="flex flex-wrap-reverse items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={onEditTopic}
+            disabled={busy}
+            className="text-muted-foreground hover:text-foreground text-sm flex items-center gap-1 disabled:opacity-60"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> Change the topic
+          </button>
+
+          {question.status === "SourceUnavailable" && (
+            // `py-1 text-sm`: a pair of actions inside a card, not a page's primary call — at the
+            // default size they dwarfed the text above them, and wrapped to two full-width slabs
+            // on a phone. The primary first, as in a dialog footer (CLAUDE.md). On a phone the two
+            // don't fit side by side at 330px, so they stack full-width, the primary on top.
+            <div className="flex w-full flex-col gap-3 sm:ml-auto sm:w-auto sm:flex-row sm:items-center sm:justify-end">
               <LiftedButton
                 type="button"
-                className="flex items-center gap-2 py-1 text-sm"
+                outerClassName="w-full sm:w-auto"
+                className="flex w-full items-center justify-center gap-2 py-1 text-sm"
                 onClick={onRetry}
                 isPending={busy}
               >
@@ -239,7 +255,8 @@ export const SourceChoiceCard = ({
               </LiftedButton>
               <LiftedButton
                 type="button"
-                className="flex items-center gap-2 bg-muted py-1 text-sm text-foreground"
+                outerClassName="w-full sm:w-auto"
+                className="flex w-full items-center justify-center gap-2 bg-muted py-1 text-sm text-foreground"
                 liftColor="muted-foreground"
                 onClick={onWriteFromMemory}
                 disabled={busy}
@@ -249,17 +266,8 @@ export const SourceChoiceCard = ({
                 Continue anyway
               </LiftedButton>
             </div>
-          </div>
-        )}
-
-        <button
-          type="button"
-          onClick={onEditTopic}
-          disabled={busy}
-          className="text-muted-foreground hover:text-foreground text-sm flex items-center gap-1 disabled:opacity-60"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" /> Change the topic
-        </button>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

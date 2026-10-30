@@ -1,7 +1,7 @@
 # 38. Every source is searched, and the titles decide which one writes
 
 Date: 2026-10-30
-Status: Accepted
+Status: Partly superseded by [ADR 0039](0039-microsoft-learn-is-asked-only-when-wikipedia-isnt-sure.md) (same day) — Learn is now asked only when Wikipedia isn't sure; the combining rules below stand
 
 ## Context
 

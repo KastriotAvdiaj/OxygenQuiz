@@ -178,3 +178,18 @@ public class AiGroundingDtoTests
         Assert.Equal(new[] { "wikipedia" }, dto.Unreachable);
     }
 }
+
+public class SourceRoutingSettlesTests
+{
+    [Fact]
+    public void A_clear_match_or_a_disambiguation_page_settles_it_and_nothing_else_does()
+    {
+        Assert.True(SourceRouting.Settles(SourceLookup.Selected("Photosynthesis", null, "text", 11914)));
+        Assert.True(SourceRouting.Settles(SourceLookup.NeedsDisambiguation(Array.Empty<SourceCandidate>(), termIsAmbiguous: true)));
+
+        Assert.False(SourceRouting.Settles(SourceLookup.NeedsDisambiguation(Array.Empty<SourceCandidate>())));
+        Assert.False(SourceRouting.Settles(SourceLookup.TooThin("Historia e Kosovës", null, 276)));
+        Assert.False(SourceRouting.Settles(SourceLookup.NotFound));
+        Assert.False(SourceRouting.Settles(SourceLookup.Unavailable));
+    }
+}

@@ -103,8 +103,9 @@ namespace QuizAPI.Services.Ai.Sources
     /// <para><b>Order.</b> Language first, because it decides which edition to search. The topic's
     /// own words (<see cref="TopicLanguage"/>), then — only when they are silent — whether exactly
     /// that title exists in one edition and not the other. Either way unsure: ask. Then the
-    /// article, from every source that serves the language at once (<see cref="SourceRouting"/>);
-    /// asking again when the search is not confident.</para>
+    /// article: from the first source that serves the language, and from the others only when
+    /// that one isn't sure (<see cref="SourceRouting.Settles"/>); asking again when nothing is
+    /// confident.</para>
     ///
     /// <para><b>Never fatal.</b> A source that is thin, missing or down makes the generation
     /// ungrounded, never failed — grounding improves generation, it is not a precondition for it.
@@ -142,8 +143,9 @@ namespace QuizAPI.Services.Ai.Sources
 
             if (answers.Declined) return Ungrounded(language, "declined");
 
-            // ── Source. Every source that serves the language is asked at once, and
-            // SourceRouting picks between their answers; a picked article goes back to its own.
+            // ── Source. The first source for the language (Wikipedia) is asked; the others only
+            // when it isn't sure (ADR 0039), and SourceRouting picks between what came back. A
+            // picked article goes back to the source it came from.
             var providers = _providers.Where(p => p.SupportsLanguage(language)).ToList();
             if (providers.Count == 0)
                 return Ungrounded(language, "no-source-for-language");
@@ -151,9 +153,12 @@ namespace QuizAPI.Services.Ai.Sources
             RoutedLookup routed;
             if (string.IsNullOrWhiteSpace(answers.ArticleTitle))
             {
-                var lookups = await Task.WhenAll(providers.Select(async p =>
-                    new SourceAnswer(p.Name, await p.LookupAsync(topic, language, ct))));
-                routed = SourceRouting.Combine(topic, lookups, _options.MaxCandidatesToOffer);
+                var primary = new SourceAnswer(providers[0].Name, await providers[0].LookupAsync(topic, language, ct));
+                var found = new List<SourceAnswer> { primary };
+                if (!SourceRouting.Settles(primary.Lookup))
+                    found.AddRange(await Task.WhenAll(providers.Skip(1).Select(async p =>
+                        new SourceAnswer(p.Name, await p.LookupAsync(topic, language, ct)))));
+                routed = SourceRouting.Combine(topic, found, _options.MaxCandidatesToOffer);
             }
             else
             {

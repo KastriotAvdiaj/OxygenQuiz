@@ -12,7 +12,11 @@ namespace QuizAPI.Services.Ai.Sources
     /// Which of several sources a topic is written from (docs/quiz/ai-quiz-generation-flow.md §2e,
     /// "More than one source").
     ///
-    /// <para><b>Every source is searched, and the titles decide.</b> The proposal's first plan was
+    /// <para><b>Who is asked</b> is <see cref="Settles"/>'s call — the first source always, the others
+    /// only when it isn't sure (ADR 0039, which narrowed ADR 0038's "every source, every time").
+    /// What follows is how the answers that did come back are combined.</para>
+    ///
+    /// <para><b>The titles decide.</b> The proposal's first plan was
     /// a fixed order by category — Wikipedia for history, Microsoft Learn for programming — but the
     /// category isn't known when the topic is typed, and guessing it is the kind of judgement this
     /// work keeps out of the model's hands. Each source already decides on its own whether it has a
@@ -29,10 +33,22 @@ namespace QuizAPI.Services.Ai.Sources
     ///   <item><b>Otherwise, everything offered is offered together</b>, best title match first.</item>
     ///   <item>Then too thin, then unreachable, then not found.</item>
     /// </list>
+    /// With today's two sources rules 1 and 2's "two" can't arise — a disambiguation page or a clear
+    /// match on Wikipedia means Learn isn't asked — but the combining doesn't assume who was asked.
     /// Pure, like <see cref="SourceSelection"/>, so the rules are tested without a network.
     /// </summary>
     public static class SourceRouting
     {
+        /// <summary>
+        /// Whether the first source's answer is final, so the others needn't be asked
+        /// (ADR 0039): a clear match, or a disambiguation page — a question that another source
+        /// being sure could not take away. Anything else — unsure, a stub, nothing, unreachable —
+        /// and the next source might do better.
+        /// </summary>
+        public static bool Settles(SourceLookup lookup) =>
+            lookup.Outcome == SourceOutcome.Selected
+            || (lookup.Outcome == SourceOutcome.NeedsDisambiguation && lookup.TermIsAmbiguous);
+
         public static RoutedLookup Combine(string topic, IReadOnlyList<SourceAnswer> answers, int maxCandidatesToOffer)
         {
             var unreachable = answers

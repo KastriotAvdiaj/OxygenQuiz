@@ -387,7 +387,8 @@ builder.Services.AddScoped<QuizAPI.Services.Ai.IAiGenerationService, QuizAPI.Ser
 builder.Services.AddScoped<QuizAPI.Services.Ai.ISourceFileReader, QuizAPI.Services.Ai.SourceFileReader>();
 // Grounding (docs/quiz/ai-quiz-generation-flow.md §2e). Off unless Ai:Source:Enabled; when off,
 // QuizGrounding answers "Off" without a request and generation is unchanged. Source tiers are
-// IQuizSourceProviders, all searched together and combined by SourceRouting: Wikipedia, Microsoft Learn.
+// IQuizSourceProviders. ORDER MATTERS: the first one serving a language is always asked, the rest
+// only when it isn't sure (ADR 0039) — Wikipedia first, Microsoft Learn after.
 builder.Services.Configure<QuizAPI.Services.Ai.Sources.SourceOptions>(
     builder.Configuration.GetSection(QuizAPI.Services.Ai.Sources.SourceOptions.SectionName));
 builder.Services.AddHttpClient<QuizAPI.Services.Ai.Sources.WikipediaSourceProvider>();

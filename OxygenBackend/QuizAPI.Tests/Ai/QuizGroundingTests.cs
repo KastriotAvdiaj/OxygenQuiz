@@ -239,6 +239,66 @@ public class QuizGroundingTests
     }
 
     [Fact]
+    public async Task A_topic_Wikipedia_is_sure_of_never_reaches_Learn()
+    {
+        // "Photosynthesis", "Kubernetes": the common case, and it costs one source.
+        var wiki = Provider();
+        var learn = Learn(SourceLookup.NotFound);
+
+        var result = await Grounding(wiki, learn).GroundAsync("Photosynthesis", new GroundingAnswers("English", null), default);
+
+        Assert.Equal("wikipedia", result.Source!.Provider);
+        learn.Verify(p => p.LookupAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task A_disambiguation_page_asks_without_reaching_Learn()
+    {
+        var wiki = Provider(SourceLookup.NeedsDisambiguation(
+            new[] { new SourceCandidate("Mercury (planet)", 16170), new SourceCandidate("Freddie Mercury", 17329) },
+            termIsAmbiguous: true));
+        var learn = Learn(SourceLookup.NotFound);
+
+        var result = await Grounding(wiki, learn).GroundAsync("Mercury", new GroundingAnswers("English", null), default);
+
+        Assert.Equal(GroundingStatus.NeedsArticle, result.Status);
+        learn.Verify(p => p.LookupAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Wikipedia_unsure_asks_Learn_and_offers_both()
+    {
+        // "Git branching": Wikipedia has Git and Branching (version control), neither clearly it.
+        var wiki = Provider(SourceLookup.NeedsDisambiguation(
+            new[] { new SourceCandidate("Git", 7918), new SourceCandidate("Branching (version control)", 1090) }));
+        var learn = Learn(SourceLookup.NeedsDisambiguation(new[]
+        {
+            new SourceCandidate("Adopt a Git branching strategy", 1341)
+            {
+                Provider = MicrosoftLearnSourceProvider.ProviderName,
+                Key = "https://learn.microsoft.com/azure/devops/repos/git/git-branching-guidance",
+            },
+        }));
+
+        var result = await Grounding(wiki, learn).GroundAsync("Git branching", new GroundingAnswers("English", null), default);
+
+        Assert.Equal(GroundingStatus.NeedsArticle, result.Status);
+        Assert.Equal(new[] { "microsoft-learn", "wikipedia", "wikipedia" }, result.Candidates.Select(c => c.Provider));
+    }
+
+    [Fact]
+    public async Task Wikipedia_down_still_asks_Learn()
+    {
+        var wiki = Provider(SourceLookup.Unavailable);
+        var learn = Learn(SourceLookup.Selected("What is Azure Functions?", LearnUrl, Article, 900, LearnUrl));
+
+        var result = await Grounding(wiki, learn).GroundAsync("Azure Functions", new GroundingAnswers("English", null), default);
+
+        Assert.Equal(GroundingStatus.Grounded, result.Status);
+        Assert.Equal(MicrosoftLearnSourceProvider.ProviderName, result.Source!.Provider);
+    }
+
+    [Fact]
     public async Task A_source_that_does_not_serve_the_language_is_not_asked()
     {
         var wiki = Provider();
