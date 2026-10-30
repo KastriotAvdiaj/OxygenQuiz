@@ -923,6 +923,9 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   (`ppprop=disambiguation`); choosing between real articles is not. Proposed gates, source tiers
   and rejected alternatives:
   [`proposals/topic-disambiguation-and-source-tiers.md`](../proposals/topic-disambiguation-and-source-tiers.md).
+- **Proposal — questions from Wikidata facts.** Curated, offline-built fact packs, filtered by
+  popularity and quality gates, phrased by the model only in Albanian:
+  [`proposals/wikidata-fact-questions.md`](../proposals/wikidata-fact-questions.md).
 - **P3 — A clear but general article beats a better page offered as a question (ADR 0038).**
   "Entity Framework Core migrations" is written from Wikipedia's *Entity Framework*: two of four
   topic words, all of the title's — clear by the rule — while Learn's *Migrations Overview* (the

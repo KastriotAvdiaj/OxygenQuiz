@@ -7,7 +7,9 @@ questions) is **rejected** — see §4d. Built 2026-10-29 for Wikipedia, end to 
 Learn built 2026-10-30** as the first official-documentation tier, and the tiers are no longer
 consulted in order — see §4d and [ADR 0038](../adr/0038-every-source-is-searched-and-the-titles-decide.md).
 **Not built:** the other tiers of §4d (other documentation sites, governing bodies, Albanian
-Wikisource), which is all that keeps this proposal open. **§4a bis is superseded** by a measured rule (below). Written 2026-10-28. Prerequisite for Phase 2 of
+Wikisource), which is all that keeps this proposal open. Wikidata is a different kind of source —
+facts, not articles — and has its own proposal:
+[`wikidata-fact-questions.md`](./wikidata-fact-questions.md). **§4a bis is superseded** by a measured rule (below). Written 2026-10-28. Prerequisite for Phase 2 of
 [`../quiz/ai-question-accuracy-plan.md`](../quiz/ai-question-accuracy-plan.md), which assumes a
 source can be picked automatically. The measurements below say it cannot.
 
