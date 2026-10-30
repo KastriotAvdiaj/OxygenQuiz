@@ -47,6 +47,10 @@ the admin **Quizzes** and **Questions** pages draw skeletons instead of loaders.
 - **Same size as what replaces it.** Row count = page size, so the swap moves nothing.
 - **Same 140ms delay** (§4) — `SkeletonGroup` handles it.
 
+`/choose-quiz` (since 2026-10-30) draws a grid of skeleton cards (`quiz-card-skeleton.tsx`) for
+the one case its loader doesn't cover — a `?category=` arrival, or a failed prefetch. Normally
+it arrives with page 1 cached and never shows it.
+
 Every other page still uses the loaders in the table above.
 
 ## 3. The boundaries

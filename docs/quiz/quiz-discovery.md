@@ -88,7 +88,14 @@ own. The query is built in one place, `pages/Quiz/catalogue-query.ts`, by both t
 loader, so they can't drift onto different keys (they did until 2026-10-30; see
 [`../development/loading-states.md`](../development/loading-states.md) §6). Changing page, filter,
 sort or search keeps the current cards on screen, dimmed, until the next ones arrive
-(`keepPreviousData`, §6.2 there); only then does the new set fade in.
+(`keepPreviousData`, §6.2 there).
+
+The page arrives with an entrance (`components/catalogue-motion.ts`): the controls drop into
+place, the sidebar slides in from the left, and the cards sweep in as a diagonal wave from the
+top-left — settled by ~550ms, started on the first frame because the data is already there. The
+same wave replays when the results change. When there is no data yet (a `?category=` arrival),
+the grid is skeleton cards in the cards' own shape. Timings and why:
+[`../development/motion.md`](../development/motion.md), "Page entrances".
 
 ## How it works
 

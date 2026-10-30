@@ -21,7 +21,6 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { rule } from "@/lib/filtering";
 import { pagedResponseToPagination } from "@/lib/pagination-query";
 import { PaginationControls } from "@/components/ui/pagination-control";
-import { BlobLoader } from "@/components/ui";
 import {
   Sheet,
   SheetContent,
@@ -44,8 +43,15 @@ import { quizPlayPath } from "./quiz-play-path";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useFormatAvailable } from "../Dashboard/Pages/Quiz/format-access";
 import { CatalogueScopeSwitch, type CatalogueChoice } from "./components/catalogue-scope-switch";
-import { DEFAULT_CATALOGUE, catalogueQueryOptions } from "./catalogue-query";
-import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
+import { CATALOGUE_PAGE_SIZE, DEFAULT_CATALOGUE, catalogueQueryOptions } from "./catalogue-query";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import {
+  cardEntrance,
+  controlsEntrance,
+  sidebarEntrance,
+  useCatalogueColumns,
+} from "./components/catalogue-motion";
+import { QuizGridSkeleton } from "./components/quiz-card/quiz-card-skeleton";
 import { cn } from "@/utils/cn";
 import { useCanSelectUnspecifiedLookup } from "@/pages/Dashboard/Pages/Question/Entities/lookup-visibility";
 
@@ -56,24 +62,6 @@ const FORMAT_OPTIONS: { value: FormatFilter; label: string }[] = [
   { value: "Classic", label: "Quizzes" },
   { value: "Associations", label: "Boards" },
 ];
-
-/**
- * How a new set of results arrives: a short fade with a slight rise, the cards 15ms apart, so a
- * full page of 12 has settled in about 350ms (docs/development/motion.md: past ~300ms an
- * animation reads as waiting). The first paint doesn't animate at all — the loader has the
- * cards ready, and holding them back to fade in is what made the page feel slow: the old
- * 50ms stagger with a 300ms fade took ~850ms to show page one, longer than every request
- * behind it combined.
- */
-const containerVariants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.015 } },
-};
-
-const itemVariants = (reduceMotion: boolean) => ({
-  hidden: { opacity: 0, y: reduceMotion ? 0 : 8 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.18, ease: "easeOut" } },
-});
 
 // Single-player only: multiplayer hosts pick their quiz inside the lobby
 // (Multiplayer/components/lobby/quiz-selection-dialog.tsx), which shares the
@@ -227,19 +215,16 @@ export function QuizSelection() {
   const pagination = quizData ? pagedResponseToPagination(quizData) : undefined;
 
   /**
-   * The grid is keyed by the cards it shows, so it remounts — and its entrance runs — exactly
-   * when the visible set changes, not when the query does (with keepPreviousData the query
-   * changes first and the cards a moment later). Remounting is also what keeps framer-motion's
-   * variants working: new children under an already-"visible" container would stay hidden.
+   * The entrance (catalogue-motion.ts) runs on arrival and again whenever the set of cards
+   * changes. The grid is keyed by the cards it shows, not by the query: with keepPreviousData
+   * the query changes first and the cards a moment later, and the wave belongs to the new cards.
    *
-   * No entrance on the first paint (motion.md: don't hold content back on load). Set during
-   * render, the "adjust state while rendering" pattern, so there is no frame of the wrong value.
+   * Reduced motion is read synchronously (useMediaQuery) — a hook that corrected itself after
+   * the first frame would start the full entrance and then change its target mid-flight.
    */
-  const reduceMotion = usePrefersReducedMotion();
+  const reduceMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const columns = useCatalogueColumns();
   const resultsKey = quizzes.map((q) => q.id).join(",");
-  const [firstResultsKey] = useState(resultsKey);
-  const [resultsChanged, setResultsChanged] = useState(false);
-  if (!resultsChanged && resultsKey !== firstResultsKey) setResultsChanged(true);
 
   const hasActiveFilters = Boolean(searchQuery) || facetCount > 0;
   const activeFilterCount = (searchQuery ? 1 : 0) + facetCount;
@@ -398,7 +383,10 @@ export function QuizSelection() {
             The two are the same chip — height, padding, type — so the row reads as one line of
             controls rather than a small link beside a bigger button. From lg up the row is gone:
             Filters is the sidebar, and Back moves to the top of it so it stays in reach. */}
-        <div className="mb-5 flex items-center justify-between gap-2 sm:mb-6 lg:hidden">
+        <motion.div
+          {...controlsEntrance(reduceMotion)}
+          className="mb-5 flex items-center justify-between gap-2 sm:mb-6 lg:hidden"
+        >
           {backButton}
           <Sheet>
             <SheetTrigger asChild>
@@ -424,7 +412,7 @@ export function QuizSelection() {
               {renderFilterPanel(true)}
             </SheetContent>
           </Sheet>
-        </div>
+        </motion.div>
 
         {/* Facet sidebar (desktop) + everything else on its right */}
         <div className="lg:flex lg:items-start lg:gap-6">
@@ -432,70 +420,76 @@ export function QuizSelection() {
               stretching to the row; the panel caps its own height and scrolls
               internally, so it stays pinned in view and never spills onto the
               footer. Back rides at its top, so it scrolls with the filters instead of away. */}
-          <aside className="hidden lg:flex lg:flex-col lg:gap-6 w-64 xl:w-72 shrink-0 sticky top-6 self-start">
+          <motion.aside
+            {...sidebarEntrance(reduceMotion)}
+            className="hidden lg:flex lg:flex-col lg:gap-6 w-64 xl:w-72 shrink-0 sticky top-6 self-start"
+          >
             {/* The div takes the column's width; the button inside keeps its own. */}
             <div>{backButton}</div>
             {renderFilterPanel()}
-          </aside>
+          </motion.aside>
 
           <div className="min-w-0 flex-1">
-            <div className="mb-3 flex flex-wrap items-center gap-3">
-              <CatalogueScopeSwitch value={catalogue} onValueChange={handleCatalogueChange} />
-              {boardsAvailable && (
-                <SegmentedControl
-                  aria-label="Format"
-                  value={formatFilter}
-                  onValueChange={handleFormatChange}
-                  options={FORMAT_OPTIONS}
+            {/* The controls rise in as one block, a beat ahead of the cards. */}
+            <motion.div {...controlsEntrance(reduceMotion)}>
+              <div className="mb-3 flex flex-wrap items-center gap-3">
+                <CatalogueScopeSwitch value={catalogue} onValueChange={handleCatalogueChange} />
+                {boardsAvailable && (
+                  <SegmentedControl
+                    aria-label="Format"
+                    value={formatFilter}
+                    onValueChange={handleFormatChange}
+                    options={FORMAT_OPTIONS}
+                  />
+                )}
+              </div>
+              {/* Toolbar — search + sort; facets live in the sidebar/drawer */}
+              <div className="mb-4 sm:mb-5">
+                <QuizToolbar
+                  showCount={false}
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  sortBy={sortBy}
+                  onSortChange={handleSortChange}
+                  resultCount={resultCount}
+                  activeFilterCount={activeFilterCount}
+                  onClearFilters={clearFilters}
+                  hideSortOnPhones
                 />
-              )}
-            </div>
-            {/* Toolbar — search + sort; facets live in the sidebar/drawer */}
-            <div className="mb-4 sm:mb-5">
-              <QuizToolbar
-                showCount={false}
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                sortBy={sortBy}
-                onSortChange={handleSortChange}
-                resultCount={resultCount}
-                activeFilterCount={activeFilterCount}
-                onClearFilters={clearFilters}
-                hideSortOnPhones
-              />
-            </div>
+              </div>
 
-            {/* Results header — visually separates the toolbar from the quiz grid.
-                The match-count pill and filter chips only appear while filtering:
-                a total is noise when browsing everything, but useful feedback once
-                the user has narrowed things down. */}
-            <div className="mb-5 sm:mb-6 md:mb-7 flex flex-wrap items-center gap-2 sm:gap-3">
-              {hasActiveFilters && (
-                <>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-primary/60 dark:border-primary/70 bg-background px-3 py-1 text-xs font-header font-semibold text-primary shadow-[0_2px_0_0_var(--primary-edge)] whitespace-nowrap tabular-nums">
-                    <ListFilter className="h-3.5 w-3.5" />
-                    {isLoading || isPlaceholderData
-                      ? "Searching…"
-                      : `${resultCount.toLocaleString()} ${
-                          resultCount === 1 ? "match" : "matches"
-                        }`}
-                  </span>
-                  {filterChips.map((chip) => (
-                    <button
-                      key={chip.key}
-                      type="button"
-                      onClick={chip.onClear}
-                      title="Remove filter"
-                      className="group inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-medium text-foreground hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive transition-colors"
-                    >
-                      {chip.label}
-                      <X className="h-3 w-3 opacity-60 group-hover:opacity-100" />
-                    </button>
-                  ))}
-                </>
-              )}
-              <div className="h-px flex-1 min-w-[3rem] bg-gradient-to-r from-primary/40 via-primary/15 to-transparent" />
-            </div>
+              {/* Results header — visually separates the toolbar from the quiz grid.
+                  The match-count pill and filter chips only appear while filtering:
+                  a total is noise when browsing everything, but useful feedback once
+                  the user has narrowed things down. */}
+              <div className="mb-5 sm:mb-6 md:mb-7 flex flex-wrap items-center gap-2 sm:gap-3">
+                {hasActiveFilters && (
+                  <>
+                    <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-primary/60 dark:border-primary/70 bg-background px-3 py-1 text-xs font-header font-semibold text-primary shadow-[0_2px_0_0_var(--primary-edge)] whitespace-nowrap tabular-nums">
+                      <ListFilter className="h-3.5 w-3.5" />
+                      {isLoading || isPlaceholderData
+                        ? "Searching…"
+                        : `${resultCount.toLocaleString()} ${
+                            resultCount === 1 ? "match" : "matches"
+                          }`}
+                    </span>
+                    {filterChips.map((chip) => (
+                      <button
+                        key={chip.key}
+                        type="button"
+                        onClick={chip.onClear}
+                        title="Remove filter"
+                        className="group inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-medium text-foreground hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive transition-colors"
+                      >
+                        {chip.label}
+                        <X className="h-3 w-3 opacity-60 group-hover:opacity-100" />
+                      </button>
+                    ))}
+                  </>
+                )}
+                <div className="h-px flex-1 min-w-[3rem] bg-gradient-to-r from-primary/40 via-primary/15 to-transparent" />
+              </div>
+            </motion.div>
 
             {arrivalNote && (
               <p
@@ -507,10 +501,11 @@ export function QuizSelection() {
             )}
 
             {/* Quiz Grid */}
+            {/* Nothing to show yet — only when the loader's prefetch didn't cover this query
+                (a `?category=` arrival, a failed prefetch). Cards in their own shape, so the
+                real ones land where the skeleton stood. */}
             {isLoading ? (
-              <div className="flex h-64 sm:h-80 items-center justify-center">
-                <BlobLoader size="lg" />
-              </div>
+              <QuizGridSkeleton count={CATALOGUE_PAGE_SIZE} />
             ) : quizzes.length === 0 ? (
               <motion.div
                 className="flex h-64 sm:h-80 flex-col items-center justify-center gap-3 text-base sm:text-lg text-muted-foreground"
@@ -530,7 +525,7 @@ export function QuizSelection() {
                 )}
               </motion.div>
             ) : (
-              <motion.div
+              <div
                 key={resultsKey}
                 // auto-rows-fr + h-full wrappers stretch every card to its
                 // row's height, so cards with short titles/descriptions don't
@@ -541,21 +536,17 @@ export function QuizSelection() {
                   isPlaceholderData && "opacity-60"
                 )}
                 aria-busy={isPlaceholderData}
-                variants={containerVariants}
-                initial={resultsChanged ? "hidden" : false}
-                animate="visible"
               >
-                {quizzes.map((quiz) => (
+                {quizzes.map((quiz, index) => (
                   <motion.div
                     key={quiz.id}
-                    variants={itemVariants(reduceMotion)}
-                    layout={false}
+                    {...cardEntrance(index, columns, reduceMotion)}
                     className="h-full"
                   >
                     <QuizCard quiz={quiz} onClick={handleQuizClick} />
                   </motion.div>
                 ))}
-              </motion.div>
+              </div>
             )}
 
             {/* Pagination */}

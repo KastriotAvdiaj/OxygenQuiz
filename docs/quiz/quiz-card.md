@@ -15,6 +15,7 @@ src/pages/Quiz/components/quiz-card/
 ├── quiz-card.tsx    layout — what is shown, in what order, in what colour
 ├── card-parts.tsx   the frame, the difficulty meter
 ├── card-model.ts    derived data — palette, duration, difficulty rank
+├── quiz-card-skeleton.tsx  the card's loading shape, and a grid of them — change with the layout
 └── index.ts         public surface: `QuizCard`
 ```
 

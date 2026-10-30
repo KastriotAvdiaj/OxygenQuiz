@@ -129,8 +129,9 @@ Full version, including the two failure modes this project has actually hit:
   view, or pushes content below it is animated — 150–300ms, and honouring
   `prefers-reduced-motion` (arrive, don't travel). Radix `data-[state]` classes and
   `tailwindcss-animate` for enter and open/close; `framer-motion` (`AnimatePresence`, `layout`) for
-  exits, height changes and lists. A list's whole entrance, stagger included, fits ~350ms, and
-  nothing animates in on a page's first paint. Full rule and what counts as a shift:
+  exits, height changes and lists. A browse page may arrive with an entrance — starting on
+  the first frame, first item settled by ~350ms, last by ~550ms, staggered by diagonal
+  (`catalogue-motion.ts`). Full rule and what counts as a shift:
   [`docs/development/motion.md`](docs/development/motion.md).
 
 ## Backend conventions (C#)

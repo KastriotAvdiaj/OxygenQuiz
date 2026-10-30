@@ -764,9 +764,9 @@ a field hint — not as a subtitle.
    the page header is the h1 and its actions — no description paragraph under it.
 15. Anything appear, disappear, open, reorder, or push content down? Animate it, and check it
    with reduced motion on (devtools → Rendering → emulate `prefers-reduced-motion`). Nothing
-   snaps — see [`development/motion.md`](./development/motion.md). A list's whole entrance,
-   stagger included, fits ~350ms, and nothing animates in on the page's first paint
-   (motion.md, "Lists").
+   snaps — see [`development/motion.md`](./development/motion.md). A browse page's entrance
+   starts on the first frame and has settled by ~550ms; copy `catalogue-motion.ts` (motion.md,
+   "Page entrances").
 16. A page that fetches on arrival? Give its route a loader that prefetches the **same query
    options** the page reads — one builder, imported by both, no UI imports in it — and, if the
    element is `React.lazy`, starts its chunk from `routes/route-chunks.ts`. `prefetchQuery`, not

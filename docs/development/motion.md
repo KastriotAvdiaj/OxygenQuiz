@@ -19,7 +19,8 @@ Animate it if any of these happens:
   so what follows slides instead of jumping.
 
 Not a shift: hover/focus colour changes (`transition-colors` is enough), typing into a field, and
-the first paint of a page — don't hold content back on load to animate it in.
+the first paint of a page. A page *may* have an entrance (see "Page entrances") — it is never
+required, and it must never hold content back.
 
 ## How
 
@@ -38,22 +39,45 @@ waiting.
 **Direction means something.** Going deeper (list → detail, step 1 → step 2) enters from the right
 or bottom; going back reverses it. Don't pick a direction per screen by taste.
 
+## Page entrances
+
+A browse page — a grid or list the user arrives at to pick something — can arrive with an
+entrance instead of appearing all at once. Stated 2026-10-30 for the quiz catalogue: the cards
+settling in is part of how the page should feel. The rules that keep an entrance from reading
+as lag:
+
+- **It starts on the first frame.** The data is already cached when the page mounts (the route
+  loader prefetched it — `loading-states.md` §6), so the entrance is the page arriving, not a
+  curtain over a load. Never delay it to wait for something.
+- **The first item settles by ~350ms, the last by ~550ms**, wherever the grid wraps. The
+  catalogue used to take ~850ms (a whole-grid fade, then cards 50ms apart in DOM order) — the
+  same motion, too slow, is exactly what felt laggy.
+- **Stagger by diagonal, not by index.** A card's delay is its row plus its column, so each
+  diagonal lands together and the wave runs top-left to bottom-right, the way the page is read.
+  A 4-column page of 12 is 6 steps instead of 12. Cap the steps (6) so a one-column phone list
+  doesn't make its last card wait.
+- **Beats overlap**: the controls lead (fade and an 8px drop, ~280ms), the sidebar slides in from
+  the edge it is anchored to, and the cards follow 40ms behind. Ease out hard (easeOutQuint,
+  `[0.22, 1, 0.36, 1]`) — the item is fast off the mark and lands softly.
+- **Rise, grow slightly, fade**: 18px up, from 96% scale. More than that reads as bouncy.
+- **Reduced motion**: a 150ms fade, everything at once.
+- **Read reduced motion synchronously** (`useMediaQuery("(prefers-reduced-motion: reduce)")`).
+  `usePrefersReducedMotion` corrects itself after the first frame, which starts the full
+  entrance and then changes its target mid-flight.
+
+`pages/Quiz/components/catalogue-motion.ts` is the reference implementation; copy its shape for
+the next browse page rather than inventing timings.
+
 ## Lists
 
-A list counts its *whole* entrance against the ~300ms budget — the stagger included. 12 cards
-at 50ms apart with a 300ms fade take 850ms to settle, which is how `/choose-quiz` felt slow
-with every request behind it done in ~250ms (fixed 2026-10-30). So:
-
-- **No entrance on the page's first paint.** The data is already there (the loader prefetched
-  it; `loading-states.md` §6), and fading it in is holding it back. Pass `initial={false}` to the
-  first render's list.
-- **When the results change** (another page, a filter), the new set enters: ≤ 200ms per item and
-  ≤ ~20ms between items, so the last one has settled by ~350ms. Reduced motion: fade only.
+- **When the results change** (another page, a filter), the new set enters with the same
+  entrance as the page's arrival — the catalogue replays its wave.
 - **Key the list on what it shows** (its item ids), not on the query that asked for it — see
-  `loading-states.md` §6.2. framer-motion variants only run when the container mounts; new
-  children under an already-`visible` container stay at `hidden` forever.
-
-`Quiz-Selection.tsx` is the reference.
+  `loading-states.md` §6.2. With `keepPreviousData` the query changes first and the items a
+  moment later; the entrance belongs to the new items.
+- **Per-item `initial`/`animate`, not parent `variants`** for a list whose items change.
+  framer-motion propagates variants only when the container mounts, so new children under an
+  already-`visible` container stay at `hidden` forever.
 
 ## What not to animate
 
