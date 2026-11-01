@@ -398,6 +398,8 @@ builder.Services.AddHttpClient<QuizAPI.Services.Ai.Sources.MicrosoftLearnSourceP
 builder.Services.AddScoped<QuizAPI.Services.Ai.Sources.IQuizSourceProvider>(
     sp => sp.GetRequiredService<QuizAPI.Services.Ai.Sources.MicrosoftLearnSourceProvider>());
 builder.Services.AddScoped<QuizAPI.Services.Ai.Sources.IQuizGrounding, QuizAPI.Services.Ai.Sources.QuizGrounding>();
+// Fact packs (docs/quiz/fact-quizzes.md): read once from FactPacks/*.json beside the app.
+builder.Services.AddSingleton<QuizAPI.Services.Facts.IFactPackCatalog, QuizAPI.Services.Facts.FactPackCatalog>();
 builder.Services.AddScoped<QuizAPI.Services.Ai.AiReservationSweeper>();
 builder.Services.AddScoped<QuizAPI.Services.AbandonedSessionSweeper>();
 builder.Services.AddScoped<QuizAPI.Services.AccountAnonymisationSweeper>();

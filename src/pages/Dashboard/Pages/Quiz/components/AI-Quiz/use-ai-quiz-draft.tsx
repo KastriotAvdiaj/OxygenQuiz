@@ -70,7 +70,9 @@ export const useAiQuizDraft = () => {
    */
   const draftSlot = location.pathname.endsWith("/ai/own")
     ? QUIZ_DRAFT_SLOTS.aiOwn
-    : QUIZ_DRAFT_SLOTS.aiTopic;
+    : location.pathname.endsWith("/ai/facts")
+      ? QUIZ_DRAFT_SLOTS.aiFacts
+      : QUIZ_DRAFT_SLOTS.aiTopic;
 
   /**
    * Read once, in an initialiser, so every `useState` below can open on the restored value
@@ -130,6 +132,7 @@ export const useAiQuizDraft = () => {
     generate: `${createBase}/ai/topic`,
     material: `${createBase}/ai/material`,
     ownAi: `${createBase}/ai/own`,
+    facts: `${createBase}/ai/facts`,
   };
 
   // ── What the user is creating from.
@@ -503,7 +506,8 @@ export const useAiQuizDraft = () => {
           // Back on the review: discard and return to the brief, or save as a draft and leave.
           reviewBack={{
             onDiscard: () => setPayload(null),
-            costsAGeneration: draftSlot !== QUIZ_DRAFT_SLOTS.aiOwn,
+            // Neither a pasted reply nor a fact quiz spent any allowance.
+            costsAGeneration: draftSlot === QUIZ_DRAFT_SLOTS.aiTopic,
           }}
           reviewNotices={
             <>

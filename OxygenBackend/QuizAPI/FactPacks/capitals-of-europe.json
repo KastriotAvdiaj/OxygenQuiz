@@ -1,0 +1,1161 @@
+{
+  "$comment": "A fact pack (docs/quiz/fact-quizzes.md). Everything above \"facts\" is written by hand and reviewed like code; \"builtAt\" and \"facts\" are written by `npm run facts:build -- capitals-of-europe` and reviewed as a diff.",
+  "slug": "capitals-of-europe",
+  "title": {
+    "English": "Capitals of Europe",
+    "Albanian": "Kryeqytetet e Evropës"
+  },
+  "description": {
+    "English": "Every sovereign state in Europe and its capital.",
+    "Albanian": "Çdo shtet sovran i Evropës dhe kryeqyteti i tij."
+  },
+  "category": "Geography",
+  "editorialNote": "Every sovereign state Wikidata places in Europe, Kosovo included. States on two continents, such as Turkey and Russia, count when Wikidata places them in Europe.",
+  "kind": "entity",
+  "query": "SELECT ?item ?value ?sitelinks WHERE { ?item wdt:P31 wd:Q3624078; wdt:P30 wd:Q46; wdt:P36 ?value; wikibase:sitelinks ?sitelinks. FILTER NOT EXISTS { ?item wdt:P576 [] } }",
+  "minSitelinks": 0,
+  "labelOverrides": {
+    "$comment": "Hand-written names that replace Wikidata's label for that item and language.",
+    "Q585": {
+      "Albanian": "Oslo"
+    },
+    "Q29999": {
+      "English": "the Netherlands",
+      "Albanian": "Holanda"
+    },
+    "Q756617": {
+      "English": "Denmark"
+    }
+  },
+  "templates": {
+    "English": {
+      "plain": "What is the capital of {subject}?",
+      "reverse": "{value} is the capital of which country?",
+      "trueFalse": "{value} is the capital of {subject}.",
+      "typed": "What is the capital of {subject}? Type the city.",
+      "statement": "The capital of {subject} is {value}."
+    },
+    "Albanian": {
+      "plain": "Cili është kryeqyteti i shtetit {subject}?",
+      "reverse": "{value} — kryeqyteti i cilit shtet?",
+      "trueFalse": "Kryeqyteti i shtetit {subject} është {value}.",
+      "typed": "Shkruani kryeqytetin e shtetit {subject}.",
+      "statement": "Kryeqyteti i shtetit {subject}: {value}."
+    }
+  },
+  "builtAt": "2026-11-01",
+  "facts": [
+    {
+      "subject": "Q142",
+      "sitelinks": 428,
+      "value": "Q90",
+      "labels": {
+        "English": {
+          "subject": "France",
+          "value": "Paris",
+          "valueAliases": [
+            "City of Light",
+            "City of Love",
+            "Lutetia"
+          ]
+        },
+        "Albanian": {
+          "subject": "Francë",
+          "value": "Parisi",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q43",
+      "sitelinks": 428,
+      "value": "Q3640",
+      "labels": {
+        "English": {
+          "subject": "Turkey",
+          "value": "Ankara",
+          "valueAliases": []
+        },
+        "Albanian": {
+          "subject": "Turqia",
+          "value": "Ankara",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q159",
+      "sitelinks": 421,
+      "value": "Q649",
+      "labels": {
+        "English": {
+          "subject": "Russia",
+          "value": "Moscow",
+          "valueAliases": [
+            "City of Moscow",
+            "Moskovĭ",
+            "Moskve",
+            "Moskvi",
+            "Moskvë",
+            "Mosky"
+          ]
+        },
+        "Albanian": {
+          "subject": "Rusia",
+          "value": "Moska",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q38",
+      "sitelinks": 409,
+      "value": "Q220",
+      "labels": {
+        "English": {
+          "subject": "Italy",
+          "value": "Rome",
+          "valueAliases": [
+            "Capital of the World",
+            "City of Marble",
+            "City of Seven Hills",
+            "Eternal City",
+            "The Capital of the World",
+            "The City of Marble",
+            "The Eternal City"
+          ]
+        },
+        "Albanian": {
+          "subject": "Italia",
+          "value": "Romë",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q183",
+      "sitelinks": 405,
+      "value": "Q64",
+      "labels": {
+        "English": {
+          "subject": "Germany",
+          "value": "Berlin",
+          "valueAliases": [
+            "DE-BE"
+          ]
+        },
+        "Albanian": {
+          "subject": "Gjermania",
+          "value": "Berlin",
+          "valueAliases": [
+            "Berlini"
+          ]
+        }
+      }
+    },
+    {
+      "subject": "Q33",
+      "sitelinks": 403,
+      "value": "Q1757",
+      "labels": {
+        "English": {
+          "subject": "Finland",
+          "value": "Helsinki",
+          "valueAliases": [
+            "Helsingia",
+            "Helsingin kaupunki",
+            "Hesa",
+            "Stadi"
+          ]
+        },
+        "Albanian": {
+          "subject": "Finlanda",
+          "value": "Helsinki",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q145",
+      "sitelinks": 396,
+      "value": "Q84",
+      "labels": {
+        "English": {
+          "subject": "United Kingdom",
+          "value": "London",
+          "valueAliases": [
+            "Augusta",
+            "Big Smoke",
+            "Kaerlud",
+            "Karelundein",
+            "Llan Dian",
+            "Llyn Dain",
+            "Lon.",
+            "Lond.",
+            "Londini",
+            "Londiniensium",
+            "Londinio",
+            "Londinion",
+            "Londinium",
+            "London U.K.",
+            "London UK",
+            "Loniniensi",
+            "Loñ",
+            "Loñ.",
+            "Lunden",
+            "Lundenburgh",
+            "Lundenburh",
+            "Lundenwic",
+            "Trinovantum",
+            "the Big Smoke"
+          ]
+        },
+        "Albanian": {
+          "subject": "Britania e Madhe",
+          "value": "Londër",
+          "valueAliases": [
+            "Londra"
+          ]
+        }
+      }
+    },
+    {
+      "subject": "Q29",
+      "sitelinks": 396,
+      "value": "Q2807",
+      "labels": {
+        "English": {
+          "subject": "Spain",
+          "value": "Madrid",
+          "valueAliases": []
+        },
+        "Albanian": {
+          "subject": "Spanja",
+          "value": "Madridi",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q20",
+      "sitelinks": 394,
+      "value": "Q585",
+      "labels": {
+        "English": {
+          "subject": "Norway",
+          "value": "Oslo",
+          "valueAliases": []
+        },
+        "Albanian": {
+          "subject": "Norvegjia",
+          "value": "Oslo",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q36",
+      "sitelinks": 391,
+      "value": "Q270",
+      "labels": {
+        "English": {
+          "subject": "Poland",
+          "value": "Warsaw",
+          "valueAliases": []
+        },
+        "Albanian": {
+          "subject": "Polonia",
+          "value": "Varshava",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q212",
+      "sitelinks": 389,
+      "value": "Q1899",
+      "labels": {
+        "English": {
+          "subject": "Ukraine",
+          "value": "Kyiv",
+          "valueAliases": [
+            "Kief",
+            "Kieff",
+            "Kiew",
+            "Kiof",
+            "Kioff",
+            "Kiou",
+            "Kiovia",
+            "Kiow",
+            "Kiowia",
+            "Kiyev",
+            "Kyiw",
+            "Kyjiw",
+            "Kyïv"
+          ]
+        },
+        "Albanian": {
+          "subject": "Ukraina",
+          "value": "Kievi",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q222",
+      "sitelinks": 387,
+      "value": "Q19689",
+      "labels": {
+        "English": {
+          "subject": "Albania",
+          "value": "Tirana",
+          "valueAliases": []
+        },
+        "Albanian": {
+          "subject": "Shqipëria",
+          "value": "Tirana",
+          "valueAliases": [
+            "Qyteti i Tiranës",
+            "Tirona"
+          ]
+        }
+      }
+    },
+    {
+      "subject": "Q39",
+      "sitelinks": 387,
+      "value": "Q70",
+      "labels": {
+        "English": {
+          "subject": "Switzerland",
+          "value": "Bern",
+          "valueAliases": [
+            "Berna",
+            "Berne",
+            "city of Bern"
+          ]
+        },
+        "Albanian": {
+          "subject": "Zvicër",
+          "value": "Bern",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q31",
+      "sitelinks": 383,
+      "value": "Q239",
+      "labels": {
+        "English": {
+          "subject": "Belgium",
+          "value": "Brussels",
+          "valueAliases": [
+            "Brussels City",
+            "City of Brussels"
+          ]
+        },
+        "Albanian": {
+          "subject": "Belgjika",
+          "value": "Brukseli",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q41",
+      "sitelinks": 378,
+      "value": "Q1524",
+      "labels": {
+        "English": {
+          "subject": "Greece",
+          "value": "Athens",
+          "valueAliases": [
+            "Athenae",
+            "Athens city"
+          ]
+        },
+        "Albanian": {
+          "subject": "Greqia",
+          "value": "Athina",
+          "valueAliases": [
+            "Athinë"
+          ]
+        }
+      }
+    },
+    {
+      "subject": "Q40",
+      "sitelinks": 372,
+      "value": "Q1741",
+      "labels": {
+        "English": {
+          "subject": "Austria",
+          "value": "Vienna",
+          "valueAliases": []
+        },
+        "Albanian": {
+          "subject": "Austria",
+          "value": "Vjena",
+          "valueAliases": [
+            "Viena",
+            "Vienë",
+            "Vjenë"
+          ]
+        }
+      }
+    },
+    {
+      "subject": "Q45",
+      "sitelinks": 372,
+      "value": "Q597",
+      "labels": {
+        "English": {
+          "subject": "Portugal",
+          "value": "Lisbon",
+          "valueAliases": []
+        },
+        "Albanian": {
+          "subject": "Portugalia",
+          "value": "Lisbona",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q34",
+      "sitelinks": 370,
+      "value": "Q1754",
+      "labels": {
+        "English": {
+          "subject": "Sweden",
+          "value": "Stockholm",
+          "valueAliases": [
+            "Sthlm"
+          ]
+        },
+        "Albanian": {
+          "subject": "Suedia",
+          "value": "Stokholmi",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q219",
+      "sitelinks": 361,
+      "value": "Q472",
+      "labels": {
+        "English": {
+          "subject": "Bulgaria",
+          "value": "Sofia",
+          "valueAliases": [
+            "Serdica",
+            "Sofija",
+            "Sredets",
+            "Sredez"
+          ]
+        },
+        "Albanian": {
+          "subject": "Bullgaria",
+          "value": "Sofja",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q184",
+      "sitelinks": 358,
+      "value": "Q2280",
+      "labels": {
+        "English": {
+          "subject": "Belarus",
+          "value": "Minsk",
+          "valueAliases": [
+            "Mensk",
+            "Miensk",
+            "Minskas",
+            "Mińsk"
+          ]
+        },
+        "Albanian": {
+          "subject": "Bjellorusia",
+          "value": "Minsk",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q28",
+      "sitelinks": 358,
+      "value": "Q1781",
+      "labels": {
+        "English": {
+          "subject": "Hungary",
+          "value": "Budapest",
+          "valueAliases": [
+            "Alt-Ofen",
+            "Buda",
+            "Buda Pest",
+            "Buda-Pest",
+            "Buda-Pesth",
+            "Budapesta",
+            "Budapeszt",
+            "Budapešť",
+            "Budim",
+            "Budon",
+            "Budín",
+            "Ofen",
+            "Pest",
+            "Pešta",
+            "Pešť"
+          ]
+        },
+        "Albanian": {
+          "subject": "Hungaria",
+          "value": "Budapesti",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q224",
+      "sitelinks": 356,
+      "value": "Q1435",
+      "labels": {
+        "English": {
+          "subject": "Croatia",
+          "value": "Zagreb",
+          "valueAliases": []
+        },
+        "Albanian": {
+          "subject": "Kroacia",
+          "value": "Zagrebi",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q189",
+      "sitelinks": 355,
+      "value": "Q1764",
+      "labels": {
+        "English": {
+          "subject": "Iceland",
+          "value": "Reykjavík",
+          "valueAliases": [
+            "Reykjavik",
+            "Reykjavikurborg",
+            "Reykjavíkurborg"
+          ]
+        },
+        "Albanian": {
+          "subject": "Islanda",
+          "value": "Rejkjavik",
+          "valueAliases": [
+            "Rejkjaviku",
+            "Reykjavik",
+            "Reykjavík"
+          ]
+        }
+      }
+    },
+    {
+      "subject": "Q213",
+      "sitelinks": 355,
+      "value": "Q1085",
+      "labels": {
+        "English": {
+          "subject": "Czech Republic",
+          "value": "Prague",
+          "valueAliases": [
+            "City of Prague",
+            "Hlavní město Praha"
+          ]
+        },
+        "Albanian": {
+          "subject": "Republika Çeke",
+          "value": "Praga",
+          "valueAliases": [
+            "Pragë"
+          ]
+        }
+      }
+    },
+    {
+      "subject": "Q191",
+      "sitelinks": 354,
+      "value": "Q1770",
+      "labels": {
+        "English": {
+          "subject": "Estonia",
+          "value": "Tallinn",
+          "valueAliases": [
+            "Kolywan",
+            "Lindanäs",
+            "Lyndanisse",
+            "Reuel",
+            "Revel",
+            "Rewel"
+          ]
+        },
+        "Albanian": {
+          "subject": "Estonia",
+          "value": "Talini",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q37",
+      "sitelinks": 352,
+      "value": "Q216",
+      "labels": {
+        "English": {
+          "subject": "Lithuania",
+          "value": "Vilnius",
+          "valueAliases": [
+            "Vilnia",
+            "Vilno",
+            "Vilnyus",
+            "Vilnė",
+            "Viĺnia",
+            "Viļņa"
+          ]
+        },
+        "Albanian": {
+          "subject": "Lituania",
+          "value": "Vilnius",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q403",
+      "sitelinks": 352,
+      "value": "Q3711",
+      "labels": {
+        "English": {
+          "subject": "Serbia",
+          "value": "Belgrade",
+          "valueAliases": [
+            "City of Belgrade"
+          ]
+        },
+        "Albanian": {
+          "subject": "Serbia",
+          "value": "Beogradi",
+          "valueAliases": [
+            "City of Belgrade"
+          ]
+        }
+      }
+    },
+    {
+      "subject": "Q230",
+      "sitelinks": 350,
+      "value": "Q994",
+      "labels": {
+        "English": {
+          "subject": "Georgia",
+          "value": "Tbilisi",
+          "valueAliases": [
+            "Tbilissi",
+            "Tiflis",
+            "Tpilisi",
+            "Tpilissi"
+          ]
+        },
+        "Albanian": {
+          "subject": "Gjeorgjia",
+          "value": "Tbilisi",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q232",
+      "sitelinks": 350,
+      "value": "Q1520",
+      "labels": {
+        "English": {
+          "subject": "Kazakhstan",
+          "value": "Astana",
+          "valueAliases": [
+            "Akmola",
+            "Akmolinsk",
+            "Aqmola",
+            "Nur-Sultan",
+            "Tselinograd"
+          ]
+        },
+        "Albanian": {
+          "subject": "Kazakistani",
+          "value": "Astana",
+          "valueAliases": [
+            "Nur-Sultan",
+            "Nursultan"
+          ]
+        }
+      }
+    },
+    {
+      "subject": "Q218",
+      "sitelinks": 349,
+      "value": "Q19660",
+      "labels": {
+        "English": {
+          "subject": "Romania",
+          "value": "Bucharest",
+          "valueAliases": [
+            "Bucuresti",
+            "Bucureşti",
+            "București",
+            "Little Paris",
+            "Paris of the East"
+          ]
+        },
+        "Albanian": {
+          "subject": "Rumania",
+          "value": "Bukureshti",
+          "valueAliases": [
+            "Bucharest",
+            "Bukuresht"
+          ]
+        }
+      }
+    },
+    {
+      "subject": "Q237",
+      "sitelinks": 343,
+      "value": "Q237",
+      "labels": {
+        "English": {
+          "subject": "Vatican City",
+          "value": "Vatican City",
+          "valueAliases": [
+            "Città del Vaticano",
+            "Holy See",
+            "Papal State",
+            "State of Vatican City",
+            "Stato della Città del Vaticano",
+            "Status Civitatis Vaticanae",
+            "The Vatican",
+            "Vatican",
+            "Vatican City State"
+          ]
+        },
+        "Albanian": {
+          "subject": "Vatikani",
+          "value": "Vatikani",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q27",
+      "sitelinks": 343,
+      "value": "Q1761",
+      "labels": {
+        "English": {
+          "subject": "Ireland",
+          "value": "Dublin",
+          "valueAliases": [
+            "City of Dublin",
+            "Dublin city"
+          ]
+        },
+        "Albanian": {
+          "subject": "Republika e Irlandës",
+          "value": "Dublini",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q225",
+      "sitelinks": 342,
+      "value": "Q11194",
+      "labels": {
+        "English": {
+          "subject": "Bosnia and Herzegovina",
+          "value": "Sarajevo",
+          "valueAliases": [
+            "Bosna-Serai",
+            "City of Sarajevo"
+          ]
+        },
+        "Albanian": {
+          "subject": "Bosnja dhe Hercegovina",
+          "value": "Sarajeva",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q214",
+      "sitelinks": 341,
+      "value": "Q1780",
+      "labels": {
+        "English": {
+          "subject": "Slovakia",
+          "value": "Bratislava",
+          "valueAliases": []
+        },
+        "Albanian": {
+          "subject": "Sllovakia",
+          "value": "Bratisllava",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q211",
+      "sitelinks": 336,
+      "value": "Q1773",
+      "labels": {
+        "English": {
+          "subject": "Latvia",
+          "value": "Riga",
+          "valueAliases": [
+            "Rige",
+            "Riia",
+            "Rija",
+            "Rīgõ"
+          ]
+        },
+        "Albanian": {
+          "subject": "Letonia",
+          "value": "Riga",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q32",
+      "sitelinks": 335,
+      "value": "Q1842",
+      "labels": {
+        "English": {
+          "subject": "Luxembourg",
+          "value": "Luxembourg",
+          "valueAliases": [
+            "City of Luxembourg",
+            "Luxembourg City",
+            "Luxemburg"
+          ]
+        },
+        "Albanian": {
+          "subject": "Luksemburgu",
+          "value": "Luksemburgu",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q228",
+      "sitelinks": 333,
+      "value": "Q1863",
+      "labels": {
+        "English": {
+          "subject": "Andorra",
+          "value": "Andorra la Vella",
+          "valueAliases": []
+        },
+        "Albanian": {
+          "subject": "Andorra",
+          "value": "Andorra la Vella",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q215",
+      "sitelinks": 331,
+      "value": "Q437",
+      "labels": {
+        "English": {
+          "subject": "Slovenia",
+          "value": "Ljubljana",
+          "valueAliases": [
+            "Labacum",
+            "Lublana"
+          ]
+        },
+        "Albanian": {
+          "subject": "Sllovenia",
+          "value": "Lubjana",
+          "valueAliases": [
+            "Lubljanë"
+          ]
+        }
+      }
+    },
+    {
+      "subject": "Q217",
+      "sitelinks": 331,
+      "value": "Q21197",
+      "labels": {
+        "English": {
+          "subject": "Moldova",
+          "value": "Chișinău",
+          "valueAliases": [
+            "Chisinau",
+            "Chisnau",
+            "Chişinău",
+            "Keshenev",
+            "Keshinov",
+            "Khisinau",
+            "Kischinew",
+            "Kischiniov",
+            "Kiscinev",
+            "Kishinef",
+            "Kishinev",
+            "Kishinëv",
+            "Kiszyniów",
+            "Kişinev",
+            "Kišinìv",
+            "Kyshyniv"
+          ]
+        },
+        "Albanian": {
+          "subject": "Molldavi",
+          "value": "Kishinau",
+          "valueAliases": [
+            "Chişinău",
+            "Kisinau"
+          ]
+        }
+      }
+    },
+    {
+      "subject": "Q221",
+      "sitelinks": 327,
+      "value": "Q384",
+      "labels": {
+        "English": {
+          "subject": "North Macedonia",
+          "value": "Skopje",
+          "valueAliases": [
+            "Escópia",
+            "Shkup",
+            "Shkupi",
+            "Skoplje",
+            "Üsküb"
+          ]
+        },
+        "Albanian": {
+          "subject": "Maqedonia e Veriut",
+          "value": "Shkupi",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q233",
+      "sitelinks": 327,
+      "value": "Q23800",
+      "labels": {
+        "English": {
+          "subject": "Malta",
+          "value": "Valletta",
+          "valueAliases": [
+            "Capital of Malta",
+            "Citta Umilissima",
+            "Città Umilissima",
+            "Il-Belt Valletta",
+            "La Valleta"
+          ]
+        },
+        "Albanian": {
+          "subject": "Malta",
+          "value": "Valeta",
+          "valueAliases": [
+            "Kryeqyteti i maltes"
+          ]
+        }
+      }
+    },
+    {
+      "subject": "Q229",
+      "sitelinks": 326,
+      "value": "Q3856",
+      "labels": {
+        "English": {
+          "subject": "Cyprus",
+          "value": "Nicosia",
+          "valueAliases": [
+            "Ledra",
+            "Ledrae",
+            "Ledroi",
+            "Ledron",
+            "Lefkosa",
+            "Lefkosia",
+            "Leucopolis",
+            "Leucosia",
+            "Leucotheon",
+            "Leukoi Theoi",
+            "Leuteon",
+            "Nicosie"
+          ]
+        },
+        "Albanian": {
+          "subject": "Qiproja",
+          "value": "Nicosia",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q236",
+      "sitelinks": 323,
+      "value": "Q23564",
+      "labels": {
+        "English": {
+          "subject": "Montenegro",
+          "value": "Podgorica",
+          "valueAliases": [
+            "Burguriçe",
+            "Capital of Montenegro"
+          ]
+        },
+        "Albanian": {
+          "subject": "Mali i Zi",
+          "value": "Podgorica",
+          "valueAliases": [
+            "Podgoricë"
+          ]
+        }
+      }
+    },
+    {
+      "subject": "Q235",
+      "sitelinks": 321,
+      "value": "Q235",
+      "labels": {
+        "English": {
+          "subject": "Monaco",
+          "value": "Monaco",
+          "valueAliases": [
+            "Fort-Hercule",
+            "Mùnegu",
+            "Principality and Diocese of Monaco",
+            "Principality of Monaco",
+            "Principato di Monaco",
+            "Principatu de Mu̍negu",
+            "Principauté de Monaco",
+            "Prinçipatu de Mùnegu"
+          ]
+        },
+        "Albanian": {
+          "subject": "Monako",
+          "value": "Monako",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q347",
+      "sitelinks": 316,
+      "value": "Q1844",
+      "labels": {
+        "English": {
+          "subject": "Liechtenstein",
+          "value": "Vaduz",
+          "valueAliases": []
+        },
+        "Albanian": {
+          "subject": "Lihtenshtajni",
+          "value": "Vaduz",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q238",
+      "sitelinks": 314,
+      "value": "Q1848",
+      "labels": {
+        "English": {
+          "subject": "San Marino",
+          "value": "San Marino",
+          "valueAliases": [
+            "City of San Marino"
+          ]
+        },
+        "Albanian": {
+          "subject": "San Marino",
+          "value": "San Marino",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q1246",
+      "sitelinks": 283,
+      "value": "Q25270",
+      "labels": {
+        "English": {
+          "subject": "Kosovo",
+          "value": "Pristina",
+          "valueAliases": [
+            "Prishtina",
+            "Prishtinë",
+            "Priştina",
+            "Priština"
+          ]
+        },
+        "Albanian": {
+          "subject": "Kosovë",
+          "value": "Prishtina",
+          "valueAliases": [
+            "Prishtinë"
+          ]
+        }
+      }
+    },
+    {
+      "subject": "Q29999",
+      "sitelinks": 108,
+      "value": "Q727",
+      "labels": {
+        "English": {
+          "subject": "the Netherlands",
+          "value": "Amsterdam",
+          "valueAliases": [
+            "A'dam",
+            "Mokum"
+          ]
+        },
+        "Albanian": {
+          "subject": "Holanda",
+          "value": "Amsterdami",
+          "valueAliases": []
+        }
+      }
+    },
+    {
+      "subject": "Q756617",
+      "sitelinks": 56,
+      "value": "Q1748",
+      "labels": {
+        "English": {
+          "subject": "Denmark",
+          "value": "Copenhagen",
+          "valueAliases": [
+            "Hafn",
+            "Kbh.",
+            "Kobenhavn",
+            "Kopenhagen",
+            "Köbenhavn"
+          ]
+        },
+        "Albanian": {
+          "subject": "Danimarka",
+          "value": "Kopenhagen",
+          "valueAliases": []
+        }
+      }
+    }
+  ]
+}

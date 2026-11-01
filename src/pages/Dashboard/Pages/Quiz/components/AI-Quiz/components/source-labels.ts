@@ -5,6 +5,7 @@
 const LABELS: Record<string, string> = {
   wikipedia: "Wikipedia",
   "microsoft-learn": "Microsoft Learn",
+  wikidata: "Wikidata",
 };
 
 export const sourceLabel = (provider?: string | null): string =>

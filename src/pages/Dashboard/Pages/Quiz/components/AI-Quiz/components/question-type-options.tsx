@@ -102,6 +102,10 @@ export interface QuestionTypeOptionsProps {
   /** Why the selection can't be used — today only "none selected". Styled like the topic
    *  box's error (generation-input.tsx) so the two read as one family. */
   error?: string;
+  /** The types that can be asked at all. Omitted, all three can. */
+  available?: QuestionType[];
+  /** The group's accessible name — "the AI" isn't who writes a fact quiz. */
+  label?: string;
 }
 
 /**
@@ -124,24 +128,31 @@ export const QuestionTypeOptions = ({
   selected,
   onToggle,
   error,
+  available,
+  label = "Question types the AI may use",
 }: QuestionTypeOptionsProps) => (
   <div className="mt-2 short:mt-1.5">
     <div
       role="group"
-      aria-label="Question types the AI may use"
+      aria-label={label}
       aria-describedby={error ? "ai-types-error" : undefined}
       className="grid grid-cols-3 gap-2 short:gap-1.5"
     >
       {ALL_AI_QUESTION_TYPES.map((type) => {
-        const active = selected.includes(type);
+        // A type the source can't produce reads as off and can't be turned on — a fact pack of
+        // heights has no typed answer (docs/quiz/fact-quizzes.md).
+        const offered = !available || available.includes(type);
+        const active = offered && selected.includes(type);
         return (
           <button
             key={type}
             type="button"
             role="checkbox"
             aria-checked={active}
+            disabled={!offered}
             onClick={() => onToggle(type)}
             className={cn(
+              "disabled:cursor-not-allowed disabled:opacity-40",
               "flex w-full flex-col items-center gap-2 rounded-lg border px-2 pb-3 pt-2.5",
               "short:gap-1.5 short:pb-2 short:pt-2",
               "text-center text-xs leading-tight transition-colors sm:text-sm",

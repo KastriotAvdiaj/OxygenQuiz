@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { animate, motion, useReducedMotion } from "framer-motion";
 import {
   ArrowLeft,
+  BadgeCheck,
   Clock,
+  Database,
   LayoutGrid,
   FileText,
   ListChecks,
@@ -51,7 +53,7 @@ const useMaterialModeAvailable = (askNow: boolean): boolean => {
  * - `format` — what kind of quiz (Classic or Associations). Only while there is a choice: players
  *   don't see Associations yet (format-access.ts), so for them the dialog opens on `method`.
  * - `method` — how to build a Classic quiz (by hand, or with AI).
- * - `aiSource` — what the AI works from (a topic, or your own material).
+ * - `aiSource` — what the AI works from (a topic, your own material, or a set of facts).
  */
 type Step = "format" | "method" | "aiSource";
 
@@ -71,6 +73,11 @@ export interface CreateQuizMethodDialogProps {
    * card is disabled until the server allows the mode (`useMaterialModeAvailable`).
    */
   aiMaterialPath: string;
+  /**
+   * A quiz built from a Wikidata fact pack, e.g. `/dashboard/quizzes/create-quiz/ai/facts`
+   * (docs/quiz/fact-quizzes.md). Optional: a surface that leaves it out shows two cards.
+   */
+  aiFactsPath?: string;
   /**
    * The Associations board builder, e.g. `/dashboard/quizzes/create-quiz/associations`. A
    * different *format*, so it is a card on the first step ("What kind of quiz?"), next to
@@ -133,6 +140,7 @@ export const CreateQuizMethodDialog = ({
   manualPath,
   aiTopicPath,
   aiMaterialPath,
+  aiFactsPath,
   associationsPath,
   trigger,
   open,
@@ -239,10 +247,10 @@ export const CreateQuizMethodDialog = ({
         : "What should the AI work from?";
 
   /** One card's slot: its leave animation, its emerge animation, and a ref to measure it by. */
-  const slot = (key: string, index: number, card: ReactNode) => (
+  const slot = (key: string, index: number, card: ReactNode, className?: string) => (
     <motion.div
       key={key}
-      className="h-full"
+      className={className ? `h-full ${className}` : "h-full"}
       initial={false}
       animate={
         leaving === null
@@ -418,6 +426,25 @@ export const CreateQuizMethodDialog = ({
                   onSelect={() => navigate(aiMaterialPath)}
                 />,
               )}
+              {/* The one card under two: a third source, the full width of the pair so the
+                  dialog keeps its width and the first two keep their place. */}
+              {aiFactsPath &&
+                slot(
+                  "facts",
+                  2,
+                  <ModeCard
+                    icon={Database}
+                    title="From a set of facts"
+                    description="Capitals, peaks and more — every answer a fact from Wikidata."
+                    meta="Free · no generation used"
+                    metaIcon={BadgeCheck}
+                    accent="green"
+                    size="compact"
+                    entrance={false}
+                    onSelect={() => navigate(aiFactsPath)}
+                  />,
+                  "sm:col-span-2",
+                )}
             </>
           )}
         </div>

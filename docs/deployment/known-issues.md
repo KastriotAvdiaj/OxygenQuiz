@@ -923,9 +923,14 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   (`ppprop=disambiguation`); choosing between real articles is not. Proposed gates, source tiers
   and rejected alternatives:
   [`proposals/topic-disambiguation-and-source-tiers.md`](../proposals/topic-disambiguation-and-source-tiers.md).
-- **Proposal — questions from Wikidata facts.** Curated, offline-built fact packs, filtered by
-  popularity and quality gates, phrased by the model only in Albanian:
-  [`proposals/wikidata-fact-questions.md`](../proposals/wikidata-fact-questions.md).
+- **P3 — Fact quizzes: Albanian labels come in mixed forms (`quiz/fact-quizzes.md`).** Wikidata's
+  Albanian names are sometimes definite (*Parisi*, *Madridi*) and sometimes not (*Romë*,
+  *Londër*), so options in one question can mix the two. Correct, slightly uneven. Fix by
+  `labelOverrides` per pack, or by model phrasing once a stronger model is configured.
+- **P3 — Fact quizzes: typed answers accept only Wikidata's aliases.** Kyiv's English aliases
+  include *Kiyev* and *Kiovia* but not *Kiev*, so a player typing the common spelling is marked
+  wrong; Malta's Albanian aliases include *Kryeqyteti i maltes*. A per-pack alias override (like
+  `labelOverrides`) is the fix when the review of a pack finds one.
 - **P3 — A clear but general article beats a better page offered as a question (ADR 0038).**
   "Entity Framework Core migrations" is written from Wikipedia's *Entity Framework*: two of four
   topic words, all of the title's — clear by the rule — while Learn's *Migrations Overview* (the

@@ -44,6 +44,8 @@ export const QUIZ_DRAFT_SLOTS = {
   manual: "quiz-create",
   aiTopic: "quiz-ai-topic",
   aiOwn: "quiz-ai-own",
+  /** A quiz built from a Wikidata fact pack (docs/quiz/fact-quizzes.md). */
+  aiFacts: "quiz-ai-facts",
   /** The Associations board builder — its own shape, so its own slot and its own version. */
   associations: "quiz-associations",
 } as const;

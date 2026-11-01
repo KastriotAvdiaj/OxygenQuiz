@@ -110,6 +110,7 @@ function CreateQuizAction() {
       manualPath="/my-dashboard/quizzes/create"
       aiTopicPath="/my-dashboard/quizzes/create/ai/topic"
       aiMaterialPath="/my-dashboard/quizzes/create/ai/material"
+      aiFactsPath="/my-dashboard/quizzes/create/ai/facts"
       associationsPath="/my-dashboard/quizzes/create/associations"
     />
   );

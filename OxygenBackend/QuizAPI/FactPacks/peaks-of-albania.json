@@ -1,0 +1,236 @@
+{
+  "$comment": "A fact pack (docs/quiz/fact-quizzes.md). Everything above \"facts\" is written by hand and reviewed like code; \"builtAt\" and \"facts\" are written by `npm run facts:build -- peaks-of-albania` and reviewed as a diff.",
+  "slug": "peaks-of-albania",
+  "title": {
+    "English": "Peaks of Albania",
+    "Albanian": "Majat e Shqipërisë"
+  },
+  "description": {
+    "English": "Albania's mountains and how high they are.",
+    "Albanian": "Malet e Shqipërisë dhe sa të larta janë."
+  },
+  "category": "Geography",
+  "editorialNote": "Albania's mountains that at least 15 Wikipedias have an article about — the ones people have heard of. Border peaks such as Korab count. Peaks with conflicting heights on Wikidata are left out.",
+  "kind": "quantity",
+  "unit": "m",
+  "query": "SELECT ?item ?value ?sitelinks WHERE { VALUES ?class { wd:Q8502 wd:Q207326 } ?item wdt:P31 ?class; wdt:P17 wd:Q222; wikibase:sitelinks ?sitelinks; p:P2044 ?st. ?st a wikibase:BestRank; psn:P2044/wikibase:quantityAmount ?value. }",
+  "minSitelinks": 15,
+  "labelOverrides": {
+    "$comment": "Hand-written names that replace Wikidata's label for that item and language.",
+    "Q2126597": {
+      "Albanian": "Radohina"
+    }
+  },
+  "templates": {
+    "English": {
+      "amount": "How high is {subject}?",
+      "highest": "Which of these peaks is the highest?",
+      "compare": "{subject} is higher than {other}.",
+      "statement": "{subject} is {value} m high."
+    },
+    "Albanian": {
+      "amount": "{subject} — sa metra lartësi ka?",
+      "highest": "Cila nga këto maja është më e larta?",
+      "compare": "{subject} ka lartësi më të madhe se {other}.",
+      "statement": "{subject} ka lartësi {value} m."
+    }
+  },
+  "builtAt": "2026-11-01",
+  "facts": [
+    {
+      "subject": "Q912579",
+      "sitelinks": 48,
+      "amount": 2764,
+      "labels": {
+        "English": {
+          "subject": "Korab"
+        },
+        "Albanian": {
+          "subject": "Maja e Korabit"
+        }
+      }
+    },
+    {
+      "subject": "Q1032440",
+      "sitelinks": 42,
+      "amount": 2694,
+      "labels": {
+        "English": {
+          "subject": "Jezercë"
+        },
+        "Albanian": {
+          "subject": "Maja e Jezercës"
+        }
+      }
+    },
+    {
+      "subject": "Q2720697",
+      "sitelinks": 40,
+      "amount": 2534,
+      "labels": {
+        "English": {
+          "subject": "Zla Kolata"
+        },
+        "Albanian": {
+          "subject": "Kollata"
+        }
+      }
+    },
+    {
+      "subject": "Q1157724",
+      "sitelinks": 33,
+      "amount": 1613,
+      "labels": {
+        "English": {
+          "subject": "Mount Dajti"
+        },
+        "Albanian": {
+          "subject": "Mali i Dajtit"
+        }
+      }
+    },
+    {
+      "subject": "Q1285400",
+      "sitelinks": 28,
+      "amount": 2520,
+      "labels": {
+        "English": {
+          "subject": "Gramos"
+        },
+        "Albanian": {
+          "subject": "Mali i Gramozit"
+        }
+      }
+    },
+    {
+      "subject": "Q568256",
+      "sitelinks": 27,
+      "amount": 2258,
+      "labels": {
+        "English": {
+          "subject": "Jablanica Mountains"
+        },
+        "Albanian": {
+          "subject": "Jabllanica"
+        }
+      }
+    },
+    {
+      "subject": "Q73515",
+      "sitelinks": 25,
+      "amount": 2375,
+      "labels": {
+        "English": {
+          "subject": "Deshat"
+        },
+        "Albanian": {
+          "subject": "Deshat"
+        }
+      }
+    },
+    {
+      "subject": "Q1164619",
+      "sitelinks": 24,
+      "amount": 2393,
+      "labels": {
+        "English": {
+          "subject": "Koritnik"
+        },
+        "Albanian": {
+          "subject": "Koritniku"
+        }
+      }
+    },
+    {
+      "subject": "Q2305090",
+      "sitelinks": 24,
+      "amount": 2415,
+      "labels": {
+        "English": {
+          "subject": "Mount Tomorr"
+        },
+        "Albanian": {
+          "subject": "Mali i Tomorrit"
+        }
+      }
+    },
+    {
+      "subject": "Q944830",
+      "sitelinks": 21,
+      "amount": 2485,
+      "labels": {
+        "English": {
+          "subject": "Gjallica"
+        },
+        "Albanian": {
+          "subject": "Gjallica"
+        }
+      }
+    },
+    {
+      "subject": "Q1886014",
+      "sitelinks": 20,
+      "amount": 2045,
+      "labels": {
+        "English": {
+          "subject": "Mali i Çikës"
+        },
+        "Albanian": {
+          "subject": "Mali i Çikës"
+        }
+      }
+    },
+    {
+      "subject": "Q263429",
+      "sitelinks": 17,
+      "amount": 1986,
+      "labels": {
+        "English": {
+          "subject": "Paštrik"
+        },
+        "Albanian": {
+          "subject": "Pashtriku"
+        }
+      }
+    },
+    {
+      "subject": "Q7909224",
+      "sitelinks": 16,
+      "amount": 2373,
+      "labels": {
+        "English": {
+          "subject": "Valamara"
+        },
+        "Albanian": {
+          "subject": "Valamara"
+        }
+      }
+    },
+    {
+      "subject": "Q1337784",
+      "sitelinks": 15,
+      "amount": 2485,
+      "labels": {
+        "English": {
+          "subject": "Mount Nemërçkë"
+        },
+        "Albanian": {
+          "subject": "Nemërçka"
+        }
+      }
+    },
+    {
+      "subject": "Q2126597",
+      "sitelinks": 15,
+      "amount": 2568,
+      "labels": {
+        "English": {
+          "subject": "Radohina"
+        },
+        "Albanian": {
+          "subject": "Radohina"
+        }
+      }
+    }
+  ]
+}

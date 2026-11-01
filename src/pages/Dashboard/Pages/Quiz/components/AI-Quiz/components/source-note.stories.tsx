@@ -76,6 +76,23 @@ export const GroundedOnMicrosoftLearn: Story = {
   },
 };
 
+/** A quiz from a fact pack: no model, so the note says what to check — the wording, not the facts. */
+export const GroundedOnWikidata: Story = {
+  args: {
+    grounding: {
+      status: "Grounded",
+      language: "Albanian",
+      source: {
+        provider: "wikidata",
+        title: "Kryeqytetet e Evropës",
+        url: "https://query.wikidata.org/#SELECT%20%3Fitem",
+        text: "…",
+        language: "Albanian",
+      },
+    },
+  },
+};
+
 /** Wikipedia was down and the author went ahead: the one amber notice. */
 export const FromMemoryWikipediaDown: Story = {
   args: {

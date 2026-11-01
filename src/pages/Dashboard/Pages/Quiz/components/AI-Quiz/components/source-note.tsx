@@ -22,7 +22,8 @@ const CHECK = "Check the answers before you publish.";
  * (`ImportNotices`, `AutoImageNotice`) and in their shape: a bordered box, an icon, a first line
  * that says it, and at most one quieter line under it.
  *
- * Three cases:
+ * The cases:
+ * - **Built from facts** — a Wikidata fact pack, linked to the query its facts came from.
  * - **Written from an article** — its source, named and linked, which is also the attribution
  *   the content's licence requires (CC BY-SA on Wikipedia, CC BY on Microsoft Learn).
  *   Blue, like the picture notice: information, not a problem.
@@ -44,9 +45,12 @@ export const SourceNote = ({ grounding }: SourceNoteProps) => {
   let detail: string;
   if (grounding.status === "Grounded" && grounding.source) {
     const { title, url, provider } = grounding.source;
+    const facts = provider === "wikidata";
     lead = (
       <>
-        Written from the {sourceLabel(provider)} {provider === "microsoft-learn" ? "page" : "article"}{" "}
+        {facts
+          ? "Built from Wikidata facts: "
+          : `Written from the ${sourceLabel(provider)} ${provider === "microsoft-learn" ? "page" : "article"} `}
         {url ? (
           <a
             href={url}
@@ -61,7 +65,10 @@ export const SourceNote = ({ grounding }: SourceNoteProps) => {
         )}
       </>
     );
-    detail = "Each answer is backed by a sentence from it — still worth a read before you publish.";
+    detail = facts
+      ? // A fact quiz has no model in it, so the thing worth checking is the wording, not the facts.
+        "Every answer is a fact from that set, and the wrong options come from it too. Check the wording reads well before you publish."
+      : "Each answer is backed by a sentence from it — still worth a read before you publish.";
   } else {
     switch (grounding.reason) {
       case "unavailable":
