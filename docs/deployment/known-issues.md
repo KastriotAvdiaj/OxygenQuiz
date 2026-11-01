@@ -923,10 +923,10 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   (`ppprop=disambiguation`); choosing between real articles is not. Proposed gates, source tiers
   and rejected alternatives:
   [`proposals/topic-disambiguation-and-source-tiers.md`](../proposals/topic-disambiguation-and-source-tiers.md).
-- **P3 — Fact quizzes: Albanian labels come in mixed forms (`quiz/fact-quizzes.md`).** Wikidata's
-  Albanian names are sometimes definite (*Parisi*, *Madridi*) and sometimes not (*Romë*,
-  *Londër*), so options in one question can mix the two. Correct, slightly uneven. Fix by
-  `labelOverrides` per pack, or by model phrasing once a stronger model is configured.
+- **P3 — Fact quizzes: the Albanian forms were written without a native speaker's review.** The
+  genitive and definite forms in `capitals-of-europe.json` (`forms`) were drafted on 2026-11-01;
+  the less certain ones are *Moldavisë/Moldavia* (Wikidata says *Molldavi*), *Kopenhaga*,
+  *Nikozia*, *Irlandës*, *Bosnjës dhe Hercegovinës*. Review once, then this goes.
 - **P3 — Fact quizzes: typed answers accept only Wikidata's aliases.** Kyiv's English aliases
   include *Kiyev* and *Kiovia* but not *Kiev*, so a player typing the common spelling is marked
   wrong; Malta's Albanian aliases include *Kryeqyteti i maltes*. A per-pack alias override (like

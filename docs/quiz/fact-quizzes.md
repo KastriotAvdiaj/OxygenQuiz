@@ -88,9 +88,12 @@ the same way.
    Easy, the least-known Hard, named in the app's own difficulty words
    (`FactQuizBuilder.DifficultyFor`, matching *Easy/Medium/Hard* or *E lehtë/Mesatare/E vështirë*,
    else by position).
-3. **A question that gives itself away isn't asked.** Monaco, San Marino, Luxembourg, Vatican City
-   and Andorra la Vella share their country's name (`NamesOverlap`, including Albanian inflection:
-   *Luksemburg* / *Luksemburgu*).
+3. **A capital named like its country is asked like any other.** Monaco, San Marino, Luxembourg,
+   Vatican City, Andorra la Vella: the answer is in the question, but to someone who doesn't know,
+   that isn't obvious — it's a fact worth asking. The browser's parser would drop it as a giveaway,
+   a check that exists to catch a *model* leaking its answer; a fact quiz has no model, so the
+   wizard turns that check off for it (`answerMayBeInText`, set when the source is `wikidata`).
+   They were excluded for the first day, and the author's call reversed it.
 
 ## The question styles
 
@@ -111,11 +114,40 @@ One quiz mixes the styles, round-robin over a shuffle.
 Numbers are never typed exactly and carry no thousands separator ("2764 m" reads the same in
 English and Albanian).
 
-**Albanian templates avoid inflected slots.** "Cili është kryeqyteti i {Francës}?" needs the
-genitive, which a label can't give; the templates use apposition instead — "kryeqyteti i shtetit
-{Francë}" — and phrasings that keep the name in the nominative ("{subject} — sa metra lartësi
-ka?", "ka lartësi më të madhe se" rather than the gendered "më e lartë"). They are data in the
-pack file, so wording is fixed without touching code.
+### Grammar: forms are hand-written, in the pack
+
+Albanian quizzes say "Cili është kryeqyteti i **Francës**?" — the genitive — and Wikidata's label
+is *Francë*. Its labels are also inconsistent: *Parisi* is definite, *Romë* isn't. So a pack
+carries a **`forms`** table, written by a person, keyed by Wikidata id and language:
+
+```json
+"forms": {
+  "Q142": { "Albanian": { "gen": "Francës", "def": "Franca" } },
+  "Q220": { "Albanian": { "def": "Roma" } }
+}
+```
+
+and templates ask for a form by name — `{subject.gen}`, `{value.def}`:
+
+| Template | Becomes |
+|---|---|
+| `Cili është kryeqyteti i {subject.gen}?` | Cili është kryeqyteti i Francës? |
+| `{value.def} është kryeqyteti i cilit shtet?` | Roma është kryeqyteti i cilit shtet? |
+| `Shkruani kryeqytetin e {subject.gen}.` | Shkruani kryeqytetin e Ukrainës. |
+
+- **A missing form skips the style for that fact** — it is never written badly. `def` is the one
+  exception: it falls back to the label, because most labels already are definite.
+- **Options and typed answers use the definite form**, so a question never offers *Parisi* beside
+  *Romë*; a typed answer accepts the label too (*Roma* or *Romë*).
+- **Nothing here reaches a model.** The grammar is the template text and the forms table, in
+  `FactPacks/<slug>.json` (`Names` in `FactQuizBuilder.cs` fills them). A native speaker fixes a
+  wrong form by editing that file; the build script leaves it alone.
+- An earlier version (2026-11-01, same day) used apposition — "kryeqyteti i shtetit Francë" — to
+  avoid needing forms. It read as contrived; Albanian quizzes use the genitive.
+
+Peaks avoid gendered adjectives instead ("Sa metra lartësi ka {subject}?", "ka lartësi më të
+madhe se" rather than "më e lartë", which would be wrong for *Mali i Dajtit*). A gender form
+would allow the more natural phrasing if wanted.
 
 ## Why the reply has a model's shape
 
@@ -137,9 +169,8 @@ has been hardened the most.
 ## What is deliberately not built
 
 - **Model phrasing for Albanian.** The proposal planned for the model to phrase Albanian questions
-  around locked facts. The templates read acceptably, cost nothing and can't introduce an error,
-  so phrasing waits for a stronger model; mixed definite and indefinite labels (*Parisi*, *Romë*)
-  are the visible cost — logged in `known-issues.md`.
+  around locked facts. Hand-written forms do the job with no model, no cost and no way to change a
+  fact; phrasing stays an option for packs whose forms would be too many to write.
 - **Clue, superlative-by-coordinates and odd-one-out styles** — they need more than one fact per
   item (rivers, coordinates); the pack format allows it when a pack needs it.
 - **Routing a typed topic to a pack.** The author picks the pack. Routing waits until there are

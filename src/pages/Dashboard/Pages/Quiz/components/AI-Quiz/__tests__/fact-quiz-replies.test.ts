@@ -17,7 +17,12 @@ describe("fact quiz replies", () => {
   it.each(replies.map((r) => [`${r.pack} · ${r.language} · seed ${r.seed}`, r] as const))(
     "%s parses with nothing dropped",
     (_, reply) => {
-      const result = parseAiOutput(reply.payload, { ...parseContext, sourceText: reply.sourceText });
+      // As the app parses one (use-ai-quiz-draft.tsx): Monaco's capital is Monaco.
+      const result = parseAiOutput(reply.payload, {
+        ...parseContext,
+        sourceText: reply.sourceText,
+        answerMayBeInText: true,
+      });
 
       expect(result.ok).toBe(true);
       expect(result.dropped).toEqual([]);

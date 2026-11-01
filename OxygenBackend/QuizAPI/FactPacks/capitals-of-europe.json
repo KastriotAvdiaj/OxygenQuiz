@@ -27,6 +27,304 @@
       "English": "Denmark"
     }
   },
+  "$formsComment": "Hand-written grammatical forms by Wikidata id (docs/quiz/fact-quizzes.md, \"Grammar\"). gen: the genitive a template needs after \"i\"/\"e\" (kryeqyteti i Francës). def: the definite form, used in sentences and as the option text, where Wikidata's label is indefinite (Romë → Roma). A missing gen skips the styles that need it for that fact; a missing def falls back to the label. Written 2026-11-01 — a native speaker's review is the check.",
+  "forms": {
+    "Q20": {
+      "Albanian": {
+        "gen": "Norvegjisë"
+      }
+    },
+    "Q27": {
+      "Albanian": {
+        "gen": "Irlandës",
+        "def": "Irlanda"
+      }
+    },
+    "Q28": {
+      "Albanian": {
+        "gen": "Hungarisë"
+      }
+    },
+    "Q29": {
+      "Albanian": {
+        "gen": "Spanjës"
+      }
+    },
+    "Q31": {
+      "Albanian": {
+        "gen": "Belgjikës"
+      }
+    },
+    "Q32": {
+      "Albanian": {
+        "gen": "Luksemburgut"
+      }
+    },
+    "Q33": {
+      "Albanian": {
+        "gen": "Finlandës"
+      }
+    },
+    "Q34": {
+      "Albanian": {
+        "gen": "Suedisë"
+      }
+    },
+    "Q36": {
+      "Albanian": {
+        "gen": "Polonisë"
+      }
+    },
+    "Q37": {
+      "Albanian": {
+        "gen": "Lituanisë"
+      }
+    },
+    "Q38": {
+      "Albanian": {
+        "gen": "Italisë"
+      }
+    },
+    "Q39": {
+      "Albanian": {
+        "gen": "Zvicrës",
+        "def": "Zvicra"
+      }
+    },
+    "Q40": {
+      "Albanian": {
+        "gen": "Austrisë"
+      }
+    },
+    "Q41": {
+      "Albanian": {
+        "gen": "Greqisë"
+      }
+    },
+    "Q43": {
+      "Albanian": {
+        "gen": "Turqisë"
+      }
+    },
+    "Q45": {
+      "Albanian": {
+        "gen": "Portugalisë"
+      }
+    },
+    "Q64": {
+      "Albanian": {
+        "def": "Berlini"
+      }
+    },
+    "Q70": {
+      "Albanian": {
+        "def": "Berna"
+      }
+    },
+    "Q84": {
+      "Albanian": {
+        "def": "Londra"
+      }
+    },
+    "Q142": {
+      "Albanian": {
+        "gen": "Francës",
+        "def": "Franca"
+      }
+    },
+    "Q145": {
+      "Albanian": {
+        "gen": "Britanisë së Madhe"
+      }
+    },
+    "Q159": {
+      "Albanian": {
+        "gen": "Rusisë"
+      }
+    },
+    "Q183": {
+      "Albanian": {
+        "gen": "Gjermanisë"
+      }
+    },
+    "Q184": {
+      "Albanian": {
+        "gen": "Bjellorusisë"
+      }
+    },
+    "Q189": {
+      "Albanian": {
+        "gen": "Islandës"
+      }
+    },
+    "Q191": {
+      "Albanian": {
+        "gen": "Estonisë"
+      }
+    },
+    "Q211": {
+      "Albanian": {
+        "gen": "Letonisë"
+      }
+    },
+    "Q212": {
+      "Albanian": {
+        "gen": "Ukrainës"
+      }
+    },
+    "Q213": {
+      "Albanian": {
+        "gen": "Republikës Çeke"
+      }
+    },
+    "Q214": {
+      "Albanian": {
+        "gen": "Sllovakisë"
+      }
+    },
+    "Q215": {
+      "Albanian": {
+        "gen": "Sllovenisë"
+      }
+    },
+    "Q217": {
+      "Albanian": {
+        "gen": "Moldavisë",
+        "def": "Moldavia"
+      }
+    },
+    "Q218": {
+      "Albanian": {
+        "gen": "Rumanisë"
+      }
+    },
+    "Q219": {
+      "Albanian": {
+        "gen": "Bullgarisë"
+      }
+    },
+    "Q220": {
+      "Albanian": {
+        "def": "Roma"
+      }
+    },
+    "Q221": {
+      "Albanian": {
+        "gen": "Maqedonisë së Veriut"
+      }
+    },
+    "Q222": {
+      "Albanian": {
+        "gen": "Shqipërisë"
+      }
+    },
+    "Q224": {
+      "Albanian": {
+        "gen": "Kroacisë"
+      }
+    },
+    "Q225": {
+      "Albanian": {
+        "gen": "Bosnjës dhe Hercegovinës"
+      }
+    },
+    "Q228": {
+      "Albanian": {
+        "gen": "Andorrës"
+      }
+    },
+    "Q229": {
+      "Albanian": {
+        "gen": "Qipros"
+      }
+    },
+    "Q230": {
+      "Albanian": {
+        "gen": "Gjeorgjisë"
+      }
+    },
+    "Q232": {
+      "Albanian": {
+        "gen": "Kazakistanit"
+      }
+    },
+    "Q233": {
+      "Albanian": {
+        "gen": "Maltës"
+      }
+    },
+    "Q235": {
+      "Albanian": {
+        "gen": "Monakos"
+      }
+    },
+    "Q236": {
+      "Albanian": {
+        "gen": "Malit të Zi"
+      }
+    },
+    "Q237": {
+      "Albanian": {
+        "gen": "Vatikanit"
+      }
+    },
+    "Q238": {
+      "Albanian": {
+        "gen": "San Marinos"
+      }
+    },
+    "Q347": {
+      "Albanian": {
+        "gen": "Lihtenshtajnit"
+      }
+    },
+    "Q403": {
+      "Albanian": {
+        "gen": "Serbisë"
+      }
+    },
+    "Q1246": {
+      "Albanian": {
+        "gen": "Kosovës",
+        "def": "Kosova"
+      }
+    },
+    "Q1748": {
+      "Albanian": {
+        "def": "Kopenhaga"
+      }
+    },
+    "Q1764": {
+      "Albanian": {
+        "def": "Rejkjaviku"
+      }
+    },
+    "Q1844": {
+      "Albanian": {
+        "def": "Vaduzi"
+      }
+    },
+    "Q2280": {
+      "Albanian": {
+        "def": "Minsku"
+      }
+    },
+    "Q3856": {
+      "Albanian": {
+        "def": "Nikozia"
+      }
+    },
+    "Q29999": {
+      "Albanian": {
+        "gen": "Holandës"
+      }
+    },
+    "Q756617": {
+      "Albanian": {
+        "gen": "Danimarkës"
+      }
+    }
+  },
   "templates": {
     "English": {
       "plain": "What is the capital of {subject}?",
@@ -36,11 +334,11 @@
       "statement": "The capital of {subject} is {value}."
     },
     "Albanian": {
-      "plain": "Cili është kryeqyteti i shtetit {subject}?",
-      "reverse": "{value} — kryeqyteti i cilit shtet?",
-      "trueFalse": "Kryeqyteti i shtetit {subject} është {value}.",
-      "typed": "Shkruani kryeqytetin e shtetit {subject}.",
-      "statement": "Kryeqyteti i shtetit {subject}: {value}."
+      "plain": "Cili është kryeqyteti i {subject.gen}?",
+      "reverse": "{value.def} është kryeqyteti i cilit shtet?",
+      "trueFalse": "Kryeqyteti i {subject.gen} është {value.def}.",
+      "typed": "Shkruani kryeqytetin e {subject.gen}.",
+      "statement": "Kryeqyteti i {subject.gen} është {value.def}."
     }
   },
   "builtAt": "2026-11-01",

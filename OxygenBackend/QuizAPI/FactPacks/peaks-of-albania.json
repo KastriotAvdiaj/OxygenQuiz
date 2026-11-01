@@ -29,7 +29,7 @@
       "statement": "{subject} is {value} m high."
     },
     "Albanian": {
-      "amount": "{subject} — sa metra lartësi ka?",
+      "amount": "Sa metra lartësi ka {subject}?",
       "highest": "Cila nga këto maja është më e larta?",
       "compare": "{subject} ka lartësi më të madhe se {other}.",
       "statement": "{subject} ka lartësi {value} m."

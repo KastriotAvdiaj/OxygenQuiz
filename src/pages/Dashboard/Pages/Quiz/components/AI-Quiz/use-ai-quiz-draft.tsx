@@ -323,6 +323,8 @@ export const useAiQuizDraft = () => {
       // own in Source mode, the article in a grounded Topic generation. Topic mode from memory
       // has nothing to check against, so the check is skipped there (question-checks.ts).
       sourceText: mode === "Source" ? sourceData : (grounding?.source?.text ?? null),
+      // A fact quiz has no model to leak an answer: Monaco's capital is Monaco.
+      answerMayBeInText: grounding?.source?.provider === "wikidata",
     });
   }, [
     payload,

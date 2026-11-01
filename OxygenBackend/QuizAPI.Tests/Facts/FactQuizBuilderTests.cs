@@ -59,15 +59,15 @@ public class FactQuizBuilderTests
     public void Every_capital_question_agrees_with_its_fact(string language)
     {
         var templates = Capitals.Templates[language];
+        var names = new Names(Capitals, language);
         for (var seed = 0; seed < 200; seed++)
         {
             var (payload, _) = Build(Capitals, language, seed: seed);
             foreach (var q in Questions(payload))
             {
                 // The quote is the fact's statement — it says which fact the question is about.
-                var fact = Capitals.Facts.Single(f => f.Labels.TryGetValue(language, out var l)
-                    && q["sourceQuote"]!.GetValue<string>() == templates["statement"].Replace("{subject}", l.Subject).Replace("{value}", l.Value));
-                var labels = fact.Labels[language];
+                var fact = Capitals.Facts.Single(f => f.Labels.ContainsKey(language)
+                    && q["sourceQuote"]!.GetValue<string>() == names.Fill(templates["statement"], f));
                 var text = q["text"]!.GetValue<string>();
 
                 switch (q["type"]!.GetValue<string>())
@@ -78,16 +78,14 @@ public class FactQuizBuilderTests
                         Assert.Single(options, o => o["isCorrect"]!.GetValue<bool>());
                         Assert.Equal(4, options.Select(o => o["text"]!.GetValue<string>()).Distinct(StringComparer.OrdinalIgnoreCase).Count());
                         var right = options.Single(o => o["isCorrect"]!.GetValue<bool>())["text"]!.GetValue<string>();
-                        Assert.True(right == labels.Value || right == labels.Subject, $"{text} → {right}");
-                        // The stem names one side, the right option is the other.
-                        Assert.Contains(right == labels.Value ? labels.Subject : labels.Value!, text);
+                        var expected = text == names.Fill(templates["plain"], fact) ? names.ValueOption(fact) : names.SubjectOption(fact);
+                        Assert.Equal(expected, right);
                         break;
                     case "TrueFalse":
-                        var claimsTruth = text == templates["trueFalse"].Replace("{subject}", labels.Subject).Replace("{value}", labels.Value);
-                        Assert.Equal(claimsTruth, q["correctAnswer"]!.GetValue<bool>());
+                        Assert.Equal(text == names.Fill(templates["trueFalse"], fact), q["correctAnswer"]!.GetValue<bool>());
                         break;
                     case "TypeTheAnswer":
-                        Assert.Equal(labels.Value, q["correctAnswer"]!.GetValue<string>());
+                        Assert.Equal(names.ValueOption(fact), q["correctAnswer"]!.GetValue<string>());
                         break;
                 }
             }
@@ -132,25 +130,64 @@ public class FactQuizBuilderTests
     }
 
     [Fact]
-    public void A_capital_named_like_its_country_is_never_asked()
+    public void A_capital_named_like_its_country_is_asked_too()
     {
-        // Monaco, San Marino, Luxembourg, Vatican City, Andorra la Vella: the stem would hold the answer.
-        for (var seed = 0; seed < 50; seed++)
-        {
-            var (payload, _) = Build(Capitals, count: 20, seed: seed);
-            Assert.DoesNotContain(Questions(payload), q => new[] { "Monaco", "San Marino", "Luxembourg", "Vatican", "Andorra" }
-                .Any(n => q["sourceQuote"]!.GetValue<string>().Contains(n)));
-        }
+        // Monaco's capital is Monaco. To someone who doesn't know, that isn't obvious — it's a fact
+        // worth asking, and the browser's parser keeps it for a fact quiz (answerMayBeInText).
+        var asked = Enumerable.Range(0, 50)
+            .SelectMany(seed => Questions(Build(Capitals, count: 20, seed: seed).Payload))
+            .Select(q => q["sourceQuote"]!.GetValue<string>());
+        Assert.Contains(asked, quote => quote == "The capital of Monaco is Monaco.");
     }
 
-    [Theory]
-    [InlineData("Monaco", "Monaco", true)]
-    [InlineData("Andorra", "Andorra la Vella", true)]
-    [InlineData("Luksemburgu", "Luksemburg", true)]
-    [InlineData("Francë", "Parisi", false)]
-    [InlineData("Kosovë", "Prishtina", false)]
-    public void Names_that_overlap_are_caught(string a, string b, bool overlap) =>
-        Assert.Equal(overlap, FactQuizBuilder.NamesOverlap(a, b));
+    [Fact]
+    public void Albanian_reads_with_the_genitive_and_definite_forms()
+    {
+        var questions = Enumerable.Range(0, 30)
+            .SelectMany(seed => Questions(Build(Capitals, "Albanian", count: 20, seed: seed).Payload))
+            .ToList();
+
+        Assert.Contains(questions, q => q["text"]!.GetValue<string>() == "Cili është kryeqyteti i Francës?");
+        Assert.Contains(questions, q => q["text"]!.GetValue<string>() == "Roma është kryeqyteti i cilit shtet?");
+        // Options are the definite form: never "Romë" beside "Parisi".
+        Assert.DoesNotContain(questions.Where(q => q["answerOptions"] is not null)
+            .SelectMany(q => q["answerOptions"]!.AsArray()), o => o!["text"]!.GetValue<string>() == "Romë");
+        // A typed answer accepts the label too.
+        Assert.Contains(questions, q => q["type"]!.GetValue<string>() == "TypeTheAnswer"
+            && q["correctAnswer"]!.GetValue<string>() == "Roma"
+            && q["acceptableAnswers"]!.AsArray().Any(a => a!.GetValue<string>() == "Romë"));
+    }
+
+    [Fact]
+    public void A_missing_form_skips_the_style_rather_than_writing_it_badly()
+    {
+        var pack = new FactPack
+        {
+            Slug = "test",
+            Title = new() { ["Albanian"] = "Test" },
+            Templates = new()
+            {
+                ["Albanian"] = new()
+                {
+                    ["plain"] = "Cili është kryeqyteti i {subject.gen}?",
+                    ["trueFalse"] = "{value} është kryeqytet.",
+                    ["statement"] = "{subject}: {value} është kryeqyteti.",
+                },
+            },
+            Facts = Enumerable.Range(1, 6).Select(i => new Fact
+            {
+                Subject = $"Q{i}",
+                Value = $"Q{100 + i}",
+                Sitelinks = 100 - i,
+                Labels = new() { ["Albanian"] = new FactLabels { Subject = $"Shteti{i}", Value = $"Qyteti{i}" } },
+            }).ToList(),
+        };
+
+        var result = FactQuizBuilder.Build(pack, new FactQuizRequest("Albanian", 6, AllTypes, Difficulties), new Random(1));
+
+        // No genitive forms in this pack: only the style that doesn't need one is asked.
+        Assert.All(Questions(JsonNode.Parse(result.Payload)!.AsObject()), q => Assert.Equal("TrueFalse", q["type"]!.GetValue<string>()));
+    }
 
     [Fact]
     public void Only_the_types_asked_for_come_back()
@@ -168,7 +205,7 @@ public class FactQuizBuilderTests
         var (payload, _) = Build(Capitals, "Albanian", count: 20, types: new[] { "TypeTheAnswer" });
 
         Assert.Equal("Kryeqytetet e Evropës", payload["title"]!.GetValue<string>());
-        Assert.All(Questions(payload), q => Assert.StartsWith("Shkruani kryeqytetin e shtetit", q["text"]!.GetValue<string>()));
+        Assert.All(Questions(payload), q => Assert.StartsWith("Shkruani kryeqytetin e ", q["text"]!.GetValue<string>()));
     }
 
     [Fact]

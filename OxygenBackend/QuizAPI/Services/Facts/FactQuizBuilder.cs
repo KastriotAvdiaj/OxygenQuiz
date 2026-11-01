@@ -55,7 +55,6 @@ namespace QuizAPI.Services.Facts
             // distractors both read from.
             var facts = pack.Facts
                 .Where(f => f.Labels.ContainsKey(request.Language) && (pack.IsQuantity ? f.Amount.HasValue : f.Labels[request.Language].Value is not null))
-                .Where(f => pack.IsQuantity || !NamesOverlap(f.Labels[request.Language].Subject, f.Labels[request.Language].Value!))
                 .OrderByDescending(f => f.Sitelinks)
                 .ThenBy(f => f.Subject, StringComparer.Ordinal)
                 .ToList();
@@ -105,37 +104,43 @@ namespace QuizAPI.Services.Facts
             FactPack pack, string language, Dictionary<string, string> templates, string style,
             Fact fact, List<Fact> facts, Random random)
         {
-            var me = fact.Labels[language];
-            var statement = Fill(templates, FactStyles.Statement, me.Subject, ValueText(pack, fact, language));
+            var names = new Names(pack, language);
+            var statement = names.Fill(templates[FactStyles.Statement], fact);
+            if (statement is null) return null;
 
             switch (style)
             {
                 case FactStyles.Plain:
                 {
-                    var wrong = Neighbours(fact, facts, 3, f => f.Labels[language].Value!, me.Value!);
-                    if (wrong.Count < 3) return null;
-                    return MultipleChoice(Fill(templates, style, me.Subject, me.Value!), me.Value!, wrong, statement, random);
+                    var text = names.Fill(templates[style], fact);
+                    var wrong = Neighbours(fact, facts, 3, names.ValueOption, names.ValueOption(fact));
+                    if (text is null || wrong.Count < 3) return null;
+                    return MultipleChoice(text, names.ValueOption(fact), wrong, statement, random);
                 }
                 case FactStyles.Reverse:
                 {
-                    var wrong = Neighbours(fact, facts, 3, f => f.Labels[language].Subject, me.Subject);
-                    if (wrong.Count < 3) return null;
-                    return MultipleChoice(Fill(templates, style, me.Subject, me.Value!), me.Subject, wrong, statement, random);
+                    var text = names.Fill(templates[style], fact);
+                    var wrong = Neighbours(fact, facts, 3, names.SubjectOption, names.SubjectOption(fact));
+                    if (text is null || wrong.Count < 3) return null;
+                    return MultipleChoice(text, names.SubjectOption(fact), wrong, statement, random);
                 }
                 case FactStyles.TrueFalse:
                 {
                     var truth = random.Next(2) == 0;
-                    var shown = me.Value!;
+                    var shown = fact;
                     if (!truth)
                     {
-                        var other = Neighbours(fact, facts, 1, f => f.Labels[language].Value!, me.Value!);
-                        if (other.Count == 0) return null;
-                        shown = other[0];
+                        // A neighbour's capital, never one that reads the same as the right one.
+                        shown = NeighbourFacts(fact, facts, names.ValueOption)
+                            .FirstOrDefault(f => !string.Equals(Fold(names.ValueOption(f)), Fold(names.ValueOption(fact)), StringComparison.Ordinal));
+                        if (shown is null) return null;
                     }
+                    var text = names.Fill(templates[style], fact, valueOf: shown);
+                    if (text is null) return null;
                     return new JsonObject
                     {
                         ["type"] = "TrueFalse",
-                        ["text"] = Fill(templates, style, me.Subject, shown),
+                        ["text"] = text,
                         ["correctAnswer"] = truth,
                         ["timeLimitInSeconds"] = 15,
                         ["explanation"] = statement,
@@ -143,25 +148,36 @@ namespace QuizAPI.Services.Facts
                     };
                 }
                 case FactStyles.Typed:
+                {
+                    var text = names.Fill(templates[style], fact);
+                    if (text is null) return null;
+                    var me = fact.Labels[language];
+                    var answer = names.ValueOption(fact);
+                    // The label is accepted too when the answer is its other form (Roma / Romë).
+                    var accepted = me.ValueAliases.Prepend(me.Value!)
+                        .Where(a => !string.Equals(a, answer, StringComparison.OrdinalIgnoreCase))
+                        .Distinct(StringComparer.OrdinalIgnoreCase);
                     return new JsonObject
                     {
                         ["type"] = "TypeTheAnswer",
-                        ["text"] = Fill(templates, style, me.Subject, me.Value!),
-                        ["correctAnswer"] = me.Value,
-                        ["acceptableAnswers"] = new JsonArray(me.ValueAliases.Select(a => (JsonNode)a).ToArray()),
+                        ["text"] = text,
+                        ["correctAnswer"] = answer,
+                        ["acceptableAnswers"] = new JsonArray(accepted.Select(a => (JsonNode)a).ToArray()),
                         ["isCaseSensitive"] = false,
                         ["timeLimitInSeconds"] = 30,
                         ["explanation"] = statement,
                         ["sourceQuote"] = statement,
                     };
+                }
                 case FactStyles.Amount:
                 {
+                    var text = names.Fill(templates[style], fact);
                     var right = Number(fact.Amount!.Value, pack.Unit);
                     // Distinct by more than rounding: two peaks of 2,485 m would make two right answers.
                     var wrong = Neighbours(fact, facts, 3, f => Number(f.Amount!.Value, pack.Unit), right,
                         f => Math.Abs(f.Amount!.Value - fact.Amount.Value) >= Math.Max(1, fact.Amount.Value * 0.02));
-                    if (wrong.Count < 3) return null;
-                    return MultipleChoice(Fill(templates, style, me.Subject, right), right, wrong, statement, random);
+                    if (text is null || wrong.Count < 3) return null;
+                    return MultipleChoice(text, right, wrong, statement, random);
                 }
                 case FactStyles.Highest:
                 {
@@ -173,11 +189,11 @@ namespace QuizAPI.Services.Facts
                         .Take(3)
                         .ToList();
                     if (lower.Count < 3) return null;
-                    var others = lower.Select(f => f.Labels[language].Subject).ToList();
+                    var others = lower.Select(names.SubjectOption).ToList();
                     var explanation = string.Join(" ", new[] { fact }.Concat(lower)
-                        .Select(f => Fill(templates, FactStyles.Statement, f.Labels[language].Subject, ValueText(pack, f, language))));
-                    var q = MultipleChoice(templates[style], me.Subject, others, statement, random);
-                    q["explanation"] = explanation;
+                        .Select(f => names.Fill(templates[FactStyles.Statement], f) ?? string.Empty));
+                    var q = MultipleChoice(templates[style], names.SubjectOption(fact), others, statement, random);
+                    q["explanation"] = explanation.Trim();
                     return q;
                 }
                 case FactStyles.Compare:
@@ -188,11 +204,13 @@ namespace QuizAPI.Services.Facts
                         .ThenBy(_ => random.Next())
                         .FirstOrDefault();
                     if (other is null) return null;
-                    var otherStatement = Fill(templates, FactStyles.Statement, other.Labels[language].Subject, ValueText(pack, other, language));
+                    var text = names.Fill(templates[style], fact, other: other);
+                    var otherStatement = names.Fill(templates[FactStyles.Statement], other);
+                    if (text is null || otherStatement is null) return null;
                     return new JsonObject
                     {
                         ["type"] = "TrueFalse",
-                        ["text"] = Fill(templates, style, me.Subject, ValueText(pack, fact, language), other.Labels[language].Subject),
+                        ["text"] = text,
                         ["correctAnswer"] = fact.Amount > other.Amount,
                         ["timeLimitInSeconds"] = 15,
                         ["explanation"] = $"{statement} {otherStatement}",
@@ -206,17 +224,14 @@ namespace QuizAPI.Services.Facts
 
         /// <summary>
         /// Up to <paramref name="count"/> other facts' answers, nearest in popularity first — a
-        /// famous fact's wrong options are famous too. Ties broken at random so a pack doesn't ask
-        /// the same four-way choice every time.
+        /// famous fact's wrong options are famous too.
         /// </summary>
         private static List<string> Neighbours(
             Fact fact, List<Fact> facts, int count, Func<Fact, string> answer, string right, Func<Fact, bool>? also = null)
         {
-            var at = facts.IndexOf(fact);
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { Fold(right) };
+            var seen = new HashSet<string>(StringComparer.Ordinal) { Fold(right) };
             var result = new List<string>();
-            foreach (var f in facts.Where(f => f != fact && (also?.Invoke(f) ?? true))
-                         .OrderBy(f => Math.Abs(facts.IndexOf(f) - at)))
+            foreach (var f in NeighbourFacts(fact, facts, answer, also))
             {
                 var text = answer(f);
                 if (!seen.Add(Fold(text))) continue;
@@ -224,6 +239,12 @@ namespace QuizAPI.Services.Facts
                 if (result.Count == count) break;
             }
             return result;
+        }
+
+        private static IEnumerable<Fact> NeighbourFacts(Fact fact, List<Fact> facts, Func<Fact, string> answer, Func<Fact, bool>? also = null)
+        {
+            var at = facts.IndexOf(fact);
+            return facts.Where(f => f != fact && (also?.Invoke(f) ?? true)).OrderBy(f => Math.Abs(facts.IndexOf(f) - at));
         }
 
         private static JsonObject MultipleChoice(string text, string right, List<string> wrong, string statement, Random random)
@@ -258,15 +279,6 @@ namespace QuizAPI.Services.Facts
             return named ?? names[Math.Min(names.Count - 1, third * names.Count / 3)];
         }
 
-        private static string Fill(Dictionary<string, string> templates, string style, string subject, string value, string? other = null) =>
-            Fill(templates[style], subject, value, other);
-
-        private static string Fill(string template, string subject, string value, string? other = null) =>
-            template.Replace("{subject}", subject).Replace("{value}", value).Replace("{other}", other ?? string.Empty);
-
-        private static string ValueText(FactPack pack, Fact fact, string language) =>
-            pack.IsQuantity ? Number(fact.Amount!.Value, null) : fact.Labels[language].Value!;
-
         /// <summary>No thousands separator: English writes 2,764 and Albanian 2.764 or 2 764, and "2764" is read the same in both.</summary>
         private static string Number(double value, string? unit)
         {
@@ -277,25 +289,70 @@ namespace QuizAPI.Services.Facts
         private static string Title(FactPack pack, string language) =>
             pack.Title.TryGetValue(language, out var t) ? t : pack.Title.Values.FirstOrDefault() ?? pack.Slug;
 
-        /// <summary>
-        /// Whether one name contains the other — Monaco's capital is Monaco, Andorra's is Andorra la
-        /// Vella. Asking those gives the answer away, so they aren't asked.
-        /// </summary>
-        internal static bool NamesOverlap(string a, string b)
-        {
-            var (x, y) = (Fold(a), Fold(b));
-            if (x.Length == 0 || y.Length == 0) return false;
-            if (x.Contains(y) || y.Contains(x)) return true;
-            // Albanian inflects the shared stem: Luksemburg / Luksemburgu, Vatikan / Vatikani.
-            return x.Length >= 5 && y.Length >= 5 && string.CompareOrdinal(x, 0, y, 0, Math.Min(6, Math.Min(x.Length, y.Length))) == 0;
-        }
-
-        private static string Fold(string text)
+        internal static string Fold(string text)
         {
             var sb = new StringBuilder(text.Length);
             foreach (var c in text.Trim().ToLowerInvariant().Normalize(NormalizationForm.FormD))
                 if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark) sb.Append(c);
             return sb.ToString();
+        }
+    }
+
+    /// <summary>
+    /// The words a template is filled with, in one language (docs/quiz/fact-quizzes.md, "Grammar").
+    ///
+    /// <para><c>{subject}</c>, <c>{value}</c> and <c>{other}</c> are the Wikidata labels as they
+    /// are. <c>{subject.gen}</c>, <c>{value.def}</c> and so on ask for a <b>form</b> from the pack's
+    /// hand-written <c>forms</c> table — Albanian needs "kryeqyteti i <i>Francës</i>", and the label is
+    /// <i>Francë</i>. A missing form means the template can't be filled for that fact, and the style
+    /// is skipped for it, rather than written badly. The one exception is <c>def</c>, which falls
+    /// back to the label: most labels already are the definite form (<i>Parisi</i>, <i>Turqia</i>).</para>
+    ///
+    /// <para>Options and typed answers use the definite form too, so one question doesn't offer
+    /// <i>Parisi</i> beside <i>Romë</i>.</para>
+    /// </summary>
+    internal sealed class Names(FactPack pack, string language)
+    {
+        private static readonly System.Text.RegularExpressions.Regex Placeholder =
+            new(@"\{(subject|value|other)(?:\.([a-z]+))?\}", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        /// <summary>The template filled for <paramref name="fact"/>; null if a form it asks for is missing.</summary>
+        /// <param name="valueOf">Whose value to state — a different fact for a false true/false claim.</param>
+        public string? Fill(string template, Fact fact, Fact? valueOf = null, Fact? other = null)
+        {
+            valueOf ??= fact;
+            var complete = true;
+            var text = Placeholder.Replace(template, m =>
+            {
+                var form = m.Groups[2].Success ? m.Groups[2].Value : null;
+                var word = m.Groups[1].Value switch
+                {
+                    "subject" => Name(fact.Subject, fact.Labels[language].Subject, form),
+                    "other" => other is null ? null : Name(other.Subject, other.Labels[language].Subject, form),
+                    _ => pack.IsQuantity
+                        ? Math.Round(valueOf.Amount!.Value).ToString("0", CultureInfo.InvariantCulture)
+                        : Name(valueOf.Value!, valueOf.Labels[language].Value!, form),
+                };
+                if (word is null) complete = false;
+                return word ?? string.Empty;
+            });
+            return complete ? text : null;
+        }
+
+        /// <summary>The value as an option or a typed answer: its definite form.</summary>
+        public string ValueOption(Fact fact) => Name(fact.Value!, fact.Labels[language].Value!, "def")!;
+
+        public string SubjectOption(Fact fact) => Name(fact.Subject, fact.Labels[language].Subject, "def")!;
+
+        private string? Name(string qid, string label, string? form)
+        {
+            if (form is null) return label;
+            if (pack.Forms.TryGetValue(qid, out var byLanguage)
+                && byLanguage.TryGetValue(language, out var forms)
+                && forms.TryGetValue(form, out var word)
+                && !string.IsNullOrWhiteSpace(word))
+                return word;
+            return form == "def" ? label : null;
         }
     }
 

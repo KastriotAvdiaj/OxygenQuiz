@@ -38,6 +38,13 @@ namespace QuizAPI.Services.Facts
         /// <summary>By language, then by question style (<see cref="FactStyles"/>). A style with no template isn't asked.</summary>
         public Dictionary<string, Dictionary<string, string>> Templates { get; set; } = new();
 
+        /// <summary>
+        /// Hand-written grammatical forms, by Wikidata id, then language, then form name:
+        /// <c>{ "Q142": { "Albanian": { "gen": "Francës" } } }</c>. Templates ask for them as
+        /// <c>{subject.gen}</c>; see <see cref="Names"/>.
+        /// </summary>
+        public Dictionary<string, Dictionary<string, Dictionary<string, string>>> Forms { get; set; } = new();
+
         /// <summary>The day the facts were fetched — shown in the review, so a stale pack is visible.</summary>
         public string? BuiltAt { get; set; }
 
