@@ -56,14 +56,16 @@ export type AiUngroundedReason =
   | "no-source-for-language";
 
 export interface AiGroundedSource {
-  /** The source: "wikipedia" or "microsoft-learn". */
+  /** The source: "wikipedia", "microsoft-learn", or "wikidata" for a fact quiz. */
   provider: string;
   title: string;
   /** Carries the CC BY-SA attribution — the review links to it. */
   url: string | null;
-  /** What the model read. The parser checks every `sourceQuote` against it. */
+  /** What the model read — the article, then any Wikidata facts. The parser checks every `sourceQuote` against it. */
   text: string;
   language: string;
+  /** How many Wikidata facts followed the article. Absent from drafts saved before 2026-11-05. */
+  wikidataFacts?: number;
 }
 
 export interface AiSourceCandidate {

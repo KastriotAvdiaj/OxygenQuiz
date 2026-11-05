@@ -151,7 +151,7 @@ namespace QuizAPI.Services.Ai
             sb.AppendLine(isTopic
                 ? $"You are a quiz-generation engine. Produce EXACTLY {request.QuestionCount} quiz question(s) about the SUBJECT given at the end of this message."
                 : grounding is not null
-                    ? $"You are a quiz-generation engine. The author asked for a quiz about \"{request.Topic?.Trim()}\". Read the SOURCE MATERIAL at the end of this message — the opening of the {SourceName(grounding.Provider)} article \"{grounding.Title}\" — and produce EXACTLY {request.QuestionCount} quiz question(s) about that subject based ONLY on it."
+                    ? $"You are a quiz-generation engine. The author asked for a quiz about \"{request.Topic?.Trim()}\". Read the SOURCE MATERIAL at the end of this message — the opening of the {SourceName(grounding.Provider)} article \"{grounding.Title}\"{(grounding.WikidataFacts > 0 ? ", followed by facts about the same subject from Wikidata" : "")} — and produce EXACTLY {request.QuestionCount} quiz question(s) about that subject based ONLY on it."
                     : $"You are a quiz-generation engine. Read the SOURCE MATERIAL at the end of this message and produce EXACTLY {request.QuestionCount} quiz question(s) based ONLY on it.");
             sb.AppendLine();
             sb.AppendLine("OUTPUT RULES — follow these precisely:");

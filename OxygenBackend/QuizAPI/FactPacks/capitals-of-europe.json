@@ -327,17 +327,43 @@
   },
   "templates": {
     "English": {
-      "plain": "What is the capital of {subject}?",
-      "reverse": "{value} is the capital of which country?",
-      "trueFalse": "{value} is the capital of {subject}.",
-      "typed": "What is the capital of {subject}? Type the city.",
+      "plain": [
+        "What is the capital of {subject}?",
+        "The capital of {subject} is _____.",
+        "Which city is the capital of {subject}?"
+      ],
+      "reverse": [
+        "{value} is the capital of which country?",
+        "Which country has {value} as its capital?"
+      ],
+      "trueFalse": [
+        "{value} is the capital of {subject}.",
+        "The capital of {subject} is {value}."
+      ],
+      "typed": [
+        "What is the capital of {subject}? Type the city.",
+        "The capital of {subject} is _____."
+      ],
       "statement": "The capital of {subject} is {value}."
     },
     "Albanian": {
-      "plain": "Cili është kryeqyteti i {subject.gen}?",
-      "reverse": "{value.def} është kryeqyteti i cilit shtet?",
-      "trueFalse": "Kryeqyteti i {subject.gen} është {value.def}.",
-      "typed": "Shkruani kryeqytetin e {subject.gen}.",
+      "plain": [
+        "Cili është kryeqyteti i {subject.gen}?",
+        "Kryeqyteti i {subject.gen} është _____.",
+        "Cili qytet është kryeqyteti i {subject.gen}?"
+      ],
+      "reverse": [
+        "{value.def} është kryeqyteti i cilit shtet?",
+        "Cilit shtet i përket kryeqyteti {value.def}?"
+      ],
+      "trueFalse": [
+        "Kryeqyteti i {subject.gen} është {value.def}.",
+        "{value.def} është kryeqyteti i {subject.gen}."
+      ],
+      "typed": [
+        "Shkruani kryeqytetin e {subject.gen}.",
+        "Kryeqyteti i {subject.gen} është _____."
+      ],
       "statement": "Kryeqyteti i {subject.gen} është {value.def}."
     }
   },

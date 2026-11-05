@@ -41,6 +41,24 @@ export const Grounded: Story = {
   },
 };
 
+/** A Wikipedia article with Wikidata's facts about its subject below it: the note counts them. */
+export const GroundedWithWikidataFacts: Story = {
+  args: {
+    grounding: {
+      status: "Grounded",
+      language: "Albanian",
+      source: {
+        provider: "wikipedia",
+        title: "Shqipëria",
+        url: "https://sq.wikipedia.org/wiki/Shqip%C3%ABria",
+        text: "…",
+        language: "Albanian",
+        wikidataFacts: 8,
+      },
+    },
+  },
+};
+
 /** A long title on a phone wraps rather than overflowing the box. */
 export const GroundedLongTitleOnMobile: Story = {
   args: {

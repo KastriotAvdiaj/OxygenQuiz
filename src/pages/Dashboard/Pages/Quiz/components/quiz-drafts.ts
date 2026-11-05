@@ -190,6 +190,7 @@ const aiQuizDraftSchema = z.object({
           url: z.string().nullable(),
           text: z.string(),
           language: z.string(),
+          wikidataFacts: z.number().optional(),
         })
         .nullish(),
     })

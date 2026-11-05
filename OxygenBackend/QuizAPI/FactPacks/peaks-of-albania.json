@@ -23,15 +23,32 @@
   },
   "templates": {
     "English": {
-      "amount": "How high is {subject}?",
-      "highest": "Which of these peaks is the highest?",
-      "compare": "{subject} is higher than {other}.",
+      "amount": [
+        "How high is {subject}?",
+        "{subject} is _____ high.",
+        "What is the elevation of {subject}?"
+      ],
+      "highest": [
+        "Which of these peaks is the highest?"
+      ],
+      "compare": [
+        "{subject} is higher than {other}.",
+        "{other} is lower than {subject}."
+      ],
       "statement": "{subject} is {value} m high."
     },
     "Albanian": {
-      "amount": "Sa metra lartësi ka {subject}?",
-      "highest": "Cila nga këto maja është më e larta?",
-      "compare": "{subject} ka lartësi më të madhe se {other}.",
+      "amount": [
+        "Sa metra lartësi ka {subject}?",
+        "{subject} ka lartësi _____."
+      ],
+      "highest": [
+        "Cila nga këto maja është më e larta?"
+      ],
+      "compare": [
+        "{subject} ka lartësi më të madhe se {other}.",
+        "{other} ka lartësi më të vogël se {subject}."
+      ],
       "statement": "{subject} ka lartësi {value} m."
     }
   },

@@ -36,7 +36,12 @@ namespace QuizAPI.Services.Facts
         public string? Unit { get; set; }
 
         /// <summary>By language, then by question style (<see cref="FactStyles"/>). A style with no template isn't asked.</summary>
-        public Dictionary<string, Dictionary<string, string>> Templates { get; set; } = new();
+        /// <remarks>
+        /// Each style holds one wording or several (<see cref="Wordings"/>): "What is the capital of
+        /// France?", "The capital of France is _____." A quiz rotates through them so it doesn't read
+        /// as one sentence with the names swapped.
+        /// </remarks>
+        public Dictionary<string, Dictionary<string, Wordings>> Templates { get; set; } = new();
 
         /// <summary>
         /// Hand-written grammatical forms, by Wikidata id, then language, then form name:
@@ -54,6 +59,29 @@ namespace QuizAPI.Services.Facts
 
         /// <summary>The Wikidata item a question links to — the subject's page.</summary>
         public static string ItemUrl(string qid) => $"https://www.wikidata.org/wiki/{qid}";
+    }
+
+    /// <summary>
+    /// A style's wordings. Written as one string or a list in the pack file; always a list here.
+    /// The first is the canonical one — the <c>statement</c> style only ever uses it, because a
+    /// fact's statement is also its quote and has to be the same every time.
+    /// </summary>
+    [JsonConverter(typeof(WordingsConverter))]
+    public sealed class Wordings : List<string>
+    {
+        public Wordings() { }
+        public Wordings(IEnumerable<string> items) : base(items) { }
+    }
+
+    internal sealed class WordingsConverter : JsonConverter<Wordings>
+    {
+        public override Wordings Read(ref System.Text.Json.Utf8JsonReader reader, Type typeToConvert, System.Text.Json.JsonSerializerOptions options) =>
+            reader.TokenType == System.Text.Json.JsonTokenType.String
+                ? new Wordings(new[] { reader.GetString()! })
+                : new Wordings(System.Text.Json.JsonSerializer.Deserialize<List<string>>(ref reader, options) ?? new());
+
+        public override void Write(System.Text.Json.Utf8JsonWriter writer, Wordings value, System.Text.Json.JsonSerializerOptions options) =>
+            System.Text.Json.JsonSerializer.Serialize(writer, (List<string>)value, options);
     }
 
     public sealed class Fact

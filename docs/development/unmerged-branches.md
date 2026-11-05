@@ -1,18 +1,64 @@
 # Unmerged branches
 
-Two branches hold finished or nearly finished work that is not in `main`. Every other branch
-in the repository is already merged and is only a leftover name. Checked 2026-10-11 against
-`origin/main`; delete a section here in the same change that merges its branch.
+Three lines of work hold finished or nearly finished work that is not in `main`. Every other branch
+in the repository is already merged and is only a leftover name. Checked 2026-11-05 against
+`origin/main` (`f4283a14`); delete a section here in the same change that merges its branch.
 
-To recheck: `git fetch --prune`, then `git branch -r --no-merged origin/main`.
+To recheck: `git fetch --prune`, then `git branch -r --no-merged origin/main`. To see what a merge
+would conflict on without touching anything: `git merge-tree --write-tree --name-only origin/main origin/<branch>`.
+
+| Branch | Ahead of `main` | Trial merge into `main` | Waiting on |
+|---|---|---|---|
+| `feature/fact-quizzes` (contains `feature/ai-source-learn`) | 6 commits | **clean** | A model for production — see below |
+| `feature/featured-quizzes` | 14 commits, cut 2026-10-07 | 7 files conflict | Nothing; it fell behind |
+| `feature/paid-plans-entitlements` | 8 commits, cut 2026-10-10 | 15 files conflict | The product-name decision |
+
+## `feature/fact-quizzes` — the AI-sources work, ready when the model is
+
+**What it is,** in order, each building on the last:
+
+- **`feature/ai-source-learn`** (its first 3 commits, also pushed on their own): Microsoft Learn as
+  a second grounding source, asked only when Wikipedia isn't sure (ADR 0038, ADR 0039); the outage
+  card's buttons bottom right; DynaPuff on the catalogue's filter headings for signed-out visitors.
+- **Fact quizzes** ([`../quiz/fact-quizzes.md`](../quiz/fact-quizzes.md), ADR 0040): *From a set of
+  facts* — Capitals of Europe and Peaks of Albania built from Wikidata, no model, in English and
+  Albanian with hand-written grammatical forms and several wordings per question style.
+- **Wikidata facts under a grounded article**
+  ([`../quiz/ai-quiz-generation-flow.md`](../quiz/ai-quiz-generation-flow.md) §2e).
+
+**Merge `feature/fact-quizzes` only** — it contains `feature/ai-source-learn`, which then counts as
+merged too.
+
+**What going live needs.** Fact quizzes need nothing: no model, no setting, on as soon as it
+deploys. Grounding (Wikipedia, Learn, Wikidata facts) stays off until `Ai:Source:Enabled=true`,
+and is worth turning on with the model that replaces the free Groq tier — a grounded prompt is
+about 6,000 of the free tier's 8,000 tokens a minute. With that model: run the eval
+(`docs/development/ai-eval.md`), set `AllowsSourceMode` on its vendor entry if it earns it, then
+enable grounding.
+
+## `feature/featured-quizzes` — not held, just behind
+
+**What it is.** The quiz home page: four category panels of featured quizzes seeded in every
+environment, drawn category art, the *Try Associations* and *Play with friends* cards, and
+Associations released to every signed-in player. Described in `docs/quiz/featured-quizzes.md` on
+that branch.
+
+**Why it waits.** No decision blocks it; `main` moved on past it (the quiz catalogue was
+redesigned since). The one question it raises, a single illustration style for the whole app
+(`docs/proposals/app-illustration-style.md` on the branch), is parked on purpose and does not hold
+the merge.
+
+**Merging it** means resolving seven files — `QuizService.cs`, `EntityMappers.cs`,
+`Quiz-Selection.tsx`, `quiz-discovery.md`, `e2e-testing.md`, the proposals README and the README —
+the biggest being the catalogue page, rewritten on both sides; and renumbering its ADR (below).
 
 ## `feature/paid-plans-entitlements` — held on purpose
 
 **What it is.** Paid plans end to end: plans and limits, Paddle checkout, webhooks and
 reconciliation, the live Paddle configuration, the webhook source-IP gate, and the Terms,
-Privacy, Refunds and Contact pages with the site footer. 8 commits ahead of `main`.
-[`../auth/paid-plans.md`](../auth/paid-plans.md) on that branch is the full description; its §9
-is the go-live status and the ordered list of what is left.
+Privacy, Refunds and Contact pages with the site footer. [`../auth/paid-plans.md`](../auth/paid-plans.md)
+on that branch is the full description; its §9 is the go-live status and the ordered list of what
+is left.
 
 **Why it waits.** The product's name is an open decision: either written permission to use it,
 or a rename. Nothing paid is published until that is settled, and the branch stays out of
@@ -20,54 +66,33 @@ or a rename. Nothing paid is published until that is settled, and the branch sta
 the name, on the live domain. A rename also changes the domain, so it changes what Paddle is
 asked to approve.
 
-**When it does merge,** deploy with `BILLING_ENABLED=false` first. The pages go public and
-checkout stays off until Paddle has verified the account.
+**When it does merge,** expect 15 conflicted files (rate limiting, the exception handler,
+`AiQuizWizard`, `query-keys.ts`, the prod compose file, configuration docs among them — `main`
+grew all of these since October), and deploy with `BILLING_ENABLED=false` first: the pages go
+public and checkout stays off until Paddle has verified the account.
 
-## `feature/featured-quizzes` — not held, just not merged yet
+## ADR numbers: both older branches must renumber
 
-**What it is.** The quiz home page: four category panels of featured quizzes seeded in every
-environment, drawn category art, the *Try Associations* and *Play with friends* cards, and
-Associations released to every signed-in player. 14 commits ahead of `main`, last commit
-2026-10-10. Described in `docs/quiz/featured-quizzes.md` on that branch.
+ADRs are numbered in `main`'s order and are append-only once merged, so a branch renumbers its own
+ADRs **on the branch, before it merges**. Git won't flag it: the file names differ.
 
-**Why it waits.** No decision blocks it. The one open question it raises, a single illustration
-style for the whole app (`docs/proposals/app-illustration-style.md` on the branch), is parked
-on purpose and does not hold the merge: the drawings stay as they are until a direction is
-chosen.
+| Branch | Its ADRs | Already taken in `main` (or by fact quizzes) |
+|---|---|---|
+| `feature/featured-quizzes` | `0026-featured-quizzes-are-seeded-once-and-protected` | `0026-the-quiz-overview` |
+| `feature/paid-plans-entitlements` | `0026-a-plan-grants-limits-never-permissions`, `0027-a-webhook-is-a-ping-the-provider-is-read-back` | `0026`, `0027-the-client-ip-is-resolved-at-nginx` |
 
-## Merging both: three small things
+`main` is at 0037; `feature/fact-quizzes` adds 0038–0040. Whichever older branch merges next takes
+the next free numbers after whatever has merged by then — 0041 onwards if fact quizzes goes first.
+Rename the file and every `ADR 0026` / `adr/0026-…` reference that means it: about 7 references on
+featured quizzes (two docs, the seeder, `Quiz.cs`, one test) and about 14 on paid plans (the
+billing services, `paid-plans.md`, the payments proposal, `classroom.md`).
 
-The two branches were cut from the same `main` and do not contain each other. A trial merge
-(`git merge-tree`) of one into the other auto-merges everything, including `Program.cs`,
-`ApplicationDbContext.cs`, the EF model snapshot and `Router.tsx`, except two files. The third
-item below is the one Git will not report.
-
-1. **`README.md`, one line.** Each branch updated the backend test count in the *Tests & CI*
-   row (about 720 on one, about 630 on the other). Neither number is right after the merge:
-   run the backend suite and write the real total.
-2. **`docs/deployment/known-issues.md`, one hunk.** Both added entries at the same place, near
-   the *Paid plans and launch compliance* heading. Keep both sides; nothing overlaps in
-   meaning.
-3. **Two ADRs are both numbered 0026, and Git merges them silently** because the file names
-   differ:
-   - `0026-featured-quizzes-are-seeded-once-and-protected.md` (featured quizzes)
-   - `0026-a-plan-grants-limits-never-permissions.md` (paid plans, which also adds `0027`)
-
-   Whichever branch merges **second** renumbers its `0026` to the next free number (`0028`
-   once both are in) before it merges: rename the file and update every `ADR 0026` and
-   `adr/0026-…` reference that means it. That is about 7 references if featured quizzes goes
-   second (two docs, the seeder, `Quiz.cs`, one test) and about 14 if paid plans does (the
-   billing services, `paid-plans.md`, the payments proposal, `classroom.md`). ADRs are
-   append-only once merged, so the renumbering has to happen on the branch, not afterwards.
-
-After the second merge, check the database model once: each branch adds its own migration
-(`AddQuizFeaturedKey`; `AddBilling` and `AddBillingWebhookEvents`) and the snapshot is merged
+**After each of the older two merges,** check the database model once — each adds a migration
+(`AddQuizFeaturedKey`; `AddBilling` and `AddBillingWebhookEvents`) and the EF snapshot is merged
 by text, not by EF. From `OxygenBackend/QuizAPI`, `dotnet ef migrations has-pending-model-changes`
-should report none, and the backend tests should pass.
+should report none, and the backend tests should pass. Fact quizzes adds no migration.
 
 ## Leftover branch names
 
-Everything else, 18 local and 21 remote branches, is fully merged into `main` and can be
-deleted whenever convenient. Three are not what they look like: `ai-creation-density-and-lookup-refactor`
-exists only locally (its remote was deleted after the merge), and `docs/known-issues` and
-`worktree-lifted-button-disabled-cursor` were never pushed. All three are merged.
+Everything else is fully merged into `main` and can be deleted whenever convenient — 15 remote
+branches as of 2026-11-05, including `ai-quiz-grounding` (merged 2026-10-30).

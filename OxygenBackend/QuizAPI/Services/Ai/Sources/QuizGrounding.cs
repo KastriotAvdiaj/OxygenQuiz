@@ -35,7 +35,13 @@ namespace QuizAPI.Services.Ai.Sources
     /// <param name="Provider">Which source tier, e.g. <c>wikipedia</c>.</param>
     /// <param name="Text">What the model reads, already cut to <see cref="SourceOptions.MaxSourceChars"/>.</param>
     /// <param name="Language">"English" or "Albanian" — the language the questions are written in.</param>
-    public sealed record GroundedSource(string Provider, string Title, string? Url, string Text, string Language);
+    /// <param name="Text">What the model reads and the quote check matches: the article, then — for a
+    /// Wikipedia article — the facts Wikidata holds about its subject (<see cref="WikidataFacts"/>).</param>
+    public sealed record GroundedSource(string Provider, string Title, string? Url, string Text, string Language)
+    {
+        /// <summary>How many Wikidata facts follow the article in <see cref="Text"/>; 0 when none.</summary>
+        public int WikidataFacts { get; init; }
+    }
 
     public sealed record GroundingResult
     {
@@ -117,10 +123,29 @@ namespace QuizAPI.Services.Ai.Sources
         private readonly IReadOnlyList<IQuizSourceProvider> _providers;
         private readonly SourceOptions _options;
 
-        public QuizGrounding(IEnumerable<IQuizSourceProvider> providers, IOptions<SourceOptions> options)
+        private readonly IWikidataFacts? _facts;
+
+        /// <param name="facts">Adds Wikidata's facts under a Wikipedia article. Optional: without it
+        /// the article goes alone, which is also what happens when Wikidata doesn't answer in time.</param>
+        public QuizGrounding(IEnumerable<IQuizSourceProvider> providers, IOptions<SourceOptions> options, IWikidataFacts? facts = null)
         {
             _providers = providers.ToList();
             _options = options.Value;
+            _facts = facts;
+        }
+
+        /// <summary>
+        /// A Wikipedia article with the facts Wikidata holds about its subject added below it — the
+        /// names and numbers a model gets wrong most. In the same text, so the prompt treats them as
+        /// source material and the quote check accepts a question that quotes one.
+        /// </summary>
+        private async Task<GroundedSource> WithFactsAsync(GroundedSource source, CancellationToken ct)
+        {
+            if (_facts is null || source.Provider != "wikipedia") return source;
+            var block = await _facts.ForArticleAsync(source.Language, source.Title, ct);
+            return block is null
+                ? source
+                : source with { Text = $"{source.Text}\n\n{block.Text}", WikidataFacts = block.Count };
         }
 
         public async Task<GroundingResult> GroundAsync(string topic, GroundingAnswers answers, CancellationToken ct)
@@ -178,7 +203,8 @@ namespace QuizAPI.Services.Ai.Sources
                 {
                     Status = GroundingStatus.Grounded,
                     Language = language,
-                    Source = new GroundedSource(routed.Provider!, lookup.Title!, lookup.Url, lookup.Text!, language),
+                    Source = await WithFactsAsync(
+                        new GroundedSource(routed.Provider!, lookup.Title!, lookup.Url, lookup.Text!, language), ct),
                 },
                 SourceOutcome.NeedsDisambiguation => new GroundingResult
                 {

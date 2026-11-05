@@ -67,7 +67,7 @@ public class FactQuizBuilderTests
             {
                 // The quote is the fact's statement — it says which fact the question is about.
                 var fact = Capitals.Facts.Single(f => f.Labels.ContainsKey(language)
-                    && q["sourceQuote"]!.GetValue<string>() == names.Fill(templates["statement"], f));
+                    && q["sourceQuote"]!.GetValue<string>() == names.Fill(templates["statement"][0], f));
                 var text = q["text"]!.GetValue<string>();
 
                 switch (q["type"]!.GetValue<string>())
@@ -78,11 +78,13 @@ public class FactQuizBuilderTests
                         Assert.Single(options, o => o["isCorrect"]!.GetValue<bool>());
                         Assert.Equal(4, options.Select(o => o["text"]!.GetValue<string>()).Distinct(StringComparer.OrdinalIgnoreCase).Count());
                         var right = options.Single(o => o["isCorrect"]!.GetValue<bool>())["text"]!.GetValue<string>();
-                        var expected = text == names.Fill(templates["plain"], fact) ? names.ValueOption(fact) : names.SubjectOption(fact);
+                        var asksForValue = templates["plain"].Any(t => text == names.Fill(t, fact));
+                        var expected = asksForValue ? names.ValueOption(fact) : names.SubjectOption(fact);
                         Assert.Equal(expected, right);
                         break;
                     case "TrueFalse":
-                        Assert.Equal(text == names.Fill(templates["trueFalse"], fact), q["correctAnswer"]!.GetValue<bool>());
+                        // True exactly when the statement shown is the fact's own, in any wording.
+                        Assert.Equal(templates["trueFalse"].Any(t => text == names.Fill(t, fact)), q["correctAnswer"]!.GetValue<bool>());
                         break;
                     case "TypeTheAnswer":
                         Assert.Equal(names.ValueOption(fact), q["correctAnswer"]!.GetValue<string>());
@@ -100,13 +102,15 @@ public class FactQuizBuilderTests
         {
             var (payload, _) = Build(Peaks, count: 10, seed: seed);
             var questions = Questions(payload).ToList();
-            Assert.True(questions.Count(q => q["text"]!.GetValue<string>() == Peaks.Templates["English"]["highest"]) <= 1,
+            var highest = Peaks.Templates["English"]["highest"];
+            var compare = Peaks.Templates["English"]["compare"];
+            Assert.True(questions.Count(q => highest.Contains(q["text"]!.GetValue<string>())) <= 1,
                 "\"Which is the highest?\" twice would be dropped as a repeat.");
 
             foreach (var q in questions)
             {
                 var text = q["text"]!.GetValue<string>();
-                if (text == Peaks.Templates["English"]["highest"])
+                if (highest.Contains(text))
                 {
                     var options = q["answerOptions"]!.AsArray().Select(o => o!.AsObject()).ToList();
                     var right = options.Single(o => o["isCorrect"]!.GetValue<bool>())["text"]!.GetValue<string>();
@@ -114,19 +118,66 @@ public class FactQuizBuilderTests
                 }
                 else if (q["type"]!.GetValue<string>() == "TrueFalse")
                 {
-                    // "{subject} is higher than {other}."
-                    var names = byName.Keys.Where(n => text.Contains(n)).OrderBy(n => text.IndexOf(n)).ToList();
-                    Assert.Equal(2, names.Count);
-                    Assert.Equal(byName[names[0]] > byName[names[1]], q["correctAnswer"]!.GetValue<bool>());
+                    // "{subject} is higher than {other}." or "{other} is lower than {subject}." — true
+                    // exactly when the subject is the higher one.
+                    var (subject, other) = (from s in byName.Keys from o in byName.Keys from t in compare
+                                            where s != o && t.Replace("{subject}", s).Replace("{other}", o) == text
+                                            select (s, o)).Single();
+                    Assert.Equal(byName[subject] > byName[other], q["correctAnswer"]!.GetValue<bool>());
                 }
                 else
                 {
-                    var subject = byName.Keys.Single(n => text == $"How high is {n}?");
+                    var subject = byName.Keys.Single(n => Peaks.Templates["English"]["amount"].Any(t => text == t.Replace("{subject}", n)));
                     var right = q["answerOptions"]!.AsArray().Single(o => o!["isCorrect"]!.GetValue<bool>())!["text"]!.GetValue<string>();
                     Assert.Equal($"{Math.Round(byName[subject])} m", right);
                 }
             }
         }
+    }
+
+    [Fact]
+    public void A_quiz_mixes_its_wordings_including_blanks()
+    {
+        var texts = Questions(Build(Capitals, "Albanian", count: 20, types: new[] { "MultipleChoice" }, seed: 3).Payload)
+            .Select(q => q["text"]!.GetValue<string>())
+            .ToList();
+
+        // Not twenty "Cili është kryeqyteti i …?": some leave a blank, some ask the other way round.
+        Assert.Contains(texts, t => t.StartsWith("Cili është kryeqyteti i "));
+        Assert.Contains(texts, t => t.EndsWith("është _____."));
+        Assert.True(texts.Select(t => t.Split(' ')[0]).Distinct().Count() >= 3, string.Join(" / ", texts));
+    }
+
+    [Fact]
+    public void A_wording_that_cannot_be_filled_gives_way_to_the_next()
+    {
+        // The first wording needs a genitive these facts don't have; the second needs nothing.
+        var pack = new FactPack
+        {
+            Slug = "test",
+            Title = new() { ["Albanian"] = "Test" },
+            Templates = new()
+            {
+                ["Albanian"] = new()
+                {
+                    ["plain"] = new Wordings(new[] { "Cili është kryeqyteti i {subject.gen}?", "{subject} — kryeqyteti është _____." }),
+                    ["statement"] = new Wordings(new[] { "{subject}: {value} është kryeqyteti." }),
+                },
+            },
+            Facts = Enumerable.Range(1, 6).Select(i => new Fact
+            {
+                Subject = $"Q{i}",
+                Value = $"Q{100 + i}",
+                Sitelinks = 100 - i,
+                Labels = new() { ["Albanian"] = new FactLabels { Subject = $"Shteti{i}", Value = $"Qyteti{i}" } },
+            }).ToList(),
+        };
+
+        var questions = Questions(JsonNode.Parse(FactQuizBuilder.Build(pack,
+            new FactQuizRequest("Albanian", 6, AllTypes, Difficulties), new Random(1)).Payload)!.AsObject()).ToList();
+
+        Assert.Equal(6, questions.Count);
+        Assert.All(questions, q => Assert.EndsWith("kryeqyteti është _____.", q["text"]!.GetValue<string>()));
     }
 
     [Fact]
@@ -143,12 +194,13 @@ public class FactQuizBuilderTests
     [Fact]
     public void Albanian_reads_with_the_genitive_and_definite_forms()
     {
-        var questions = Enumerable.Range(0, 30)
+        var questions = Enumerable.Range(0, 60)
             .SelectMany(seed => Questions(Build(Capitals, "Albanian", count: 20, seed: seed).Payload))
             .ToList();
 
-        Assert.Contains(questions, q => q["text"]!.GetValue<string>() == "Cili është kryeqyteti i Francës?");
-        Assert.Contains(questions, q => q["text"]!.GetValue<string>() == "Roma është kryeqyteti i cilit shtet?");
+        // The genitive after "i", in whichever wording came up.
+        Assert.Contains(questions, q => q["text"]!.GetValue<string>().Contains("kryeqyteti i Francës"));
+        Assert.Contains(questions, q => q["text"]!.GetValue<string>() is "Roma është kryeqyteti i cilit shtet?" or "Cilit shtet i përket kryeqyteti Roma?");
         // Options are the definite form: never "Romë" beside "Parisi".
         Assert.DoesNotContain(questions.Where(q => q["answerOptions"] is not null)
             .SelectMany(q => q["answerOptions"]!.AsArray()), o => o!["text"]!.GetValue<string>() == "Romë");
@@ -169,9 +221,9 @@ public class FactQuizBuilderTests
             {
                 ["Albanian"] = new()
                 {
-                    ["plain"] = "Cili është kryeqyteti i {subject.gen}?",
-                    ["trueFalse"] = "{value} është kryeqytet.",
-                    ["statement"] = "{subject}: {value} është kryeqyteti.",
+                    ["plain"] = new Wordings(new[] { "Cili është kryeqyteti i {subject.gen}?" }),
+                    ["trueFalse"] = new Wordings(new[] { "{value} është kryeqytet." }),
+                    ["statement"] = new Wordings(new[] { "{subject}: {value} është kryeqyteti." }),
                 },
             },
             Facts = Enumerable.Range(1, 6).Select(i => new Fact
@@ -205,7 +257,7 @@ public class FactQuizBuilderTests
         var (payload, _) = Build(Capitals, "Albanian", count: 20, types: new[] { "TypeTheAnswer" });
 
         Assert.Equal("Kryeqytetet e Evropës", payload["title"]!.GetValue<string>());
-        Assert.All(Questions(payload), q => Assert.StartsWith("Shkruani kryeqytetin e ", q["text"]!.GetValue<string>()));
+        Assert.All(Questions(payload), q => Assert.Matches("^(Shkruani kryeqytetin e |Kryeqyteti i .+ është _____\\.$)", q["text"]!.GetValue<string>()));
     }
 
     [Fact]

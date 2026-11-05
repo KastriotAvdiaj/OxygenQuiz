@@ -395,6 +395,8 @@ builder.Services.AddHttpClient<QuizAPI.Services.Ai.Sources.WikipediaSourceProvid
 builder.Services.AddScoped<QuizAPI.Services.Ai.Sources.IQuizSourceProvider>(
     sp => sp.GetRequiredService<QuizAPI.Services.Ai.Sources.WikipediaSourceProvider>());
 builder.Services.AddHttpClient<QuizAPI.Services.Ai.Sources.MicrosoftLearnSourceProvider>();
+// The facts under a grounded Wikipedia article (§2e, "Facts from Wikidata").
+builder.Services.AddHttpClient<QuizAPI.Services.Ai.Sources.IWikidataFacts, QuizAPI.Services.Ai.Sources.WikidataFacts>();
 builder.Services.AddScoped<QuizAPI.Services.Ai.Sources.IQuizSourceProvider>(
     sp => sp.GetRequiredService<QuizAPI.Services.Ai.Sources.MicrosoftLearnSourceProvider>());
 builder.Services.AddScoped<QuizAPI.Services.Ai.Sources.IQuizGrounding, QuizAPI.Services.Ai.Sources.QuizGrounding>();

@@ -160,6 +160,7 @@ namespace QuizAPI.DTOs.Quiz
                 Url = g.Source.Url,
                 Text = g.Source.Text,
                 Language = g.Source.Language,
+                WikidataFacts = g.Source.WikidataFacts,
             },
             Articles = g.Status == GroundingStatus.NeedsArticle
                 ? g.Candidates.Select(c => new AiSourceCandidateDTO
@@ -181,6 +182,9 @@ namespace QuizAPI.DTOs.Quiz
         public string? Url { get; set; }
         public string Text { get; set; } = string.Empty;
         public string Language { get; set; } = string.Empty;
+
+        /// <summary>How many Wikidata facts follow the article in <see cref="Text"/> — the review says so.</summary>
+        public int WikidataFacts { get; set; }
     }
 
     public class AiSourceCandidateDTO

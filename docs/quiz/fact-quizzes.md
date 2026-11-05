@@ -100,6 +100,24 @@ the same way.
 A pack opts into a style by giving it a template; the author's question types narrow it further.
 One quiz mixes the styles, round-robin over a shuffle.
 
+**And each style has several wordings** (2026-11-05), so ten capitals don't read as one sentence
+with the names swapped. A template is one string or a list; a quiz takes each style's wordings in
+turn from a random start, and some leave a blank to fill:
+
+| Style | Albanian wordings |
+|---|---|
+| `plain` | Cili është kryeqyteti i Francës? · Kryeqyteti i Francës është _____. · Cili qytet është kryeqyteti i Francës? |
+| `reverse` | Roma është kryeqyteti i cilit shtet? · Cilit shtet i përket kryeqyteti Roma? |
+| `trueFalse` | Kryeqyteti i Francës është Parisi. · Parisi është kryeqyteti i Francës. |
+| `typed` | Shkruani kryeqytetin e Francës. · Kryeqyteti i Francës është _____. |
+
+Wordings keep names in the nominative or the genitive, the two forms the table holds: "Cili shtet
+e ka kryeqytet …?" was tried and dropped the same day, because it needs the accusative (*Romën*).
+
+A wording that can't be filled for a fact — it needs a form the pack lacks — gives way to the next;
+the style is skipped only when none can be. `statement` stays one string: it is also the quote,
+and has to be the same every time.
+
 | Style | Type | Example | Built from |
 |---|---|---|---|
 | `plain` | Multiple choice | What is the capital of Latvia? | Wrong options: other capitals, **nearest in popularity** — famous capitals for famous countries |

@@ -68,6 +68,7 @@ namespace QuizAPI.Services.Facts
             var statements = new List<string>();
             var askedHighest = false;
             var order = styles.OrderBy(_ => random.Next()).ToList();
+            var wording = new Wording(templates, random);
 
             for (var i = 0; i < picked.Count; i++)
             {
@@ -79,7 +80,7 @@ namespace QuizAPI.Services.Facts
                 {
                     var style = order[(i + attempt) % order.Count];
                     if (style == FactStyles.Highest && askedHighest) continue;
-                    question = Ask(pack, request.Language, templates, style, fact, facts, random);
+                    question = Ask(pack, request.Language, templates, style, fact, facts, random, wording);
                     if (question is not null && style == FactStyles.Highest) askedHighest = true;
                 }
                 if (question is null) continue;
@@ -101,25 +102,25 @@ namespace QuizAPI.Services.Facts
         }
 
         private static JsonObject? Ask(
-            FactPack pack, string language, Dictionary<string, string> templates, string style,
-            Fact fact, List<Fact> facts, Random random)
+            FactPack pack, string language, Dictionary<string, Wordings> templates, string style,
+            Fact fact, List<Fact> facts, Random random, Wording wording)
         {
             var names = new Names(pack, language);
-            var statement = names.Fill(templates[FactStyles.Statement], fact);
+            var statement = names.Fill(wording.Statement, fact);
             if (statement is null) return null;
 
             switch (style)
             {
                 case FactStyles.Plain:
                 {
-                    var text = names.Fill(templates[style], fact);
+                    var text = wording.Fill(style, t => names.Fill(t, fact));
                     var wrong = Neighbours(fact, facts, 3, names.ValueOption, names.ValueOption(fact));
                     if (text is null || wrong.Count < 3) return null;
                     return MultipleChoice(text, names.ValueOption(fact), wrong, statement, random);
                 }
                 case FactStyles.Reverse:
                 {
-                    var text = names.Fill(templates[style], fact);
+                    var text = wording.Fill(style, t => names.Fill(t, fact));
                     var wrong = Neighbours(fact, facts, 3, names.SubjectOption, names.SubjectOption(fact));
                     if (text is null || wrong.Count < 3) return null;
                     return MultipleChoice(text, names.SubjectOption(fact), wrong, statement, random);
@@ -135,7 +136,7 @@ namespace QuizAPI.Services.Facts
                             .FirstOrDefault(f => !string.Equals(Fold(names.ValueOption(f)), Fold(names.ValueOption(fact)), StringComparison.Ordinal));
                         if (shown is null) return null;
                     }
-                    var text = names.Fill(templates[style], fact, valueOf: shown);
+                    var text = wording.Fill(style, t => names.Fill(t, fact, valueOf: shown));
                     if (text is null) return null;
                     return new JsonObject
                     {
@@ -149,7 +150,7 @@ namespace QuizAPI.Services.Facts
                 }
                 case FactStyles.Typed:
                 {
-                    var text = names.Fill(templates[style], fact);
+                    var text = wording.Fill(style, t => names.Fill(t, fact));
                     if (text is null) return null;
                     var me = fact.Labels[language];
                     var answer = names.ValueOption(fact);
@@ -171,7 +172,7 @@ namespace QuizAPI.Services.Facts
                 }
                 case FactStyles.Amount:
                 {
-                    var text = names.Fill(templates[style], fact);
+                    var text = wording.Fill(style, t => names.Fill(t, fact));
                     var right = Number(fact.Amount!.Value, pack.Unit);
                     // Distinct by more than rounding: two peaks of 2,485 m would make two right answers.
                     var wrong = Neighbours(fact, facts, 3, f => Number(f.Amount!.Value, pack.Unit), right,
@@ -191,8 +192,8 @@ namespace QuizAPI.Services.Facts
                     if (lower.Count < 3) return null;
                     var others = lower.Select(names.SubjectOption).ToList();
                     var explanation = string.Join(" ", new[] { fact }.Concat(lower)
-                        .Select(f => names.Fill(templates[FactStyles.Statement], f) ?? string.Empty));
-                    var q = MultipleChoice(templates[style], names.SubjectOption(fact), others, statement, random);
+                        .Select(f => names.Fill(wording.Statement, f) ?? string.Empty));
+                    var q = MultipleChoice(wording.Next(style), names.SubjectOption(fact), others, statement, random);
                     q["explanation"] = explanation.Trim();
                     return q;
                 }
@@ -204,8 +205,8 @@ namespace QuizAPI.Services.Facts
                         .ThenBy(_ => random.Next())
                         .FirstOrDefault();
                     if (other is null) return null;
-                    var text = names.Fill(templates[style], fact, other: other);
-                    var otherStatement = names.Fill(templates[FactStyles.Statement], other);
+                    var text = wording.Fill(style, t => names.Fill(t, fact, other: other));
+                    var otherStatement = names.Fill(wording.Statement, other);
                     if (text is null || otherStatement is null) return null;
                     return new JsonObject
                     {
@@ -295,6 +296,36 @@ namespace QuizAPI.Services.Facts
             foreach (var c in text.Trim().ToLowerInvariant().Normalize(NormalizationForm.FormD))
                 if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark) sb.Append(c);
             return sb.ToString();
+        }
+    }
+
+    /// <summary>
+    /// Which wording a question gets: each style's wordings in turn, from a random start, so a quiz
+    /// of ten capitals isn't ten "What is the capital of …?" — some ask, some leave a blank to fill
+    /// ("Kryeqyteti i Francës është _____."). A wording that can't be filled for a fact — it asks
+    /// for a form the pack doesn't have — gives way to the next; only when none can be filled is the
+    /// style skipped for that fact.
+    /// </summary>
+    internal sealed class Wording(Dictionary<string, Wordings> templates, Random random)
+    {
+        private readonly Dictionary<string, int> _next = new();
+
+        public string Statement => templates[FactStyles.Statement][0];
+
+        public string Next(string style)
+        {
+            var options = templates[style];
+            if (!_next.TryGetValue(style, out var at)) at = random.Next(options.Count);
+            _next[style] = at + 1;
+            return options[at % options.Count];
+        }
+
+        /// <summary>The next wording of <paramref name="style"/> that <paramref name="fill"/> can complete, or null.</summary>
+        public string? Fill(string style, Func<string, string?> fill)
+        {
+            for (var tries = 0; tries < templates[style].Count; tries++)
+                if (fill(Next(style)) is { } text) return text;
+            return null;
         }
     }
 

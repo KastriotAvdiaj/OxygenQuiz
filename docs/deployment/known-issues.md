@@ -927,6 +927,12 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   genitive and definite forms in `capitals-of-europe.json` (`forms`) were drafted on 2026-11-01;
   the less certain ones are *Moldavisë/Moldavia* (Wikidata says *Molldavi*), *Kopenhaga*,
   *Nikozia*, *Irlandës*, *Bosnjës dhe Hercegovinës*. Review once, then this goes.
+- **P3 — Wikimedia rate-limits shared addresses.** From a cloud sandbox, Wikipedia and the
+  Wikidata API both answered 429 after a handful of requests (2026-10-30, 2026-11-05). Production
+  sends a descriptive User-Agent from its own address at a few requests per generation, well
+  under the published limits — but if it ever happens there, grounding reports Wikipedia as down
+  and asks, and the Wikidata facts are left out silently. A Wikimedia API token raises the limits
+  if it's needed.
 - **P3 — Fact quizzes: typed answers accept only Wikidata's aliases.** Kyiv's English aliases
   include *Kiyev* and *Kiovia* but not *Kiev*, so a player typing the common spelling is marked
   wrong; Malta's Albanian aliases include *Kryeqyteti i maltes*. A per-pack alias override (like

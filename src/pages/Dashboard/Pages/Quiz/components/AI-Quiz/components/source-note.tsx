@@ -68,7 +68,9 @@ export const SourceNote = ({ grounding }: SourceNoteProps) => {
     detail = facts
       ? // A fact quiz has no model in it, so the thing worth checking is the wording, not the facts.
         "Every answer is a fact from that set, and the wrong options come from it too. Check the wording reads well before you publish."
-      : "Each answer is backed by a sentence from it — still worth a read before you publish.";
+      : grounding.source.wikidataFacts
+        ? `Each answer is backed by a sentence from it or one of ${grounding.source.wikidataFacts} facts about it from Wikidata — still worth a read before you publish.`
+        : "Each answer is backed by a sentence from it — still worth a read before you publish.";
   } else {
     switch (grounding.reason) {
       case "unavailable":

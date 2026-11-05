@@ -411,6 +411,35 @@ English topics, and which reached Learn:
 | Git branching | yes | asks: two Learn pages, three Wikipedia articles |
 | Python, Azure | yes | asks — Wikipedia's meanings first |
 
+**Facts from Wikidata (2026-11-05).** A Wikipedia article goes to the model with the facts Wikidata
+holds about its subject added underneath — the names and numbers a model gets wrong most, and
+which an article's opening may not state:
+
+```text
+Facts from Wikidata about "Shqipëria":
+- kryeqytet: Tirana
+- gjuha zyrtare: shqip
+- kufizohet me: Greqia, Maqedonia e Veriut, Mali i Zi, Bashkimi Evropian, Kosovë
+- popullsia: 2811655 (2023)
+- sipërfaqja: 28748 kilometër katror
+- fillimi: 1912-11-28
+```
+
+`WikidataFacts` finds the item from the article itself (`wbgetentities` takes `sites=sqwiki` and
+the title — no extra Wikipedia call), keeps a fixed list of quiz-worthy properties (capital,
+population, dates of birth and death, notable work…; no office holders, which change, and no
+occupation or citizenship, which are noisy — [`fact-quizzes.md`](./fact-quizzes.md)), takes the
+best-ranked value and the latest dated figure, and names everything in the quiz's language,
+leaving out a value with no name in it rather than showing another language. The facts sit in
+the same source text as the article, so the prompt calls them source material ("followed by facts
+about the same subject from Wikidata") and the quote check accepts a question that quotes one.
+At most 800 characters (`Ai:Source:WikidataFacts:MaxChars`, about 200 tokens), in whole lines.
+
+**It never holds grounding up.** Two entity-API calls, 0.7–1.5 s measured; a 3-second timeout, a
+429 or any error sends the article alone, logged, and the author sees no difference except the
+review not mentioning facts. Learn pages get none — they have no Wikidata item. Off with
+`Ai:Source:WikidataFacts:Enabled=false`.
+
 **One article per quiz.** A quiz is written from one article, so a topic spanning several
 ("C# 12 *and* .NET 8", "comparing programming languages") is asked about and grounded in the one
 picked. Several articles in one prompt — some questions from Learn, some from Wikipedia — is open
