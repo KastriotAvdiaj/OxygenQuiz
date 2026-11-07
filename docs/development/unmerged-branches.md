@@ -1,7 +1,7 @@
 # Unmerged branches
 
-Three lines of work hold finished or nearly finished work that is not in `main`. Every other branch
-in the repository is already merged and is only a leftover name. Checked 2026-11-05 against
+Three lines of work hold finished or nearly finished work that is not in `main`; they are the only
+branches on the remote besides `main`. Checked 2026-11-07 against
 `origin/main` (`f4283a14`); delete a section here in the same change that merges its branch.
 
 To recheck: `git fetch --prune`, then `git branch -r --no-merged origin/main`. To see what a merge
@@ -94,5 +94,6 @@ should report none, and the backend tests should pass. Fact quizzes adds no migr
 
 ## Leftover branch names
 
-Everything else is fully merged into `main` and can be deleted whenever convenient — 15 remote
-branches as of 2026-11-05, including `ai-quiz-grounding` (merged 2026-10-30).
+None. The 15 branches that were fully merged were deleted from GitHub on 2026-11-07, so the remote
+holds `main` and the four branches above. A clone that fetched before then still lists them until
+`git fetch --prune origin`.
