@@ -70,7 +70,7 @@ colour-scheme rule. The glyphs sit inside the circle Google crops to (`PADDING`)
 survives the crop; the rounded corners (`BADGE_RADIUS`) are what a browser tab shows.
 
 Re-run the script when the wordmark, its font, or the brand colours change. The constants
-at the top (`TEXT`, `FONT_FAMILY`, `FONT_WEIGHT`, `BADGE_COLOR`, `GLYPH_COLOR`, `PADDING`)
+at the top (`TEXT`, `FONT_FAMILY`, `FONT_WEIGHT`, `BADGE_COLOR`, `GLYPH_COLOR`, `PADDING`, and `GLYPH_SCALE`, which shrinks the `₂` so the `O` can be bigger)
 are the things worth editing; they're kept in sync with `O2Button.tsx` and `src/global.css`.
 Then regenerate the PNG from the SVG (any SVG rasteriser; with librsvg):
 

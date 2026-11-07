@@ -45,7 +45,11 @@ BOX = 64  # viewBox size
 BADGE_RADIUS = 14  # rounded square in a tab; Google crops it to a circle
 # The glyphs stay inside the circle Google crops to: a 64-box circle's inscribed square is
 # ~45 wide, so 11 on each side keeps the "₂" clear of the crop.
-PADDING = 11.0
+PADDING = 9.0
+# The subscript at this fraction of the font's own size (2026-11-07). The font's "₂" is wide,
+# and the mark is fitted by width, so shrinking it is what lets the "O" grow: at 1.0 the O was
+# about half the badge. Scaled about its own baseline-left point, so it stays a subscript.
+GLYPH_SCALE = {"₂": 0.72}
 
 OUTPUT = Path(__file__).resolve().parent.parent / "public" / "favicon.svg"
 
@@ -81,18 +85,19 @@ def build_svg(font: TTFont) -> str:
         sys.exit(f"{FONT_FAMILY} has no glyph for: {missing!r}")
 
     # Lay the glyphs out on a baseline, accumulating advance widths.
-    placed: list[tuple[str, float]] = []
+    placed: list[tuple[str, Transform]] = []
     pen_x = 0.0
     for char in TEXT:
         name = cmap[ord(char)]
-        placed.append((name, pen_x))
-        pen_x += advances[name][0]
+        k = GLYPH_SCALE.get(char, 1.0)
+        placed.append((name, Transform().translate(pen_x, 0).scale(k)))
+        pen_x += advances[name][0] * k
 
     # Measure the combined ink bounds so we centre on the glyphs, not the advance box
     # (the subscript leaves a lot of empty advance to the right otherwise).
     bounds_pen = BoundsPen(glyph_set)
-    for name, offset in placed:
-        glyph_set[name].draw(TransformPen(bounds_pen, Transform().translate(offset, 0)))
+    for name, local in placed:
+        glyph_set[name].draw(TransformPen(bounds_pen, local))
     x_min, y_min, x_max, y_max = bounds_pen.bounds
 
     # Fit into the padded box. The y scale is negative: fonts are Y-up, SVG is Y-down.
@@ -102,9 +107,9 @@ def build_svg(font: TTFont) -> str:
     ty = PADDING + (available - (y_max - y_min) * scale) / 2 + y_max * scale
 
     paths = []
-    for name, offset in placed:
+    for name, local in placed:
         path_pen = SVGPathPen(glyph_set)
-        transform = Transform(scale, 0, 0, -scale, tx, ty).translate(offset, 0)
+        transform = Transform(scale, 0, 0, -scale, tx, ty).transform(local)
         glyph_set[name].draw(TransformPen(path_pen, transform))
         if commands := path_pen.getCommands():
             paths.append(f'    <path d="{commands}"/>')
