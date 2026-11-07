@@ -9,6 +9,7 @@ import {
 } from "./field-wrapper";
 import { FIELD_MODERN, FIELD_PRESS, FIELD_SHELL, FIELD_THEMES } from "./field-variants";
 import { QuestionType } from "@/types/question-types";
+import { PasswordToggle } from "./password-toggle";
 
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement> &
   FieldWrapperPassThroughProps & {
@@ -93,6 +94,15 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
+    // Every password field gets an eye button to show what was typed (PasswordToggle). The
+    // field's own `type` switches between "password" and "text"; nothing else changes.
+    const isPassword = type === "password";
+    const [revealed, setRevealed] = React.useState(false);
+    const inputType = isPassword && revealed ? "text" : type;
+    const toggle = isPassword ? (
+      <PasswordToggle visible={revealed} onToggle={() => setRevealed((v) => !v)} />
+    ) : null;
+
     // `text-[16px] sm:text-sm`: iOS Safari zooms the whole page when a focused input's font is
     // under 16px, so phones get a hard 16px and desktop keeps the denser `text-sm`. The phone
     // half is an arbitrary px value on purpose: it used to be `text-base`, which the density
@@ -123,17 +133,19 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             )}
           >
             <input
-              type={type}
+              type={inputType}
               className={cn(
                 "minimal-input",
                 hasError && "minimal-input--error",
                 isCorrect && "minimal-input--correct",
+                isPassword && "minimal-input--has-toggle",
                 className
               )}
               ref={ref}
               {...props}
               {...registration}
             />
+            {toggle}
           </div>
         </FieldWrapper>
       );
@@ -141,18 +153,36 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
     return (
       <FieldWrapper label={label} error={error}>
-        <input
-          type={type}
-          className={cn(
-            baseClasses,
-            getVariantStyles(variant, questionType),
-            className
-          )}
-          ref={ref}
-          {...props}
-          {...(variant === "display" ? { readOnly: true, tabIndex: -1 } : {})}
-          {...registration}
-        />
+        {isPassword ? (
+          <div className="relative w-full">
+            <input
+              type={inputType}
+              className={cn(
+                baseClasses,
+                getVariantStyles(variant, questionType),
+                "pr-10",
+                className
+              )}
+              ref={ref}
+              {...props}
+              {...registration}
+            />
+            {toggle}
+          </div>
+        ) : (
+          <input
+            type={type}
+            className={cn(
+              baseClasses,
+              getVariantStyles(variant, questionType),
+              className
+            )}
+            ref={ref}
+            {...props}
+            {...(variant === "display" ? { readOnly: true, tabIndex: -1 } : {})}
+            {...registration}
+          />
+        )}
       </FieldWrapper>
     );
   }

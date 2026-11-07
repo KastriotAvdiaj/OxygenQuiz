@@ -4,6 +4,7 @@ import { Check, CheckCircle2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAuthConfig } from "@/lib/auth-config";
+import { PasswordToggle } from "@/components/ui/form/password-toggle";
 import { resetErrorMessage, useResetPassword } from "./api/password-reset";
 
 /**
@@ -25,6 +26,9 @@ export const ResetPassword = () => {
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  // One eye per field, like the shared Input's (PasswordToggle).
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const reset = useResetPassword();
 
   // The server's own Auth:MinPasswordLength, delivered by /auth-config, so this form cannot
@@ -80,17 +84,20 @@ export const ResetPassword = () => {
           <label htmlFor="new-password" className="text-sm font-medium">
             New password
           </label>
-          <input
-            id="new-password"
-            placeholder="Enter your new password"
-            type="password"
-            required
-            autoComplete="new-password"
-            autoFocus
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          />
+          <div className="relative">
+            <input
+              id="new-password"
+              placeholder="Enter your new password"
+              type={showPassword ? "text" : "password"}
+              required
+              autoComplete="new-password"
+              autoFocus
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-md border border-border bg-background px-3 py-2 pr-10 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            />
+            <PasswordToggle visible={showPassword} onToggle={() => setShowPassword((v) => !v)} />
+          </div>
           {/* A row of chips rather than a sentence: the rules are short, and the user needs to
               see WHICH one is outstanding at a glance, not read a paragraph. It appears from the
               first keystroke, so an untouched form stays clean. */}
@@ -106,16 +113,19 @@ export const ResetPassword = () => {
           <label htmlFor="confirm-password" className="text-sm font-medium">
             Confirm new password
           </label>
-          <input
-            id="confirm-password"
-            placeholder="Re-enter your new password"
-            type="password"
-            required
-            autoComplete="new-password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          />
+          <div className="relative">
+            <input
+              id="confirm-password"
+              placeholder="Re-enter your new password"
+              type={showConfirm ? "text" : "password"}
+              required
+              autoComplete="new-password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              className="w-full rounded-md border border-border bg-background px-3 py-2 pr-10 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            />
+            <PasswordToggle visible={showConfirm} onToggle={() => setShowConfirm((v) => !v)} />
+          </div>
           {/* The mismatch state lives in the chip row above, so it isn't said twice. */}
         </div>
 

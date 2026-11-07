@@ -389,6 +389,19 @@ body {
   border-top: 1px solid transparent;
 }
 
+/* Room for the eye button on a password field (PasswordToggle). Plain CSS for the same reason
+   as the padding above: a Tailwind pr-* would lose to `.minimal-input`. */
+.minimal-input--has-toggle {
+  padding-right: 2.75rem;
+}
+
+/* Edge and IE draw their own reveal eye inside a password field; ours is the one that works
+   everywhere, so theirs would make two. */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
 /* The density step for the field text, applied only from `sm` up — see the font-size note
    in `.minimal-input`. Phones keep the hard 16px floor; everything wider follows the knob. */
 @media (min-width: 640px) {

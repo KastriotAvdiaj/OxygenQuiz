@@ -120,6 +120,13 @@ client-side blocklist would be a downloadable list of the passwords we reject. B
 surface only after submit, in the server's own words, via `resetErrorMessage`. See
 [`password-reset.md`](password-reset.md) §5.
 
+**Every password field has a show/hide eye** (since 2026-11-07) — login, signup, reset, the account
+panel's password change and the admin's create-user form. It lives in the shared `Input`
+(`PasswordToggle`, `components/ui/form/password-toggle.tsx`), so any new `type="password"` field
+gets it with no extra code; the reset page's plain inputs use the same button. A long password with
+no complexity rules is easier to get right when you can see it, which is the point of §2. Edge's
+own reveal button is hidden in `global.css` so there are never two.
+
 ## 7. If you are tempted to change this
 
 - **Adding a capital/digit/symbol requirement** makes passwords worse, for the reasons in §2. Read
