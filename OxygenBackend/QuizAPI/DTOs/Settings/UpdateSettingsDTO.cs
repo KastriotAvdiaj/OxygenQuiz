@@ -26,7 +26,7 @@ namespace QuizAPI.DTOs.Settings
         public bool? AskBeforeRemovingQuestion { get; set; }
 
         [MaxLength(64)]
-        public string AppFont { get; set; } = "Noto Sans";
+        public string AppFont { get; set; } = "DynaPuff";
 
         [MaxLength(64)]
         public string QuizFont { get; set; } = "DynaPuff";

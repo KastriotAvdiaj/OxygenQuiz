@@ -26,6 +26,7 @@ import { LiftedButton } from "@/common/LiftedButton";
 import { HEADER_ACTION_FACE } from "./header-action-face";
 import { ModeCard } from "@/pages/Quiz/components/mode-card";
 import { useFormatAvailable } from "../format-access";
+import { useAiAvailable } from "../ai-access";
 import { useAiQuota } from "../api/generate-ai-quiz";
 import { useUser } from "@/lib/Auth";
 
@@ -37,14 +38,16 @@ import { useUser } from "@/lib/Auth";
  * "Source mode"), so it can change with a deploy and no frontend release. `GET /quiz/ai-quota`
  * carries it as `sourceModeEnabled`.
  *
- * Asked only once the dialog reaches the step that shows the card, and only for a signed-in
- * user: the landing page opens this dialog for visitors too, and the endpoint answers them 401.
+ * Asked only once the dialog reaches the step that shows the card, and only for someone who may
+ * use AI: the landing page opens this dialog for visitors too, and the endpoint answers anyone
+ * outside `AI_ROLES` 403.
  * Until the answer arrives the card reads "Coming soon", which is also what it says when the
  * server can't be asked — the safe reading of "don't know".
  */
 const useMaterialModeAvailable = (askNow: boolean): boolean => {
   const user = useUser();
-  const quota = useAiQuota({ enabled: askNow && Boolean(user.data) });
+  const aiAvailable = useAiAvailable();
+  const quota = useAiQuota({ enabled: askNow && Boolean(user.data) && aiAvailable });
   return quota.data?.sourceModeEnabled === true;
 };
 
@@ -52,7 +55,8 @@ const useMaterialModeAvailable = (askNow: boolean): boolean => {
  * The steps, one question each:
  * - `format` — what kind of quiz (Classic or Associations). Only while there is a choice: players
  *   don't see Associations yet (format-access.ts), so for them the dialog opens on `method`.
- * - `method` — how to build a Classic quiz (by hand, or with AI).
+ * - `method` — how to build a Classic quiz (by hand, or with AI). For anyone who may not use AI
+ *   (ai-access.ts) the AI card is replaced by "From a set of facts", which needs no model.
  * - `aiSource` — what the AI works from (a topic, your own material, or a set of facts).
  */
 type Step = "format" | "method" | "aiSource";
@@ -150,6 +154,10 @@ export const CreateQuizMethodDialog = ({
   const navigate = useNavigate();
   // Associations is admin-only while it is tested (format-access.ts).
   const showAssociations = useFormatAvailable("Associations");
+  // AI is for Admins, SuperAdmins and Teachers (ai-access.ts). Everyone else builds by hand or
+  // from a fact pack, so their second card on the method step is the facts one.
+  const aiAvailable = useAiAvailable();
+  const factsInsteadOfAi = !aiAvailable && Boolean(aiFactsPath);
   const firstStep: Step = showAssociations ? "format" : "method";
 
   const [step, setStep] = useState<Step>(initialStep ?? firstStep);
@@ -329,7 +337,7 @@ export const CreateQuizMethodDialog = ({
                   icon={ListChecks}
                   title="Classic quiz"
                   description="Questions with answers to pick or type."
-                  meta="By hand or with AI"
+                  meta={aiAvailable ? "By hand or with AI" : "By hand or from facts"}
                   metaIcon={Sparkles}
                   accent="primary"
                   size="compact"
@@ -375,21 +383,38 @@ export const CreateQuizMethodDialog = ({
                   onSelect={() => navigate(manualPath)}
                 />,
               )}
-              {slot(
-                "ai",
-                1,
-                <ModeCard
-                  icon={Sparkles}
-                  title="With AI"
-                  description="Describe the quiz and we'll draft the questions for you."
-                  meta="You review before it saves"
-                  metaIcon={Wand2}
-                  accent="primary"
-                  size="compact"
-                  entrance={false}
-                  onSelect={() => advance("ai", "aiSource")}
-                />,
-              )}
+              {aiAvailable &&
+                slot(
+                  "ai",
+                  1,
+                  <ModeCard
+                    icon={Sparkles}
+                    title="With AI"
+                    description="Describe the quiz and we'll draft the questions for you."
+                    meta="You review before it saves"
+                    metaIcon={Wand2}
+                    accent="primary"
+                    size="compact"
+                    entrance={false}
+                    onSelect={() => advance("ai", "aiSource")}
+                  />,
+                )}
+              {factsInsteadOfAi &&
+                slot(
+                  "facts",
+                  1,
+                  <ModeCard
+                    icon={Database}
+                    title="From a set of facts"
+                    description="Capitals, peaks and more — every answer a fact from Wikidata."
+                    meta="Free · ready in seconds"
+                    metaIcon={BadgeCheck}
+                    accent="primary"
+                    size="compact"
+                    entrance={false}
+                    onSelect={() => navigate(aiFactsPath!)}
+                  />,
+                )}
             </>
           )}
 

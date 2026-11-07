@@ -5,7 +5,6 @@ export type FontOption = { label: string; value: string };
 
 export const FONT_OPTIONS: FontOption[] = [
   { label: "System Default", value: "system-ui" },
-  { label: "Noto Sans", value: "Noto Sans" },
   { label: "Inter", value: "Inter" },
   { label: "Poppins", value: "Poppins" },
   { label: "Nunito", value: "Nunito" },
@@ -21,11 +20,12 @@ export const FONT_OPTIONS: FontOption[] = [
 // which paint the same fonts before this module runs; `__tests__/font-defaults.test.ts`
 // fails the build if they drift.
 //
-// The app font is deliberately a plain, readable face rather than one of the display
-// options below it. Those are a voice the user can choose, not a default we impose on
-// someone who hasn't chosen anything — a display face costs real vertical space in the
-// dashboard's forms (docs/adr/0002-quiz-creation-routes-hide-the-dashboard-header.md).
-export const DEFAULT_APP_FONT = "Noto Sans";
+// DynaPuff for both zones since 2026-11-07 — the app's own voice, the font of its logo
+// and quiz cards. Until then the app font was Noto Sans, a plain face, and a visitor who
+// wasn't signed in saw dialogs and buttons in it that read as a different site; Noto Sans
+// was removed from the options at the same time. The cost is space: a display face sets
+// wider and taller, which docs/TYPOGRAPHY.md says how to design for, and ADR 0041 records.
+export const DEFAULT_APP_FONT = "DynaPuff";
 export const DEFAULT_QUIZ_FONT = "DynaPuff";
 
 // Coalesce an unknown/empty stored value (e.g. an old row backfilled with "")

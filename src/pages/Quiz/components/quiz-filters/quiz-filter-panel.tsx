@@ -163,9 +163,8 @@ export function QuizFilterPanel({
       >
         {leading}
         <div className="mb-1 flex shrink-0 items-center justify-between">
-          {/* font-quiz on the headings, like the quiz cards beside them: the page is set in the
-              app font, which for a visitor who isn't signed in is Noto Sans — so the filters read
-              as a different site from the cards unless a signed-in user picked DynaPuff for it. */}
+          {/* font-quiz on the headings, like the quiz cards beside them, so the filters follow the
+              quiz zone even for someone who picked a different app font. */}
           <h3 className="font-quiz text-sm font-bold uppercase tracking-wider text-muted-foreground">
             Filters
           </h3>

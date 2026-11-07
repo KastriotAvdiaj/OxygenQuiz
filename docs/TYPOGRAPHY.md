@@ -12,17 +12,26 @@ from a fix that shipped. Add to it the same way, not from first principles.
 ## The app font is a user setting, and it can be a display face
 
 `--font-app` is chosen by the user in Settings from `src/lib/fonts.ts`. The default is
-**Noto Sans**, but the ten options include DynaPuff, Baloo 2, Fredoka and Barriecito — display
-faces that set noticeably wider and taller at the same `px`.
+**DynaPuff** since 2026-11-07 ([ADR 0041](adr/0041-the-app-font-defaults-to-dynapuff.md)) — a
+display face, so what most people see is the wide, tall case. The other options include plain
+faces (Inter, Poppins, Nunito, system) and more display faces (Baloo 2, Fredoka, Barriecito).
+Noto Sans, the default until then, is no longer offered.
+
+**A component inherits the app font; it never names one.** Body text, buttons, dialogs and forms
+take `--font-app` from `body`, so they follow the user's setting with no class at all. The only
+font classes a component adds are `font-quiz` (quiz content: cards, questions, the play screens)
+and `font-mono` (codes and keys: room codes, invite codes, typed answers). No `font-sans`, no
+`font-header`, no inline `fontFamily` (the Settings font picker previewing each option is the one
+exception). A hardcoded face is what made the Go back button system-font on the signup page.
 
 Consequences for anything you size:
 
-- **Tune the scale against the default.** Noto Sans is what most people see. A ramp tuned to make
-  a display face fit will look thin and undersized to everyone else.
+- **Tune the scale against the default.** DynaPuff is what most people see, so a layout has to
+  fit in it first; then check it still looks deliberate in a plain face like Inter.
 - **Check it in the heaviest option before shipping.** It may be taller there; it must not
   *break* there — no clipping, no overlap, no control shrinking below its floor.
 - **Never assume a font's metrics.** `--font-app` resolves at runtime; a magic pixel height that
-  happens to work in Noto Sans is a bug waiting for someone to pick Barriecito.
+  happens to work in DynaPuff is a bug waiting for someone to pick Barriecito.
 - The `:root` fallback in `global.css` and `DEFAULT_APP_FONT` in `fonts.ts` **must agree** —
   `src/lib/__tests__/font-defaults.test.ts` fails the build if they drift. They disagreed for
   months, and the Settings page silently offered to change a font the user wasn't using.

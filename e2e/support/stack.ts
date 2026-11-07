@@ -92,6 +92,9 @@ export function apiServerEnv(): Record<string, string> {
     // Media on local disk, under the API's own uploads folder: development may point Media at a
     // real R2 bucket through user-secrets, and a test run must never write there.
     Media__Storage: "Disk",
+    // Signup is open by default since 2026-11-07, but the invite journey in auth.spec.ts is the one
+    // that can still be switched on in production, so the stack keeps testing it.
+    Signup__RequireInviteCode: "true",
   };
 }
 

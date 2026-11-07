@@ -50,10 +50,12 @@ describe("signup flow when /Authentication/auth-config is unavailable", () => {
     expect(authConfigCalls.length).toBe(1);
   });
 
-  it("still renders — and fails closed to the invite gate", async () => {
+  it("still renders — and falls back to open signup, not the invite gate", async () => {
     renderFlow();
-    // Not the spinner, and not a silently-open signup: the gate is what an unreadable
-    // config must fall back to, since the server requires a code regardless.
-    expect(await screen.findByText(/invite only right now/i)).toBeTruthy();
+    // Not the spinner, and not a gate: signup is open by default since the public launch, so an
+    // unreadable config must not stop everyone at a code nobody has. The server still enforces
+    // the code at submit if the gate is on.
+    expect(await screen.findByText(/continue with email/i)).toBeTruthy();
+    expect(screen.queryByText(/invite only right now/i)).toBeNull();
   });
 });

@@ -50,6 +50,22 @@ Override per-environment with the standard double-underscore env var:
 Signup__RequireInviteCode=true
 ```
 
+**Production (since 2026-11-07, when the app opened to the public).** The root
+`docker-compose.prod.yml` passes `Signup__RequireInviteCode=${SIGNUP_REQUIRE_INVITE_CODE:-false}`,
+so the gate is one line in `~/OxygenQuiz/.env.prod`:
+
+```bash
+SIGNUP_REQUIRE_INVITE_CODE=true    # invite-only; delete the line (or set false) to reopen
+```
+
+then `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d` — a restart, no
+rebuild. The E2E stack sets it `true` so the invite journey stays tested.
+
+**Role invites need the gate on.** With the flag off, signup ignores codes entirely, so a code
+minted for an Admin or Teacher role is never redeemed; onboard staff by letting them sign up and
+granting the role in the Users table ([`user-role-management.md`](./user-role-management.md)), or
+turn the gate on for the day.
+
 The frontend reads the flag through a small public endpoint (below) so the invite field is shown and
 required only when the gate is on — there is nothing to hide manually at launch.
 
@@ -325,10 +341,11 @@ Signup is a multi-step flow under `src/pages/UserRelated/Signup/`.
   marked "kept for compatibility", but nothing calls it — see
   [known-issues.md](../deployment/known-issues.md).)
 
-  It **fails closed**: anything other than an explicit `false` from the server means "show the
-  gate". Earlier this defaulted to *not* required, on the reasoning that the server enforces the
-  real rule at submit — true, but it meant an unreachable config walked the user through the whole
-  form to a rejection. The server remains the authority either way. The call is also fetched at
+  It **fails open** since the public launch (2026-11-07): only an explicit `true` from the server
+  shows the gate. While signup was invite-only it failed closed, because then an unreachable
+  config walked the user through the whole form to a rejection; with signup open by default, a
+  gate on a failed fetch would stop everyone at a code nobody has. The server remains the
+  authority either way. The call is also fetched at
   most once per page load; social-login.md explains why that matters.
 - **`api/check-availability.ts`** — alongside the username/email availability hooks,
   `useInviteCodeValidity(code)` is a debounced check against
@@ -460,7 +477,7 @@ address rejected.
 
 ## 12. Operational runbook (for the test)
 
-1. Set `Signup__RequireInviteCode=true` on the server.
+1. Set `SIGNUP_REQUIRE_INVITE_CODE=true` in `~/OxygenQuiz/.env.prod` and `up -d` (§2).
 2. Log in as admin → open **Dashboard → Invite Codes** → **Generate codes** (count 25) →
    **copy them now** (they can't be re-read). Or hit `POST /api/admin/invite-codes { "count": 25 }`
    directly if you prefer.
@@ -473,8 +490,8 @@ address rejected.
    an expiry, and hand them the single code it returns. They sign up with that address and the
    account is an Admin from its first login — no second trip to the Users table. Only a SuperAdmin
    can do this for the SuperAdmin role.
-6. **Going public later:** set `Signup__RequireInviteCode=false`. The frontend hides the field
-   automatically. No code change, no migration.
+6. **Going public** (done 2026-11-07): the flag is `false` in `appsettings.json` and production
+   no longer sets it. The frontend hides the field automatically.
 
 ---
 

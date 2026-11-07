@@ -42,6 +42,7 @@ import {
   quizResultsLoader,
 } from "@/loaders/quiz-results.loader";
 import { MultiplayerLobbyPage } from "@/pages/Quiz/Multiplayer/MultiplayerLobbyPage";
+import { RequireAi } from "@/pages/Dashboard/Pages/Quiz/require-ai";
 // Public routes with a loader share their chunk importer with it (route-chunks.ts), so the
 // chunk downloads alongside the loader's data instead of after it.
 const HomeLayout = lazy(() =>
@@ -561,7 +562,7 @@ const createAppRouter = (queryClient: QueryClient) =>
           // AI-assisted creation, topic mode. The wizard mounts QuizQuestionProvider itself
           // once the generated questions are parsed, so it can seed them as initialQuestions.
           path: "quizzes/create-quiz/ai/topic",
-          element: <AiQuizWizard />,
+          element: <RequireAi><AiQuizWizard /></RequireAi>,
         },
         {
           // The same wizard in Source mode — `useAiQuizDraft` reads the mode off this segment.
@@ -569,14 +570,14 @@ const createAppRouter = (queryClient: QueryClient) =>
           // says so and offers the topic wizard, which beats a 404 for an old bookmark. The
           // method dialog only offers it when it's open (`sourceModeEnabled` on ai-quota).
           path: "quizzes/create-quiz/ai/material",
-          element: <AiQuizWizard />,
+          element: <RequireAi><AiQuizWizard /></RequireAi>,
         },
         {
           // The same feature with the model swapped for the user's own: copy a prompt out,
           // paste the reply back. A sibling route rather than a panel inside the wizard —
           // docs/quiz/ai-quiz-two-paths.md. Mounts its own provider the same way.
           path: "quizzes/create-quiz/ai/own",
-          element: <OwnAiQuiz />,
+          element: <RequireAi><OwnAiQuiz /></RequireAi>,
         },
         {
           // A quiz built from a Wikidata fact pack — no model (docs/quiz/fact-quizzes.md). Under
@@ -792,16 +793,16 @@ const createAppRouter = (queryClient: QueryClient) =>
         },
         {
           path: "quizzes/create/ai/topic",
-          element: <AiQuizWizard />,
+          element: <RequireAi><AiQuizWizard /></RequireAi>,
         },
         {
           // Source mode — see the note on the admin dashboard's twin.
           path: "quizzes/create/ai/material",
-          element: <AiQuizWizard />,
+          element: <RequireAi><AiQuizWizard /></RequireAi>,
         },
         {
           path: "quizzes/create/ai/own",
-          element: <OwnAiQuiz />,
+          element: <RequireAi><OwnAiQuiz /></RequireAi>,
         },
         {
           path: "quizzes/create/ai/facts",

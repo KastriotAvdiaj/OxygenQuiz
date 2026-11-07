@@ -5,7 +5,7 @@
 /* User-selectable font zones. Overwritten at runtime from the user's settings
    (see SettingsApplier). Defaults match the previous look. */
 :root {
-  --font-app: "Noto Sans";
+  --font-app: "DynaPuff";
   --font-quiz: "DynaPuff";
 }
 

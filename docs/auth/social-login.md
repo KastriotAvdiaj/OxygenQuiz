@@ -461,4 +461,4 @@ decorative, now real) · `Signup/{Signup.tsx,SignupComponents/{SignupForm,Signup
 **Tests:** `QuizAPI.Tests/Auth/ExternalAuthenticationTests.cs` (+ updated
 `AuthenticationServiceTests.cs` constructor wiring) ·
 `src/pages/UserRelated/Signup/__tests__/signup-auth-config-storm.test.tsx` (one request when
-`auth-config` is unreachable; fails closed to the invite gate).
+`auth-config` is unreachable; falls back to open signup, not the invite gate).

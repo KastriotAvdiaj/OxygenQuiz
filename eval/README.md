@@ -32,7 +32,9 @@ has a flawless error rate.
    subjects your users actually generate, in the proportion they actually use. Keep the `id`s
    stable forever: they are how run 1 and run 7 are compared. Include deliberate traps; two are
    already in there (`Mercury` for ambiguity, a current-records topic for staleness).
-2. **`cp eval/.env.example eval/.env`** and fill in an API account and a model API key.
+2. **`cp eval/.env.example eval/.env`** and fill in an API account and a model API key. The
+   account must be an Admin, SuperAdmin or Teacher: `ai-prompt` refuses anyone else since
+   2026-11-07.
 3. **Start the API** (`dotnet run` in `OxygenBackend/QuizAPI`) — the harness fetches the prompt
    from it.
 4. **Run the three stages** (below).

@@ -41,17 +41,15 @@ const DISABLED: ProviderConfig = { enabled: false, clientId: null };
  * sign-in providers (Google/Microsoft) are enabled — with their public client ids.
  * Supersedes the older `useSignupConfig` (the invite flag now rides along here).
  *
- * Both fallbacks are conservative, but in OPPOSITE directions, on purpose:
+ * What an unreadable config falls back to:
  *
  *  - **providers → disabled.** Hiding a button degrades gracefully, and a provider button must
  *    never render without its client id.
- *  - **invite gate → required.** Skipping a gate does not degrade gracefully. The server is the
- *    real authority (`Signup:RequireInviteCode`, enforced inside the signup transaction), so
- *    assuming "not required" doesn't let anyone in — it just walks them through the whole form
- *    to a rejection at submit. Asking for a code we might not need is the cheaper mistake.
- *
- * Trade-off accepted: if the gate is ever turned OFF server-side *and* this call fails, users
- * see a gate they can't pass. Revisit this default at public launch.
+ *  - **invite gate → not required** (since the public launch, 2026-11-07; it was "required"
+ *    while signup was invite-only). Signup is open by default now, so showing a gate on a failed
+ *    fetch would stop everyone at a code nobody has. The server is the authority either way
+ *    (`Signup:RequireInviteCode`, enforced inside the signup transaction): if the gate is in fact
+ *    on, assuming it off lets nobody in — the form just reaches a rejection at submit.
  *
  * `isLoading` lets the signup page hold rendering briefly so the gate doesn't flash in after
  * the form.
@@ -80,8 +78,8 @@ export const useAuthConfig = () => {
   });
 
   return {
-    // Fail CLOSED: anything other than an explicit `false` from the server means "show the gate".
-    requireInviteCode: query.data?.requireInviteCode !== false,
+    // Only an explicit `true` from the server shows the gate — see the fallbacks above.
+    requireInviteCode: query.data?.requireInviteCode === true,
     google: query.data?.providers?.google ?? DISABLED,
     microsoft: query.data?.providers?.microsoft ?? DISABLED,
     /**

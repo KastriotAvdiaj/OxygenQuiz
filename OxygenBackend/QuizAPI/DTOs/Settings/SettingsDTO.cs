@@ -10,7 +10,7 @@ namespace QuizAPI.DTOs.Settings
         public string Theme { get; set; } = "system";
         public bool ShowTimer { get; set; }
         public bool AskBeforeRemovingQuestion { get; set; } = true;
-        public string AppFont { get; set; } = "Noto Sans";
+        public string AppFont { get; set; } = "DynaPuff";
         public string QuizFont { get; set; } = "DynaPuff";
     }
 }

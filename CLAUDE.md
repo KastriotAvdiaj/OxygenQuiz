@@ -72,6 +72,11 @@ Full version, including the two failure modes this project has actually hit:
 - **Tailwind class strings stay complete literals.** Never build one by concatenation or
   interpolation — the JIT compiler only generates classes it can read verbatim in source, so
   `` `dark:${borderColor}` `` silently produces nothing.
+- **A component inherits the app font; it never names one.** The app font is DynaPuff unless the
+  user picked another in Settings (`--font-app`, ADR 0041), and `body` already applies it — so a
+  new component, dialog or button needs no font class at all. The only ones to add on purpose are
+  `font-quiz` for quiz content and `font-mono` for codes and keys. No `font-sans`, no
+  `font-header`, no inline `fontFamily`. See `docs/TYPOGRAPHY.md`.
 - **Colors come from theme tokens or `question-type-theme.ts`,** never raw hues in a
   component. See `docs/quiz/question-type-color-schema.md` for what each token means and the
   rule it enforces: color encodes *type* quietly, *state* is what gets loud.

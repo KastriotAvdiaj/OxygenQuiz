@@ -23,6 +23,9 @@ services:
       - Cors__AllowedOrigins__0=https://oxygenquiz.com
       - Cors__AllowedOrigins__1=https://www.oxygenquiz.com
       #  AI and Google OAuth settings
+      #  Invite-only signup: off unless .env.prod says SIGNUP_REQUIRE_INVITE_CODE=true.
+      #  docs/auth/invite-code-system.md §2
+      - Signup__RequireInviteCode=${SIGNUP_REQUIRE_INVITE_CODE:-false}
       - Ai__Enabled=true
       - Ai__ApiKey=${AI_API_KEY}
       #  Spend caps, checked against our own cost estimate (list price, so an upper bound). Keep

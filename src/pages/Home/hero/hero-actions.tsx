@@ -3,11 +3,13 @@ import { PencilLine, Play, Users } from "lucide-react";
 import { forwardRef } from "react";
 import { LiftedButton, type LiftedButtonProps } from "@/common/LiftedButton";
 import { CreateQuizMethodDialog } from "@/pages/Dashboard/Pages/Quiz/components/create-quiz-method-dialog";
+import { useAiAvailable } from "@/pages/Dashboard/Pages/Quiz/ai-access";
 import { cn } from "@/utils/cn";
 
 /**
  * The hero's actions: **Play** as the one big button, an "or", then **Host a lobby** and
- * **Create a quiz** (with a "With AI" speech bubble over its corner).
+ * **Create a quiz** (with a "With AI" speech bubble over its corner, for those who may use AI —
+ * ai-access.ts).
  *
  * All three are the old landing page's "Explore" `LiftedButton` (square face, a frame of edge
  * around it — docs/home/landing-page.md): Play big and in the theme blue, the two secondaries
@@ -94,6 +96,9 @@ SecondaryButton.displayName = "SecondaryButton";
  * loader and land back where they were going.
  */
 function CreateQuizAction() {
+  // Visitors and players can't use AI (ai-access.ts), so the bubble promising it is only for
+  // Admins, SuperAdmins and Teachers.
+  const aiAvailable = useAiAvailable();
   return (
     <CreateQuizMethodDialog
       trigger={
@@ -103,8 +108,8 @@ function CreateQuizAction() {
         >
           <PencilLine className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
           Create a quiz
-          <span className="sr-only">, by hand or with AI</span>
-          <WithAiBubble />
+          <span className="sr-only">{aiAvailable ? ", by hand or with AI" : ", by hand or from facts"}</span>
+          {aiAvailable && <WithAiBubble />}
         </SecondaryButton>
       }
       manualPath="/my-dashboard/quizzes/create"

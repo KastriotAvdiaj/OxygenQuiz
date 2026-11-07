@@ -1551,7 +1551,10 @@ Deferred: a renderer (KaTeX) has to be added to every surface that shows questio
   choice, and some options are display faces (DynaPuff, Baloo 2, Fredoka, Barriecito) built for
   headings: at 11–13px their heavy, rounded shapes close up. Proposal: keep the chosen font for
   headings, labels, buttons and quiz content (questions, answers), and set *secondary* text —
-  hints, field descriptions, helper lines — in a fixed readable face (Noto Sans, the default), via
+  hints, field descriptions, helper lines — in a fixed readable face (Inter, say; Noto Sans was the
+  default until 2026-11-07 and is no longer loaded), via
   one shared token rather than per screen. Deliberately not applied: test it on one screen first
   (the question editor is the candidate) with a display font selected, and decide then. See
-  docs/TYPOGRAPHY.md for the current font rules.
+  docs/TYPOGRAPHY.md for the current font rules. **More pressing since 2026-11-07:** DynaPuff is
+  now the default ([ADR 0041](../adr/0041-the-app-font-defaults-to-dynapuff.md)), so this is what
+  every visitor sees, not only those who picked a display face.

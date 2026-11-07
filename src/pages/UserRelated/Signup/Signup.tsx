@@ -5,8 +5,11 @@ import SignupFlow from "./SignupComponents/SignupFlow";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import { O2Button } from "@/common/O2Button";
 import { GoBackButton } from "@/common/Go-Back-Button";
+import { useAuthConfig } from "@/lib/auth-config";
 
 const Signup: React.FC = () => {
+  // The same query SignupFlow reads, so no second request.
+  const { requireInviteCode } = useAuthConfig();
     return (
     // Standalone route (no HomeLayout) — provides its own scroll container;
     // see Login.tsx / docs/RESPONSIVE.md for the full rationale.
@@ -37,12 +40,15 @@ const Signup: React.FC = () => {
           <div className="transform hover:scale-105 transition-transform duration-300 flex justify-center">
             <O2Button />
           </div>
-          <div className="flex justify-center">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-medium uppercase tracking-wide text-white backdrop-blur-sm">
-              <MailPlus className="h-3.5 w-3.5" aria-hidden="true" />
-              Invite only &middot; Public launch coming soon
-            </span>
-          </div>
+          {/* Only while signup is gated (Signup:RequireInviteCode). */}
+          {requireInviteCode && (
+            <div className="flex justify-center animate-in fade-in duration-200 motion-reduce:animate-none">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-medium uppercase tracking-wide text-white backdrop-blur-sm">
+                <MailPlus className="h-3.5 w-3.5" aria-hidden="true" />
+                Invite only
+              </span>
+            </div>
+          )}
           <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-white tracking-tight">
             Join Oxygen Quiz
           </h1>

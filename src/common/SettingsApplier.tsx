@@ -42,7 +42,7 @@ export const SettingsApplier = () => {
   // point. This used to read `if (settings?.appFont)`, so "no preference" meant "don't
   // touch the variable" and `DEFAULT_APP_FONT` was never actually applied: it only fed
   // the Settings <Select>. Which is how it came to say "Baloo 2" while `:root` said
-  // "Noto Sans" without anyone noticing, and how saving that page could silently change
+  // "Noto Sans" (the default until 2026-11-07) without anyone noticing, and how saving that page could silently change
   // a user's font to one they never picked.
   //
   // Applying the constant makes it the single authority for "the default app font", and

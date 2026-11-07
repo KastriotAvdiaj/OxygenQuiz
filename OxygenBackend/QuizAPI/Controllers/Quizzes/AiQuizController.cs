@@ -6,6 +6,7 @@ using QuizAPI.Middleware;
 using QuizAPI.Services.Ai;
 using QuizAPI.Services.Audit;
 using QuizAPI.Services.CurrentUserService;
+using QuizAPI.Services.Roles;
 
 namespace QuizAPI.Controllers.Quizzes
 {
@@ -20,7 +21,10 @@ namespace QuizAPI.Controllers.Quizzes
     /// </summary>
     [ApiController]
     [Route("api/quiz")]
-    [Authorize]
+    // Every action, the free copy-paste prompt included: AI is for Admins, SuperAdmins and
+    // Teachers only (RoleRules.AiRoles). ai-import is NOT here — it saves a reviewed quiz, fact
+    // quizzes use it too, and it costs nothing.
+    [Authorize(Roles = RoleRules.AiRoles)]
     public class AiQuizController : BaseApiController
     {
         private readonly IAiGenerationService _generation;

@@ -3,6 +3,10 @@
 How "generate it for me" and "use your own AI" relate, why they are two routes rather than
 one screen with a disclosure, and what has to stay identical between them.
 
+> **Both paths are for Admins, SuperAdmins and Teachers only since 2026-11-07** — the own-AI path
+> included, though it costs nothing ([`ai-quiz-generation-flow.md`](./ai-quiz-generation-flow.md)
+> §4a). A plain player builds by hand or from a fact pack.
+
 Last updated: 2026-08-13. Companion to
 [`ai-quiz-architecture.md`](./ai-quiz-architecture.md) (the *how* of the whole feature) and
 [`ai-quiz-generation-flow.md`](./ai-quiz-generation-flow.md) (the in-app generation contract).

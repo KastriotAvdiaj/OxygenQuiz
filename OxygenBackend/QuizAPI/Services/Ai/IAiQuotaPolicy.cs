@@ -24,20 +24,18 @@ namespace QuizAPI.Services.Ai
     }
 
     /// <summary>
-    /// Everyone gets <c>Ai:DefaultDailyQuota</c>; staff get no daily cap.
+    /// SuperAdmins have no daily cap; Admins and Teachers get <c>Ai:DefaultDailyQuota</c>; anyone
+    /// else gets none (since 2026-11-07 — before that every player had the default and Admins were
+    /// uncapped too).
+    ///
+    /// <para>Zero for a plain player is the second lock, not the first: the AI endpoints already
+    /// refuse them by role (<see cref="Roles.RoleRules.AiRoles"/>). It keeps a role mix-up, or a
+    /// caller that reaches generation another way, from spending.</para>
     ///
     /// <para>Replace, don't extend, when paid plans land.</para>
     /// </summary>
     public sealed class ConfigAiQuotaPolicy : IAiQuotaPolicy
     {
-        /// <summary>
-        /// Roles exempt from the daily count. Matches the Admin-or-SuperAdmin notion used
-        /// everywhere else in the codebase (<c>ICurrentUserService.IsAdmin</c>) rather than
-        /// inventing a third definition of "staff".
-        /// </summary>
-        private static readonly HashSet<string> UnlimitedRoles =
-            new(StringComparer.OrdinalIgnoreCase) { "Admin", "SuperAdmin" };
-
         private readonly AiOptions _options;
         private readonly IUserRepository _users;
 
@@ -53,11 +51,16 @@ namespace QuizAPI.Services.Ai
             // answer doesn't depend on who happens to be calling — the signature takes a userId
             // and should mean it. GetByIdAsync already includes roles.
             var user = await _users.GetByIdAsync(userId, tracked: false, ct);
+            var roles = user?.UserRoles
+                .Where(ur => ur.Role is not null)
+                .Select(ur => ur.Role!.Name)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase)
+                ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            var isStaff = user?.UserRoles
-                .Any(ur => ur.Role is not null && UnlimitedRoles.Contains(ur.Role.Name)) == true;
-
-            return isStaff ? null : Math.Max(0, _options.DefaultDailyQuota);
+            if (roles.Contains(Roles.RoleRules.SuperAdmin)) return null;
+            if (roles.Contains(Roles.RoleRules.Admin) || roles.Contains(Roles.RoleRules.Teacher))
+                return Math.Max(0, _options.DefaultDailyQuota);
+            return 0;
         }
     }
 }

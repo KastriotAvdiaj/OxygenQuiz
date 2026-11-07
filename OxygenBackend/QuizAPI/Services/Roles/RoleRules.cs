@@ -40,6 +40,15 @@ namespace QuizAPI.Services.Roles
             roleNames.Any(r => Teacher.Equals(r, StringComparison.OrdinalIgnoreCase) ||
                                SuperAdmin.Equals(r, StringComparison.OrdinalIgnoreCase));
 
+        /// <summary>
+        /// Who may use AI quiz generation — in-app, from material, and the copy-paste prompt
+        /// (docs/quiz/ai-quiz-generation-flow.md §4a). Since the public launch (2026-11-07) a plain
+        /// player gets none of it: generation costs money and paid plans aren't live. A const for
+        /// <c>[Authorize(Roles = RoleRules.AiRoles)]</c>. How many a day is a separate question,
+        /// answered by <c>IAiQuotaPolicy</c>. Mirrored in the frontend's <c>ai-access.ts</c>.
+        /// </summary>
+        public const string AiRoles = Admin + "," + SuperAdmin + "," + Teacher;
+
         /// <summary>Roles that may see a quiz format still in preview (<c>QuizFormatAccess</c>).</summary>
         public static readonly HashSet<string> PreviewFormatRoles =
             new(StringComparer.OrdinalIgnoreCase) { Admin, SuperAdmin, Teacher };

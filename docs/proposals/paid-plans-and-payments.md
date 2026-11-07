@@ -25,15 +25,10 @@ reading a subscription, with no caller and no schema touched". It is registered 
 builder.Services.AddScoped<QuizAPI.Services.Ai.IAiQuotaPolicy, QuizAPI.Services.Ai.ConfigAiQuotaPolicy>();
 ```
 
-```csharp
-public async Task<int?> GetDailyLimitAsync(Guid userId, CancellationToken ct = default)
-{
-    var user = await _users.GetByIdAsync(userId, tracked: false, ct);
-    var isStaff = user?.UserRoles
-        .Any(ur => ur.Role is not null && UnlimitedRoles.Contains(ur.Role.Name)) == true;
-    return isStaff ? null : Math.Max(0, _options.DefaultDailyQuota);   // 2
-}
-```
+Since the public launch (2026-11-07) it answers by role — SuperAdmin `null` (no cap), Admin and
+Teacher `Ai:DefaultDailyQuota` (2), anyone else 0 — and the AI endpoints refuse plain players
+outright (`RoleRules.AiRoles`; ai-quiz-generation-flow.md §4a). A plan that gives players AI
+changes both: the role gate on `AiQuizController` and this policy.
 
 The wizard already reads the limit from `GET /quiz/ai-quota` and renders "N of M left today", so
 the frontend learns a new limit with **no change**.
@@ -42,16 +37,16 @@ Everything else a plan might limit has no seam yet:
 
 | Lever | Where it is decided today | Server-enforced? |
 |---|---|---|
-| AI generations / day | `ConfigAiQuotaPolicy` → `Ai:DefaultDailyQuota` = **2** | Yes |
+| AI generations / day | `ConfigAiQuotaPolicy` → `Ai:DefaultDailyQuota` = **2** for Admin and Teacher; no cap for SuperAdmin; **players have no AI** (`RoleRules.AiRoles`) | Yes |
 | Questions per AI generation | `Ai:MaxQuestionsPerGeneration` = 15 (global) | Yes |
-| AI spend | `Ai:DailyBudgetUsd` = 2, `Ai:MonthlyBudgetUsd` = 25, **global across all users** | Yes |
+| AI spend | `Ai:DailyBudgetUsd` = 2, `Ai:MonthlyBudgetUsd` = 25 in `appsettings.json` ($0.50 / $4 in production), **global across all users** | Yes |
 | Quizzes a user may own | **No limit** | — |
 | Lobby size | `QuizHub.CreateSession` clamps 2–10 (`MinLobbyPlayers` / `MaxLobbyPlayers`) | Yes, as constants |
 | Hosting a board, Classes | `RoleRules.HostRoles` (Teacher, SuperAdmin), role granted on approval | Yes, as a role |
 | Students per Class | `Class.MaxStudents` = 40 in [`ClassService`](../../OxygenBackend/QuizAPI/Services/Classroom/ClassService.cs) | Yes |
 | Classes per Teacher | No limit | — |
 | Upload sizes | Constants in `FileService` (image 5 MB, audio 20 MB, video 100 MB) | Yes |
-| Signup | `Signup:RequireInviteCode` = **true** in `appsettings.json` | Yes |
+| Signup | `Signup:RequireInviteCode` — **false** since 2026-11-07 (open signup); one line in `.env.prod` turns it on | Yes |
 
 **The lobby cap was a client-side suggestion — fixed 2026-10-07.**
 [`QuizHub.CreateSession`](../../OxygenBackend/QuizAPI/Hubs/QuizHub.cs) used to pass the caller's

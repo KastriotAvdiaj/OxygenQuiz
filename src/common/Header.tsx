@@ -10,6 +10,7 @@ import { useUser } from "@/lib/Auth";
 import { NotificationBell } from "@/features/notifications/components/NotificationBell";
 import { getAppScrollContainer } from "@/lib/app-scroll";
 import { CreateQuizMethodDialog } from "@/pages/Dashboard/Pages/Quiz/components/create-quiz-method-dialog";
+import { useAiAvailable } from "@/pages/Dashboard/Pages/Quiz/ai-access";
 
 interface HeaderProps {
   BackgroundColor?: boolean;
@@ -19,6 +20,7 @@ const Header = ({ BackgroundColor }: HeaderProps) => {
   const [hidden, setHidden] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const { data: currentUser } = useUser();
+  const aiAvailable = useAiAvailable();
 
   // Update CSS custom property when header height changes
   useEffect(() => {
@@ -160,7 +162,9 @@ const Header = ({ BackgroundColor }: HeaderProps) => {
                   >
                     Create
                   </span>
-                  <span className="sr-only">, a quiz by hand or with AI</span>
+                  <span className="sr-only">
+                    {aiAvailable ? ", a quiz by hand or with AI" : ", a quiz by hand or from facts"}
+                  </span>
                 </button>
               }
               manualPath="/my-dashboard/quizzes/create"

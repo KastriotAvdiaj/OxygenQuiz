@@ -748,16 +748,31 @@ seconds long, and a double-clicked button lands squarely inside it.
 id, so the count-and-insert is serialised per user. Contention is per-user, so it costs nothing
 in practice. On non-Postgres providers it is a no-op (see §9).
 
-### 4a. Staff have no daily cap
+### 4a. Who may generate, and how often
 
-`ConfigAiQuotaPolicy` returns `null` for anyone holding **Admin** or **SuperAdmin** — the same
-Admin-or-SuperAdmin notion `ICurrentUserService.IsAdmin` uses, rather than a third definition of
-"staff". Roles are read from the user's stored roles, not the request principal, so the answer
-doesn't depend on who happens to be calling.
+**Since the public launch (2026-11-07), AI is for Admins, SuperAdmins and Teachers only.**
+Generation costs money and paid plans aren't live, so a plain player gets none of it — not the
+in-app wizard, not Source mode, and not the copy-paste prompt either (the own-AI path; it costs
+nothing, but it was judged not good enough to offer). Fact quizzes are not AI and stay open to
+everyone, and so does `ai-import`, which saves a reviewed quiz and is how fact quizzes are saved.
 
-Be precise about what "unlimited" exempts, because getting this wrong is how a bill happens:
+| Role | Daily generations | Enforced by |
+|---|---|---|
+| SuperAdmin | no cap | `ConfigAiQuotaPolicy` → `null` |
+| Admin, Teacher | `Ai:DefaultDailyQuota` (2) | `ConfigAiQuotaPolicy` |
+| Anyone else | none: every AI endpoint answers 403 | `[Authorize(Roles = RoleRules.AiRoles)]` on `AiQuizController`; `ConfigAiQuotaPolicy` → 0 as a second lock |
 
-| Still applies to staff | Exempt |
+Until then every player had the default 2 a day and Admins were uncapped with SuperAdmins. The
+frontend mirrors the roles in `ai-access.ts` (`useAiAvailable`; AI routes are wrapped in `RequireAi`, `require-ai.tsx`) only to decide what
+to offer: a player's create dialog shows *Manually* and *From a set of facts*, the home page's
+"With AI" bubble is hidden, and an AI route typed by hand goes back to the quiz list. Guarded by
+`AiAccessTests` and `create-quiz-method-dialog.test.tsx`. Roles are read from the user's stored
+roles, not the request principal, so the daily answer doesn't depend on who happens to be calling.
+
+Be precise about what a SuperAdmin's "unlimited" exempts, because getting this wrong is how a
+bill happens:
+
+| Still applies to a SuperAdmin | Exempt |
 |---|---|
 | Rolling daily and monthly **budget caps** | The daily generation count |
 | `max_tokens` per call | |
@@ -765,9 +780,10 @@ Be precise about what "unlimited" exempts, because getting this wrong is how a b
 | A usage row per attempt, priced and audited | |
 
 The budget caps are the thing standing between a runaway loop and the card, so exempting anyone
-from *those* would defeat their purpose. An admin who scripts a thousand generations trips the
-$2 daily budget and gets `FeatureDisabled` like everyone else. Usage rows are still written, so
-staff generations appear in the cost ledger and in `AuditActions.AiQuizGenerated`.
+from *those* would defeat their purpose. A SuperAdmin who scripts a thousand generations trips the
+daily budget (`Ai:DailyBudgetUsd`, $0.50 in production) and gets `FeatureDisabled` like everyone
+else. Usage rows are still written, so their generations appear in the cost ledger and in
+`AuditActions.AiQuizGenerated`.
 
 The UI says "No daily limit on your account — N used today" rather than rendering a counter that
 never moves.
@@ -1005,7 +1021,7 @@ Ordered from "cheapest to bypass by a bug in our code" to "cannot be bypassed by
 |---|---|---|---|
 | 1 | `MaxOutputTokens` = 4000 | One call to ~$0.0024 at Groq's output rate, instead of whatever a repetition loop would run to | `max_tokens` on the request |
 | 2 | `MaxSourceChars` = 40,000 | Input to ~10K tokens (~$0.0022) per call | `AiGenerationService.Normalise` |
-| 3 | `DefaultDailyQuota` = 2 | One user to 2 generations/day — stated in the UI. **Staff exempt** (§4a) | `AiQuotaService` |
+| 3 | `DefaultDailyQuota` = 2 | An Admin or Teacher to 2 generations/day — stated in the UI. **SuperAdmin exempt; players have no AI** (§4a) | `AiQuotaService` |
 | 4 | `DailyBudgetUsd` = 2 | Everyone, to ~$2/day — bounds the *rate* of loss | `IsOverBudgetAsync` |
 | 5 | `MonthlyBudgetUsd` = 25 | Everyone, to ~$25/30 days — bounds *total* loss | `IsOverBudgetAsync` |
 
