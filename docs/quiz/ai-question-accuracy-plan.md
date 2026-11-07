@@ -206,6 +206,31 @@ Wikipedia article and were written from memory (en-05, sq-01, sq-05, sq-06). Com
 - **The model returns one question too many** on some topics (four here, two in the baseline).
   Yield "of requested" counts them, so it reads 100.8%; capped per topic it is 97.5%.
 
+#### DeepSeek V4.1 Flash, grounded (2026-11-07) — provisional: labelled by a model
+
+Run `deepseek-grounded-2`: `deepseek/deepseek-v4.1-flash` through OpenRouter, reasoning `low`,
+same seed and topics, `--grounding`, 119 of 119 kept. **Labelled by Claude, not by a person**, so
+it does not meet this doc's own standard and is not yet comparable with the human-labelled runs
+above; a person has to confirm the labels before it decides anything.
+
+| | Groq, grounded (2026-10-29) | DeepSeek, grounded |
+|---|---|---|
+| yield | 121 kept | 119 / 120 |
+| whole run — wrong | 13.2% (16/121) | **1.7%** (2/119, CI 0.5–5.9) |
+| whole run — ambiguous | — | 5.0% (6/119); time-sensitive 2.5% (3) |
+| memory topics — wrong | 13/37 | 1/29 (sq-01, sq-05, sq-06; en-05 grounded on Learn this time) |
+| Albanian wrong / fluency | 9/62, 3.55 | 2/59, 3.92 |
+
+- **If the labels hold, this is a different model, not a small gain**: the whole-run intervals
+  don't overlap, and it is the memory topics — which grounding cannot help — that improved most.
+- **New defect: Learn questions lose their context.** All ten en-05 questions were written from
+  *What's new in C# 12* and several never say C# — "Which of these is a collection expression?"
+  The prompt should require each question to name its subject.
+- **The source still leaks into explanations** ("as stated in the source") on at least two rows,
+  despite the prompt rule.
+- **Thinking dominates the output** — 1,809–11,139 of 3,822–13,790 tokens; see
+  [`ai-quiz-generation-flow.md`](./ai-quiz-generation-flow.md) §2b before selecting it.
+
 ### Phase 1 — Deterministic checks ✅ implemented
 
 No model calls, no schema change, both paths.
