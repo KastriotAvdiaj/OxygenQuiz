@@ -46,7 +46,9 @@ export const CreateLobbyDialogView = ({
 
         <div className="py-6 font-quiz">
           <div className="space-y-3">
-            <label className="text-sm font-medium text-center block">Max Players</label>
+            <label className="text-sm font-medium text-center block">
+              Max Players
+            </label>
             <div className="flex items-center gap-3">
               <Button
                 type="button"
@@ -88,7 +90,7 @@ export const CreateLobbyDialogView = ({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="gap-2">
           <LiftedButton
             type="button"
             onClick={onCancel}
