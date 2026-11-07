@@ -16,7 +16,9 @@ The project has three parts:
 > that actually runs and is the authority whenever the deployment docs disagree (several do).
 > Then: [`deployment/cheatsheet.md`](deployment/cheatsheet.md) for day-to-day commands,
 > [`deployment/configuration.md`](deployment/configuration.md) for how config is layered, and
-> [`deployment/known-issues.md`](deployment/known-issues.md) for the deferred-fix backlog.
+> [`deployment/known-issues.md`](deployment/known-issues.md) for the deferred-fix backlog, and
+> [`deployment/search-visibility.md`](deployment/search-visibility.md) for how the site shows up in
+> Google and what is still to do.
 
 ---
 

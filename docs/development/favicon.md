@@ -1,7 +1,9 @@
 # Favicon
 
-The production favicon is the **O₂ brand mark** — the same wordmark rendered by
-[`src/common/O2Button.tsx`](../../src/common/O2Button.tsx) on the login and signup pages.
+The production favicon is the **O₂ mark** in Nunito Black, white on a brand-blue badge. Since
+2026-11-07 it is deliberately *not* the DynaPuff wordmark of
+[`src/common/O2Button.tsx`](../../src/common/O2Button.tsx): at 16–48 px DynaPuff's O came out
+small and lumpy, and a plain heavy face reads better at that size.
 In development the app deliberately keeps a **generic icon** instead, so a dev tab and a
 production tab are tellable apart at a glance when both are open.
 
@@ -54,12 +56,13 @@ pip install fonttools
 python scripts/generate-favicon.py
 ```
 
-The script downloads DynaPuff 700 from Google Fonts, converts the `O` and `₂` glyphs to
-SVG outline paths, and centres them on their ink bounds.
+The script downloads Nunito 900 from Google Fonts, converts the `O` and an ordinary `2` to SVG
+outline paths — the `2` shrunk and dropped below the baseline as a subscript, so its size is ours
+to set rather than the font's `₂` — and centres them on their ink bounds.
 
 **Why outlines instead of `<text>`.** A favicon is drawn by the browser chrome, outside
 the page, so it cannot load a webfont. `<text font-family="DynaPuff">` would silently fall
-back to a system face and the icon would stop matching the wordmark. Converting to paths
+back to a system face and the icon would change from one machine to the next. Converting to paths
 makes the file self-contained.
 
 **Why a badge (since 2026-11-07).** Until then the mark had no background: blue glyphs on
@@ -70,8 +73,8 @@ colour-scheme rule. The glyphs sit inside the circle Google crops to (`PADDING`)
 survives the crop; the rounded corners (`BADGE_RADIUS`) are what a browser tab shows.
 
 Re-run the script when the wordmark, its font, or the brand colours change. The constants
-at the top (`TEXT`, `FONT_FAMILY`, `FONT_WEIGHT`, `BADGE_COLOR`, `GLYPH_COLOR`, `PADDING`, and `GLYPH_SCALE`, which shrinks the `₂` so the `O` can be bigger)
-are the things worth editing; they're kept in sync with `O2Button.tsx` and `src/global.css`.
+at the top (`FONT_FAMILY`, `FONT_WEIGHT`, `SUB_SCALE`, `SUB_DROP`, `SUB_GAP`, `BADGE_COLOR`, `GLYPH_COLOR`,
+`PADDING`) are the things worth editing; the badge colour is kept in sync with `src/global.css`.
 Then regenerate the PNG from the SVG (any SVG rasteriser; with librsvg):
 
 ```bash

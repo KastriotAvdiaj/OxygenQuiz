@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Regenerate public/favicon.svg — the O₂ brand mark used as the production favicon.
+"""Regenerate public/favicon.svg — the O₂ mark used as the production favicon.
 
 Why this script exists instead of a hand-written SVG with a <text> element:
 a favicon is rendered by the browser chrome, outside the page, so it cannot load a
 webfont. `<text font-family="DynaPuff">` would silently fall back to a system face and
-the icon would stop matching the O₂ wordmark in src/common/O2Button.tsx. So we convert
-the DynaPuff glyphs to outline paths once, here, and commit the result.
+the icon would change with whatever face the system has. So we convert the glyphs to
+outline paths once, here, and commit the result.
 
 Run this only when the wordmark, its font, or the brand colour changes:
 
     pip install fonttools
     python scripts/generate-favicon.py
 
-Requires network access (downloads DynaPuff from Google Fonts).
+Requires network access (downloads the font from Google Fonts).
 """
 
 from __future__ import annotations
@@ -29,10 +29,16 @@ from fontTools.pens.svgPathPen import SVGPathPen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.ttLib import TTFont
 
-# --- Keep in sync with src/common/O2Button.tsx and the brand palette ---------------
-TEXT = "O₂"
-FONT_FAMILY = "DynaPuff"
-FONT_WEIGHT = 700  # matches the wordmark's `font-bold`
+# --- The mark ------------------------------------------------------------------------
+# Nunito Black since 2026-11-07, not the app's DynaPuff wordmark (src/common/O2Button.tsx):
+# at 16-48px DynaPuff's O came out small and lumpy. The subscript is the font's ordinary "2",
+# shrunk and dropped below the baseline here, rather than its "₂" glyph — that leaves its size
+# and position ours to set, which is what lets the O fill the badge.
+FONT_FAMILY = "Nunito"
+FONT_WEIGHT = 900
+SUB_SCALE = 0.5  # the "2" at half the O's size
+SUB_DROP = 0.08  # its baseline this far below the O's, in em
+SUB_GAP = 0.02  # space between the O and the 2, in em
 
 # A white mark on a brand-blue badge (since 2026-11-07; it was a bare blue mark on a
 # transparent background). Google shows a site's favicon inside a circle in its results,
@@ -45,11 +51,7 @@ BOX = 64  # viewBox size
 BADGE_RADIUS = 14  # rounded square in a tab; Google crops it to a circle
 # The glyphs stay inside the circle Google crops to: a 64-box circle's inscribed square is
 # ~45 wide, so 11 on each side keeps the "₂" clear of the crop.
-PADDING = 9.0
-# The subscript at this fraction of the font's own size (2026-11-07). The font's "₂" is wide,
-# and the mark is fitted by width, so shrinking it is what lets the "O" grow: at 1.0 the O was
-# about half the badge. Scaled about its own baseline-left point, so it stays a subscript.
-GLYPH_SCALE = {"₂": 0.72}
+PADDING = 8.0
 
 OUTPUT = Path(__file__).resolve().parent.parent / "public" / "favicon.svg"
 
@@ -61,7 +63,7 @@ LEGACY_UA = "Mozilla/5.0"
 
 
 def fetch_font() -> TTFont:
-    css_url = f"https://fonts.googleapis.com/css2?family={FONT_FAMILY}:wght@400..700"
+    css_url = f"https://fonts.googleapis.com/css2?family={FONT_FAMILY}:wght@{FONT_WEIGHT}"
     req = urllib.request.Request(css_url, headers={"User-Agent": LEGACY_UA})
     css = urllib.request.urlopen(req).read().decode("utf-8")
 
@@ -78,23 +80,27 @@ def fetch_font() -> TTFont:
 def build_svg(font: TTFont) -> str:
     glyph_set = font.getGlyphSet()
     cmap = font.getBestCmap()
-    advances = font["hmtx"].metrics
 
-    missing = [c for c in TEXT if ord(c) not in cmap]
-    if missing:
-        sys.exit(f"{FONT_FAMILY} has no glyph for: {missing!r}")
+    o_name, two_name = cmap[ord("O")], cmap[ord("2")]
+    em = font["head"].unitsPerEm
 
-    # Lay the glyphs out on a baseline, accumulating advance widths.
-    placed: list[tuple[str, Transform]] = []
-    pen_x = 0.0
-    for char in TEXT:
-        name = cmap[ord(char)]
-        k = GLYPH_SCALE.get(char, 1.0)
-        placed.append((name, Transform().translate(pen_x, 0).scale(k)))
-        pen_x += advances[name][0] * k
+    def ink(name: str) -> tuple[float, float, float, float]:
+        pen = BoundsPen(glyph_set)
+        glyph_set[name].draw(pen)
+        return pen.bounds
 
-    # Measure the combined ink bounds so we centre on the glyphs, not the advance box
-    # (the subscript leaves a lot of empty advance to the right otherwise).
+    # The O where the font puts it; the 2 shrunk, set just right of the O's ink and dropped
+    # below its baseline.
+    _, _, o_right, _ = ink(o_name)
+    two_left = ink(two_name)[0]
+    placed = [
+        (o_name, Transform()),
+        (two_name, Transform()
+            .translate(o_right + SUB_GAP * em - two_left * SUB_SCALE, -SUB_DROP * em)
+            .scale(SUB_SCALE)),
+    ]
+
+    # Measure the combined ink bounds so we centre on the glyphs, not the advance box.
     bounds_pen = BoundsPen(glyph_set)
     for name, local in placed:
         glyph_set[name].draw(TransformPen(bounds_pen, local))
