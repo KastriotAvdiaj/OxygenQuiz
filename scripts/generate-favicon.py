@@ -34,14 +34,18 @@ TEXT = "O₂"
 FONT_FAMILY = "DynaPuff"
 FONT_WEIGHT = 700  # matches the wordmark's `font-bold`
 
-# The mark sits on a transparent background, so the glyphs carry the colour themselves and
-# have to hold up against both a light and a dark browser tab strip. Hence two values:
-# --primary in light mode, and its dark-mode counterpart, switched with prefers-color-scheme.
-GLYPH_COLOR = "#2563EB"  # --primary, light: hsl(221.2 83.2% 53.3%)
-GLYPH_COLOR_DARK = "#60A5FA"  # --primary, dark: hsl(217.2 91.2% 59.8%)
+# A white mark on a brand-blue badge (since 2026-11-07; it was a bare blue mark on a
+# transparent background). Google shows a site's favicon inside a circle in its results,
+# where the bare mark came out small, thin and floating; a badge reads at 16px on any tab
+# strip, light or dark, so it needs no prefers-color-scheme rule either.
+BADGE_COLOR = "#2563EB"  # --primary, light: hsl(221.2 83.2% 53.3%)
+GLYPH_COLOR = "#FFFFFF"
 
 BOX = 64  # viewBox size
-PADDING = 2.0  # small inset so the glyphs don't touch the edge when browsers crop
+BADGE_RADIUS = 14  # rounded square in a tab; Google crops it to a circle
+# The glyphs stay inside the circle Google crops to: a 64-box circle's inscribed square is
+# ~45 wide, so 11 on each side keeps the "₂" clear of the crop.
+PADDING = 11.0
 
 OUTPUT = Path(__file__).resolve().parent.parent / "public" / "favicon.svg"
 
@@ -106,20 +110,13 @@ def build_svg(font: TTFont) -> str:
             paths.append(f'    <path d="{commands}"/>')
 
     glyph_markup = "\n".join(paths)
-    # The `fill` attribute is the fallback: a presentation attribute loses to the stylesheet
-    # wherever CSS applies, and is all that's left anywhere it doesn't. Without it, a browser
-    # that ignores <style> in a favicon would render the mark black.
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {BOX} {BOX}" role="img" aria-label="Oxygen Quiz">\n'
         f"  <title>Oxygen Quiz</title>\n"
         f"  <!-- GENERATED FILE — do not edit by hand. Run scripts/generate-favicon.py.\n"
         f"       The O₂ wordmark ({FONT_FAMILY} {FONT_WEIGHT}) converted to outlines, because a\n"
-        f"       favicon renders outside the page and cannot load a webfont. Transparent\n"
-        f"       background, so the glyph colour follows the browser's colour scheme. -->\n"
-        f"  <style>\n"
-        f"    path {{ fill: {GLYPH_COLOR}; }}\n"
-        f"    @media (prefers-color-scheme: dark) {{ path {{ fill: {GLYPH_COLOR_DARK}; }} }}\n"
-        f"  </style>\n"
+        f"       favicon renders outside the page and cannot load a webfont. -->\n"
+        f'  <rect width="{BOX}" height="{BOX}" rx="{BADGE_RADIUS}" fill="{BADGE_COLOR}"/>\n'
         f'  <g fill="{GLYPH_COLOR}">\n'
         f"{glyph_markup}\n"
         f"  </g>\n"

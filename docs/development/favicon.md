@@ -7,7 +7,8 @@ production tab are tellable apart at a glance when both are open.
 
 | Mode | Icon | File |
 |---|---|---|
-| `production` (`npm run build`) | O₂ brand mark, brand blue on a transparent background | `public/favicon.svg` |
+| `production` (`npm run build`) | O₂ brand mark, white on a brand-blue rounded badge | `public/favicon.svg` |
+| both | the same badge as a 180×180 PNG, for iOS home screens and search engines | `public/apple-touch-icon.png` |
 | `development` (`npm run dev`, `npm run build:dev`) | generic Vite mark | `public/vite.svg` |
 
 ---
@@ -61,23 +62,31 @@ the page, so it cannot load a webfont. `<text font-family="DynaPuff">` would sil
 back to a system face and the icon would stop matching the wordmark. Converting to paths
 makes the file self-contained.
 
-**Why the background is transparent, and what that costs.** The mark has no badge behind
-it, so the glyphs carry the colour and have to work on both a light and a dark tab strip.
-The generated SVG therefore ships a `prefers-color-scheme` rule that swaps the fill between
-`--primary` light and `--primary` dark. The `fill` presentation attribute on the `<g>` is
-the fallback for anywhere that CSS-in-favicon isn't honoured — without it the mark would
-render black there, so don't remove it.
+**Why a badge (since 2026-11-07).** Until then the mark had no background: blue glyphs on
+transparent, with a `prefers-color-scheme` rule for dark tab strips. Google shows a site's
+favicon inside a circle in its results, and there the wide, thin mark came out small and
+floating. A white mark on a brand-blue badge reads at 16 px on any background and needs no
+colour-scheme rule. The glyphs sit inside the circle Google crops to (`PADDING`), so the `₂`
+survives the crop; the rounded corners (`BADGE_RADIUS`) are what a browser tab shows.
 
 Re-run the script when the wordmark, its font, or the brand colours change. The constants
-at the top (`TEXT`, `FONT_FAMILY`, `FONT_WEIGHT`, `GLYPH_COLOR`, `GLYPH_COLOR_DARK`) are
-the things worth editing; they're kept in sync with `O2Button.tsx` and `src/global.css`.
+at the top (`TEXT`, `FONT_FAMILY`, `FONT_WEIGHT`, `BADGE_COLOR`, `GLYPH_COLOR`, `PADDING`)
+are the things worth editing; they're kept in sync with `O2Button.tsx` and `src/global.css`.
+Then regenerate the PNG from the SVG (any SVG rasteriser; with librsvg):
+
+```bash
+rsvg-convert -w 180 -h 180 public/favicon.svg -o public/apple-touch-icon.png
+```
+
+**A search result's icon changes on Google's schedule, not ours.** It is fetched when Google
+recrawls the home page — days to weeks; *Request indexing* on the home page in Search Console
+speeds it up. It must be square and at least 48 px, which both files are.
 
 ---
 
 ## Scope / not included
 
-Only `rel="icon"` is wired up. If the app later needs to be installable or pinned to an
-iOS home screen, add `apple-touch-icon` (180×180 PNG) and a web app manifest — both would
-follow the same `%VITE_*%` pattern. A legacy `favicon.ico` was skipped on purpose: SVG
+`rel="icon"` and `rel="apple-touch-icon"` are wired up. If the app later needs to be
+installable, add a web app manifest with 192 and 512 PNGs. A legacy `favicon.ico` was skipped on purpose: SVG
 favicons are supported by all current browsers, and older ones degrade to no icon rather
 than a broken one.
