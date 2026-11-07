@@ -217,15 +217,19 @@ above; a person has to confirm the labels before it decides anything.
 |---|---|---|
 | yield | 121 kept | 119 / 120 |
 | whole run — wrong | 13.2% (16/121) | **1.7%** (2/119, CI 0.5–5.9) |
-| whole run — ambiguous | — | 5.0% (6/119); time-sensitive 2.5% (3) |
+| whole run — ambiguous | — | 5.9% (7/119); time-sensitive 2.5% (3) |
 | memory topics — wrong | 13/37 | 1/29 (sq-01, sq-05, sq-06; en-05 grounded on Learn this time) |
-| Albanian wrong / fluency | 9/62, 3.55 | 2/59, 3.92 |
+| Albanian wrong / fluency | 9/62, 3.55 | 2/59, 3.88 |
 
 - **If the labels hold, this is a different model, not a small gain**: the whole-run intervals
   don't overlap, and it is the memory topics — which grounding cannot help — that improved most.
 - **New defect: Learn questions lose their context.** All ten en-05 questions were written from
   *What's new in C# 12* and several never say C# — "Which of these is a collection expression?"
   The prompt should require each question to name its subject.
+- **New defect: unmeasurable superlatives.** "Which ingredient, besides garlic, is *undoubtedly*
+  the most used in Albania?" — no statistic exists, so several options are defensible (relabelled
+  ambiguous by a person). The prompt should forbid "most used / most popular" without a measured
+  figure in the source.
 - **The source still leaks into explanations** ("as stated in the source") on at least two rows,
   despite the prompt rule.
 - **Thinking dominates the output** — 1,809–11,139 of 3,822–13,790 tokens; see
