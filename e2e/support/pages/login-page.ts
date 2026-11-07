@@ -10,7 +10,9 @@ export class LoginPage {
 
   constructor(readonly page: Page) {
     this.email = page.getByLabel("Email");
-    this.password = page.getByLabel("Password");
+    // Exact: the field's eye button is labelled "Show password", and a loose label match finds
+    // both (PasswordToggle, 2026-11-07 — it broke every sign-in in the suite).
+    this.password = page.getByLabel("Password", { exact: true });
     this.signInButton = page.getByRole("button", { name: "Sign In", exact: true });
     this.failure = page.getByText("Login failed. Please check your credentials.");
   }

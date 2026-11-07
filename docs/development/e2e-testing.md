@@ -293,6 +293,10 @@ App-specific traps:
 - **Several inputs have no label** — the signup steps and the typed answer are reachable only by
   placeholder. That's an accessibility gap as much as a testing one; when you fix one, switch the
   test to `getByLabel`.
+- **A password field's label also matches its eye button.** `getByLabel("Password")` is a
+  case-insensitive *substring* match, and the show/hide button is labelled "Show password", so it
+  finds two elements and fails strict mode. Use `getByLabel("Password", { exact: true })`
+  (`LoginPage` does) — the first run after the eye shipped broke every sign-in in the suite.
 - **Nested banners** on dashboard pages: `getByRole("banner")` matches two elements there. Use the
   `accountButton(page, username)` helper for the signed-in user's button.
 - **Development-only prefill:** `LoginForm` fills the local admin's credentials under `npm run dev`.
