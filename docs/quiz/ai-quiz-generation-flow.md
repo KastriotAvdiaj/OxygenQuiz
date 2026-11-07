@@ -245,11 +245,23 @@ quality and price, so an eval run is only comparable to another if the hosts wer
 one in OpenRouter's account settings before a measured run (`ChatRequest` has no `provider`
 field). The thinking comes back in `message.reasoning`, beside `content`, and is ignored.
 
-**Not every reasoning model honours `reasoning_effort`.** Checked with curl on 2026-11-07, one
-Albanian question each: DeepSeek V4.1 Flash with `"low"` thought for 55 tokens; GLM 5.3 Flash
-thought for 144 without the field and 382 with it — ignored. A model that ignores it has no
-ceiling on its thinking other than `max_tokens`, which is the empty-completion failure above, so
-GLM has no vendor entry until a setting that bounds its thinking is found.
+**Not every reasoning model honours `reasoning_effort`, and `"low"` is not small.** Checked with
+curl on 2026-11-07, one Albanian question each: DeepSeek V4.1 Flash with `"low"` thought for 55
+tokens; GLM 5.3 Flash thought for 144 without the field and 382 with it — ignored, so GLM has no
+vendor entry. But on the real prompt DeepSeek at `"low"` thought far more (eval, the same day,
+ten questions per topic):
+
+| DeepSeek V4.1 Flash, `"low"` | output tokens | of which thinking |
+|---|---|---|
+| Ungrounded, 12 topics | 3,158–6,270 | 1,842–4,371 |
+| Grounded, 12 topics | 3,822–13,790 | 1,809–11,139 |
+
+Thinking is two-thirds or more of the output, and the answer itself is ~1,300–2,800 tokens. **With
+`Ai:MaxOutputTokens` at 4,000 most of these replies are cut off** — the first eval run hit the
+ceiling on 8 of 12 — and so would the palette call's 1,500. Selecting `openrouter-deepseek` means
+raising both ceilings (16,000 covers the largest grounded reply above) and checking
+`Ai:TimeoutSeconds` against how long a 14,000-token reply takes; or turning the thinking off,
+which needs OpenRouter's `reasoning` field — one more line of C# in `ChatRequest`.
 
 **Prices are ours to keep current, and nothing validates them.** See §9.14.
 
