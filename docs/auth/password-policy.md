@@ -120,6 +120,12 @@ client-side blocklist would be a downloadable list of the passwords we reject. B
 surface only after submit, in the server's own words, via `resetErrorMessage`. See
 [`password-reset.md`](password-reset.md) §5.
 
+**Signup says which rule a password broke.** Length and the common-password list are attributes
+on `SignupDTO`, so a failure comes back as a validation error with the sentence under
+`errors.Password`; both signup forms read it with `signupErrorMessage` and go back to the password
+step. Until 2026-11-08 they read the generic title instead, and a too-common password failed with
+"One or more validation errors occurred." and nothing to fix.
+
 **Every password field has a show/hide eye** (since 2026-11-07) — login, signup, reset, the account
 panel's password change and the admin's create-user form. It lives in the shared `Input`
 (`PasswordToggle`, `components/ui/form/password-toggle.tsx`), so any new `type="password"` field

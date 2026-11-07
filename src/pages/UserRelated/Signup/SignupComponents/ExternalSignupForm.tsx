@@ -13,6 +13,7 @@ import {
   MIN_USERNAME_LENGTH,
 } from "../api/check-availability";
 import type { StepFeedback } from "./SignupSteps";
+import { signupErrorMessage } from "../api/signup-error-message";
 
 export type ExternalSignupInfo = ExternalSignupRequired & {
   provider: ExternalProvider;
@@ -87,11 +88,7 @@ const ExternalSignupForm: React.FC<ExternalSignupFormProps> = ({
         },
         onError: (error: any) => {
           const status = error?.response?.status;
-          const data = error?.response?.data;
-          const message =
-            data?.detail ||
-            data?.title ||
-            "We couldn't create your account. Please try again.";
+          const message = signupErrorMessage(error);
 
           // The ticket lives 10 minutes; past that the provider popup must run again.
           if (status === 401) {

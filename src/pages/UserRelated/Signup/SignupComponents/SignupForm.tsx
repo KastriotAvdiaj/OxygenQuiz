@@ -12,6 +12,7 @@ import {
   useEmailAvailability,
   MIN_USERNAME_LENGTH,
 } from "../api/check-availability";
+import { signupErrorMessage } from "../api/signup-error-message";
 
 interface SignupFormProps {
   /**
@@ -151,12 +152,8 @@ export const SignupForm: React.FC<SignupFormProps> = ({
           });
           navigate("/");
         },
-        onError: (error: any) => {
-          const data = error?.response?.data;
-          const message =
-            data?.detail ||
-            data?.title ||
-            "We couldn't create your account. Please try again.";
+        onError: (error: unknown) => {
+          const message = signupErrorMessage(error);
           useNotifications.getState().addNotification({
             type: "error",
             title: "Sign up failed",
@@ -176,6 +173,8 @@ export const SignupForm: React.FC<SignupFormProps> = ({
             onBadInviteCode?.();
           else if (lower.includes("email")) setStep(2 + offset);
           else if (lower.includes("username")) setStep(1 + offset);
+          // Too short or too common: back to the password, where it can be changed.
+          else if (lower.includes("password")) setStep(3 + offset);
         },
       }
     );
