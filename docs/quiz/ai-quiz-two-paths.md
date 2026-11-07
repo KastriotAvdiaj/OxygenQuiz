@@ -76,13 +76,16 @@ existed but were unreachable.)
    so it goes straight to the board builder. **Only shown while there is a choice**: Associations
    is admin-only in preview (`format-access.ts`), so everyone else opens on step 2.
 2. **How do you want to build it?** — Manually / With AI.
-3. **What should the AI work from?** — From a topic / From my material.
+3. **What should the AI work from?** — From a topic / From my material / From a set of facts.
+   The third is a fact quiz with no model in it ([`fact-quizzes.md`](./fact-quizzes.md)); it sits
+   under the first two at their combined width, so the dialog keeps its width and the pair keeps
+   its place.
 
 Until 2026-09-29 the first step was Manually / With AI / Associations side by side, which offered
 a format as if it were a way of writing questions — Associations can't be made with AI at all.
 
-Two cards per step, so the dialog keeps one width throughout. "Use your own AI" is deliberately
-not a third card — see §2 for why it belongs at the foot of the wizard instead.
+Two columns per step, so the dialog keeps one width throughout. "Use your own AI" is deliberately
+not another card — see §2 for why it belongs at the foot of the wizard instead.
 
 **Moving between steps.** The card you pick grows a touch and fades while its sibling shrinks
 away (170ms), then the next step's two cards **pop out of the picked card**: each starts at its
@@ -119,11 +122,12 @@ step 2; the arrow beside the dialog title is what pays it.
 the wizard to toggle, only a route it was loaded at. `/ai` redirects to `/ai/topic`, so
 existing links, bookmarks and the own-AI page's "back to generating" control keep working.
 
-**`/ai/material` is not registered yet.** The server has accepted pasted `sourceText` since
-slice 2.0, but the mode people actually asked for is *upload a file* (slice 2.3), so the dialog
-renders that card disabled — "Coming soon" in its foot row, no lift, no arrow — rather than
-routing to a paste box. The flag is `AI_MATERIAL_MODE_ENABLED` in the dialog, and its doc
-comment lists what else has to change when it flips — the route, and nothing else.
+**`/ai/material` is registered, and the server decides whether it opens.** Source mode (paste or
+upload) is built, but it only opens on a model strong enough to write from someone's own
+document: the vendor entry's `AllowsSourceMode`, carried to the dialog as `sourceModeEnabled` on
+`GET /quiz/ai-quota` ([ADR 0037](../adr/0037-source-mode-writes-in-the-materials-language-and-opens-per-model.md)).
+Until then the card is disabled — "Coming soon" in its foot row, no lift, no arrow. (Until
+2026-10-29 this was a frontend flag, `AI_MATERIAL_MODE_ENABLED`, and the route didn't exist.)
 
 ## 3. What must stay the same, and what enforces it
 

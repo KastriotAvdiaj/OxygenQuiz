@@ -16,6 +16,7 @@ a draft is not a `Quiz` row.
 | Board builder (`.../create-quiz/associations`, `.../create/associations`) | `quiz-associations` | The whole board form — sixteen Tiles, four solutions, the Final, spellings and quiz fields. Versioned on its own (`ASSOCIATION_DRAFT_VERSION`) |
 | AI wizard, generate path (`.../ai/topic`) | `quiz-ai-topic` | **The model's reply**, and the topic and Advanced options that produced it |
 | AI wizard, bring-your-own (`.../ai/own`) | `quiz-ai-own` | The same, plus the reply pasted into the box before it has been imported |
+| From facts (`.../ai/facts`) | `quiz-ai-facts` | The built quiz, before it is saved — [`fact-quizzes.md`](./fact-quizzes.md). The pack and language aren't kept: picking again is a click |
 
 The AI reply — `payload` — is the reason the AI slots exist. The typing is cheap to redo; a
 generation is not. It came out of the user's quota, and losing it to a stray refresh makes them

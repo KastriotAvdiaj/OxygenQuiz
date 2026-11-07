@@ -125,6 +125,11 @@ const OwnAiQuiz = lazy(() =>
     (module) => ({ default: module.OwnAiQuiz }),
   ),
 );
+const FactQuiz = lazy(() =>
+  import("@/pages/Dashboard/Pages/Quiz/components/AI-Quiz/fact-quiz").then(
+    (module) => ({ default: module.FactQuiz }),
+  ),
+);
 const DashboardErrorElement = lazy(() =>
   import("@/pages/UtilityPages/Error/Dashboard-Error-Element").then(
     (module) => ({ default: module.DashboardErrorElement }),
@@ -574,6 +579,12 @@ const createAppRouter = (queryClient: QueryClient) =>
           element: <OwnAiQuiz />,
         },
         {
+          // A quiz built from a Wikidata fact pack — no model (docs/quiz/fact-quizzes.md). Under
+          // ai/ for the same review handoff and draft hook as its siblings.
+          path: "quizzes/create-quiz/ai/facts",
+          element: <FactQuiz />,
+        },
+        {
           // The Associations board builder (docs/quiz/associations.md, "Authoring"). Under
           // create-quiz/ so the layout's full-width prefix match covers it with no new entry.
           path: "quizzes/create-quiz/associations",
@@ -791,6 +802,10 @@ const createAppRouter = (queryClient: QueryClient) =>
         {
           path: "quizzes/create/ai/own",
           element: <OwnAiQuiz />,
+        },
+        {
+          path: "quizzes/create/ai/facts",
+          element: <FactQuiz />,
         },
         {
           // Owners edit their own quizzes here. The admin dashboard's edit routes are admin-only

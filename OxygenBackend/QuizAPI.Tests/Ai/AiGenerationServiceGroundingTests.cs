@@ -106,6 +106,36 @@ public class AiGenerationServiceGroundingTests
     }
 
     [Fact]
+    public async Task The_prompt_says_when_Wikidata_facts_follow_the_article()
+    {
+        var withFacts = Grounded() with
+        {
+            Source = Grounded().Source! with
+            {
+                Text = Article + "\n\nFacts from Wikidata about \"Fotosinteza\":\n- fillimi: 1779",
+                WikidataFacts = 1,
+            },
+        };
+        var h = Build(withFacts);
+
+        await h.Service.GenerateAsync(Guid.NewGuid(), TopicRequest());
+
+        var prompt = Assert.Single(h.Prompts);
+        Assert.Contains("followed by facts about the same subject from Wikidata", prompt);
+        Assert.Contains("- fillimi: 1779", prompt);
+    }
+
+    [Fact]
+    public async Task Without_facts_the_prompt_mentions_none()
+    {
+        var h = Build(Grounded());
+
+        await h.Service.GenerateAsync(Guid.NewGuid(), TopicRequest());
+
+        Assert.DoesNotContain("Wikidata", Assert.Single(h.Prompts));
+    }
+
+    [Fact]
     public async Task Explanations_are_told_to_state_the_fact_not_cite_the_article()
     {
         // Players never see the article; "sipas materialit" explains nothing to them.
@@ -135,7 +165,7 @@ public class AiGenerationServiceGroundingTests
 
         await h.Service.GenerateAsync(Guid.NewGuid(), TopicRequest(sourceTitle: "Fotosinteza") with { SourceLanguage = "Albanian" });
 
-        h.Grounding.Verify(g => g.GroundAsync("Fotosinteza", new GroundingAnswers("Albanian", "Fotosinteza", false, false), It.IsAny<CancellationToken>()));
+        h.Grounding.Verify(g => g.GroundAsync("Fotosinteza", new GroundingAnswers("Albanian", "Fotosinteza", false, false, null), It.IsAny<CancellationToken>()));
     }
 
     [Fact]

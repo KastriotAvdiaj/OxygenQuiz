@@ -61,7 +61,7 @@ interface TopicRow {
    */
   sourceTitle?: string;
   /**
-   * `--grounding` only: answer "which article?" with "none of these" — for topics Wikipedia has no
+   * `--grounding` only: answer "which article?" with "none of these" — for topics no source has a
    * good article for, where an author would decline rather than pick a wrong one.
    */
   noSource?: boolean;
@@ -73,8 +73,10 @@ interface GroundingInfo {
   language?: string | null;
   reason?: string | null;
   source?: { provider: string; title: string; url?: string | null; text: string; language: string } | null;
-  articles?: { title: string; words: number }[] | null;
+  /** `provider` and `key` arrive since Microsoft Learn (2026-10-30): the key is what's sent back. */
+  articles?: { title: string; words: number; provider?: string; key?: string }[] | null;
   languages?: string[] | null;
+  unreachable?: string[] | null;
 }
 
 /** One question the server put to the "author", and how the run answered it. */
@@ -242,14 +244,21 @@ async function promptFor(
       asks.push({ kind: "article", offered, answered: "none of these", auto: false });
       body = { ...body, SourceDeclined: true, SourceLanguage: question.language ?? topic.language };
     } else if (question.status === "NeedsArticle" && !asks.some((a) => a.kind === "article")) {
-      const offered = (question.articles ?? []).map((a) => a.title);
-      const wanted = topic.sourceTitle && offered.includes(topic.sourceTitle) ? topic.sourceTitle : undefined;
-      const answered = wanted ?? offered[0];
-      if (!answered) throw new Error("The server asked which article but offered none.");
-      asks.push({ kind: "article", offered, answered, auto: wanted === undefined });
-      body = { ...body, SourceTitle: answered, SourceLanguage: question.language ?? topic.language };
+      const articles = question.articles ?? [];
+      const offered = articles.map((a) => a.title);
+      const wanted = articles.find((a) => a.title === topic.sourceTitle);
+      const picked = wanted ?? articles[0];
+      if (!picked) throw new Error("The server asked which article but offered none.");
+      asks.push({ kind: "article", offered, answered: picked.title, auto: wanted === undefined });
+      // The candidate's key, not its title: on Microsoft Learn it is the page's address.
+      body = {
+        ...body,
+        SourceTitle: picked.key ?? picked.title,
+        SourceProvider: picked.provider,
+        SourceLanguage: question.language ?? topic.language,
+      };
     } else if (question.status === "SourceUnavailable" && !asks.some((a) => a.kind === "unavailable")) {
-      // Wikipedia was down. An author could wait; a measurement shouldn't silently become a
+      // A source was down. An author could wait; a measurement shouldn't silently become a
       // from-memory run, so the report marks the topic (asked: unavailable) and it can be re-run.
       asks.push({ kind: "unavailable", offered: ["try again", "write from memory"], answered: "write from memory", auto: true });
       body = { ...body, SourceAcceptFromMemory: true, SourceLanguage: question.language ?? topic.language };
@@ -292,6 +301,10 @@ interface ModelReply {
   content: string;
   inputTokens: number;
   outputTokens: number;
+  /** Of `outputTokens`, how many the model spent thinking (absent when the vendor doesn't say). */
+  reasoningTokens: number | null;
+  /** "length" means the reply hit `max_tokens` and was cut off — its JSON is usually broken. */
+  finishReason: string | null;
 }
 
 async function callModel(prompt: string, attempt = 1): Promise<ModelReply> {
@@ -329,13 +342,19 @@ async function callModel(prompt: string, attempt = 1): Promise<ModelReply> {
     throw new Error(`Model call returned ${res.status}${hint}: ${(await res.text()).slice(0, 400)}`);
   }
   const body = (await res.json()) as {
-    choices?: { message?: { content?: string } }[];
-    usage?: { prompt_tokens?: number; completion_tokens?: number };
+    choices?: { message?: { content?: string }; finish_reason?: string }[];
+    usage?: {
+      prompt_tokens?: number;
+      completion_tokens?: number;
+      completion_tokens_details?: { reasoning_tokens?: number };
+    };
   };
   return {
     content: body.choices?.[0]?.message?.content ?? "",
     inputTokens: body.usage?.prompt_tokens ?? 0,
     outputTokens: body.usage?.completion_tokens ?? 0,
+    reasoningTokens: body.usage?.completion_tokens_details?.reasoning_tokens ?? null,
+    finishReason: body.choices?.[0]?.finish_reason ?? null,
   };
 }
 
@@ -459,12 +478,14 @@ async function main(): Promise<void> {
       const waited = await pacer.waitForRoom();
       if (waited > 0) console.log(`      paused ${(waited / 1000).toFixed(1)}s to stay under ${TPM_LIMIT} tokens/min`);
 
+      const started = Date.now();
       const reply = await callModel(prompt);
+      const seconds = (Date.now() - started) / 1000;
       pacer.record(reply.inputTokens + reply.outputTokens);
 
       await fs.writeFile(
         path.join(runDir, "raw", `${topic.id}.json`),
-        JSON.stringify({ topic, request, prompt, reply, languageMode, grounding: groundingInfo, asks }, null, 2),
+        JSON.stringify({ topic, request, prompt, reply, seconds, languageMode, grounding: groundingInfo, asks }, null, 2),
       );
       const source = groundingInfo?.source
         ? `grounded on "${groundingInfo.source.title}"`
@@ -472,7 +493,16 @@ async function main(): Promise<void> {
           ? `ungrounded (${groundingInfo.reason ?? "?"})`
           : "";
       const asked = asks.length > 0 ? `, asked ${asks.map((a) => a.kind).join(" + ")}` : "";
-      console.log(`${label}  ok  (${reply.outputTokens} output tokens${source ? `, ${source}` : ""}${asked})`);
+      // A reply cut off at max_tokens still saves and still "succeeds" here; parse then finds
+      // broken JSON and the topic scores as zero yield, which reads as a bad model rather than
+      // a ceiling too low for it. Say so now. Reasoning models spend their thinking inside the
+      // same ceiling (docs/quiz/ai-quiz-generation-flow.md §2b).
+      const thinking = reply.reasoningTokens != null ? `, ${reply.reasoningTokens} thinking` : "";
+      const status = reply.finishReason === "length" ? "CUT OFF at max_tokens" : "ok";
+      // Production reaches the model through Cloudflare, which drops any request after 100s, and
+      // Ai:TimeoutSeconds is 90 to stay under it. A call this slow in the eval fails in the app.
+      const slow = seconds > 90 ? "  — OVER Ai:TimeoutSeconds (90s)" : "";
+      console.log(`${label}  ${status}  (${seconds.toFixed(0)}s, ${reply.outputTokens} output tokens${thinking}${source ? `, ${source}` : ""}${asked})${slow}`);
     } catch (err) {
       const message = describeError(err);
       failures.push({ id: topic.id, error: message });

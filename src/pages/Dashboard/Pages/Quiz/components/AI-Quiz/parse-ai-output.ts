@@ -162,6 +162,13 @@ export interface ParseContext {
    * since a model that never saw the text cannot quote it verbatim by accident.
    */
   sourceText?: string | null;
+  /**
+   * Keep a question whose answer is written in its own text. Set for fact quizzes
+   * (docs/quiz/fact-quizzes.md), where "What is the capital of Monaco?" — answer *Monaco* — is the
+   * fact itself rather than a model's slip: the giveaway check exists to catch a model leaking its
+   * answer, and a fact quiz has no model. To someone who doesn't know, it isn't obvious either.
+   */
+  answerMayBeInText?: boolean;
 }
 
 /**
@@ -325,6 +332,7 @@ const buildQuestion = (
     languageId: number;
     difficultyId: number;
     explanation: string;
+    answerMayBeInText?: boolean;
   }
 ): { question: NewAnyQuestion } | { reason: string } => {
   const common = {
@@ -355,6 +363,7 @@ const buildQuestion = (
       // Only meaningful for a single answer: with several correct options, one of them sitting
       // in the question text is often just context.
       if (
+        !base.answerMayBeInText &&
         correct.length === 1 &&
         givesAwayAnswer(
           raw.text,
@@ -402,7 +411,7 @@ const buildQuestion = (
       if (typeof answer !== "string" || !answer.trim()) {
         return { reason: "correctAnswer must be a non-empty string" };
       }
-      if (givesAwayAnswer(raw.text, answer)) {
+      if (!base.answerMayBeInText && givesAwayAnswer(raw.text, answer)) {
         return { reason: "gives the answer away in the question text" };
       }
       const question: NewTypeTheAnswerQuestion = {
@@ -504,6 +513,7 @@ export const parseAiOutput = (raw: string, ctx: ParseContext): ParseResult => {
       languageId: ctx.languageId,
       difficultyId,
       explanation: cleanExplanation(rawQuestion.explanation),
+      answerMayBeInText: ctx.answerMayBeInText,
     });
 
     if ("reason" in built) {

@@ -257,6 +257,7 @@ namespace QuizAPI.Services.Ai
                 LanguageName = string.IsNullOrWhiteSpace(request.LanguageName) ? null : request.LanguageName.Trim(),
                 SourceLanguage = string.IsNullOrWhiteSpace(request.SourceLanguage) ? null : request.SourceLanguage.Trim(),
                 SourceTitle = string.IsNullOrWhiteSpace(request.SourceTitle) ? null : request.SourceTitle.Trim(),
+                SourceProvider = string.IsNullOrWhiteSpace(request.SourceProvider) ? null : request.SourceProvider.Trim(),
                 // Never from a caller: only GroundAsync sets this, from a lookup it made itself.
                 Grounding = null,
                 QuestionCount = Math.Clamp(request.QuestionCount, 1, Math.Max(1, _options.MaxQuestionsPerGeneration)),
@@ -290,7 +291,9 @@ namespace QuizAPI.Services.Ai
 
             var grounding = await _grounding.GroundAsync(
                 r.Topic,
-                new GroundingAnswers(r.SourceLanguage ?? r.LanguageName, r.SourceTitle, r.SourceDeclined, r.SourceAcceptFromMemory),
+                new GroundingAnswers(
+                    r.SourceLanguage ?? r.LanguageName, r.SourceTitle, r.SourceDeclined, r.SourceAcceptFromMemory,
+                    r.SourceProvider),
                 ct);
             if (grounding.Status is GroundingStatus.Off || grounding.NeedsChoice) return (r, grounding);
 
@@ -421,6 +424,7 @@ namespace QuizAPI.Services.Ai
                 r.QuestionCount,
                 string.Join(',', r.AllowedTypes),
                 r.ExtraInstructions ?? string.Empty,
+                r.Grounding?.Provider ?? string.Empty,
                 r.Grounding?.Title ?? string.Empty,
                 r.AddImages);
 

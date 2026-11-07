@@ -100,7 +100,7 @@ namespace QuizAPI.Services.Ai.Sources
                         return SourceLookup.NotFound;
 
                     case SourceDecisionKind.Ask:
-                        return SourceLookup.NeedsDisambiguation(decision.Candidates);
+                        return SourceLookup.NeedsDisambiguation(decision.Candidates, decision.TermIsAmbiguous);
 
                     case SourceDecisionKind.TooThin:
                         return SourceLookup.TooThin(

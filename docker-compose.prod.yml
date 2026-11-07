@@ -25,6 +25,12 @@ services:
       #  AI and Google OAuth settings
       - Ai__Enabled=true
       - Ai__ApiKey=${AI_API_KEY}
+      #  Spend caps, checked against our own cost estimate (list price, so an upper bound). Keep
+      #  the monthly one UNDER the OpenRouter key's own limit ($5 since 2026-11-07), so ours trips
+      #  first with a clean "unavailable" instead of the vendor's 402; the daily one keeps a busy
+      #  day from spending the month. Defaults in appsettings.json are $25 / $2.
+      - Ai__MonthlyBudgetUsd=4
+      - Ai__DailyBudgetUsd=0.5
       - Authentication__Google__Enabled=true
       - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID}
       #  Transactional email (Brevo) + the base URL its links point at

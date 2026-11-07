@@ -74,5 +74,38 @@ namespace QuizAPI.Services.Ai.Sources
         /// anonymous agent with HTTP 429 — which is how this was found.
         /// </summary>
         public string UserAgent { get; set; } = "OxygenQuiz/1.0 (https://oxygenquiz.com)";
+
+        /// <summary><c>Ai:Source:MicrosoftLearn</c> — the second source, for English technical topics.</summary>
+        public MicrosoftLearnOptions MicrosoftLearn { get; set; } = new();
+
+        /// <summary><c>Ai:Source:WikidataFacts</c> — the facts added under a Wikipedia article.</summary>
+        public WikidataFactsOptions WikidataFacts { get; set; } = new();
+    }
+
+    public sealed class WikidataFactsOptions
+    {
+        /// <summary>On whenever grounding is; off sends the article alone, as before 2026-11-05.</summary>
+        public bool Enabled { get; set; } = true;
+
+        /// <summary>
+        /// The most the facts may add to the prompt. 800 characters is about 200 tokens — room for
+        /// a dozen facts without crowding the free tier's per-minute token limit.
+        /// </summary>
+        public int MaxChars { get; set; } = 800;
+
+        /// <summary>Short on purpose: the article is already in hand, and the facts are a bonus.</summary>
+        public int TimeoutSeconds { get; set; } = 3;
+    }
+
+    public sealed class MicrosoftLearnOptions
+    {
+        /// <summary>
+        /// On whenever grounding is: it is searched alongside Wikipedia and only used when its
+        /// page matches the topic better. Here to switch it off on its own if Learn misbehaves.
+        /// </summary>
+        public bool Enabled { get; set; } = true;
+
+        /// <summary>Learn's MCP server — keyless and free (learn.microsoft.com/training/support/mcp).</summary>
+        public string Endpoint { get; set; } = "https://learn.microsoft.com/api/mcp";
     }
 }

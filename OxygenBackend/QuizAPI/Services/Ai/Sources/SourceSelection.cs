@@ -12,10 +12,12 @@ namespace QuizAPI.Services.Ai.Sources
         NotFound = 3,
     }
 
+    /// <param name="TermIsAmbiguous">Asking because the top hit is a disambiguation page — the source says the term has several meanings.</param>
     public sealed record SourceDecision(
         SourceDecisionKind Kind,
         SourceCandidate? Chosen,
-        IReadOnlyList<SourceCandidate> Candidates);
+        IReadOnlyList<SourceCandidate> Candidates,
+        bool TermIsAmbiguous = false);
 
     /// <summary>
     /// Which article a set of search hits points at, or whether to ask.
@@ -68,7 +70,7 @@ namespace QuizAPI.Services.Ai.Sources
             // The source itself says the term is ambiguous. Nothing to weigh — ask.
             if (candidates[0].IsDisambiguation)
                 return offer.Count > 0
-                    ? new SourceDecision(SourceDecisionKind.Ask, null, offer)
+                    ? new SourceDecision(SourceDecisionKind.Ask, null, offer, TermIsAmbiguous: true)
                     : new SourceDecision(SourceDecisionKind.NotFound, null, Array.Empty<SourceCandidate>());
 
             if (ranked.Count == 0)
@@ -99,7 +101,7 @@ namespace QuizAPI.Services.Ai.Sources
         /// The better of the title and the redirect the search matched through. "Quantum physics"
         /// finds <i>Quantum mechanics</i> by its redirect, and the redirect is what matches.
         /// </summary>
-        private static TitleScore Best(string topic, SourceCandidate c)
+        internal static TitleScore Best(string topic, SourceCandidate c)
         {
             var title = TitleMatch.Score(topic, c.Title);
             if (string.IsNullOrWhiteSpace(c.RedirectTitle)) return title;

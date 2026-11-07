@@ -203,4 +203,149 @@ public class QuizGroundingTests
         Assert.Equal("too-thin", result.Reason);
         Assert.Equal("Historia e Kosovës", result.ConsideredTitle);
     }
+
+    // ── More than one source ─────────────────────────────────────────────────────────────
+
+    private const string LearnUrl = "https://learn.microsoft.com/azure/azure-functions/functions-overview";
+
+    /// <summary>A second, English-only source, like Microsoft Learn.</summary>
+    private static Mock<IQuizSourceProvider> Learn(SourceLookup lookup)
+    {
+        var learn = new Mock<IQuizSourceProvider>();
+        learn.SetupGet(p => p.Name).Returns(MicrosoftLearnSourceProvider.ProviderName);
+        learn.Setup(p => p.SupportsLanguage(It.IsAny<string?>())).Returns((string? l) => l is "English");
+        learn.Setup(p => p.LookupAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>())).ReturnsAsync(lookup);
+        learn.Setup(p => p.FetchAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync((string key, string? _, CancellationToken _) => SourceLookup.Selected("What is Azure Functions?", key, Article, 900, key));
+        learn.Setup(p => p.HasTitleAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        return learn;
+    }
+
+    private static QuizGrounding Grounding(params Mock<IQuizSourceProvider>[] providers) =>
+        new(providers.Select(p => p.Object), Options.Create(new SourceOptions { Enabled = true }));
+
+    [Fact]
+    public async Task Every_source_for_the_language_is_searched_and_the_sure_one_writes()
+    {
+        var wiki = Provider(SourceLookup.NotFound);
+        var learn = Learn(SourceLookup.Selected("What is Azure Functions?", LearnUrl, Article, 900, LearnUrl));
+
+        var result = await Grounding(wiki, learn).GroundAsync("Azure Functions", new GroundingAnswers("English", null), default);
+
+        Assert.Equal(GroundingStatus.Grounded, result.Status);
+        Assert.Equal(MicrosoftLearnSourceProvider.ProviderName, result.Source!.Provider);
+        Assert.Equal(LearnUrl, result.Source.Url);
+        wiki.Verify(p => p.LookupAsync("Azure Functions", "English", It.IsAny<CancellationToken>()));
+    }
+
+    [Fact]
+    public async Task A_topic_Wikipedia_is_sure_of_never_reaches_Learn()
+    {
+        // "Photosynthesis", "Kubernetes": the common case, and it costs one source.
+        var wiki = Provider();
+        var learn = Learn(SourceLookup.NotFound);
+
+        var result = await Grounding(wiki, learn).GroundAsync("Photosynthesis", new GroundingAnswers("English", null), default);
+
+        Assert.Equal("wikipedia", result.Source!.Provider);
+        learn.Verify(p => p.LookupAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task A_disambiguation_page_asks_without_reaching_Learn()
+    {
+        var wiki = Provider(SourceLookup.NeedsDisambiguation(
+            new[] { new SourceCandidate("Mercury (planet)", 16170), new SourceCandidate("Freddie Mercury", 17329) },
+            termIsAmbiguous: true));
+        var learn = Learn(SourceLookup.NotFound);
+
+        var result = await Grounding(wiki, learn).GroundAsync("Mercury", new GroundingAnswers("English", null), default);
+
+        Assert.Equal(GroundingStatus.NeedsArticle, result.Status);
+        learn.Verify(p => p.LookupAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Wikipedia_unsure_asks_Learn_and_offers_both()
+    {
+        // "Git branching": Wikipedia has Git and Branching (version control), neither clearly it.
+        var wiki = Provider(SourceLookup.NeedsDisambiguation(
+            new[] { new SourceCandidate("Git", 7918), new SourceCandidate("Branching (version control)", 1090) }));
+        var learn = Learn(SourceLookup.NeedsDisambiguation(new[]
+        {
+            new SourceCandidate("Adopt a Git branching strategy", 1341)
+            {
+                Provider = MicrosoftLearnSourceProvider.ProviderName,
+                Key = "https://learn.microsoft.com/azure/devops/repos/git/git-branching-guidance",
+            },
+        }));
+
+        var result = await Grounding(wiki, learn).GroundAsync("Git branching", new GroundingAnswers("English", null), default);
+
+        Assert.Equal(GroundingStatus.NeedsArticle, result.Status);
+        Assert.Equal(new[] { "microsoft-learn", "wikipedia", "wikipedia" }, result.Candidates.Select(c => c.Provider));
+    }
+
+    [Fact]
+    public async Task Wikipedia_down_still_asks_Learn()
+    {
+        var wiki = Provider(SourceLookup.Unavailable);
+        var learn = Learn(SourceLookup.Selected("What is Azure Functions?", LearnUrl, Article, 900, LearnUrl));
+
+        var result = await Grounding(wiki, learn).GroundAsync("Azure Functions", new GroundingAnswers("English", null), default);
+
+        Assert.Equal(GroundingStatus.Grounded, result.Status);
+        Assert.Equal(MicrosoftLearnSourceProvider.ProviderName, result.Source!.Provider);
+    }
+
+    [Fact]
+    public async Task A_source_that_does_not_serve_the_language_is_not_asked()
+    {
+        var wiki = Provider();
+        var learn = Learn(SourceLookup.NotFound);
+
+        var result = await Grounding(wiki, learn).GroundAsync("Rregullat e futbollit", NoAnswers, default);
+
+        Assert.Equal("wikipedia", result.Source!.Provider);
+        learn.Verify(p => p.LookupAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task A_picked_article_is_fetched_from_the_source_it_came_from()
+    {
+        var wiki = Provider();
+        var learn = Learn(SourceLookup.NotFound);
+
+        var result = await Grounding(wiki, learn).GroundAsync(
+            "Azure Functions", new GroundingAnswers("English", LearnUrl, ArticleProvider: MicrosoftLearnSourceProvider.ProviderName), default);
+
+        Assert.Equal(MicrosoftLearnSourceProvider.ProviderName, result.Source!.Provider);
+        learn.Verify(p => p.FetchAsync(LearnUrl, "English", It.IsAny<CancellationToken>()));
+        wiki.Verify(p => p.FetchAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task A_picked_article_with_no_source_named_is_Wikipedias()
+    {
+        // How the wizard answered before there were two sources, and still a valid request.
+        var wiki = Provider();
+        var learn = Learn(SourceLookup.NotFound);
+
+        var result = await Grounding(wiki, learn).GroundAsync("Mercury", new GroundingAnswers("English", "Mercury (planet)"), default);
+
+        Assert.Equal("wikipedia", result.Source!.Provider);
+        wiki.Verify(p => p.FetchAsync("Mercury (planet)", "English", It.IsAny<CancellationToken>()));
+    }
+
+    [Fact]
+    public async Task An_outage_names_the_source_that_was_down()
+    {
+        var wiki = Provider(SourceLookup.NotFound);
+        var learn = Learn(SourceLookup.Unavailable);
+
+        var result = await Grounding(wiki, learn).GroundAsync("Azure Functions", new GroundingAnswers("English", null), default);
+
+        Assert.Equal(GroundingStatus.SourceUnavailable, result.Status);
+        Assert.Equal(new[] { MicrosoftLearnSourceProvider.ProviderName }, result.Unreachable);
+    }
 }

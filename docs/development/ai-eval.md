@@ -110,12 +110,14 @@ before the fix rather than after.
 otherwise). When the server asks a question, the run answers as an author would: the topic's
 `language` for "English or Albanian?", and for "which article?" the topic's `sourceTitle`,
 "none of these" when `noSource` is set, or the first offer — marked *(auto)* in the report so
-`topics.json` can be fixed. The article text is saved with the reply, so `parse` runs the quote
+`topics.json` can be fixed. A picked candidate goes back as its `key` and `provider`, since a
+Microsoft Learn page is named by its address (since 2026-10-30; en-05 moved from `noSource` to
+Learn's *What's new in C# 12* then, so its grounded rows don't compare with earlier runs). The article text is saved with the reply, so `parse` runs the quote
 check exactly as the app does for Source mode.
 
 The report gains a grounding table — what each topic was written from, and what was asked. With
 `--compare`, it also gives **the grounded topics only, in both runs**. That cut is the one that can
-show grounding working: topics Wikipedia has no article for are written from memory in a
+show grounding working: topics no source has an article for are written from memory in a
 grounded run too, and on the Phase 0 set they held 11 of the 23 wrong answers — enough that the
 whole-run rate could not clear the "intervals don't overlap" bar even if grounding fixed every
 error it touched.
@@ -134,6 +136,7 @@ npm run eval:score -- --compare=2026-10-28T23-41-01-324Z-inferred
 - **No per-question regeneration or repair.** The harness measures; it does not improve.
 - **No CI integration.** Every run costs model calls and a human afternoon. Run it when a change
   to the generation path is worth measuring, not on every push.
-- **No Source mode yet.** `/ai/material` is unrouted, so Topic mode is the only mode users reach
-  and the quote check has nothing to compare against. When Source mode ships, `topics.json` gains
-  a `sourceText` field and `contextFor` stops passing `sourceText: null`.
+- **No Source mode topics.** Source mode is built (`/ai/material`) and closed on the current model
+  (ADR 0037); the harness only runs topics. The quote check already runs — on the grounded
+  article's text. Measuring Source mode needs a `sourceText` field in `topics.json` and
+  `generate` sending it; worth doing before any vendor entry sets `AllowsSourceMode`.

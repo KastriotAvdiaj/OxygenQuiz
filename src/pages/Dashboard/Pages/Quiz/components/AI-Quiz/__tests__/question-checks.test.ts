@@ -155,6 +155,17 @@ describe("parseAiOutput quality checks", () => {
     expect(result.dropped[0].reason).toMatch(/gives the answer away/);
   });
 
+  it("keeps an answer written in the question when the reply is a fact quiz", () => {
+    // Monaco's capital is Monaco: a fact, not a model leaking its answer (docs/quiz/fact-quizzes.md).
+    const monaco = [
+      mc("What is the capital of Monaco?", [["Monaco", true], ["Vaduz", false], ["San Marino", false]]),
+      { type: QuestionType.TypeTheAnswer, text: "What is the capital of Luxembourg?", correctAnswer: "Luxembourg" },
+    ];
+
+    expect(parseAiOutput(reply(monaco), ctx).questions).toHaveLength(0);
+    expect(parseAiOutput(reply(monaco), { ...ctx, answerMayBeInText: true }).questions).toHaveLength(2);
+  });
+
   it("drops a repeated question but keeps the first copy", () => {
     const result = parseAiOutput(
       reply([

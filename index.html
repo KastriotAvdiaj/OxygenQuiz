@@ -26,6 +26,9 @@
            development -> /vite.svg     (deliberately generic)
          See docs/development/favicon.md. -->
     <link rel="icon" type="image/svg+xml" href="%VITE_FAVICON%" />
+    <!-- iOS home screens, and a raster fallback search engines may use. Always the brand mark:
+         it never shows in a tab, so the dev/prod split above doesn't apply. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -45,23 +48,28 @@
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=Poppins:wght@300;400;500;600;700&family=Nunito:wght@300..800&family=Fredoka:wght@400..600&family=Baloo+2:wght@400..700&display=swap"
       rel="stylesheet" />
-    <title>Oxygen Quiz</title>
+    <title>Oxygen Quiz — Challenge yourself, or a friend</title>
     <!-- Link previews and search snippets. Site-wide defaults: chat apps and crawlers read these
          from the HTML and never run the app. On a shared link (/play/shared/:token) the Worker
          swaps in that quiz's own title, description and image — it rewrites these exact tags, so
          keep their name/property attributes as they are. docs/deployment/frontend-worker.md -->
-    <meta name="description" content="Play, create and host quizzes: solo, live with friends in a lobby, or for a whole class." />
+    <meta name="description" content="Challenge yourself with quizzes on anything. Play solo, take on friends live, or build your own — by hand or with AI." />
     <meta property="og:site_name" content="Oxygen Quiz" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Oxygen Quiz" />
-    <meta property="og:description" content="Play, create and host quizzes: solo, live with friends in a lobby, or for a whole class." />
+    <meta property="og:title" content="Oxygen Quiz — Challenge yourself, or a friend" />
+    <meta property="og:description" content="Challenge yourself with quizzes on anything. Play solo, take on friends live, or build your own — by hand or with AI." />
     <meta property="og:image" content="https://oxygenquiz.com/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Oxygen Quiz" />
-    <meta name="twitter:description" content="Play, create and host quizzes: solo, live with friends in a lobby, or for a whole class." />
+    <meta name="twitter:title" content="Oxygen Quiz — Challenge yourself, or a friend" />
+    <meta name="twitter:description" content="Challenge yourself with quizzes on anything. Play solo, take on friends live, or build your own — by hand or with AI." />
     <meta name="twitter:image" content="https://oxygenquiz.com/og-image.png" />
+    <!-- The site name Google shows above the result, instead of guessing one from the domain.
+         https://developers.google.com/search/docs/appearance/site-names -->
+    <script type="application/ld+json">
+      {"@context":"https://schema.org","@type":"WebSite","name":"Oxygen Quiz","alternateName":"OxygenQuiz","url":"https://oxygenquiz.com/"}
+    </script>
   </head>
   <body>
     <div id="root"></div>

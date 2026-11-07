@@ -150,6 +150,9 @@ namespace QuizAPI.Services.Ai
         /// <summary>Topic mode, grounding on: the article the author picked after being asked (<see cref="GroundingStatus.NeedsArticle"/>).</summary>
         public string? SourceTitle { get; init; }
 
+        /// <summary>Which source <see cref="SourceTitle"/> came from — the candidate's <c>provider</c>.</summary>
+        public string? SourceProvider { get; init; }
+
         /// <summary>Topic mode, grounding on: the author answered "none of these" — write from memory.</summary>
         public bool SourceDeclined { get; init; }
 
@@ -255,11 +258,20 @@ namespace QuizAPI.Services.Ai
                     GroundingStatus.NeedsLanguage =>
                         "Is this quiz in English or Albanian? Pick one and we'll find a source in that language.",
                     GroundingStatus.SourceUnavailable =>
-                        "Wikipedia can't be reached right now. Try again in a minute, or let the AI write from memory — those questions are much more likely to contain mistakes.",
+                        $"{SourceNames(grounding.Unreachable)} can't be reached right now. Try again in a minute, or let the AI write from memory — those questions are much more likely to contain mistakes.",
                     _ => "That topic could mean more than one thing. Pick the article the quiz should come from.",
                 },
                 Grounding = grounding,
             };
+
+        private static string SourceNames(IReadOnlyList<string> providers)
+        {
+            var names = providers
+                .Select(p => p == Sources.MicrosoftLearnSourceProvider.ProviderName ? "Microsoft Learn" : "Wikipedia")
+                .Distinct()
+                .ToList();
+            return names.Count == 0 ? "The source" : string.Join(" and ", names);
+        }
 
         public static AiGenerationOutcome Fail(string code, string message, DateTime? retryAfterUtc = null) =>
             new() { Success = false, ErrorCode = code, Message = message, RetryAfterUtc = retryAfterUtc };

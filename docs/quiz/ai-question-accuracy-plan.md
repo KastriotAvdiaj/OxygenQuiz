@@ -206,6 +206,35 @@ Wikipedia article and were written from memory (en-05, sq-01, sq-05, sq-06). Com
 - **The model returns one question too many** on some topics (four here, two in the baseline).
   Yield "of requested" counts them, so it reads 100.8%; capped per topic it is 97.5%.
 
+#### DeepSeek V4.1 Flash, grounded (2026-11-07) — provisional: labelled by a model
+
+Run `deepseek-grounded-2`: `deepseek/deepseek-v4.1-flash` through OpenRouter, reasoning `low`,
+same seed and topics, `--grounding`, 119 of 119 kept. **Labelled by Claude, not by a person**, so
+it does not meet this doc's own standard and is not yet comparable with the human-labelled runs
+above; a person has to confirm the labels before it decides anything.
+
+| | Groq, grounded (2026-10-29) | DeepSeek, grounded |
+|---|---|---|
+| yield | 121 kept | 119 / 120 |
+| whole run — wrong | 13.2% (16/121) | **1.7%** (2/119, CI 0.5–5.9) |
+| whole run — ambiguous | — | 5.9% (7/119); time-sensitive 2.5% (3) |
+| memory topics — wrong | 13/37 | 1/29 (sq-01, sq-05, sq-06; en-05 grounded on Learn this time) |
+| Albanian wrong / fluency | 9/62, 3.55 | 2/59, 3.88 |
+
+- **If the labels hold, this is a different model, not a small gain**: the whole-run intervals
+  don't overlap, and it is the memory topics — which grounding cannot help — that improved most.
+- **New defect: Learn questions lose their context.** All ten en-05 questions were written from
+  *What's new in C# 12* and several never say C# — "Which of these is a collection expression?"
+  The prompt should require each question to name its subject.
+- **New defect: unmeasurable superlatives.** "Which ingredient, besides garlic, is *undoubtedly*
+  the most used in Albania?" — no statistic exists, so several options are defensible (relabelled
+  ambiguous by a person). The prompt should forbid "most used / most popular" without a measured
+  figure in the source.
+- **The source still leaks into explanations** ("as stated in the source") on at least two rows,
+  despite the prompt rule.
+- **Thinking dominates the output** — 1,809–11,139 of 3,822–13,790 tokens; see
+  [`ai-quiz-generation-flow.md`](./ai-quiz-generation-flow.md) §2b before selecting it.
+
 ### Phase 1 — Deterministic checks ✅ implemented
 
 No model calls, no schema change, both paths.
@@ -237,7 +266,7 @@ states the answer: the session DTO no longer carries the answer key mid-quiz
   baseline above rules out. How it works: [`ai-quiz-generation-flow.md`](./ai-quiz-generation-flow.md)
   §2d; why: [ADR 0037](../adr/0037-source-mode-writes-in-the-materials-language-and-opens-per-model.md).
   Measure it before opening it (flow doc §9.16).
-- **2b. Server and eval built 2026-10-29, switched off** — flow doc §2e. Language and article
+- **2b. Server and eval built 2026-10-29; on since 2026-11-07 with DeepSeek** — flow doc §2e. Language and article
   are chosen as [the source-tiers proposal](../proposals/topic-disambiguation-and-source-tiers.md)
   says, except that the article is matched by title (the "first hit" below picked the wrong one on
   seven of the twelve eval topics). Next: an eval run with `--grounding`, compared on the grounded

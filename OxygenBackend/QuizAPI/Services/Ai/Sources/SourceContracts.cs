@@ -48,6 +48,18 @@ namespace QuizAPI.Services.Ai.Sources
         /// <i>Quantum mechanics</i>. <see cref="SourceSelection"/> scores it like a second title.
         /// </summary>
         public string? RedirectTitle { get; init; }
+
+        /// <summary>Which source it came from (<see cref="IQuizSourceProvider.Name"/>). Set by the router.</summary>
+        public string Provider { get; init; } = "wikipedia";
+
+        /// <summary>
+        /// What <see cref="IQuizSourceProvider.FetchAsync"/> takes to get this page back when the
+        /// author picks it. Wikipedia's titles are unique, so the title; Microsoft Learn has
+        /// several pages called "Overview", so the URL. Null means the title.
+        /// </summary>
+        public string? Key { get; init; }
+
+        public string FetchKey => Key ?? Title;
     }
 
     /// <summary>The result of looking a topic up in one source.</summary>
@@ -66,14 +78,29 @@ namespace QuizAPI.Services.Ai.Sources
 
         public int Words { get; init; }
 
+        /// <summary>
+        /// The chosen page's <see cref="SourceCandidate.Key"/> — what fetches it again. Null means
+        /// the title. The router needs it when two sources each choose a page and the author is
+        /// asked between them.
+        /// </summary>
+        public string? Key { get; init; }
+
         /// <summary>Populated for <see cref="SourceOutcome.NeedsDisambiguation"/>.</summary>
         public IReadOnlyList<SourceCandidate> Candidates { get; init; } = Array.Empty<SourceCandidate>();
 
-        public static SourceLookup Selected(string title, string? url, string text, int words) =>
-            new() { Outcome = SourceOutcome.Selected, Title = title, Url = url, Text = text, Words = words };
+        public static SourceLookup Selected(string title, string? url, string text, int words, string? key = null) =>
+            new() { Outcome = SourceOutcome.Selected, Title = title, Url = url, Text = text, Words = words, Key = key };
 
-        public static SourceLookup NeedsDisambiguation(IReadOnlyList<SourceCandidate> candidates) =>
-            new() { Outcome = SourceOutcome.NeedsDisambiguation, Candidates = candidates };
+        /// <summary>
+        /// <see cref="SourceOutcome.NeedsDisambiguation"/> because the source itself says the term
+        /// means several things (a Wikipedia disambiguation page) — not merely because the search
+        /// wasn't sure. The router lets nothing outvote this: another source being sure of one
+        /// meaning doesn't make the others go away.
+        /// </summary>
+        public bool TermIsAmbiguous { get; init; }
+
+        public static SourceLookup NeedsDisambiguation(IReadOnlyList<SourceCandidate> candidates, bool termIsAmbiguous = false) =>
+            new() { Outcome = SourceOutcome.NeedsDisambiguation, Candidates = candidates, TermIsAmbiguous = termIsAmbiguous };
 
         public static SourceLookup TooThin(string title, string? url, int words) =>
             new() { Outcome = SourceOutcome.TooThin, Title = title, Url = url, Words = words };

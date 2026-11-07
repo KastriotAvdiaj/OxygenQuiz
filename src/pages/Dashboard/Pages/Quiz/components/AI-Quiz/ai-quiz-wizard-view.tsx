@@ -84,7 +84,7 @@ export interface AiQuizWizardViewProps {
   // ── Grounding (docs/quiz/ai-quiz-generation-flow.md §2e) ──
   /**
    * The server's question, when grounding needs the author before it can go on: which
-   * language, which article, or whether to go ahead from memory while Wikipedia is down.
+   * language, which article, or whether to go ahead from memory while a source is down.
    * Shown in place of the form, like `ConfirmDetailsCard`. Asked before anything is spent.
    */
   sourceChoice?: AiGrounding | null;
@@ -489,7 +489,9 @@ export const AiQuizWizardView = ({
             topic={topic}
             busy={isGenerating}
             onPickLanguage={(language) => onAnswerSource({ sourceLanguage: language })}
-            onPickArticle={(title) => onAnswerSource({ sourceTitle: title })}
+            onPickArticle={(article) =>
+              onAnswerSource({ sourceTitle: article.key ?? article.title, sourceProvider: article.provider })
+            }
             onDecline={() => onAnswerSource({ sourceDeclined: true })}
             onRetry={() => onAnswerSource({})}
             onWriteFromMemory={() => onAnswerSource({ sourceAcceptFromMemory: true })}

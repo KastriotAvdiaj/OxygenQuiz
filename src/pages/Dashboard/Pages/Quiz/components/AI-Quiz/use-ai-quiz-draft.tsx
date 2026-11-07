@@ -70,7 +70,9 @@ export const useAiQuizDraft = () => {
    */
   const draftSlot = location.pathname.endsWith("/ai/own")
     ? QUIZ_DRAFT_SLOTS.aiOwn
-    : QUIZ_DRAFT_SLOTS.aiTopic;
+    : location.pathname.endsWith("/ai/facts")
+      ? QUIZ_DRAFT_SLOTS.aiFacts
+      : QUIZ_DRAFT_SLOTS.aiTopic;
 
   /**
    * Read once, in an initialiser, so every `useState` below can open on the restored value
@@ -130,6 +132,7 @@ export const useAiQuizDraft = () => {
     generate: `${createBase}/ai/topic`,
     material: `${createBase}/ai/material`,
     ownAi: `${createBase}/ai/own`,
+    facts: `${createBase}/ai/facts`,
   };
 
   // ── What the user is creating from.
@@ -196,7 +199,7 @@ export const useAiQuizDraft = () => {
   );
 
   /**
-   * What `payload` was written from — the Wikipedia article, or why there was none
+   * What `payload` was written from — the article (Wikipedia or Microsoft Learn), or why there was none
    * (docs/quiz/ai-quiz-generation-flow.md §2e). Only ever set together with the payload, by
    * `setPayload`, so the two cannot describe different replies. The review reads it for the
    * provenance line, and the parser for the article's text to check quotes against.
@@ -320,6 +323,8 @@ export const useAiQuizDraft = () => {
       // own in Source mode, the article in a grounded Topic generation. Topic mode from memory
       // has nothing to check against, so the check is skipped there (question-checks.ts).
       sourceText: mode === "Source" ? sourceData : (grounding?.source?.text ?? null),
+      // A fact quiz has no model to leak an answer: Monaco's capital is Monaco.
+      answerMayBeInText: grounding?.source?.provider === "wikidata",
     });
   }, [
     payload,
@@ -503,7 +508,8 @@ export const useAiQuizDraft = () => {
           // Back on the review: discard and return to the brief, or save as a draft and leave.
           reviewBack={{
             onDiscard: () => setPayload(null),
-            costsAGeneration: draftSlot !== QUIZ_DRAFT_SLOTS.aiOwn,
+            // Neither a pasted reply nor a fact quiz spent any allowance.
+            costsAGeneration: draftSlot === QUIZ_DRAFT_SLOTS.aiTopic,
           }}
           reviewNotices={
             <>

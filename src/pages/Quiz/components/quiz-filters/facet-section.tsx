@@ -101,7 +101,7 @@ export function FacetSection({
         type="button"
         onClick={toggleOpen}
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-2 py-2.5 text-sm font-semibold text-foreground hover:text-primary transition-colors"
+        className="flex w-full items-center justify-between gap-2 py-2.5 font-quiz text-sm font-semibold text-foreground hover:text-primary transition-colors"
       >
         <span className="flex items-center gap-2">
           {title}

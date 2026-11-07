@@ -87,7 +87,9 @@ namespace QuizAPI.Services.Ai
                 // a limit; if we don't set one, that limit is the model's 384K ceiling and a
                 // single call costs ~250× what it should. Truncated output fails JSON extraction
                 // and releases the user's quota slot, which is the correct outcome.
-                MaxTokens = maxOutputTokens ?? _options.MaxOutputTokens,
+                // ThinkingTokens is the vendor's allowance for a reasoning model's thinking, added
+                // to every ceiling — the caller's number is room for the answer (AiVendorOptions).
+                MaxTokens = (maxOutputTokens ?? _options.MaxOutputTokens) + _options.ThinkingTokens,
                 // Null unless configured, and null is not serialised — see the property. On a
                 // reasoning model this is what keeps the thinking inside MaxTokens rather than
                 // consuming it and returning an empty completion.

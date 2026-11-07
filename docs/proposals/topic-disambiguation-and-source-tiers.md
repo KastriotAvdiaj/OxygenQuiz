@@ -2,10 +2,14 @@
 
 **Status: accepted 2026-10-28, implementation in progress.** Rank 3 (English source → non-English
 questions) is **rejected** — see §4d. Built 2026-10-29 for Wikipedia, end to end
-(server, wizard, eval) and measured — switched off; how it works is in
-[`../quiz/ai-quiz-generation-flow.md`](../quiz/ai-quiz-generation-flow.md) §2e. **Not built:**
-the other tiers of §4d (official documentation, governing bodies), which is all that keeps this
-proposal open. **§4a bis is superseded** by a measured rule (below). Written 2026-10-28. Prerequisite for Phase 2 of
+(server, wizard, eval) and measured — switched on 2026-11-07 with DeepSeek V4.1 Flash; how it works is in
+[`../quiz/ai-quiz-generation-flow.md`](../quiz/ai-quiz-generation-flow.md) §2e. **Microsoft
+Learn built 2026-10-30** as the first official-documentation tier, and the tiers are no longer
+consulted in order — see §4d and [ADR 0038](../adr/0038-every-source-is-searched-and-the-titles-decide.md).
+**Not built:** the other tiers of §4d (other documentation sites, governing bodies, Albanian
+Wikisource), which is all that keeps this proposal open. Wikidata is a different kind of source —
+facts, not articles — and is built as its own feature:
+[`../quiz/fact-quizzes.md`](../quiz/fact-quizzes.md). **§4a bis is superseded** by a measured rule (below). Written 2026-10-28. Prerequisite for Phase 2 of
 [`../quiz/ai-question-accuracy-plan.md`](../quiz/ai-question-accuracy-plan.md), which assumes a
 source can be picked automatically. The measurements below say it cannot.
 
@@ -171,6 +175,23 @@ and silent about it.
 This is also why `SourceOptions.LanguageDomains` has no fallback entry. A missing language is a
 missing source, not a redirect to English.
 
+**Not "in priority order" by category (2026-10-30).** The table reads as a fixed order by
+category, but the category isn't known when the topic is typed. Wikipedia is asked first, the
+next tier only when Wikipedia isn't sure, and the titles decide between what came back —
+[ADR 0038](../adr/0038-every-source-is-searched-and-the-titles-decide.md) for the combining,
+[ADR 0039](../adr/0039-microsoft-learn-is-asked-only-when-wikipedia-isnt-sure.md) for who is asked.
+
+**Rank 4, Microsoft Learn — built 2026-10-30.** Read through Learn's MCP server
+(`learn.microsoft.com/api/mcp`): published by Microsoft for software to read Learn, keyless, no
+charge, use under the [Learn Terms of Use](https://learn.microsoft.com/legal/termsofuse). Those
+terms restrict site content to non-commercial use *unless* a document carries its own licence,
+which then controls; the documentation repositories behind the pages — `dotnet/docs`,
+`MicrosoftDocs/azure-docs`, `sql-docs`, `PowerShell-Docs` — are CC BY 4.0 (checked 2026-10-30),
+so the page link is the attribution, as with Wikipedia. What doesn't clearly come from those is
+left out: Q&A threads (other people's posts), training modules and shows, generated API reference,
+and any other host the search returns. Re-check the licence before a paid launch — see
+[`legal-and-compliance-for-launch.md`](./legal-and-compliance-for-launch.md).
+
 ## 5. Rejected
 
 **Asking the model whether the topic is ambiguous.** A model unreliable enough to state wrong
@@ -192,6 +213,11 @@ The tiered allowlist keeps the set small enough to check deliberately.
   with a model strong at translation, and measure it before trusting it.
 - ~~The close-contest ratio (§4a bis).~~ Replaced by title matching; its thresholds (coverage ½,
   precision ¾) are fitted the same way, and the eval's ask rate is what tests them.
+- **A quiz from several articles.** Grounding is one article per quiz, so "C# 12 and .NET 8" or
+  "comparing programming languages" is grounded in whichever one article the author picks. Letting
+  the author tick several — some questions from a Learn page, some from Wikipedia — is a prompt and
+  card change, but splits the free tier's 6,000-character budget between them; worth it with a
+  vendor that allows more.
 - Does a grounded generation cost the same quota slot? It is up to two calls instead of one.
 - Caching. Two HTTP 429s came back inside a dozen probe requests, so the plan's
   `IMemoryCache` by (language, title) is load-bearing, not an optimisation.

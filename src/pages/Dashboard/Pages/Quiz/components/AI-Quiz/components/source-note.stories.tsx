@@ -41,6 +41,24 @@ export const Grounded: Story = {
   },
 };
 
+/** A Wikipedia article with Wikidata's facts about its subject below it: the note counts them. */
+export const GroundedWithWikidataFacts: Story = {
+  args: {
+    grounding: {
+      status: "Grounded",
+      language: "Albanian",
+      source: {
+        provider: "wikipedia",
+        title: "Shqipëria",
+        url: "https://sq.wikipedia.org/wiki/Shqip%C3%ABria",
+        text: "…",
+        language: "Albanian",
+        wikidataFacts: 8,
+      },
+    },
+  },
+};
+
 /** A long title on a phone wraps rather than overflowing the box. */
 export const GroundedLongTitleOnMobile: Story = {
   args: {
@@ -59,9 +77,52 @@ export const GroundedLongTitleOnMobile: Story = {
   parameters: { viewport: { defaultViewport: "mobile1" } },
 };
 
+/** Written from a Microsoft Learn page — a "page", not an "article", and linked the same way. */
+export const GroundedOnMicrosoftLearn: Story = {
+  args: {
+    grounding: {
+      status: "Grounded",
+      language: "English",
+      source: {
+        provider: "microsoft-learn",
+        title: "What is Azure Functions?",
+        url: "https://learn.microsoft.com/azure/azure-functions/functions-overview",
+        text: "…",
+        language: "English",
+      },
+    },
+  },
+};
+
+/** A quiz from a fact pack: no model, so the note says what to check — the wording, not the facts. */
+export const GroundedOnWikidata: Story = {
+  args: {
+    grounding: {
+      status: "Grounded",
+      language: "Albanian",
+      source: {
+        provider: "wikidata",
+        title: "Kryeqytetet e Evropës",
+        url: "https://query.wikidata.org/#SELECT%20%3Fitem",
+        text: "…",
+        language: "Albanian",
+      },
+    },
+  },
+};
+
 /** Wikipedia was down and the author went ahead: the one amber notice. */
 export const FromMemoryWikipediaDown: Story = {
-  args: { grounding: { status: "Ungrounded", language: "Albanian", reason: "unavailable" } },
+  args: {
+    grounding: { status: "Ungrounded", language: "Albanian", reason: "unavailable", unreachable: ["wikipedia"] },
+  },
+};
+
+/** The same, when Microsoft Learn was the one down — the notice names it. */
+export const FromMemoryMicrosoftLearnDown: Story = {
+  args: {
+    grounding: { status: "Ungrounded", language: "English", reason: "unavailable", unreachable: ["microsoft-learn"] },
+  },
 };
 
 /** The author answered "none of these". */

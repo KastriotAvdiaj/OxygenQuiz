@@ -191,6 +191,7 @@ namespace QuizAPI.Services.Ai
                 options.BaseUrl = vendor.BaseUrl;
                 options.Model = vendor.Model;
                 options.ReasoningEffort = vendor.ReasoningEffort;
+                options.ThinkingTokens = vendor.ThinkingTokens;
                 options.InputCostPerMillionUsd = vendor.InputCostPerMillionUsd;
                 options.OutputCostPerMillionUsd = vendor.OutputCostPerMillionUsd;
                 options.SourceModeEnabled = vendor.AllowsSourceMode;
@@ -219,6 +220,9 @@ namespace QuizAPI.Services.Ai
                 missing.Add($"BaseUrl (\"{options.BaseUrl}\" is not an absolute URL)");
 
             if (string.IsNullOrWhiteSpace(options.Model)) missing.Add("Model");
+
+            // Negative would shrink every ceiling below the answer it is meant to leave room for.
+            if (options.ThinkingTokens < 0) missing.Add($"ThinkingTokens ({options.ThinkingTokens} is below zero)");
 
             // Zero is not "free", it is "unpriced": it would record every generation as costing
             // nothing, and both budget caps are enforced against that number. Silent, and the most

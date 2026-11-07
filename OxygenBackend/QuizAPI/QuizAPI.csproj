@@ -45,6 +45,11 @@
     <Folder Include="wwwroot\uploads\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Fact packs (docs/quiz/fact-quizzes.md): data the app reads at runtime, deployed beside it. -->
+    <None Update="FactPacks\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 
   <ItemGroup>
     <!-- PwnedPasswordsChecker deliberately keeps its hash-splitting and response-parsing helpers
