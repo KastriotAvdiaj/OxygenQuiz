@@ -55,10 +55,21 @@ public class AiAccessTests
     }
 
     [Fact]
+    public void Fact_quizzes_are_for_the_same_roles()
+    {
+        // 64 facts between two packs: every quiz from them is much the same quiz (2026-11-08).
+        var gate = typeof(FactQuizController).GetCustomAttribute<AuthorizeAttribute>();
+        Assert.NotNull(gate);
+        Assert.Equal(RoleRules.AiRoles, gate!.Roles);
+        Assert.Empty(Actions(typeof(FactQuizController))
+            .Where(m => m.GetCustomAttribute<AllowAnonymousAttribute>() is not null));
+    }
+
+    [Fact]
     public void Saving_a_reviewed_quiz_stays_open_to_every_signed_in_user()
     {
-        // ai-import saves what the author reviewed — fact quizzes go through it, and it calls no
-        // model. Gating it with the AI roles would take fact quizzes away from players.
+        // ai-import saves what the author reviewed in one step and calls no model — no more than
+        // a player can do by hand, so it isn't gated with the AI roles.
         var import = Actions(typeof(QuizController))
             .Single(m => m.GetCustomAttributes<HttpMethodAttribute>().Any(a => a.Template == "ai-import"));
         var gate = import.GetCustomAttribute<AuthorizeAttribute>();

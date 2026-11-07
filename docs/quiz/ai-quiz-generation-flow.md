@@ -753,8 +753,10 @@ in practice. On non-Postgres providers it is a no-op (see §9).
 **Since the public launch (2026-11-07), AI is for Admins, SuperAdmins and Teachers only.**
 Generation costs money and paid plans aren't live, so a plain player gets none of it — not the
 in-app wizard, not Source mode, and not the copy-paste prompt either (the own-AI path; it costs
-nothing, but it was judged not good enough to offer). Fact quizzes are not AI and stay open to
-everyone, and so does `ai-import`, which saves a reviewed quiz and is how fact quizzes are saved.
+nothing, but it was judged not good enough to offer). Fact quizzes call no model but are limited to
+the same roles since 2026-11-08 — two packs of 64 facts make every quiz much the same
+([`fact-quizzes.md`](./fact-quizzes.md)). `ai-import` stays open: it saves a reviewed quiz with
+its questions in one step and calls no model.
 
 | Role | Daily generations | Enforced by |
 |---|---|---|
@@ -764,7 +766,7 @@ everyone, and so does `ai-import`, which saves a reviewed quiz and is how fact q
 
 Until then every player had the default 2 a day and Admins were uncapped with SuperAdmins. The
 frontend mirrors the roles in `ai-access.ts` (`useAiAvailable`; AI routes are wrapped in `RequireAi`, `require-ai.tsx`) only to decide what
-to offer: a player's create dialog shows *Manually* and *From a set of facts*, the home page's
+to offer: a player's *Create* goes straight to the builder (one way to build is no question), the home page's
 "With AI" bubble is hidden, and an AI route typed by hand goes back to the quiz list. Guarded by
 `AiAccessTests` and `create-quiz-method-dialog.test.tsx`. Roles are read from the user's stored
 roles, not the request principal, so the daily answer doesn't depend on who happens to be calling.

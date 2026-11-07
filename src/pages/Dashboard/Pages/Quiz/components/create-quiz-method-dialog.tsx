@@ -27,6 +27,7 @@ import { HEADER_ACTION_FACE } from "./header-action-face";
 import { ModeCard } from "@/pages/Quiz/components/mode-card";
 import { useFormatAvailable } from "../format-access";
 import { useAiAvailable } from "../ai-access";
+import { Slot } from "@radix-ui/react-slot";
 import { useAiQuota } from "../api/generate-ai-quiz";
 import { useUser } from "@/lib/Auth";
 
@@ -55,8 +56,10 @@ const useMaterialModeAvailable = (askNow: boolean): boolean => {
  * The steps, one question each:
  * - `format` — what kind of quiz (Classic or Associations). Only while there is a choice: players
  *   don't see Associations yet (format-access.ts), so for them the dialog opens on `method`.
- * - `method` — how to build a Classic quiz (by hand, or with AI). For anyone who may not use AI
- *   (ai-access.ts) the AI card is replaced by "From a set of facts", which needs no model.
+ * - `method` — how to build a Classic quiz (by hand, or with AI).
+ *
+ * Someone with neither Associations nor AI (a plain player — ai-access.ts, format-access.ts) has
+ * one way to build, so there is no dialog: the trigger goes straight to the builder.
  * - `aiSource` — what the AI works from (a topic, your own material, or a set of facts).
  */
 type Step = "format" | "method" | "aiSource";
@@ -154,10 +157,8 @@ export const CreateQuizMethodDialog = ({
   const navigate = useNavigate();
   // Associations is admin-only while it is tested (format-access.ts).
   const showAssociations = useFormatAvailable("Associations");
-  // AI is for Admins, SuperAdmins and Teachers (ai-access.ts). Everyone else builds by hand or
-  // from a fact pack, so their second card on the method step is the facts one.
+  // AI and fact quizzes are for Admins, SuperAdmins and Teachers (ai-access.ts).
   const aiAvailable = useAiAvailable();
-  const factsInsteadOfAi = !aiAvailable && Boolean(aiFactsPath);
   const firstStep: Step = showAssociations ? "format" : "method";
 
   const [step, setStep] = useState<Step>(initialStep ?? firstStep);
@@ -281,12 +282,22 @@ export const CreateQuizMethodDialog = ({
     </motion.div>
   );
 
+  const defaultTrigger = (
+    <LiftedButton className={HEADER_ACTION_FACE}>+ Create Quiz</LiftedButton>
+  );
+
+  // One way to build — a player has neither Associations nor AI — so no question to ask: the
+  // trigger itself opens the builder. Slot hands the click to whatever the surface passed in.
+  if (!showAssociations && !aiAvailable) {
+    return <Slot onClick={() => navigate(manualPath)}>{trigger ?? defaultTrigger}</Slot>;
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {/* Default trigger = the dashboards' header action. Its face is `HEADER_ACTION_FACE`,
             shared with the Filters button beside it so the pair stays one height. */}
-        {trigger ?? <LiftedButton className={HEADER_ACTION_FACE}>+ Create Quiz</LiftedButton>}
+        {trigger ?? defaultTrigger}
       </DialogTrigger>
       {/* `sm:max-w-xl` is the width at which two cards sit side by side without either wrapping
           its title — and every step is two cards, so the width never changes. DialogContent
@@ -337,7 +348,7 @@ export const CreateQuizMethodDialog = ({
                   icon={ListChecks}
                   title="Classic quiz"
                   description="Questions with answers to pick or type."
-                  meta={aiAvailable ? "By hand or with AI" : "By hand or from facts"}
+                  meta="By hand or with AI"
                   metaIcon={Sparkles}
                   accent="primary"
                   size="compact"
@@ -383,38 +394,21 @@ export const CreateQuizMethodDialog = ({
                   onSelect={() => navigate(manualPath)}
                 />,
               )}
-              {aiAvailable &&
-                slot(
-                  "ai",
-                  1,
-                  <ModeCard
-                    icon={Sparkles}
-                    title="With AI"
-                    description="Describe the quiz and we'll draft the questions for you."
-                    meta="You review before it saves"
-                    metaIcon={Wand2}
-                    accent="primary"
-                    size="compact"
-                    entrance={false}
-                    onSelect={() => advance("ai", "aiSource")}
-                  />,
-                )}
-              {factsInsteadOfAi &&
-                slot(
-                  "facts",
-                  1,
-                  <ModeCard
-                    icon={Database}
-                    title="From a set of facts"
-                    description="Capitals, peaks and more — every answer a fact from Wikidata."
-                    meta="Free · ready in seconds"
-                    metaIcon={BadgeCheck}
-                    accent="primary"
-                    size="compact"
-                    entrance={false}
-                    onSelect={() => navigate(aiFactsPath!)}
-                  />,
-                )}
+              {slot(
+                "ai",
+                1,
+                <ModeCard
+                  icon={Sparkles}
+                  title="With AI"
+                  description="Describe the quiz and we'll draft the questions for you."
+                  meta="You review before it saves"
+                  metaIcon={Wand2}
+                  accent="primary"
+                  size="compact"
+                  entrance={false}
+                  onSelect={() => advance("ai", "aiSource")}
+                />,
+              )}
             </>
           )}
 

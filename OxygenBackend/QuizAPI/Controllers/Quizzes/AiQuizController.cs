@@ -22,8 +22,8 @@ namespace QuizAPI.Controllers.Quizzes
     [ApiController]
     [Route("api/quiz")]
     // Every action, the free copy-paste prompt included: AI is for Admins, SuperAdmins and
-    // Teachers only (RoleRules.AiRoles). ai-import is NOT here — it saves a reviewed quiz, fact
-    // quizzes use it too, and it costs nothing.
+    // Teachers only (RoleRules.AiRoles). ai-import is NOT here — it saves a reviewed quiz with its
+    // questions in one step, calls no model, and is no more than a player can do by hand.
     [Authorize(Roles = RoleRules.AiRoles)]
     public class AiQuizController : BaseApiController
     {

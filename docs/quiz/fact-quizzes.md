@@ -1,6 +1,11 @@
 # Fact quizzes — questions built from Wikidata facts, no model
 
-> **Status: built 2026-11-01, live since the merge of 2026-11-07.** Folds in and replaces the proposal
+> **Status: built 2026-11-01, live since the merge of 2026-11-07 — for Admins, SuperAdmins and
+> Teachers only since 2026-11-08** (`RoleRules.AiRoles` on `FactQuizController`; the routes behind
+> `RequireAi`). Two packs hold 64 facts between them, so every quiz from a pack is much the same
+> quiz: not worth offering every player, and briefly it was the card players saw in place of AI.
+> Reopen it to players once the packs are many and large enough that two quizzes on one pack
+> differ (known-issues, "Fact quizzes"). Folds in and replaces the proposal
 > `proposals/wikidata-fact-questions.md` (written 2026-10-30, measured against the live Wikidata
 > Query Service). The decision to build packs offline and commit them is
 > [ADR 0040](../adr/0040-fact-packs-are-built-offline-and-committed.md).

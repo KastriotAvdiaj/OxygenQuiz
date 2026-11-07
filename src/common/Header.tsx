@@ -163,7 +163,7 @@ const Header = ({ BackgroundColor }: HeaderProps) => {
                     Create
                   </span>
                   <span className="sr-only">
-                    {aiAvailable ? ", a quiz by hand or with AI" : ", a quiz by hand or from facts"}
+                    {aiAvailable ? ", a quiz by hand or with AI" : ", a quiz by hand"}
                   </span>
                 </button>
               }

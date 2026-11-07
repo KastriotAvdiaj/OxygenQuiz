@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.Exceptions;
 using QuizAPI.Services.Facts;
+using QuizAPI.Services.Roles;
 
 namespace QuizAPI.Controllers.Quizzes
 {
@@ -11,10 +12,14 @@ namespace QuizAPI.Controllers.Quizzes
     /// there is no quota and no spend: the builder is a few milliseconds of templates over a file
     /// that shipped with the app. Like <c>ai-generate</c>, this only returns questions for review;
     /// saving goes through <c>ai-import</c>.
+    ///
+    /// <para><b>Admins, SuperAdmins and Teachers only</b> (<see cref="RoleRules.AiRoles"/>), since
+    /// 2026-11-08: the two packs hold 64 facts between them, so every quiz from them is much the
+    /// same quiz — not something to offer every player. docs/quiz/fact-quizzes.md.</para>
     /// </summary>
     [ApiController]
     [Route("api/quiz")]
-    [Authorize]
+    [Authorize(Roles = RoleRules.AiRoles)]
     public class FactQuizController : BaseApiController
     {
         private readonly IFactPackCatalog _catalog;

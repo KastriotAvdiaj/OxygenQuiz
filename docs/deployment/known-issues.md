@@ -1558,3 +1558,12 @@ Deferred: a renderer (KaTeX) has to be added to every surface that shows questio
   docs/TYPOGRAPHY.md for the current font rules. **More pressing since 2026-11-07:** DynaPuff is
   now the default ([ADR 0041](../adr/0041-the-app-font-defaults-to-dynapuff.md)), so this is what
   every visitor sees, not only those who picked a display face.
+
+## Fact quizzes (2026-11-08)
+
+- **P3 — Two fact packs, 64 facts.** *Capitals of Europe* (49) and *Peaks of Albania* (15) are
+  all there is, so a 15-question quiz on a pack draws from the same few dozen facts every time and
+  two authors' quizzes are much the same. Limited to Admins, SuperAdmins and Teachers until that
+  changes. _Before reopening it to players:_ enough packs, each large enough that two quizzes on it
+  differ — and a pack's size shown before building. → `docs/quiz/fact-quizzes.md`,
+  `OxygenBackend/QuizAPI/Controllers/Quizzes/FactQuizController.cs`

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 // Who is signed in decides what the dialog offers (ai-access.ts).
 let roles: string[] = [];
@@ -24,23 +24,39 @@ const renderDialog = () =>
     </MemoryRouter>,
   );
 
-describe("the create dialog's AI card follows the AI roles", () => {
+const props = {
+  manualPath: "/my-dashboard/quizzes/create",
+  aiTopicPath: "/my-dashboard/quizzes/create/ai/topic",
+  aiMaterialPath: "/my-dashboard/quizzes/create/ai/material",
+  aiFactsPath: "/my-dashboard/quizzes/create/ai/facts",
+  associationsPath: "/my-dashboard/quizzes/create/associations",
+};
+
+describe("the create dialog follows the AI roles", () => {
   beforeEach(() => {
     roles = [];
   });
 
-  it("offers a player facts instead of AI", () => {
+  it("sends a player straight to the builder — one way to build is no question", () => {
+    // AI and fact quizzes are for staff and Teachers (ai-access.ts), Associations too.
     roles = ["User"];
-    renderDialog();
-    expect(screen.getByText("Manually")).toBeTruthy();
-    expect(screen.getByText("From a set of facts")).toBeTruthy();
-    expect(screen.queryByText("With AI")).toBeNull();
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <Routes>
+          <Route path="/" element={<CreateQuizMethodDialog {...props} />} />
+          <Route path={props.manualPath} element={<p>The builder</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "+ Create Quiz" }));
+    expect(screen.getByText("The builder")).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it.each(["Teacher", "Admin", "SuperAdmin"])("offers a %s AI", (role) => {
     roles = ["User", role];
     renderDialog();
+    expect(screen.getByText("Manually")).toBeTruthy();
     expect(screen.getByText("With AI")).toBeTruthy();
-    expect(screen.queryByText("From a set of facts")).toBeNull();
   });
 });

@@ -108,7 +108,7 @@ function CreateQuizAction() {
         >
           <PencilLine className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
           Create a quiz
-          <span className="sr-only">{aiAvailable ? ", by hand or with AI" : ", by hand or from facts"}</span>
+          <span className="sr-only">{aiAvailable ? ", by hand or with AI" : ", by hand"}</span>
           {aiAvailable && <WithAiBubble />}
         </SecondaryButton>
       }

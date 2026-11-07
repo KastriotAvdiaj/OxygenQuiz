@@ -18,7 +18,7 @@
   The old definition — "anything but `User`" — would have made a Teacher undeletable by an Admin.
 - `RoleRules.IsExtraRole` is the other question: "does a grant of this add anything?" — every role
   but `User`. Invite codes use it to decide whether a code carries a role at all.
-- **Teachers may use AI generation** (2 a day, like an Admin; a SuperAdmin has no cap) — since the
+- **Teachers may use AI generation and fact quizzes** (2 AI quizzes a day, like an Admin; a SuperAdmin has no cap) — since the
   public launch, 2026-11-07, plain players can't (`RoleRules.AiRoles`,
   [`../quiz/ai-quiz-generation-flow.md`](../quiz/ai-quiz-generation-flow.md) §4a). The Teacher
   request is therefore also how a player gets AI.

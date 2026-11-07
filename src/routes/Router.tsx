@@ -583,7 +583,7 @@ const createAppRouter = (queryClient: QueryClient) =>
           // A quiz built from a Wikidata fact pack — no model (docs/quiz/fact-quizzes.md). Under
           // ai/ for the same review handoff and draft hook as its siblings.
           path: "quizzes/create-quiz/ai/facts",
-          element: <FactQuiz />,
+          element: <RequireAi><FactQuiz /></RequireAi>,
         },
         {
           // The Associations board builder (docs/quiz/associations.md, "Authoring"). Under
@@ -806,7 +806,7 @@ const createAppRouter = (queryClient: QueryClient) =>
         },
         {
           path: "quizzes/create/ai/facts",
-          element: <FactQuiz />,
+          element: <RequireAi><FactQuiz /></RequireAi>,
         },
         {
           // Owners edit their own quizzes here. The admin dashboard's edit routes are admin-only

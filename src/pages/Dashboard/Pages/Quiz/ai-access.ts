@@ -8,7 +8,8 @@ import { ROLES } from "@/lib/authorization";
  * isn't shown a card or a route that ends in a 403. Routes are wrapped in `RequireAi`
  * (require-ai.tsx). Since the public launch (2026-11-07).
  *
- * Fact quizzes are not AI and stay open to everyone (docs/quiz/fact-quizzes.md).
+ * Fact quizzes use the same roles since 2026-11-08: they call no model, but two packs of 64 facts
+ * make every quiz much the same (docs/quiz/fact-quizzes.md).
  */
 export const AI_ROLES: readonly ROLES[] = [ROLES.Admin, ROLES.SuperAdmin, ROLES.Teacher];
 
