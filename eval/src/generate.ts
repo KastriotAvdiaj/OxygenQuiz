@@ -301,6 +301,10 @@ interface ModelReply {
   content: string;
   inputTokens: number;
   outputTokens: number;
+  /** Of `outputTokens`, how many the model spent thinking (absent when the vendor doesn't say). */
+  reasoningTokens: number | null;
+  /** "length" means the reply hit `max_tokens` and was cut off — its JSON is usually broken. */
+  finishReason: string | null;
 }
 
 async function callModel(prompt: string, attempt = 1): Promise<ModelReply> {
@@ -338,13 +342,19 @@ async function callModel(prompt: string, attempt = 1): Promise<ModelReply> {
     throw new Error(`Model call returned ${res.status}${hint}: ${(await res.text()).slice(0, 400)}`);
   }
   const body = (await res.json()) as {
-    choices?: { message?: { content?: string } }[];
-    usage?: { prompt_tokens?: number; completion_tokens?: number };
+    choices?: { message?: { content?: string }; finish_reason?: string }[];
+    usage?: {
+      prompt_tokens?: number;
+      completion_tokens?: number;
+      completion_tokens_details?: { reasoning_tokens?: number };
+    };
   };
   return {
     content: body.choices?.[0]?.message?.content ?? "",
     inputTokens: body.usage?.prompt_tokens ?? 0,
     outputTokens: body.usage?.completion_tokens ?? 0,
+    reasoningTokens: body.usage?.completion_tokens_details?.reasoning_tokens ?? null,
+    finishReason: body.choices?.[0]?.finish_reason ?? null,
   };
 }
 
@@ -481,7 +491,13 @@ async function main(): Promise<void> {
           ? `ungrounded (${groundingInfo.reason ?? "?"})`
           : "";
       const asked = asks.length > 0 ? `, asked ${asks.map((a) => a.kind).join(" + ")}` : "";
-      console.log(`${label}  ok  (${reply.outputTokens} output tokens${source ? `, ${source}` : ""}${asked})`);
+      // A reply cut off at max_tokens still saves and still "succeeds" here; parse then finds
+      // broken JSON and the topic scores as zero yield, which reads as a bad model rather than
+      // a ceiling too low for it. Say so now. Reasoning models spend their thinking inside the
+      // same ceiling (docs/quiz/ai-quiz-generation-flow.md §2b).
+      const thinking = reply.reasoningTokens != null ? `, ${reply.reasoningTokens} thinking` : "";
+      const status = reply.finishReason === "length" ? "CUT OFF at max_tokens" : "ok";
+      console.log(`${label}  ${status}  (${reply.outputTokens} output tokens${thinking}${source ? `, ${source}` : ""}${asked})`);
     } catch (err) {
       const message = describeError(err);
       failures.push({ id: topic.id, error: message });
