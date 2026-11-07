@@ -238,6 +238,19 @@ free tier is ~30 requests/minute but ~250/day. Our own `ai` policy (6/min per us
 the minute and says nothing about the day, so a busy afternoon hits *their* ceiling first, and it
 arrives as a generation failure rather than as our own 429.
 
+**A router picks the host, per request.** Through OpenRouter (`openrouter-deepseek`) the same
+model id was served by different companies on different calls — Baidu for DeepSeek, OpenInference
+for GLM — and the reply's top-level `provider` field names which. Hosts of one model can differ in
+quality and price, so an eval run is only comparable to another if the hosts were the same; pin
+one in OpenRouter's account settings before a measured run (`ChatRequest` has no `provider`
+field). The thinking comes back in `message.reasoning`, beside `content`, and is ignored.
+
+**Not every reasoning model honours `reasoning_effort`.** Checked with curl on 2026-11-07, one
+Albanian question each: DeepSeek V4.1 Flash with `"low"` thought for 55 tokens; GLM 5.3 Flash
+thought for 144 without the field and 382 with it — ignored. A model that ignores it has no
+ceiling on its thinking other than `max_tokens`, which is the empty-completion failure above, so
+GLM has no vendor entry until a setting that bounds its thinking is found.
+
 **Prices are ours to keep current, and nothing validates them.** See §9.14.
 
 ---
