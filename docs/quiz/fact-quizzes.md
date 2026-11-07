@@ -1,6 +1,6 @@
 # Fact quizzes — questions built from Wikidata facts, no model
 
-> **Status: built 2026-11-01, live on its branch.** Folds in and replaces the proposal
+> **Status: built 2026-11-01, live since the merge of 2026-11-07.** Folds in and replaces the proposal
 > `proposals/wikidata-fact-questions.md` (written 2026-10-30, measured against the live Wikidata
 > Query Service). The decision to build packs offline and commit them is
 > [ADR 0040](../adr/0040-fact-packs-are-built-offline-and-committed.md).
