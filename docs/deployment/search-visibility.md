@@ -15,8 +15,13 @@ weeks.
 | Favicon: white O₂ on a blue badge, survives Google's circular crop | [`../development/favicon.md`](../development/favicon.md) | 2026-11-07 |
 | Real HTML for public quiz listings (`/q/…`) and `/sitemap.xml` | the Worker — [`frontend-worker.md`](./frontend-worker.md) | before 2026-11-07 |
 | `robots.txt` keeping dashboards, settings and play screens out | `public/robots.txt` | before 2026-11-07 |
+| Search Console: a **Domain** property for `oxygenquiz.com`, verified by a `google-site-verification` TXT record on `@` in Cloudflare DNS — **keep that record**, or verification lapses | Search Console, Cloudflare DNS | 2026-11-07 |
+| Sitemap submitted (15 URLs: home, catalogue, 13 public quizzes). It showed *Couldn't fetch* straight after submitting, while the file served fine — Google hadn't read it yet; recheck, and resubmit if it persists | Search Console → Sitemaps | 2026-11-07 |
 
 ## Still to do
+
+The home page was already indexed when Search Console was set up (2026-11-07), so "oxygen quiz"
+not finding it is ranking, not a missing page.
 
 1. **Search Console, after each deploy that touches the home page.** Inspect
    `https://oxygenquiz.com/` and press *Request indexing*. Under *Sitemaps*, check that
