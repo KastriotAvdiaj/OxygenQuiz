@@ -37,6 +37,22 @@ namespace QuizAPI.Services.Ai
         public string? ReasoningEffort { get; set; }
 
         /// <summary>
+        /// Reasoning models only: tokens added to <b>every</b> call's <c>max_tokens</c> for the
+        /// model's thinking, which it spends inside the same ceiling and before any answer.
+        /// Zero (the default) for a model that thinks briefly or not at all.
+        ///
+        /// <para><b>Why the vendor's and not one bigger <c>Ai:MaxOutputTokens</c>.</b> How long
+        /// a model thinks is a property of the model, like <see cref="ReasoningEffort"/>, and the
+        /// ceilings are per call: the palette proposer's 1,500 fits its answer, not DeepSeek V4.1
+        /// Flash's thinking, which ran 1,800–11,100 tokens at <c>"low"</c> on quiz prompts
+        /// (eval, 2026-11-07). Raising only the top-level key would leave the palette cut off,
+        /// and would break the <c>groq</c> entry, whose free tier refuses any request over 8,000
+        /// tokens a minute. A reply cut off at the ceiling fails JSON extraction and releases the
+        /// quota slot, so too small a value shows up as generation failures, not as cost.</para>
+        /// </summary>
+        public int ThinkingTokens { get; set; }
+
+        /// <summary>
         /// Cache-miss input rate, so the recorded cost is an upper bound on the real bill. Must be
         /// greater than zero: a rate of zero prices every generation at nothing, which would let
         /// the budget caps pass forever. That is the one failure here that is completely silent,

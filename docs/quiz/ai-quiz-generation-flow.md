@@ -12,9 +12,9 @@ Status: **slices 2.0, 2.1 and 2.3.** Topic and Source modes, the one-box wizard,
 caps, kill switch, and a single server-owned prompt shared with copy-paste. Source mode takes
 pasted text or an uploaded PDF, Word or text file (§2d) — **built, and closed on the current
 model** until a vendor entry allows it. Topic mode can be **grounded** in a Wikipedia article,
-or for English technical topics a Microsoft Learn page (§2e) — **built end to end and measured;
-switched off** until `Ai:Source:Enabled` is turned on.
-**Not yet: streaming progress (2.2).** Last updated: 2026-10-30
+or for English technical topics a Microsoft Learn page (§2e) — **built end to end, measured, and
+on** since 2026-11-07 with DeepSeek V4.1 Flash through OpenRouter (`openrouter-deepseek`).
+**Not yet: streaming progress (2.2).** Last updated: 2026-11-07
 
 ---
 
@@ -159,6 +159,7 @@ environment selects one with a single value:
 | `Ai:Model` | Which model there. Recorded on every usage row. **Not** shown in the wizard — the model note was removed (see `quota-note.tsx`); the `ai-quota` endpoint still returns it, nothing renders it. |
 | `Ai:InputCostPerMillionUsd` / `Ai:OutputCostPerMillionUsd` | What it costs. **Change these in the same edit** — see §9.14. |
 | `Ai:ReasoningEffort` | How long a *reasoning* model may think. Unset for everything else, and unset means the field is never sent. See §2b. |
+| `Ai:Vendors:<name>:ThinkingTokens` | Tokens added to **every** call's `max_tokens` for a reasoning model's thinking, so each ceiling stays room for the answer. 0 unless the entry says so; 12,000 on `openrouter-deepseek`. §2b. |
 | `Ai:Vendors:<name>:AllowsSourceMode` | Whether this model may write from a user's own material. Off unless the entry says so, and off on `groq`. §2d. |
 
 Two things follow from that split, and both were bugs waiting to happen before it:
@@ -259,9 +260,13 @@ ten questions per topic):
 Thinking is two-thirds or more of the output, and the answer itself is ~1,300–2,800 tokens. **With
 `Ai:MaxOutputTokens` at 4,000 most of these replies are cut off** — the first eval run hit the
 ceiling on 8 of 12 — and so would the palette call's 1,500. Selecting `openrouter-deepseek` means
-raising both ceilings (16,000 covers the largest grounded reply above) and checking
-`Ai:TimeoutSeconds` against how long a 14,000-token reply takes; or turning the thinking off,
-which needs OpenRouter's `reasoning` field — one more line of C# in `ChatRequest`.
+**`ThinkingTokens` on the vendor entry** (since 2026-11-07): added to every call's ceiling, so
+`Ai:MaxOutputTokens` (4,000) and the palette's 1,500 keep meaning room for the answer, and the
+`groq` entry, at 0, still fits its free tier. 12,000 on `openrouter-deepseek` covers the longest
+grounded reply measured. The other half is time: production reaches the API through Cloudflare,
+which drops a request after 100 s, so `Ai:TimeoutSeconds` stays at 90 and the eval prints each
+call's seconds and flags one over 90. Turning the thinking off instead needs OpenRouter's
+`reasoning` field — one more line of C# in `ChatRequest`.
 
 **Prices are ours to keep current, and nothing validates them.** See §9.14.
 
@@ -353,11 +358,11 @@ user hears it at once; pasted text when Generate is pressed, which is equally fr
 
 ## 2e. Grounding — Topic mode written from an article
 
-> **Status: built 2026-10-29, switched off** (`Ai:Source:Enabled=false`). Server, wizard and eval
-> are all done, and the first grounded eval run beat the baseline on the topics it grounded —
-> wrong answers 15.2% → 3.6% ([`ai-question-accuracy-plan.md`](./ai-question-accuracy-plan.md)).
-> Turning it on is the one setting; mind the free tier's tokens-per-minute (§2b) — a grounded
-> generation is about 6,000 tokens of the 8,000.
+> **Status: on since 2026-11-07** (`Ai:Source:Enabled=true`, with `openrouter-deepseek`). Built
+> 2026-10-29 and kept off on the free Groq tier, where a grounded generation was about 6,000 of
+> its 8,000 tokens a minute. The first grounded run beat the Groq baseline on the topics it
+> grounded — wrong answers 15.2% → 3.6% — and DeepSeek grounded measured 1.7% wrong on the
+> whole run ([`ai-question-accuracy-plan.md`](./ai-question-accuracy-plan.md)).
 
 From memory, the model's wrong answers concentrate in subjects it knows badly
 ([`ai-question-accuracy-plan.md`](./ai-question-accuracy-plan.md), Phase 0). Grounding hands it

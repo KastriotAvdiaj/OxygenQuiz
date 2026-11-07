@@ -278,7 +278,7 @@ vendor by construction. Production supplies only what is secret or environment-s
    ```
 
    That is the whole change. To run a **different** vendor in production than in development, add
-   `- Ai__Vendor=deepseek` — one value, naming a catalogue entry. Overriding `Ai__BaseUrl` /
+   `- Ai__Vendor=groq` — one value, naming a catalogue entry. Overriding `Ai__BaseUrl` /
    `Ai__Model` / the cost rates individually still works and is warned about at startup; it is the
    form the catalogue exists to retire, because the five values must move together and setting some
    of them mis-prices the ledger silently.
@@ -303,7 +303,7 @@ So after a config change, *check the logs* — a working site is no longer proof
 docker compose -f docker-compose.prod.yml logs backend | grep '\[AI\]'
 ```
 
-`[AI] Ready — vendor "groq", model … at …` is what you want. `[AI] The AI features are switched
+`[AI] Ready — vendor "openrouter-deepseek", model … at …` is what you want. `[AI] The AI features are switched
 off because …` names the key to fix. The auth-provider guards still fail startup outright — an
 enabled provider with a blank `ClientId` will not boot — so the two behave differently on purpose;
 `docs/adr/0004-ai-misconfiguration-disables-the-feature.md` explains which failures earn which.

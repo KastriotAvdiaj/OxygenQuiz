@@ -55,6 +55,34 @@ public class AiConfigurationResolverTests
     }
 
     [Fact]
+    public void Thinking_tokens_come_from_the_vendor_entry_and_default_to_none()
+    {
+        // The allowance is the model's (AiVendorOptions.ThinkingTokens), so switching vendor must
+        // carry it — and an entry that doesn't set it adds nothing, which keeps groq inside its
+        // free tier's 8,000 tokens a minute.
+        var options = Configured();
+        Resolve(options);
+        Assert.Equal(0, options.ThinkingTokens);
+
+        var thinking = Configured();
+        thinking.Vendors["groq"].ThinkingTokens = 12_000;
+        Resolve(thinking);
+        Assert.Equal(12_000, thinking.ThinkingTokens);
+    }
+
+    [Fact]
+    public void Negative_thinking_tokens_are_refused()
+    {
+        var options = Configured();
+        options.Vendors["groq"].ThinkingTokens = -1;
+
+        var result = Resolve(options);
+
+        Assert.Equal(AiConfigStatus.Misconfigured, result.Availability.Status);
+        Assert.False(options.Enabled);
+    }
+
+    [Fact]
     public void Vendor_selection_is_case_insensitive()
     {
         // Ai__Vendor=GROQ from a shell is the same choice as "groq" in a file, and a deploy that

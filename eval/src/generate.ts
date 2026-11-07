@@ -478,12 +478,14 @@ async function main(): Promise<void> {
       const waited = await pacer.waitForRoom();
       if (waited > 0) console.log(`      paused ${(waited / 1000).toFixed(1)}s to stay under ${TPM_LIMIT} tokens/min`);
 
+      const started = Date.now();
       const reply = await callModel(prompt);
+      const seconds = (Date.now() - started) / 1000;
       pacer.record(reply.inputTokens + reply.outputTokens);
 
       await fs.writeFile(
         path.join(runDir, "raw", `${topic.id}.json`),
-        JSON.stringify({ topic, request, prompt, reply, languageMode, grounding: groundingInfo, asks }, null, 2),
+        JSON.stringify({ topic, request, prompt, reply, seconds, languageMode, grounding: groundingInfo, asks }, null, 2),
       );
       const source = groundingInfo?.source
         ? `grounded on "${groundingInfo.source.title}"`
@@ -497,7 +499,10 @@ async function main(): Promise<void> {
       // same ceiling (docs/quiz/ai-quiz-generation-flow.md §2b).
       const thinking = reply.reasoningTokens != null ? `, ${reply.reasoningTokens} thinking` : "";
       const status = reply.finishReason === "length" ? "CUT OFF at max_tokens" : "ok";
-      console.log(`${label}  ${status}  (${reply.outputTokens} output tokens${thinking}${source ? `, ${source}` : ""}${asked})`);
+      // Production reaches the model through Cloudflare, which drops any request after 100s, and
+      // Ai:TimeoutSeconds is 90 to stay under it. A call this slow in the eval fails in the app.
+      const slow = seconds > 90 ? "  — OVER Ai:TimeoutSeconds (90s)" : "";
+      console.log(`${label}  ${status}  (${seconds.toFixed(0)}s, ${reply.outputTokens} output tokens${thinking}${source ? `, ${source}` : ""}${asked})${slow}`);
     } catch (err) {
       const message = describeError(err);
       failures.push({ id: topic.id, error: message });

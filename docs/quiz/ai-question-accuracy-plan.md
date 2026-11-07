@@ -266,7 +266,7 @@ states the answer: the session DTO no longer carries the answer key mid-quiz
   baseline above rules out. How it works: [`ai-quiz-generation-flow.md`](./ai-quiz-generation-flow.md)
   §2d; why: [ADR 0037](../adr/0037-source-mode-writes-in-the-materials-language-and-opens-per-model.md).
   Measure it before opening it (flow doc §9.16).
-- **2b. Server and eval built 2026-10-29, switched off** — flow doc §2e. Language and article
+- **2b. Server and eval built 2026-10-29; on since 2026-11-07 with DeepSeek** — flow doc §2e. Language and article
   are chosen as [the source-tiers proposal](../proposals/topic-disambiguation-and-source-tiers.md)
   says, except that the article is matched by title (the "first hit" below picked the wrong one on
   seven of the twelve eval topics). Next: an eval run with `--grounding`, compared on the grounded

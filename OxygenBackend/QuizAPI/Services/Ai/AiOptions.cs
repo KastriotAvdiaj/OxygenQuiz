@@ -120,6 +120,13 @@ namespace QuizAPI.Services.Ai
         /// </summary>
         public string? ReasoningEffort { get; set; }
 
+        /// <summary>
+        /// Resolved from the selected vendor's <see cref="AiVendorOptions.ThinkingTokens"/>, never
+        /// set directly: added to every call's output ceiling, so <see cref="MaxOutputTokens"/>
+        /// and the palette's ceiling keep meaning "room for the answer".
+        /// </summary>
+        public int ThinkingTokens { get; set; }
+
         // ── Quota and spend ──
 
         /// <summary>

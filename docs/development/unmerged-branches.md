@@ -9,7 +9,7 @@ would conflict on without touching anything: `git merge-tree --write-tree --name
 
 | Branch | Ahead of `main` | Trial merge into `main` | Waiting on |
 |---|---|---|---|
-| `feature/fact-quizzes` (contains `feature/ai-source-learn`) | 6 commits | **clean** | A model for production — see below |
+| `feature/fact-quizzes` (contains `feature/ai-source-learn`) | 14 commits | **clean** (rechecked 2026-11-07) | An OpenRouter key on the server — see below |
 | `feature/featured-quizzes` | 14 commits, cut 2026-10-07 | 7 files conflict | Nothing; it fell behind |
 | `feature/paid-plans-entitlements` | 8 commits, cut 2026-10-10 | 15 files conflict | The product-name decision |
 
@@ -30,11 +30,12 @@ would conflict on without touching anything: `git merge-tree --write-tree --name
 merged too.
 
 **What going live needs.** Fact quizzes need nothing: no model, no setting, on as soon as it
-deploys. Grounding (Wikipedia, Learn, Wikidata facts) stays off until `Ai:Source:Enabled=true`,
-and is worth turning on with the model that replaces the free Groq tier — a grounded prompt is
-about 6,000 of the free tier's 8,000 tokens a minute. With that model: run the eval
-(`docs/development/ai-eval.md`), set `AllowsSourceMode` on its vendor entry if it earns it, then
-enable grounding.
+deploys. The branch also switches the AI vendor to DeepSeek V4.1 Flash through OpenRouter
+(`openrouter-deepseek`) and turns grounding on, both in `appsettings.json` — so production's
+`AI_API_KEY` must be an **OpenRouter key** before this deploys, or the AI features switch off.
+Source mode stays closed until it is measured on that model (ADR 0037). Steps:
+[`../deployment/production-topology.md`](../deployment/production-topology.md), "Worked example:
+turning the AI features on".
 
 ## `feature/featured-quizzes` — not held, just behind
 
