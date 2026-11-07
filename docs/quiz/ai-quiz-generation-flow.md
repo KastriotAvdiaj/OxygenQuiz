@@ -233,12 +233,6 @@ deliberately *not* retryable: our retry is one attempt two seconds later, and no
 refills in two seconds. The user gets a message naming the actual remedy ("wait a minute, or ask
 for fewer questions") rather than the generic outage line.
 
-**Reasoning models spend output tokens before writing anything.** `openai/gpt-oss-120b` and its
-kind emit internal reasoning first, billed as output and counted against TPM. A `max_tokens` that
-looks generous for the answer can be consumed entirely by reasoning, and the vendor then reports
-`json_validate_failed` with an empty `failed_generation` — which reads like a prompt problem and
-isn't one.
-
 **Free tiers are rate-limited in two dimensions, and the day limit is the tighter one.** Groq's
 free tier is ~30 requests/minute but ~250/day. Our own `ai` policy (6/min per user) is stricter on
 the minute and says nothing about the day, so a busy afternoon hits *their* ceiling first, and it

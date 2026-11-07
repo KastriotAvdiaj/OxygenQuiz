@@ -17,7 +17,7 @@ would conflict on without touching anything: `git merge-tree --write-tree --name
 
 **What it is,** in order, each building on the last:
 
-- **`feature/ai-source-learn`** (its first 3 commits, also pushed on their own): Microsoft Learn as
+- **`feature/ai-source-learn`** (its first 3 commits; that branch is no longer on the remote): Microsoft Learn as
   a second grounding source, asked only when Wikipedia isn't sure (ADR 0038, ADR 0039); the outage
   card's buttons bottom right; DynaPuff on the catalogue's filter headings for signed-out visitors.
 - **Fact quizzes** ([`../quiz/fact-quizzes.md`](../quiz/fact-quizzes.md), ADR 0040): *From a set of
@@ -95,5 +95,5 @@ should report none, and the backend tests should pass. Fact quizzes adds no migr
 ## Leftover branch names
 
 None. The 15 branches that were fully merged were deleted from GitHub on 2026-11-07, so the remote
-holds `main` and the four branches above. A clone that fetched before then still lists them until
+holds `main` and the three branches above (checked 2026-11-07). A clone that fetched before then still lists them until
 `git fetch --prune origin`.
