@@ -86,8 +86,8 @@ const ExternalSignupForm: React.FC<ExternalSignupFormProps> = ({
           });
           navigate("/");
         },
-        onError: (error: any) => {
-          const status = error?.response?.status;
+        onError: (error: unknown) => {
+          const status = (error as { response?: { status?: number } })?.response?.status;
           const message = signupErrorMessage(error);
 
           // The ticket lives 10 minutes; past that the provider popup must run again.
