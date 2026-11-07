@@ -242,7 +242,7 @@ nothing reads it; `cp .env.example .env` configures nothing today.
 3. `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d`
 4. **Verify it reached the process**, rather than assuming:
    ```bash
-   docker compose -f docker-compose.prod.yml exec backend printenv | grep -E 'Ai__|Authentication__'
+   docker compose -f docker-compose.prod.yml exec backend printenv | grep -E 'Ai__|Authentication__' | sed -E 's/(Key|Secret|Password)=.*/\1=***/'
    curl -s https://api.oxygenquiz.com/api/Authentication/auth-config
    ```
    The second command is the better check: it proves the value reached the app *and* that nginx
@@ -287,9 +287,13 @@ vendor by construction. Production supplies only what is secret or environment-s
 
    ```bash
    docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
-   docker compose -f docker-compose.prod.yml exec backend printenv | grep -E 'Ai__|Authentication__'
+   docker compose -f docker-compose.prod.yml exec backend printenv | grep -E 'Ai__|Authentication__' | sed -E 's/(Key|Secret|Password)=.*/\1=***/'
    curl -s https://api.oxygenquiz.com/api/Authentication/auth-config
    ```
+
+   The `sed` blanks every key, secret and password, so the output is safe to paste into a chat
+   or an issue — without it, `printenv` prints them in full (an OpenRouter key was rotated for
+   exactly that on 2026-11-07).
 
    `GET /api/quiz/ai-quota` (authenticated) is the end-to-end check for AI: its `enabled` field
    answers "would a generation actually be attempted" — configuration, kill switch *and* spend caps

@@ -160,7 +160,7 @@ cat ~/OxygenQuiz/.env.prod
 grep -iE "ADMIN|SEED|JWT|POSTGRES" ~/OxygenQuiz/.env.prod   # NOTE: use | not / to OR terms
 
 # Everything the running backend container actually has in its environment:
-docker compose -f docker-compose.prod.yml exec backend printenv | grep -iE "SEED|JWT|CORS|POSTGRES|ASPNETCORE"
+docker compose -f docker-compose.prod.yml exec backend printenv | grep -iE "SEED|JWT|CORS|POSTGRES|ASPNETCORE" | sed -E 's/(KEY|PASSWORD|Key|Password)=.*/\1=***/'
 
 # What environment the app thinks it's in (also printed in the boot logs):
 docker compose -f docker-compose.prod.yml exec backend printenv ASPNETCORE_ENVIRONMENT
