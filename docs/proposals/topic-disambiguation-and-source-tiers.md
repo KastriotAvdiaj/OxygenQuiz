@@ -2,7 +2,8 @@
 
 **Status: accepted 2026-10-28, implementation in progress.** Rank 3 (English source → non-English
 questions) is **rejected** — see §4d. Built 2026-10-29 for Wikipedia, end to end
-(server, wizard, eval) and measured — switched off; how it works is in
+(server, wizard, eval) and measured — switched on 2026-11-07 with DeepSeek V4.1 Flash on
+`feature/fact-quizzes`; how it works is in
 [`../quiz/ai-quiz-generation-flow.md`](../quiz/ai-quiz-generation-flow.md) §2e. **Microsoft
 Learn built 2026-10-30** as the first official-documentation tier, and the tiers are no longer
 consulted in order — see §4d and [ADR 0038](../adr/0038-every-source-is-searched-and-the-titles-decide.md).
