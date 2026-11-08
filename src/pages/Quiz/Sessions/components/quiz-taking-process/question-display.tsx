@@ -86,9 +86,10 @@ export function QuestionDisplay({
       onSubmit: handleSubmit,
       isSubmitting,
       instantFeedback,
-      // When timed out, don't pass answerResult to children —
-      // this prevents them from showing red/green feedback on the selected option
-      answerResult: isTimedOut ? null : answerResult,
+      // Passed on a timeout too: the server sends the key for a TimedOut answer, and the player
+      // should see what the answer was. The children leave the unsubmitted pick neutral — it was
+      // never judged, so it is not painted wrong.
+      answerResult,
       isTimedOut,
       onSelectionChange: handleSelectionChange,
     };
@@ -157,9 +158,10 @@ export function QuestionDisplay({
           </div>
         )}
 
-        {/* Time's Up Banner — shown instead of feedback when timed out */}
+        {/* Time's Up banner — only for a quiz that holds results until the end. With instant
+            feedback the FeedbackDisplay below says "Time's Up!" itself, with the explanation. */}
         <AnimatePresence>
-          {isTimedOut && (
+          {isTimedOut && !instantFeedback && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -181,8 +183,8 @@ export function QuestionDisplay({
           )}
         </AnimatePresence>
 
-        {/* Instant Feedback Display — only shown when NOT timed out */}
-        {instantFeedback && answerResult && !isTimedOut && (
+        {/* Instant feedback — Correct, Incorrect or Time's Up, and the explanation */}
+        {instantFeedback && answerResult && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}

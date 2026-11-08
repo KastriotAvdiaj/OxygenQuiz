@@ -79,7 +79,8 @@ export function TrueOrFalseQuestion({
         answerResult.correctAnswer.trim().toLowerCase();
 
     if (isThisCorrect) return "correct";
-    if (selectedOptionId === option.id) return "incorrect";
+    // A timed-out pick was never submitted, so it isn't wrong — only the key is shown.
+    if (selectedOptionId === option.id && answerResult.status !== "TimedOut") return "incorrect";
     return "default";
   };
 

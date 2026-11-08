@@ -22,8 +22,9 @@ namespace QuizAPI.Services.Scoring
     /// tampered client can therefore steal at most the credit an honest client on a slow
     /// connection would legitimately receive — capped, bounded, and worth only a few points.
     /// Anything outside those bounds falls back to the server window, which is exactly the
-    /// pre-compensation behaviour. Timeout enforcement deliberately stays on the server clock
-    /// (see <c>SubmitAnswerService.CalculateTimeContext</c>): this helper only affects scoring.</para>
+    /// pre-compensation behaviour. Since 2026-11-08 the single-player timeout is decided on the
+    /// same validated time (<see cref="IsLate"/>, ADR 0042): on the raw server clock, with no grace,
+    /// an answer clicked in the last second arrived "late" by its own round trip.</para>
     /// </summary>
     public static class QuizTiming
     {
@@ -64,5 +65,20 @@ namespace QuizAPI.Services.Scoring
 
             return isPlausible ? clientElapsed : serverElapsed;
         }
+
+        /// <summary>
+        /// Whether an answer came in after the question's time ran out, judged on the same
+        /// validated elapsed time it is scored with. The client can claim back at most
+        /// <paramref name="maxLatencyCredit"/> — the round trip an honest player on a slow
+        /// connection really spent — so an answer clicked in time counts, and one clicked later
+        /// than that credit still times out (ADR 0042).
+        /// </summary>
+        /// <param name="timeLimit">The question's limit, including any grace period.</param>
+        public static bool IsLate(
+            TimeSpan serverElapsed,
+            long? clientElapsedMs,
+            TimeSpan timeLimit,
+            TimeSpan? maxLatencyCredit = null)
+            => EffectiveElapsed(serverElapsed, clientElapsedMs, maxLatencyCredit) > timeLimit;
     }
 }
