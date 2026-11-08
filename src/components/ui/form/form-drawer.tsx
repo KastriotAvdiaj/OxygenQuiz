@@ -214,10 +214,11 @@ export const FormDrawer = ({
 };
 
 /**
- * "Question created": a pill that rises out of the submit button and fades, ~1s, each time
+ * "Question created": a pill that rises out of the submit button, holds, then floats up and
+ * fades — 2.2s in all — each time
  * `signal` goes up. It replaces the corner toast for a form that stays open to make another —
- * the confirmation lands where the author is looking, and is gone before the next question is
- * typed. Keyed by the signal, so saving again mid-rise starts a fresh one.
+ * the confirmation lands where the author is looking, and is gone by the time the next question
+ * is under way. Keyed by the signal, so saving again mid-rise starts a fresh one.
  *
  * Reduced motion: it fades in place rather than rising. The live region beside it says the same
  * thing to a screen reader, which the moving pill (aria-hidden) can't.
@@ -231,17 +232,33 @@ const SavedPill = ({ signal, message }: { signal: number; message: string }) => 
       </span>
       <AnimatePresence>
         {signal > 0 && (
-          <motion.span
+          // Centred by a full-width row, not -translate-x-1/2 on the pill: framer-motion writes
+          // its own transform for the rise, which wiped that class out and left the pill's left
+          // edge, not its middle, over the button's centre.
+          <span
             key={signal}
             aria-hidden="true"
-            className="pointer-events-none absolute bottom-full left-1/2 mb-1 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full bg-quiz-success px-3 py-1 text-xs font-semibold text-white shadow-md"
-            initial={{ opacity: 0, y: reduce ? 0 : 6 }}
-            animate={{ opacity: [0, 1, 1, 0], y: reduce ? 0 : [6, -6, -14, -26] }}
-            transition={{ duration: 1.1, times: [0, 0.15, 0.6, 1], ease: "easeOut" }}
+            className="pointer-events-none absolute inset-x-0 bottom-full mb-2 flex justify-center"
           >
-            <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden="true" />
-            {message}
-          </motion.span>
+            <motion.span
+              className="flex items-center gap-2 whitespace-nowrap rounded-lg bg-quiz-success px-4 py-2 text-sm font-semibold text-white shadow-lg"
+              // Rises into place, holds so it can be read, then floats up as it fades.
+              initial={{ opacity: 0, y: reduce ? 0 : 10, scale: reduce ? 1 : 0.95 }}
+              animate={{
+                opacity: [0, 1, 1, 0],
+                y: reduce ? 0 : [10, 0, 0, -32],
+                scale: reduce ? 1 : [0.95, 1, 1, 1],
+              }}
+              transition={{
+                duration: 2.2,
+                times: [0, 0.14, 0.68, 1],
+                ease: ["easeOut", "linear", "easeIn"],
+              }}
+            >
+              <Check className="h-4 w-4" strokeWidth={3} aria-hidden="true" />
+              {message}
+            </motion.span>
+          </span>
         )}
       </AnimatePresence>
     </>
