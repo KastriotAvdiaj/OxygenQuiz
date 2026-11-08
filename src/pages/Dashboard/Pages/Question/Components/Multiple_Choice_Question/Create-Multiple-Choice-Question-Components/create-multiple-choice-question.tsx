@@ -12,6 +12,7 @@ import { DifficultySelect } from "../../../Entities/Difficulty/Components/select
 import { LanguageSelect } from "../../../Entities/Language/components/select-question-language";
 import { LiftedButton } from "@/common/LiftedButton";
 import { QuestionTypeButton } from "../../question-type-button";
+import { useCreateAnother } from "../../use-create-another";
 import { QuestionType } from "@/types/question-types";
 
 /** The most options a multiple-choice question may have — and how many a new one starts with. */
@@ -33,6 +34,7 @@ interface CreateMultipleChoiceFormProps {
   categories: QuestionCategory[];
   difficulties: QuestionDifficulty[];
   languages: QuestionLanguage[];
+  /** The author closed the drawer after saving at least one question — the batch is done. */
   onSuccess: () => void;
 }
 
@@ -41,15 +43,15 @@ export const CreateMultipleChoiceForm: React.FC<
 > = ({ categories, difficulties, languages, onSuccess }) => {
   const { addNotification } = useNotifications();
   const [media, setMedia] = useState<MediaSelection | null>(null);
+  // Stays open for the next question (use-create-another.ts).
+  const batch = useCreateAnother(onSuccess);
 
   const createQuestionMutation = useCreateMultipleChoiceQuestion({
     mutationConfig: {
-      onSuccess: () => {
-        addNotification({
-          type: "success",
-          title: "Multiple Choice Question Created",
-        });
-        onSuccess();
+      // No toast: the drawer's "Question created" pill confirms it, on the submit button.
+      onSuccess: (_created, { data }) => {
+        setMedia(null);
+        batch.markSaved(data);
       },
       onError: () => {
         addNotification({
@@ -62,7 +64,10 @@ export const CreateMultipleChoiceForm: React.FC<
 
   return (
     <FormDrawer
-      isDone={createQuestionMutation.isSuccess}
+      isDone={false}
+      savedSignal={batch.savedCount}
+      savedMessage="Question created"
+      onClosed={batch.handleClosed}
       triggerButton={<QuestionTypeButton questionType={QuestionType.MultipleChoice} label="Multiple Choice" />}
       title="Create a New Multiple Choice Question"
       submitButton={
@@ -80,6 +85,7 @@ export const CreateMultipleChoiceForm: React.FC<
       }
     >
       <Form
+        key={batch.formKey}
         id="create-multiple-choice-question"
         className="w-[500px]"
         onSubmit={(values) => {
@@ -105,6 +111,7 @@ export const CreateMultipleChoiceForm: React.FC<
         // default value is applied once, in development and production alike. Four, like the
         // quiz builder's new question (DEFAULT_NEW_MULTIPLE_CHOICE) and the most allowed.
         defaultValues={{
+          ...batch.carried,
           answerOptions: Array.from({ length: MAX_ANSWER_OPTIONS }, () => ({ text: "", isCorrect: false })),
         }}
       >
@@ -170,6 +177,8 @@ export const CreateMultipleChoiceForm: React.FC<
                   formState.errors["text"] ? "border-red-500" : ""
                 }`}
                 placeholder="Enter your question here..."
+                // Back to the question after each save, ready for the next one.
+                autoFocus
                 error={formState.errors["text"]}
                 registration={register("text")}
               />
@@ -237,6 +246,9 @@ export const CreateMultipleChoiceForm: React.FC<
                         <Switch
                           className="shadow-md"
                           id={`correct-${index}`}
+                          // Four switches all labelled "Correct Answer" are indistinguishable to
+                          // a screen reader (and to a test); this one says which option it marks.
+                          aria-label={`Option ${index + 1} is correct`}
                           checked={isCorrect}
                           onCheckedChange={() => handleSwitchChange(index)}
                         />

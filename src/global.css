@@ -679,6 +679,30 @@ input[type="password"]::-ms-clear {
 
 /* Quiz-specific utility classes */
 @layer components {
+  /* A side panel sliding in — the Drawer and Sheet primitives (components/ui/drawer.tsx,
+     sheet.tsx), so every drawer in the app. Measured 2026-11-08 (docs/development/motion.md,
+     "Drawers"): the panels opened in 500ms on ease-in-out, whose slow start is exactly where a
+     heavy first render already eats frames, so they read as lagging.
+     - A decelerating curve, the iOS sheet's: fast out of the gate, settling softly.
+     - `will-change: transform` gives the panel its own compositor layer for the slide, so a
+       long task on the main thread mid-slide doesn't stall it. Panels mount only while open,
+       so the layer lives no longer than the panel.
+     - Reduced motion: arrive, don't travel — the slide becomes a fade. */
+  .slide-panel {
+    will-change: transform;
+    animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .slide-panel {
+      --tw-enter-translate-x: 0 !important;
+      --tw-enter-translate-y: 0 !important;
+      --tw-exit-translate-x: 0 !important;
+      --tw-exit-translate-y: 0 !important;
+      --tw-enter-opacity: 0 !important;
+      --tw-exit-opacity: 0 !important;
+    }
+  }
+
   .quiz-card {
     @apply bg-quiz-surface border border-quiz-border-subtle rounded-xl shadow-sm;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);

@@ -89,6 +89,29 @@ the next browse page rather than inventing timings.
   every change needs a backdrop, a bounce or a delay. If the element already arrives with an
   animation, don't add a second layer to it.
 
+## Drawers
+
+Every side panel — the `Drawer` and `Sheet` primitives (`components/ui/drawer.tsx`, `sheet.tsx`):
+the question bank's create and edit drawers, the account drawer, the filter sheets — slides in
+over **300ms and out over 200ms on a decelerating curve** (`.slide-panel` in `global.css`, the
+iOS sheet's `cubic-bezier(0.32, 0.72, 0, 1)`). The panel gets its own compositor layer
+(`will-change: transform`) for the slide, and under reduced motion it fades in place.
+
+Measured 2026-11-08 in a production build at 4× CPU, because the drawers read as laggy:
+
+- They opened over 500ms on `ease-in-out`. Its slowest part is the start, exactly where the next
+  point already cost frames, so the visible slide began late and half-way across.
+- The click rendered the whole form before the browser could draw anything — 160–270ms for the
+  multiple-choice form. `FormDrawer` now renders its panel first and its body a frame later
+  (`useAfterFirstFrame`), fading in: the click task fell to 20–70ms and the slide starts at once.
+  The body's render (~250ms at 4×) still happens, but on the frame after, and the trace shows the
+  slide composited (no `compositeFailed`), so it doesn't stall it.
+- A blanket `transition` class sat beside the keyframe slide, transitioning every property and
+  firing `transitionend` work mid-slide. Removed.
+
+The account drawer's first frame still waits ~100ms at 4× for its own render — small enough to
+leave. A drawer whose body is heavier than a form should defer it the same way `FormDrawer` does.
+
 ## Page changes
 
 A route change inside a dashboard fades the new page in over 200ms — `PageEnter` in

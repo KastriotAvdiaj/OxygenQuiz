@@ -2,7 +2,6 @@ import { Trash2 } from "lucide-react";
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
-import { useNotifications } from "@/common/Notifications";
 
 import { useFieldArray } from "react-hook-form";
 import { Separator } from "@/components/ui/separator";
@@ -23,6 +22,7 @@ import {
 } from "@/components/ui";
 import { LiftedButton } from "@/common/LiftedButton";
 import { QuestionTypeButton } from "../question-type-button";
+import { useCreateAnother } from "../use-create-another";
 import { QuestionType, QuestionCategory, QuestionDifficulty, QuestionLanguage } from "@/types/question-types";
 import { MediaPicker } from "@/features/media/components/media-picker";
 import { type MediaSelection } from "@/features/media/api/upload-media";
@@ -39,24 +39,26 @@ interface CreateTypeAnswerQuestionFormProps {
 export const CreateTypeAnswerQuestionForm: React.FC<
   CreateTypeAnswerQuestionFormProps
 > = ({ categories, difficulties, languages, onSuccess, title }) => {
-  const { addNotification } = useNotifications();
   const [media, setMedia] = useState<MediaSelection | null>(null);
+  // Stays open for the next question (use-create-another.ts).
+  const batch = useCreateAnother(onSuccess);
 
   const createQuestionMutation = useCreateTypeTheAnswerQuestion({
     mutationConfig: {
-      onSuccess: () => {
-        addNotification({
-          type: "success",
-          title: "Type Answer Question Created",
-        });
-        onSuccess?.();
+      // No toast: the drawer's "Question created" pill confirms it, on the submit button.
+      onSuccess: (_created, { data }) => {
+        setMedia(null);
+        batch.markSaved(data);
       },
     },
   });
 
   return (
     <FormDrawer
-      isDone={createQuestionMutation.isSuccess}
+      isDone={false}
+      savedSignal={batch.savedCount}
+      savedMessage="Question created"
+      onClosed={batch.handleClosed}
       triggerButton={
         title ? (
           <LiftedButton>{title}</LiftedButton>
@@ -80,6 +82,7 @@ export const CreateTypeAnswerQuestionForm: React.FC<
       }
     >
       <Form
+        key={batch.formKey}
         id="create-type-answer-question"
         className="w-[500px]"
         onSubmit={(values) => {
@@ -91,9 +94,10 @@ export const CreateTypeAnswerQuestionForm: React.FC<
         options={{
           defaultValues: {
             text: "",
-            difficultyId: undefined,
-            categoryId: undefined,
-            languageId: undefined,
+            // The last question's, when this is the next in a batch (use-create-another.ts).
+            difficultyId: batch.carried.difficultyId,
+            categoryId: batch.carried.categoryId,
+            languageId: batch.carried.languageId,
             correctAnswer: "",
             isCaseSensitive: false,
             allowPartialMatch: false,
@@ -125,6 +129,7 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                   formState.errors["text"] ? "border-red-500" : ""
                 }`}
                 placeholder="Enter your question here..."
+                autoFocus
                 error={formState.errors["text"]}
                 registration={register("text")}
               />

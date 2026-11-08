@@ -2,7 +2,6 @@ import { Check } from "lucide-react";
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
-import { useNotifications } from "@/common/Notifications";
 
 import { CategorySelect } from "../../Entities/Categories/Components/select-question-category";
 import { DifficultySelect } from "../../Entities/Difficulty/Components/select-question-difficulty";
@@ -13,6 +12,7 @@ import {
 } from "../../api/True_False-Question/create-true_false-question";
 import { LiftedButton } from "@/common/LiftedButton";
 import { QuestionTypeButton } from "../question-type-button";
+import { useCreateAnother } from "../use-create-another";
 import { QuestionType } from "@/types/question-types";
 import { MediaPicker } from "@/features/media/components/media-picker";
 import { type MediaSelection } from "@/features/media/api/upload-media";
@@ -34,24 +34,26 @@ interface CreateTrueFalseQuestionFormProps {
 export const CreateTrueFalseQuestionForm: React.FC<
   CreateTrueFalseQuestionFormProps
 > = ({ categories, difficulties, languages, onSuccess, title }) => {
-  const { addNotification } = useNotifications();
   const [media, setMedia] = useState<MediaSelection | null>(null);
+  // Stays open for the next question (use-create-another.ts).
+  const batch = useCreateAnother(onSuccess);
 
   const createQuestionMutation = useCreateTrueFalseQuestion({
     mutationConfig: {
-      onSuccess: () => {
-        addNotification({
-          type: "success",
-          title: "True/False Question Created",
-        });
-        onSuccess?.();
+      // No toast: the drawer's "Question created" pill confirms it, on the submit button.
+      onSuccess: (_created, { data }) => {
+        setMedia(null);
+        batch.markSaved(data);
       },
     },
   });
 
   return (
     <FormDrawer
-      isDone={createQuestionMutation.isSuccess}
+      isDone={false}
+      savedSignal={batch.savedCount}
+      savedMessage="Question created"
+      onClosed={batch.handleClosed}
       triggerButton={
         title ? (
           <LiftedButton>{title}</LiftedButton>
@@ -75,6 +77,7 @@ export const CreateTrueFalseQuestionForm: React.FC<
       }
     >
       <Form
+        key={batch.formKey}
         id="create-true-false-question"
         className="w-[500px]"
         onSubmit={(values) => {
@@ -83,6 +86,7 @@ export const CreateTrueFalseQuestionForm: React.FC<
           });
         }}
         schema={createTrueFalseQuestionInputSchema}
+        defaultValues={batch.carried}
       >
         {({ register, formState, setValue, watch, clearErrors }) => {
           const checkCorrectAnswer = (value: boolean) => {
@@ -107,6 +111,7 @@ export const CreateTrueFalseQuestionForm: React.FC<
                       formState.errors["text"] ? "border-red-500" : ""
                     }`}
                     placeholder="Enter your statement here..."
+                    autoFocus
                     error={formState.errors["text"]}
                     registration={register("text")}
                   />
