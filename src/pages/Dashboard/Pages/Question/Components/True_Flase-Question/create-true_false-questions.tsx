@@ -11,6 +11,7 @@ import {
   useCreateTrueFalseQuestion,
 } from "../../api/True_False-Question/create-true_false-question";
 import { AddQuestionButton, QuestionTypeButton } from "../question-type-button";
+import { QuestionVisibilityField, useNewQuestionVisibility } from "../../Entities/select-visibility";
 import { useCreateAnother } from "../use-create-another";
 import { QuestionType } from "@/types/question-types";
 import { MediaPicker } from "@/features/media/components/media-picker";
@@ -37,6 +38,7 @@ export const CreateTrueFalseQuestionForm: React.FC<
   const [media, setMedia] = useState<MediaSelection | null>(null);
   // Stays open for the next question (use-create-another.ts).
   const batch = useCreateAnother(onSuccess);
+  const newVisibility = useNewQuestionVisibility();
 
   const createQuestionMutation = useCreateTrueFalseQuestion({
     mutationConfig: {
@@ -86,7 +88,7 @@ export const CreateTrueFalseQuestionForm: React.FC<
           });
         }}
         schema={createTrueFalseQuestionInputSchema}
-        defaultValues={batch.carried}
+        defaultValues={{ ...batch.carried, visibility: newVisibility }}
       >
         {({ register, formState, setValue, watch, clearErrors }) => {
           const checkCorrectAnswer = (value: boolean) => {
@@ -209,6 +211,12 @@ export const CreateTrueFalseQuestionForm: React.FC<
                   }
                   error={formState.errors["languageId"]?.message}
                   clearErrors={() => clearErrors("languageId")}
+                />
+                <QuestionVisibilityField
+                  value={watch("visibility") ?? newVisibility}
+                  onChange={(value: string) => setValue("visibility", value)}
+                  error={formState.errors["visibility"]?.message}
+                  clearErrors={() => clearErrors("visibility")}
                 />
               </section>
               {/* Optional "why" shown to players after they answer — see

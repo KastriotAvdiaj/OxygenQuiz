@@ -14,7 +14,7 @@ import { useFieldArray } from "react-hook-form";
 import { DifficultySelect } from "../../Entities/Difficulty/Components/select-question-difficulty";
 import { CategorySelect } from "../../Entities/Categories/Components/select-question-category";
 import { LanguageSelect } from "../../Entities/Language/components/select-question-language";
-import { VisibilitySelect } from "../../Entities/select-visibility";
+import { QuestionVisibilityField } from "../../Entities/select-visibility";
 import {
   Switch,
   Tooltip,
@@ -342,7 +342,7 @@ export const UpdateTypeAnswerQuestionForm: React.FC<
                       clearErrors={() => clearErrors("languageId")}
                     />
 
-                    <VisibilitySelect
+                    <QuestionVisibilityField
                       label="Visibility"
                       value={watch("visibility")}
                       onChange={(value: string) =>

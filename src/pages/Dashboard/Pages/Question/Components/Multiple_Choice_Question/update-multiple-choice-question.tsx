@@ -17,7 +17,7 @@ import { useQuizForm } from "../../../Quiz/components/Create-Quiz-Form/use-quiz-
 import { CategorySelect } from "../../Entities/Categories/Components/select-question-category";
 import { DifficultySelect } from "../../Entities/Difficulty/Components/select-question-difficulty";
 import { LanguageSelect } from "../../Entities/Language/components/select-question-language";
-import { VisibilitySelect } from "../../Entities/select-visibility";
+import { QuestionVisibilityField } from "../../Entities/select-visibility";
 import { LiftedButton } from "@/common/LiftedButton";
 import { MediaPicker } from "@/features/media/components/media-picker";
 import { selectionFrom, type MediaSelection } from "@/features/media/api/upload-media";
@@ -268,7 +268,7 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
                     clearErrors={() => clearErrors("languageId")}
                   />
 
-                  <VisibilitySelect
+                  <QuestionVisibilityField
                     label="Visibility"
                     value={watch("visibility")}
                     onChange={(value: string) => setValue("visibility", value)}

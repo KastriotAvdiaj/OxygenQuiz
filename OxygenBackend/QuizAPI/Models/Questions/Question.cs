@@ -90,7 +90,7 @@ namespace QuizAPI.Models
         public string? Explanation { get; set; }
 
         [Required]
-        public QuestionVisibility Visibility { get; set; } = QuestionVisibility.Global;
+        public QuestionVisibility Visibility { get; set; } = QuestionVisibility.Private;
 
         public int DifficultyId { get; set; }
         [JsonIgnore]

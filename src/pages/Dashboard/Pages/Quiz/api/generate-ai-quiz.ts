@@ -156,7 +156,7 @@ export interface AiQuotaStatus {
    */
   enabled: boolean;
   /**
-   * Daily allowance, or `null` for unlimited (Admin / SuperAdmin).
+   * Daily allowance, or `null` for unlimited (SuperAdmin only; Admin and Teacher get `Ai:DefaultDailyQuota`).
    *
    * Unlimited means the daily *count* is skipped — not spending. The rolling budget caps
    * still apply to everyone, and usage rows are still written, so staff generations show

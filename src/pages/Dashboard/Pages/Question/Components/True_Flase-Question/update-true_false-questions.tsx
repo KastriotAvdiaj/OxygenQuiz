@@ -16,7 +16,7 @@ import { DifficultySelect } from "../../Entities/Difficulty/Components/select-qu
 import { CategorySelect } from "../../Entities/Categories/Components/select-question-category";
 import { LanguageSelect } from "../../Entities/Language/components/select-question-language";
 import { useQuizForm } from "../../../Quiz/components/Create-Quiz-Form/use-quiz-form";
-import { VisibilitySelect } from "../../Entities/select-visibility";
+import { QuestionVisibilityField } from "../../Entities/select-visibility";
 import { Check } from "lucide-react";
 import { TrueFalseQuestion } from "@/types/question-types";
 import { IconButtonWithTooltip } from "../Re-Usable-Components/icon-button-with-tooltip";
@@ -218,7 +218,7 @@ export const UpdateTrueFalseQuestionForm: React.FC<
                     clearErrors={() => clearErrors("languageId")}
                   />
 
-                  <VisibilitySelect
+                  <QuestionVisibilityField
                     label="Visibility"
                     value={watch("visibility")}
                     onChange={(value: string) => setValue("visibility", value)}

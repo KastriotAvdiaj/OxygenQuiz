@@ -101,6 +101,46 @@ namespace QuizAPI.Controllers.Questions.Services
                 throw new AppValidationException("Pick a language for this question — \"Unspecified\" isn't allowed.");
         }
 
+        // ── Shared bank (docs/quiz/question-bank.md) ───────────────────────────────
+        // A Global question is readable by every caller, guests included (the QuestionBase query
+        // filter's rule 3), so putting one there is a staff decision. Anything unrecognised —
+        // a missing value, "Public", a stray number — lands Private: the safe side of a
+        // privacy default is the one that shows nobody. Until 2026-11-08 two of the three
+        // creates fell back to Global instead.
+
+        internal const string SharedBankForbidden =
+            "Only admins can add questions to the shared question bank.";
+
+        private static bool TryParseVisibility(string? raw, out QuestionVisibility visibility) =>
+            Enum.TryParse(raw?.Trim(), true, out visibility)
+            && Enum.IsDefined(visibility)
+            && !int.TryParse(raw, out _);
+
+        private static QuestionVisibility ResolveNewVisibility(string? requested, bool canShare)
+        {
+            if (!TryParseVisibility(requested, out var visibility))
+                return QuestionVisibility.Private;
+
+            if (visibility == QuestionVisibility.Global && !canShare)
+                throw new ForbiddenException(SharedBankForbidden);
+
+            return visibility;
+        }
+
+        // An edit may take a question out of the bank, or leave it where it is; only staff may
+        // put one in. Leaving an already-Global question Global is not a change, so an older
+        // question a user shared before this rule existed stays editable by its owner.
+        private static void ApplyVisibilityChange(QuestionBase question, string? requested, bool canShare)
+        {
+            if (!TryParseVisibility(requested, out var visibility) || visibility == question.Visibility)
+                return;
+
+            if (visibility == QuestionVisibility.Global && !canShare)
+                throw new ForbiddenException(SharedBankForbidden);
+
+            question.Visibility = visibility;
+        }
+
         // Cleans the alternative answers and enforces the cap. Cleaning runs first so a blank row
         // the author never filled in, or a duplicate of the correct answer, doesn't count against
         // their budget — only the answers we'd actually store do.
@@ -247,7 +287,7 @@ namespace QuizAPI.Controllers.Questions.Services
         }
 
         // ── Creates ─────────────────────────────────────────────────────────────────
-        public async Task<MultipleChoiceQuestionDTO> CreateMultipleChoiceQuestionAsync(MultipleChoiceQuestionCM questionCM, Guid userId)
+        public async Task<MultipleChoiceQuestionDTO> CreateMultipleChoiceQuestionAsync(MultipleChoiceQuestionCM questionCM, Guid userId, bool canShare = false)
         {
             await ValidateClassificationAsync(questionCM.CategoryId, questionCM.LanguageId);
 
@@ -262,8 +302,7 @@ namespace QuizAPI.Controllers.Questions.Services
             question.UserId = userId;
             question.CreatedAt = DateTime.UtcNow;
             question.Type = QuestionType.MultipleChoice;
-            question.Visibility = Enum.TryParse(questionCM.Visibility, true, out QuestionVisibility vis)
-                ? vis : QuestionVisibility.Private;
+            question.Visibility = ResolveNewVisibility(questionCM.Visibility, canShare);
 
             await _media.ApplyToQuestionAsync(question, questionCM.MediaAssetId, userId);
 
@@ -274,7 +313,7 @@ namespace QuizAPI.Controllers.Questions.Services
             return created?.ToDto();
         }
 
-        public async Task<TrueFalseQuestionDTO> CreateTrueFalseQuestionAsync(TrueFalseQuestionCM questionCM, Guid userId)
+        public async Task<TrueFalseQuestionDTO> CreateTrueFalseQuestionAsync(TrueFalseQuestionCM questionCM, Guid userId, bool canShare = false)
         {
             await ValidateClassificationAsync(questionCM.CategoryId, questionCM.LanguageId);
 
@@ -283,8 +322,7 @@ namespace QuizAPI.Controllers.Questions.Services
             question.UserId = userId;
             question.CreatedAt = DateTime.UtcNow;
             question.Type = QuestionType.TrueFalse;
-            question.Visibility = Enum.TryParse(questionCM.Visibility, true, out QuestionVisibility vis)
-                ? vis : QuestionVisibility.Global;
+            question.Visibility = ResolveNewVisibility(questionCM.Visibility, canShare);
 
             await _media.ApplyToQuestionAsync(question, questionCM.MediaAssetId, userId);
 
@@ -295,7 +333,7 @@ namespace QuizAPI.Controllers.Questions.Services
             return created?.ToDto();
         }
 
-        public async Task<TypeTheAnswerQuestionDTO> CreateTypeTheAnswerQuestionAsync(TypeTheAnswerQuestionCM questionCM, Guid userId)
+        public async Task<TypeTheAnswerQuestionDTO> CreateTypeTheAnswerQuestionAsync(TypeTheAnswerQuestionCM questionCM, Guid userId, bool canShare = false)
         {
             await ValidateClassificationAsync(questionCM.CategoryId, questionCM.LanguageId);
 
@@ -307,8 +345,7 @@ namespace QuizAPI.Controllers.Questions.Services
             question.UserId = userId;
             question.CreatedAt = DateTime.UtcNow;
             question.Type = QuestionType.TypeTheAnswer;
-            question.Visibility = Enum.TryParse(questionCM.Visibility, true, out QuestionVisibility vis)
-                ? vis : QuestionVisibility.Global;
+            question.Visibility = ResolveNewVisibility(questionCM.Visibility, canShare);
 
             await _media.ApplyToQuestionAsync(question, questionCM.MediaAssetId, userId);
 
@@ -323,7 +360,7 @@ namespace QuizAPI.Controllers.Questions.Services
         // canUpdateAny comes from the controller's permission check; when false the repository
         // clamps the lookup to the caller's own questions.
         public async Task<MultipleChoiceQuestionDTO> UpdateMultipleChoiceQuestionAsync(
-            MultipleChoiceQuestionUM questionUM, Guid userId, bool canUpdateAny)
+            MultipleChoiceQuestionUM questionUM, Guid userId, bool canUpdateAny, bool canShare = false)
         {
             // Validated after the ownership lookup so a caller can't probe lookup ids through a
             // question they aren't allowed to touch.
@@ -335,8 +372,7 @@ namespace QuizAPI.Controllers.Questions.Services
 
             questionUM.ApplyTo(existingQuestion);
 
-            if (Enum.TryParse(questionUM.Visibility, true, out QuestionVisibility vis))
-                existingQuestion.Visibility = vis;
+            ApplyVisibilityChange(existingQuestion, questionUM.Visibility, canShare);
 
             await _answerOptionService.SyncAnswerOptionsAsync(existingQuestion, questionUM.AnswerOptions);
 
@@ -350,7 +386,7 @@ namespace QuizAPI.Controllers.Questions.Services
         }
 
         public async Task<TrueFalseQuestionDTO> UpdateTrueFalseQuestionAsync(
-            TrueFalseQuestionUM questionUM, Guid userId, bool canUpdateAny)
+            TrueFalseQuestionUM questionUM, Guid userId, bool canUpdateAny, bool canShare = false)
         {
             var existingQuestion = await _questions.GetTrueFalseForUpdateAsync(
                 questionUM.Id, canUpdateAny ? null : userId);
@@ -360,8 +396,7 @@ namespace QuizAPI.Controllers.Questions.Services
 
             questionUM.ApplyTo(existingQuestion);
 
-            if (Enum.TryParse(questionUM.Visibility, true, out QuestionVisibility visibility))
-                existingQuestion.Visibility = visibility;
+            ApplyVisibilityChange(existingQuestion, questionUM.Visibility, canShare);
 
             await _media.ApplyToQuestionAsync(existingQuestion, questionUM.MediaAssetId, userId);
 
@@ -373,7 +408,7 @@ namespace QuizAPI.Controllers.Questions.Services
         }
 
         public async Task<TypeTheAnswerQuestionDTO> UpdateTypeTheAnswerQuestionAsync(
-            TypeTheAnswerQuestionUM questionUM, Guid userId, bool canUpdateAny)
+            TypeTheAnswerQuestionUM questionUM, Guid userId, bool canUpdateAny, bool canShare = false)
         {
             var existingQuestion = await _questions.GetTypeTheAnswerForUpdateAsync(
                 questionUM.Id, canUpdateAny ? null : userId);
@@ -388,8 +423,7 @@ namespace QuizAPI.Controllers.Questions.Services
                 existingQuestion.CorrectAnswer,
                 existingQuestion.IsCaseSensitive);
 
-            if (Enum.TryParse(questionUM.Visibility, true, out QuestionVisibility visibility))
-                existingQuestion.Visibility = visibility;
+            ApplyVisibilityChange(existingQuestion, questionUM.Visibility, canShare);
 
             await _media.ApplyToQuestionAsync(existingQuestion, questionUM.MediaAssetId, userId);
 

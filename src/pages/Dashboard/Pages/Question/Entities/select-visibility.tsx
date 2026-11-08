@@ -7,6 +7,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/form";
+import { ROLES } from "@/lib/authorization";
+import { useUser } from "@/lib/Auth";
 
 interface VisibilitySelectProps {
   label?: string;
@@ -56,3 +58,27 @@ export const VisibilitySelect: React.FC<VisibilitySelectProps> = ({
     </div>
   );
 };
+
+/**
+ * Whether the signed-in user may file questions in the shared question bank (`Global`) — Admin and
+ * SuperAdmin. Fast feedback only: the gate is `QuestionService.ResolveNewVisibility` /
+ * `ApplyVisibilityChange` on the API, which answers 403 to anyone else (docs/quiz/question-bank.md).
+ */
+export const useCanShareQuestions = () => {
+  // useUser rather than useAuthorization, which throws without a signed-in user: with no user
+  // loaded the answer is simply "no", the same side the server errs on.
+  const roles = useUser().data?.roles;
+  return roles?.some((r) => r === ROLES.Admin || r === ROLES.SuperAdmin) ?? false;
+};
+
+/**
+ * The visibility a new question on the Questions page starts with: staff file into the shared
+ * bank, everyone else keeps it to themselves. It is a default, not carried from the last save
+ * (use-create-another.ts), so a batch starts in the bank every time.
+ */
+export const useNewQuestionVisibility = (): "Global" | "Private" =>
+  useCanShareQuestions() ? "Global" : "Private";
+
+/** The visibility select, shown to staff only. Everyone else's questions stay `Private`. */
+export const QuestionVisibilityField: React.FC<VisibilitySelectProps> = (props) =>
+  useCanShareQuestions() ? <VisibilitySelect {...props} /> : null;

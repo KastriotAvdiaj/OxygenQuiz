@@ -46,6 +46,24 @@ A quiz a moderator (or 10 reporters) took out of sight pending review (`Quiz.Mod
 out of the catalogue, playable by its owner only. Not a `Status` — the owner can't undo it.
 _Avoid_: hidden quiz, banned quiz, unpublished (that is the owner's Draft)
 
+## Question bank
+
+**Question bank**:
+Every saved question, reusable across quizzes and filed by category, language and difficulty. See
+[`question-bank.md`](./question-bank.md).
+_Avoid_: question pool, public pool
+
+**Shared question**:
+A question in the bank that every author and player can read (`Visibility = Global`). Only Admins
+and SuperAdmins file one.
+_Avoid_: public question (`Public` is a quiz `Status`), global question in prose (fine for the
+enum value)
+
+**Private question**:
+A question only its owner can read on its own (`Visibility = Private`) — it still plays inside any
+quiz the reader may see. What every builder, AI and user-made question is.
+_Avoid_: hidden question (that is Hidden media), draft question
+
 ## Reports
 
 **Report**:

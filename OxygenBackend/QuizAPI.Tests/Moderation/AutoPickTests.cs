@@ -164,7 +164,7 @@ public class AutoPickTests
         await service.UpdateTrueFalseQuestionAsync(new TrueFalseQuestionUM
         {
             Id = 7, Text = "Rome was founded in 753 BC.", CorrectAnswer = true,
-            CategoryId = 1, LanguageId = 1, DifficultyId = 1, Visibility = "Global",
+            CategoryId = 1, LanguageId = 1, DifficultyId = 1, Visibility = "Private",
         }, OwnerId, canUpdateAny: false);
         return repo;
     }

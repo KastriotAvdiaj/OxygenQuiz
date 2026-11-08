@@ -126,7 +126,7 @@ public class QuizUpdatedAtTests
     private static TrueFalseQuestionUM Edit => new()
     {
         Id = 7, Text = "Rome was founded in 753 BC.", CorrectAnswer = true,
-        CategoryId = 1, LanguageId = 1, DifficultyId = 1, Visibility = "Global",
+        CategoryId = 1, LanguageId = 1, DifficultyId = 1, Visibility = "Private",
     };
 
     [Fact]
@@ -150,12 +150,12 @@ public class QuizUpdatedAtTests
 
         await service.UpdateMultipleChoiceQuestionAsync(new MultipleChoiceQuestionUM
         {
-            Id = 8, Text = "Capital of Italy?", CategoryId = 1, LanguageId = 1, DifficultyId = 1, Visibility = "Global",
+            Id = 8, Text = "Capital of Italy?", CategoryId = 1, LanguageId = 1, DifficultyId = 1, Visibility = "Private",
         }, OwnerId, canUpdateAny: false);
         await service.UpdateTypeTheAnswerQuestionAsync(new TypeTheAnswerQuestionUM
         {
             Id = 9, Text = "Capital of Italy?", CorrectAnswer = "Rome",
-            CategoryId = 1, LanguageId = 1, DifficultyId = 1, Visibility = "Global",
+            CategoryId = 1, LanguageId = 1, DifficultyId = 1, Visibility = "Private",
         }, OwnerId, canUpdateAny: false);
 
         repo.Verify(r => r.TouchQuizzesContainingAsync(8, It.IsAny<CancellationToken>()), Times.Once);

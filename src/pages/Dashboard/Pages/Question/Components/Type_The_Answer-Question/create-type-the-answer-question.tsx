@@ -22,6 +22,7 @@ import {
 } from "@/components/ui";
 import { LiftedButton } from "@/common/LiftedButton";
 import { AddQuestionButton, QuestionTypeButton } from "../question-type-button";
+import { QuestionVisibilityField, useNewQuestionVisibility } from "../../Entities/select-visibility";
 import { useCreateAnother } from "../use-create-another";
 import { QuestionType, QuestionCategory, QuestionDifficulty, QuestionLanguage } from "@/types/question-types";
 import { MediaPicker } from "@/features/media/components/media-picker";
@@ -43,6 +44,7 @@ export const CreateTypeAnswerQuestionForm: React.FC<
   const [media, setMedia] = useState<MediaSelection | null>(null);
   // Stays open for the next question (use-create-another.ts).
   const batch = useCreateAnother(onSuccess);
+  const newVisibility = useNewQuestionVisibility();
 
   const createQuestionMutation = useCreateTypeTheAnswerQuestion({
     mutationConfig: {
@@ -103,7 +105,7 @@ export const CreateTypeAnswerQuestionForm: React.FC<
             isCaseSensitive: false,
             allowPartialMatch: false,
             acceptableAnswers: [],
-            visibility: undefined,
+            visibility: newVisibility,
           },
         }}
       >
@@ -316,6 +318,12 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                     }
                     error={formState.errors["languageId"]?.message}
                     clearErrors={() => clearErrors("languageId")}
+                  />
+                  <QuestionVisibilityField
+                    value={watch("visibility") ?? newVisibility}
+                    onChange={(value: string) => setValue("visibility", value)}
+                    error={formState.errors["visibility"]?.message}
+                    clearErrors={() => clearErrors("visibility")}
                   />
                 </section>
               </div>

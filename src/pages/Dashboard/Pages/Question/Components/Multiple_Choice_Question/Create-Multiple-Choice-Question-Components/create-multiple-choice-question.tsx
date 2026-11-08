@@ -12,6 +12,7 @@ import { DifficultySelect } from "../../../Entities/Difficulty/Components/select
 import { LanguageSelect } from "../../../Entities/Language/components/select-question-language";
 import { LiftedButton } from "@/common/LiftedButton";
 import { AddQuestionButton, QuestionTypeButton } from "../../question-type-button";
+import { QuestionVisibilityField, useNewQuestionVisibility } from "../../../Entities/select-visibility";
 import { useCreateAnother } from "../../use-create-another";
 import { QuestionType } from "@/types/question-types";
 
@@ -47,6 +48,7 @@ export const CreateMultipleChoiceForm: React.FC<
   const [media, setMedia] = useState<MediaSelection | null>(null);
   // Stays open for the next question (use-create-another.ts).
   const batch = useCreateAnother(onSuccess);
+  const newVisibility = useNewQuestionVisibility();
 
   const createQuestionMutation = useCreateMultipleChoiceQuestion({
     mutationConfig: {
@@ -120,6 +122,7 @@ export const CreateMultipleChoiceForm: React.FC<
         // quiz builder's new question (DEFAULT_NEW_MULTIPLE_CHOICE) and the most allowed.
         defaultValues={{
           ...batch.carried,
+          visibility: newVisibility,
           answerOptions: Array.from({ length: MAX_ANSWER_OPTIONS }, () => ({ text: "", isCorrect: false })),
         }}
       >
@@ -325,6 +328,12 @@ export const CreateMultipleChoiceForm: React.FC<
                   }
                   error={formState.errors["languageId"]?.message}
                   clearErrors={() => clearErrors("languageId")}
+                />
+                <QuestionVisibilityField
+                  value={watch("visibility") ?? newVisibility}
+                  onChange={(value: string) => setValue("visibility", value)}
+                  error={formState.errors["visibility"]?.message}
+                  clearErrors={() => clearErrors("visibility")}
                 />
               </section>
               {/* Optional "why" shown to players after they answer — see

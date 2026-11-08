@@ -215,7 +215,7 @@ namespace QuizAPI.Controllers.Questions
             if (!await _permissionService.HasPermissionAsync(userId.Value, "question:create"))
                 return Forbid();
 
-            var createdQuestion = await _questionService.CreateMultipleChoiceQuestionAsync(questionCM, userId.Value);
+            var createdQuestion = await _questionService.CreateMultipleChoiceQuestionAsync(questionCM, userId.Value, canShare: _currentUserService.IsAdmin);
             await _auditService.LogAsync(
                 AuditActions.QuestionCreated, "Question", createdQuestion.Id.ToString(),
                 newValue: new { createdQuestion.Id, Type = "MultipleChoice" });
@@ -232,7 +232,7 @@ namespace QuizAPI.Controllers.Questions
             if (!await _permissionService.HasPermissionAsync(userId.Value, "question:create"))
                 return Forbid();
 
-            var createdQuestion = await _questionService.CreateTrueFalseQuestionAsync(questionCM, userId.Value);
+            var createdQuestion = await _questionService.CreateTrueFalseQuestionAsync(questionCM, userId.Value, canShare: _currentUserService.IsAdmin);
             await _auditService.LogAsync(
                 AuditActions.QuestionCreated, "Question", createdQuestion.Id.ToString(),
                 newValue: new { createdQuestion.Id, Type = "TrueFalse" });
@@ -249,7 +249,7 @@ namespace QuizAPI.Controllers.Questions
             if (!await _permissionService.HasPermissionAsync(userId.Value, "question:create"))
                 return Forbid();
 
-            var createdQuestion = await _questionService.CreateTypeTheAnswerQuestionAsync(questionCM, userId.Value);
+            var createdQuestion = await _questionService.CreateTypeTheAnswerQuestionAsync(questionCM, userId.Value, canShare: _currentUserService.IsAdmin);
             await _auditService.LogAsync(
                 AuditActions.QuestionCreated, "Question", createdQuestion.Id.ToString(),
                 newValue: new { createdQuestion.Id, Type = "TypeTheAnswer" });
@@ -281,7 +281,7 @@ namespace QuizAPI.Controllers.Questions
                 await _questionService.EnsureEditableInPlaceAsync(userId.Value, id, quizId);
 
             var canUpdateAny = await _permissionService.HasPermissionAsync(userId.Value, "question:update:any");
-            var result = await _questionService.UpdateMultipleChoiceQuestionAsync(questionUM, userId.Value, canUpdateAny);
+            var result = await _questionService.UpdateMultipleChoiceQuestionAsync(questionUM, userId.Value, canUpdateAny, canShare: _currentUserService.IsAdmin);
 
             if (result == null) return NotFound();
             await _auditService.LogAsync(
@@ -313,7 +313,7 @@ namespace QuizAPI.Controllers.Questions
                 await _questionService.EnsureEditableInPlaceAsync(userId.Value, id, quizId);
 
             var canUpdateAny = await _permissionService.HasPermissionAsync(userId.Value, "question:update:any");
-            var result = await _questionService.UpdateTrueFalseQuestionAsync(questionUM, userId.Value, canUpdateAny);
+            var result = await _questionService.UpdateTrueFalseQuestionAsync(questionUM, userId.Value, canUpdateAny, canShare: _currentUserService.IsAdmin);
 
             if (result == null) return NotFound();
             await _auditService.LogAsync(
@@ -345,7 +345,7 @@ namespace QuizAPI.Controllers.Questions
                 await _questionService.EnsureEditableInPlaceAsync(userId.Value, id, quizId);
 
             var canUpdateAny = await _permissionService.HasPermissionAsync(userId.Value, "question:update:any");
-            var result = await _questionService.UpdateTypeTheAnswerQuestionAsync(questionUM, userId.Value, canUpdateAny);
+            var result = await _questionService.UpdateTypeTheAnswerQuestionAsync(questionUM, userId.Value, canUpdateAny, canShare: _currentUserService.IsAdmin);
 
             if (result == null) return NotFound();
             await _auditService.LogAsync(

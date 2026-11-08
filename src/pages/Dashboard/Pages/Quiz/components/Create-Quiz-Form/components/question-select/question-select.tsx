@@ -86,7 +86,6 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
     difficultyIds: selectedDifficultyIds.length > 0 ? selectedDifficultyIds : undefined,
     languageIds: selectedLanguageIds.length > 0 ? selectedLanguageIds : undefined,
     questionType: activeTab,
-    visibility: "Public",
   };
 
   const hasFilters =

@@ -422,7 +422,7 @@ namespace QuizAPI.Controllers.DataTransfer
                                 Visibility = NormalizeVisibility(r.Visibility),
                                 Explanation = r.Explanation,
                                 CorrectAnswer = r.CorrectAnswer ?? false,
-                            }, userId);
+                            }, userId, canShare: true); // the importer is staff-only ([Authorize(Roles)] above)
                             break;
 
                         case "typetheanswer":
@@ -439,7 +439,7 @@ namespace QuizAPI.Controllers.DataTransfer
                                 AcceptableAnswers = SplitPipe(r.AcceptableAnswers),
                                 IsCaseSensitive = r.IsCaseSensitive,
                                 AllowPartialMatch = r.AllowPartialMatch,
-                            }, userId);
+                            }, userId, canShare: true); // the importer is staff-only ([Authorize(Roles)] above)
                             break;
 
                         default: // MultipleChoice (also "mc")
@@ -459,7 +459,7 @@ namespace QuizAPI.Controllers.DataTransfer
                                     Text = o,
                                     IsCorrect = correct.Contains(o, StringComparer.OrdinalIgnoreCase),
                                 }).ToList(),
-                            }, userId);
+                            }, userId, canShare: true); // the importer is staff-only ([Authorize(Roles)] above)
                             break;
                     }
                     result.Imported++;

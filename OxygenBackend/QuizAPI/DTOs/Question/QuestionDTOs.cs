@@ -68,7 +68,8 @@ namespace QuizAPI.DTOs.Question
         public int DifficultyId { get; set; }
         public int CategoryId { get; set; }
         public int LanguageId { get; set; }
-        public string Visibility { get; set; } = "Global";
+        /// <summary>"Global" (staff only) or "Private"; anything else is Private. docs/quiz/question-bank.md.</summary>
+        public string? Visibility { get; set; }
     }
 
     public class MultipleChoiceQuestionCM : QuestionBaseCM
