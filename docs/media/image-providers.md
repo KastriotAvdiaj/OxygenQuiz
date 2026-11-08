@@ -73,5 +73,5 @@ costs one more lookup by id plus the download. Our side caches a (source, query,
   [`media-pipeline.md`](./media-pipeline.md) §7 and ADR 0035.
 - **Openverse** aggregates Commons, Flickr, Smithsonian and others, but its images live on many
   hosts. The import downloads only from hosts a provider declares
-  (`IStockImageProvider.ImageHosts`), and an open-ended host list is the server-side request
+  (`IStockImageProvider.DownloadHosts`), and an open-ended host list is the server-side request
   forgery that rule exists to close.
