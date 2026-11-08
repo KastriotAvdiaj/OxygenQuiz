@@ -239,6 +239,10 @@ None open in code. The fix below is live only once the backend is rebuilt on the
   `Mapping/EntityMappers.cs` (`ProjectMultipleChoice`),
   `DTOs/Question/QuestionDTOs.cs` (`AnswerOptionDTO.IsCorrect`),
   `src/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/components/question-select/`
+- **Proposal — one image search across every source.** Add Pixabay and mix Commons, Pixabay and
+  Pexels into one grid by configured weights, instead of a per-source switch. Open; waits for
+  screenshot import. [`../proposals/mixed-image-sources.md`](../proposals/mixed-image-sources.md),
+  limits per source in [`../media/image-providers.md`](../media/image-providers.md).
 - **Proposal — one media pipeline for quizzes and questions.** Phase 1 (pipeline, R2, uploads,
   quotas, sweep) is built — [`../media/media-pipeline.md`](../media/media-pipeline.md) — and phase 2
   (reports, moderation, picked catalogue) — [`../media/moderation.md`](../media/moderation.md) — and
