@@ -102,7 +102,9 @@ Full version, including the two failure modes this project has actually hit:
 - **User-facing buttons are `LiftedButton`s** (`src/common/LiftedButton.tsx`) — any button a
   player, teacher or quiz author presses on a page or in a dialog. The flat `Button`
   (`components/ui/button`) is for dense tooling only: table row actions, icon-only toggles,
-  the admin dashboard's controls. Pick the colour by the action's rank:
+  the admin dashboard's controls. One exception: an empty state's own hint action (*Add a
+  question* under an empty question list) is a link-styled `<button>` — muted, primary on hover —
+  because the page's real button is already beside it. Pick the colour by the action's rank:
   - **Primary** (the one thing to do here): default blue, or the screen's own accent (a quiz's
     `--face` on the start modal).
   - **Secondary** (a real alternative beside the primary): **muted** —
@@ -127,6 +129,8 @@ Full version, including the two failure modes this project has actually hit:
   (default blue; destructive is `bg-red-600 text-white … liftColor="red-700"`), then Cancel as
   a lifted outline (`bg-background border border-foreground/30 … liftColor="muted"`). Not the
   flat `Button` ghost/destructive pair — a form dialog's footer copies the same two.
+  Both are `py-1 text-sm` — a dialog's buttons are smaller than a page's, and the two match
+  (no `sm:text-base` on one of them).
 - **A page header is the h1 and its actions — no description paragraph under it.** A sentence
   of grey text explaining what the page is reads as filler and pushes the content down; the
   title, the empty state and the controls carry that. Put a needed explanation where it's

@@ -103,7 +103,7 @@ export const ConfirmationDialog = ({
       <DialogFooter>
         {confirmButton}
         <LiftedButton
-        className="bg-background border border-foreground/30 text-sm text-foreground sm:text-base py-1"
+        className="bg-background border border-foreground/30 py-1 text-sm text-foreground"
         liftColor="muted"
           ref={cancelButtonRef}
           onClick={() => setOpen(false)}

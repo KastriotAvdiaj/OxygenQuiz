@@ -135,7 +135,7 @@ const Controller = ({
               }
               confirmButton={
                 <LiftedButton
-                  className="bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 py-1"
+                  className="bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 py-1 text-sm"
                   liftColor="red-700"
                   type="button"
                   isPending={actions.end.isPending}
@@ -189,7 +189,7 @@ const Controller = ({
                   }
                   confirmButton={
                     <LiftedButton
-                      className="py-1"
+                      className="py-1 text-sm"
                       type="button"
                       isPending={actions.undo.isPending}
                       onClick={() => actions.undo.mutate(undefined, { onSuccess: () => setFeedback(null) })}

@@ -49,7 +49,7 @@ export const RemoveQuestionDialog = ({ number, isDraft, onConfirm, onCancel }: R
       confirmButton={
         <LiftedButton
           type="button"
-          className="flex items-center gap-2 bg-red-600 py-1 text-white"
+          className="flex items-center gap-2 bg-red-600 py-1 text-white text-sm"
           liftColor="red-700"
           onClick={() => {
             onConfirm(dontAskAgain);
@@ -91,7 +91,7 @@ export const EditCopyDialog = ({ number, onConfirm, onCancel }: EditCopyDialogPr
     title={`Edit a copy of question ${number ?? ""}?`}
     body="The copy replaces it in this quiz only. The original stays as it is."
     confirmButton={
-      <LiftedButton type="button" className="flex items-center gap-2 py-1" onClick={onConfirm}>
+      <LiftedButton type="button" className="flex items-center gap-2 py-1 text-sm" onClick={onConfirm}>
         <EditPencil className="h-4 w-4" aria-hidden="true" />
         Edit a copy
       </LiftedButton>

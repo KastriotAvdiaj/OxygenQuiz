@@ -37,7 +37,7 @@ export const DeleteUser = ({ id, closeDropDown }: DeleteUserProps) => {
       }
       confirmButton={
         <LiftedButton
-          className="bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 py-1"
+          className="bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 py-1 text-sm"
           liftColor="red-700"
           isPending={deleteUserMutation.isPending}
           type="button"

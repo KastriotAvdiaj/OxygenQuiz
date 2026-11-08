@@ -49,7 +49,7 @@ export const DeleteQuestion = ({ questionType, question }: DeleteUserProps) => {
           <LiftedButton
             isPending={deleteQuestionMutation.isPending}
             type="button"
-            className="flex w-full items-center justify-center gap-2 whitespace-nowrap bg-red-600 text-white sm:w-auto"
+            className="flex w-full items-center justify-center gap-2 whitespace-nowrap bg-red-600 text-white sm:w-auto py-1 text-sm"
             liftColor="red-700"
             onClick={() => {
               deleteQuestionMutation.mutate({ questionId: question.id });

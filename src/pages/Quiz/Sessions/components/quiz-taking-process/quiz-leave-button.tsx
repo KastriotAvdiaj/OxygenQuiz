@@ -58,7 +58,7 @@ export const QuizLeaveButton = ({
     }
     confirmButton={
       <LiftedButton
-        className="bg-red-500 hover:bg-red-600 py-1"
+        className="bg-red-500 hover:bg-red-600 py-1 text-sm"
         liftColor="red"
         onClick={onLeave}
       >

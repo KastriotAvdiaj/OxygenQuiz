@@ -41,22 +41,22 @@ QuestionTypeButton.displayName = "QuestionTypeButton";
 
 /**
  * "Add a question" under an empty list — the create drawer's trigger when there is nothing yet.
- * Secondary rank (muted, CLAUDE.md button rank), not primary blue: the empty state is a hint,
- * and the page's own "Add Question" button is already the loud one.
+ * Styled as a link, not a LiftedButton: the empty state is a hint, and the page's own "Add
+ * Question" button is already the button. Muted until hovered, then the primary colour.
+ * Still a `<button>`, because it opens a drawer rather than going anywhere.
  */
 export const AddQuestionButton = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement>
 >((props, ref) => (
-  <LiftedButton
+  <button
     ref={ref}
     type="button"
     {...props}
-    liftColor="muted-foreground"
-    className="flex items-center gap-2 bg-muted px-4 py-1.5 text-sm text-foreground"
+    className="inline-flex items-center gap-1.5 rounded-sm text-sm font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-primary hover:underline focus-visible:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
   >
     <Plus className="h-4 w-4" aria-hidden="true" />
     Add a question
-  </LiftedButton>
+  </button>
 ));
 AddQuestionButton.displayName = "AddQuestionButton";

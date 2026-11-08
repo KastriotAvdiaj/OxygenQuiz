@@ -317,7 +317,7 @@ function TargetActions({ target, resolved }: { target: ReportTarget; resolved: b
         body="It's taken off every question and quiz that uses it, deleted from storage, and the same file can't be uploaded again. This can't be undone."
         confirmButton={
           <LiftedButton
-            className="flex items-center gap-2 bg-red-600 text-white"
+            className="flex items-center gap-2 bg-red-600 text-white py-1 text-sm"
             liftColor="red-700"
             disabled={busy}
             onClick={() => target.mediaAssetId && run({ kind: "remove-media", assetId: target.mediaAssetId }, "Media removed")}
