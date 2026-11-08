@@ -64,6 +64,12 @@ A question only its owner can read on its own (`Visibility = Private`) — it st
 quiz the reader may see. What every builder, AI and user-made question is.
 _Avoid_: hidden question (that is Hidden media), draft question
 
+**Screenshot import**:
+Making questions from images: a model reads the questions shown in a screenshot or photo, and a
+person reviews them before any is saved. Copies the questions it sees; it does not write new ones.
+_Avoid_: import (that is the data import of CSV/JSON files), OCR, image import (an image *in* a
+question is media)
+
 ## Reports
 
 **Report**:
