@@ -135,7 +135,7 @@ Full version, including the two failure modes this project has actually hit:
 ### Motion
 
 - **Nothing in the UI snaps.** Anything that appears, disappears, opens, closes, reorders, changes
-  view, or pushes content below it is animated — 150–300ms, and honouring
+  view, or pushes content below it is animated — 150–300ms (a side panel 450ms in, 280ms out), and honouring
   `prefers-reduced-motion` (arrive, don't travel). Radix `data-[state]` classes and
   `tailwindcss-animate` for enter and open/close; `framer-motion` (`AnimatePresence`, `layout`) for
   exits, height changes and lists. A browse page may arrive with an entrance — starting on

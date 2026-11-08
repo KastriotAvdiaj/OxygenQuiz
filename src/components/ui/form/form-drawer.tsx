@@ -1,4 +1,5 @@
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check } from "lucide-react";
 import { useDisclosure } from "@/hooks/use-disclosure";
@@ -36,35 +37,85 @@ type FormDrawerProps = {
   variant?: "top" | "bottom" | "left" | "right";
 };
 
+/** Exit animation (280ms, `.slide-panel` in global.css) plus a margin. */
+const UNMOUNT_AFTER_CLOSE_MS = 350;
+/** Pointer left the trigger without opening: keep the warm form this long in case it comes back. */
+const COOL_AFTER_LEAVE_MS = 400;
+
 /**
- * True one frame after `open` turns true; false while closed.
+ * Renders the drawer's form **before** it opens — when the pointer reaches the trigger, or it
+ * takes focus or a touch — so the click only has to slide a panel whose content already exists.
  *
- * Why: the click that opens a drawer used to render the whole form before the browser could
- * draw a single frame — 160–270ms of work at 4× CPU for the multiple-choice form (measured
- * 2026-11-08, docs/development/motion.md "Drawers"). The slide couldn't start until that was
- * done, so it began late and its first frames were lost: the "laggy" open. Rendering the panel
- * first and its body on the next frame lets the slide start at once; the body arrives while the
- * panel is still mostly off-screen. The external system this Effect syncs with is the browser's
- * frame clock.
+ * Why: the multiple-choice form costs ~250ms to render at 4× CPU (measured 2026-11-08,
+ * docs/development/motion.md "Drawers"). Rendered on the click, it either delays the slide or
+ * (deferred a frame) pops in during it. Hover gives it the ~100–300ms a hand takes to press.
+ *
+ * How: the form is portalled into a detached `<div>` (`host`) and that node is moved into the
+ * panel when the panel mounts. Not Radix `forceMount`: a force-mounted closed dialog still runs
+ * `hideOthers` (aria-hides the page) and `RemoveScroll` (locks scrolling). The form keeps its
+ * React tree under the Drawer root, so dialog context still reaches it — but Radix also judges
+ * "click outside" by that tree, hence the `onPointerDownOutside` guard on the panel.
+ *
+ * It is dropped again after the close animation, so a reopened drawer starts fresh (no stale
+ * draft), and when the pointer leaves without opening, so hovering down a table of edit buttons
+ * doesn't leave a form per row. Opened with nothing warm (a scripted open), it renders two frames
+ * after the panel instead — the panel is still mostly off-screen then.
  */
-function useAfterFirstFrame(open: boolean): boolean {
-  const [ready, setReady] = React.useState(false);
-  React.useEffect(() => {
-    if (!open) {
-      setReady(false);
-      return;
-    }
-    // Two frames: the first is the one the panel's opening style is committed in.
-    let second = 0;
-    const first = requestAnimationFrame(() => {
-      second = requestAnimationFrame(() => setReady(true));
-    });
-    return () => {
-      cancelAnimationFrame(first);
-      cancelAnimationFrame(second);
-    };
-  }, [open]);
-  return ready;
+function useWarmBody() {
+  const [warm, setWarm] = React.useState(false);
+  const [host] = React.useState(() => document.createElement("div"));
+  const timer = React.useRef<ReturnType<typeof setTimeout>>();
+  const isOpenRef = React.useRef(false);
+  // While closing, Radix hands focus back to the trigger. Warming on that focus would keep the
+  // closed form — an abandoned edit — for the next open, so warm-up waits for the unmount.
+  const closingRef = React.useRef(false);
+
+  const cancel = () => clearTimeout(timer.current);
+  const later = (ms: number) => {
+    cancel();
+    timer.current = setTimeout(() => {
+      closingRef.current = false;
+      setWarm(false);
+    }, ms);
+  };
+  const warmUp = () => {
+    if (closingRef.current) return;
+    cancel();
+    setWarm(true);
+  };
+
+  React.useEffect(() => cancel, []);
+
+  return {
+    warm,
+    host,
+    /** Ref for the slot inside the panel: moves the pre-rendered form in, before focus is placed. */
+    slotRef: React.useCallback((node: HTMLDivElement | null) => node?.appendChild(host), [host]),
+    triggerHandlers: {
+      onPointerEnter: warmUp,
+      onFocus: warmUp,
+      onPointerDown: warmUp,
+      onPointerLeave: () => {
+        if (!isOpenRef.current && !closingRef.current) later(COOL_AFTER_LEAVE_MS);
+      },
+      onBlur: () => {
+        if (!isOpenRef.current && !closingRef.current) later(COOL_AFTER_LEAVE_MS);
+      },
+    },
+    opened: () => {
+      isOpenRef.current = true;
+      closingRef.current = false;
+      cancel();
+      if (!warm) {
+        requestAnimationFrame(() => requestAnimationFrame(() => setWarm(true)));
+      }
+    },
+    closed: () => {
+      isOpenRef.current = false;
+      closingRef.current = true;
+      later(UNMOUNT_AFTER_CLOSE_MS);
+    },
+  };
 }
 
 export const FormDrawer = ({
@@ -80,12 +131,14 @@ export const FormDrawer = ({
   onClosed,
 }: FormDrawerProps) => {
   const { close, open, isOpen } = useDisclosure();
-  const bodyReady = useAfterFirstFrame(isOpen);
+  const body = useWarmBody();
 
   React.useEffect(() => {
     if (isDone) {
       close();
+      body.closed();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- body's functions are fresh each render; isDone is the trigger
   }, [isDone, close]);
 
   return (
@@ -94,28 +147,54 @@ export const FormDrawer = ({
       onOpenChange={(isOpen) => {
         if (!isOpen) {
           close();
+          body.closed();
           onClosed?.();
         } else {
           open();
+          body.opened();
         }
       }}
     >
-      <DrawerTrigger asChild>{triggerButton}</DrawerTrigger>
+      <DrawerTrigger asChild {...body.triggerHandlers}>
+        {triggerButton}
+      </DrawerTrigger>
+      {body.warm && createPortal(children, body.host)}
       <DrawerContent
         side={variant || "right"}
         className={cn(
           "overflow-y-auto flex max-w-[800px] bg-background border-l dark:border-foreground/40 flex-col justify-between sm:max-w-[540px]",
           className
         )}
+        onPointerDownOutside={(e) => {
+          // Radix decides "outside" by the React tree, and the form is portalled in from outside
+          // DrawerContent's — so to Radix every click on it is outside, and would close the
+          // drawer. Inside means inside the moved-in form, or a dropdown/popover it opened.
+          const target = e.detail.originalEvent.target;
+          if (
+            target instanceof Element &&
+            (body.host.contains(target) || target.closest("[data-radix-popper-content-wrapper]"))
+          ) {
+            e.preventDefault();
+          }
+        }}
+        onOpenAutoFocus={(e) => {
+          // The pre-rendered form mounted detached, so its autoFocus input never got focus.
+          // Give it focus now — without scrolling, which would jolt the panel mid-slide.
+          const field = body.host.querySelector<HTMLElement>(
+            "input:not([type=hidden]):not([disabled]), textarea:not([disabled])"
+          );
+          if (field) {
+            e.preventDefault();
+            field.focus({ preventScroll: true });
+          }
+        }}
       >
         <div className="flex flex-col">
           <DrawerHeader className="px-3 py-2 border-b border-gray-500">
             <DrawerTitle>{title}</DrawerTitle>
           </DrawerHeader>
-          {/* Arrives a frame after the panel (useAfterFirstFrame), fading rather than snapping. */}
-          {bodyReady && (
-            <div className="animate-in fade-in-0 duration-150 motion-reduce:animate-none">{children}</div>
-          )}
+          {/* The form lives in body.host (useWarmBody); this is where it is placed. */}
+          <div ref={body.slotRef} />
         </div>
         <DrawerFooter className="gap-4">
           {/* The pill rises out of the submit button, so it sits in the button's box. */}

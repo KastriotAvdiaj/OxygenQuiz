@@ -93,24 +93,41 @@ the next browse page rather than inventing timings.
 
 Every side panel — the `Drawer` and `Sheet` primitives (`components/ui/drawer.tsx`, `sheet.tsx`):
 the question bank's create and edit drawers, the account drawer, the filter sheets — slides in
-over **300ms and out over 200ms on a decelerating curve** (`.slide-panel` in `global.css`, the
-iOS sheet's `cubic-bezier(0.32, 0.72, 0, 1)`). The panel gets its own compositor layer
-(`will-change: transform`) for the slide, and under reduced motion it fades in place.
+over **450ms on easeOutCubic and out over 280ms on an ease-in** (`.slide-panel` in `global.css`,
+which also holds the durations: Tailwind's scale has no 450, and an arbitrary `duration-[…]` is
+ambiguous with tailwindcss-animate). That is longer than the 150–300ms rule on purpose: a panel
+this size crosses half the screen, and at 300ms on the iOS sheet curve (tried first) it read as a
+jump. The panel gets its own compositor layer (`will-change: transform`) for the slide, and under
+reduced motion it fades in place.
 
 Measured 2026-11-08 in a production build at 4× CPU, because the drawers read as laggy:
 
 - They opened over 500ms on `ease-in-out`. Its slowest part is the start, exactly where the next
   point already cost frames, so the visible slide began late and half-way across.
 - The click rendered the whole form before the browser could draw anything — 160–270ms for the
-  multiple-choice form. `FormDrawer` now renders its panel first and its body a frame later
-  (`useAfterFirstFrame`), fading in: the click task fell to 20–70ms and the slide starts at once.
-  The body's render (~250ms at 4×) still happens, but on the frame after, and the trace shows the
-  slide composited (no `compositeFailed`), so it doesn't stall it.
+  multiple-choice form (~250ms of it the form body).
 - A blanket `transition` class sat beside the keyframe slide, transitioning every property and
   firing `transitionend` work mid-slide. Removed.
 
+**`FormDrawer` renders its form before the click** (`useWarmBody` in `form-drawer.tsx`): when the
+pointer reaches the trigger, or it takes focus or a touch, the form renders into a detached
+`<div>`, which is moved into the panel when it mounts. The click then only slides a panel that is
+already complete — one 57–92ms task at 4× on the dev server, and nothing after. The form is
+dropped 350ms after the drawer closes (a reopened drawer starts fresh) and 400ms after the
+pointer leaves without opening (hovering down a table of edit buttons keeps no form per row).
+Opened with nothing warm, it renders two frames after the panel.
+
+Two traps this works around, so don't "simplify" them away:
+
+- **Not Radix `forceMount`.** A force-mounted closed dialog still runs `hideOthers` (aria-hides
+  the whole page) and `RemoveScroll` (locks scrolling).
+- **Radix judges "click outside" by the React tree.** The form is portalled in from outside
+  `DrawerContent`'s tree, so without the `onPointerDownOutside` guard every click on it — and on
+  a dropdown it opens — would close the drawer. The form's autofocus also happened while
+  detached, so `onOpenAutoFocus` focuses its first field.
+
 The account drawer's first frame still waits ~100ms at 4× for its own render — small enough to
-leave. A drawer whose body is heavier than a form should defer it the same way `FormDrawer` does.
+leave. A drawer whose body is heavier than a form should warm it the same way `FormDrawer` does.
 
 ## Page changes
 

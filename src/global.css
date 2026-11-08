@@ -688,9 +688,22 @@ input[type="password"]::-ms-clear {
        long task on the main thread mid-slide doesn't stall it. Panels mount only while open,
        so the layer lives no longer than the panel.
      - Reduced motion: arrive, don't travel — the slide becomes a fade. */
+  /* Drawers and sheets (docs/development/motion.md, "Drawers"). Longer than the 150–300ms
+     rule on purpose: a panel this big crosses half the screen, and at 300ms on a sharp curve it
+     read as a jump. Durations live here, not in duration-* classes, because Tailwind's scale
+     has no 450 and an arbitrary duration-[…] is ambiguous with tailwindcss-animate. The
+     [data-state] selector outranks .animate-in's own 150ms. */
   .slide-panel {
     will-change: transform;
-    animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .slide-panel[data-state="open"] {
+    animation-duration: 450ms;
+    /* easeOutCubic: decelerates evenly instead of covering most of the distance at once. */
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+  }
+  .slide-panel[data-state="closed"] {
+    animation-duration: 280ms;
+    animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
   }
   @media (prefers-reduced-motion: reduce) {
     .slide-panel {
