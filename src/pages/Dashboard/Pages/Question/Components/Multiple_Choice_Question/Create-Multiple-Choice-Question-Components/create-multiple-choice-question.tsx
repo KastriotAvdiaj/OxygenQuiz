@@ -11,6 +11,11 @@ import { CategorySelect } from "../../../Entities/Categories/Components/select-q
 import { DifficultySelect } from "../../../Entities/Difficulty/Components/select-question-difficulty";
 import { LanguageSelect } from "../../../Entities/Language/components/select-question-language";
 import { LiftedButton } from "@/common/LiftedButton";
+import { QuestionTypeButton } from "../../question-type-button";
+import { QuestionType } from "@/types/question-types";
+
+/** The most options a multiple-choice question may have — and how many a new one starts with. */
+const MAX_ANSWER_OPTIONS = 4;
 import {
   createMultipleChoiceQuestionInputSchema,
   useCreateMultipleChoiceQuestion,
@@ -58,7 +63,7 @@ export const CreateMultipleChoiceForm: React.FC<
   return (
     <FormDrawer
       isDone={createQuestionMutation.isSuccess}
-      triggerButton={<LiftedButton>Multiple Choice</LiftedButton>}
+      triggerButton={<QuestionTypeButton questionType={QuestionType.MultipleChoice} label="Multiple Choice" />}
       title="Create a New Multiple Choice Question"
       submitButton={
         <Button
@@ -93,6 +98,15 @@ export const CreateMultipleChoiceForm: React.FC<
           });
         }}
         schema={createMultipleChoiceQuestionInputSchema}
+        // The four options a new question starts with are the form's initial state, not
+        // something an Effect appends after the first render. That Effect ("if there are none,
+        // add two") ran twice under React's development-only StrictMode — which deliberately
+        // mounts every component twice to surface exactly this — and doubled the options. A
+        // default value is applied once, in development and production alike. Four, like the
+        // quiz builder's new question (DEFAULT_NEW_MULTIPLE_CHOICE) and the most allowed.
+        defaultValues={{
+          answerOptions: Array.from({ length: MAX_ANSWER_OPTIONS }, () => ({ text: "", isCorrect: false })),
+        }}
       >
         {({ register, formState, control, setValue, watch, clearErrors }) => {
           const { fields, append, remove } = useFieldArray({
@@ -100,16 +114,8 @@ export const CreateMultipleChoiceForm: React.FC<
             name: "answerOptions",
           });
 
-          const addOptionDisabled = fields.length >= 4;
+          const addOptionDisabled = fields.length >= MAX_ANSWER_OPTIONS;
           const allowMultipleSelections = watch("allowMultipleSelections");
-
-
-          React.useEffect(() => {
-            if (fields.length === 0) {
-              append({ text: "", isCorrect: false });
-              append({ text: "", isCorrect: false });
-            }
-          }, [append, fields.length]);
 
           React.useEffect(() => {
             if (!allowMultipleSelections) {

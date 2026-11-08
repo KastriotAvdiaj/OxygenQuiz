@@ -58,9 +58,10 @@ const Tile = ({
  * A small picture of what answering each type looks like — four options, two cards, a field
  * you write in — so the cards read at a glance. Solid, lifted tiles (2026-10-26; outlines before),
  * all three in the primary colour: here they are one family of choices, so they share a colour
- * rather than wearing the builder's per-type hues (question-type-theme.ts).
+ * rather than wearing the builder's per-type hues (question-type-theme.ts). Also the face of the
+ * question bank's type chooser (QuestionTypeButton), so a type looks the same wherever you pick it.
  */
-const TypeGlyph = ({ type }: { type: QuestionType }) => {
+export const TypeGlyph = ({ type }: { type: QuestionType }) => {
   switch (type) {
     case QuestionType.MultipleChoice:
       return (

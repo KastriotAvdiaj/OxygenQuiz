@@ -105,15 +105,15 @@ export const MyQuestions = () => {
               Add Question +
             </LiftedButton>
           </DialogTrigger>
-          {/* Same chooser as the admin Questions page — `sm:max-w-sm` rather than `w-fit`
-              for the same reason (see Questions.tsx). */}
-          <DialogContent className="bg-background p-4 rounded-md pt-8 sm:max-w-sm dark:border border-foreground/30">
+          {/* Same chooser as the admin Questions page — `sm:max-w-md` for the same reason
+              (see Questions.tsx). */}
+          <DialogContent className="bg-background p-4 rounded-md pt-8 sm:max-w-md dark:border border-foreground/30">
             <DialogHeader>
               <DialogTitle className="flex items-center justify-center">
                 Choose the type of question
               </DialogTitle>
             </DialogHeader>
-            <div className="flex flex-col gap-4 mt-4">
+            <div className="grid grid-cols-3 gap-3 mt-4">
               <CreateQuestionForm
                 languages={languagesQuery.data || []}
                 categories={categoriesQuery.data || []}

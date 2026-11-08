@@ -22,10 +22,11 @@ import {
   TooltipContent,
 } from "@/components/ui";
 import { LiftedButton } from "@/common/LiftedButton";
+import { QuestionTypeButton } from "../question-type-button";
+import { QuestionType, QuestionCategory, QuestionDifficulty, QuestionLanguage } from "@/types/question-types";
 import { MediaPicker } from "@/features/media/components/media-picker";
 import { type MediaSelection } from "@/features/media/api/upload-media";
 import { ExplanationField } from "@/common/QuestionExplanation";
-import { QuestionCategory, QuestionDifficulty, QuestionLanguage } from "@/types/question-types";
 
 interface CreateTypeAnswerQuestionFormProps {
   categories: QuestionCategory[];
@@ -57,7 +58,11 @@ export const CreateTypeAnswerQuestionForm: React.FC<
     <FormDrawer
       isDone={createQuestionMutation.isSuccess}
       triggerButton={
-        <LiftedButton>{title ? title : "Type The Answer"}</LiftedButton>
+        title ? (
+          <LiftedButton>{title}</LiftedButton>
+        ) : (
+          <QuestionTypeButton questionType={QuestionType.TypeTheAnswer} label="Type The Answer" />
+        )
       }
       title="Create a Type the Answer Question"
       submitButton={

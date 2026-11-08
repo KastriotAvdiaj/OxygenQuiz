@@ -12,6 +12,8 @@ import {
   useCreateTrueFalseQuestion,
 } from "../../api/True_False-Question/create-true_false-question";
 import { LiftedButton } from "@/common/LiftedButton";
+import { QuestionTypeButton } from "../question-type-button";
+import { QuestionType } from "@/types/question-types";
 import { MediaPicker } from "@/features/media/components/media-picker";
 import { type MediaSelection } from "@/features/media/api/upload-media";
 import { ExplanationField } from "@/common/QuestionExplanation";
@@ -51,7 +53,11 @@ export const CreateTrueFalseQuestionForm: React.FC<
     <FormDrawer
       isDone={createQuestionMutation.isSuccess}
       triggerButton={
-        <LiftedButton>{title ? title : "True/False Question"}</LiftedButton>
+        title ? (
+          <LiftedButton>{title}</LiftedButton>
+        ) : (
+          <QuestionTypeButton questionType={QuestionType.TrueFalse} label="True / False" />
+        )
       }
       title="Create a True False Question"
       submitButton={

@@ -41,6 +41,10 @@ Full version, including the two failure modes this project has actually hit:
   result. If a click should update a form field, the click handler updates it — an Effect
   that re-does what the handler already did is dead weight (see the `imageUrl` Effects in
   the question forms for the pattern to stop repeating).
+- **Initial state is initial state** — `useState(init)`, a form's `defaultValues` — never an Effect
+  that fills it in after the first render. StrictMode runs every Effect twice in development, and
+  an "if empty, add some" Effect then adds twice: a new multiple-choice question started with 4
+  options in development and 2 in production until 2026-11-08.
 - **Reset a component with `key`, not an Effect on a prop.** Remounting is one line and
   can't get the ordering wrong.
 - **Server state is React Query.** Never `useEffect` + `fetch`. Caching, invalidation and

@@ -141,18 +141,17 @@ export const Questions = () => {
             <DialogTrigger asChild>
               <LiftedButton disabled={isFilterDataLoading}>Add Question +</LiftedButton>
             </DialogTrigger>
-            {/* sm:max-w-sm, not the shared max-w-lg: three stacked buttons in a 512px
-                shell read as a half-empty panel. `w-fit` used to be here and did nothing
-                useful — the buttons inside are full-width, so fit-content just resolved
-                back to the max-width while also fighting the phone gutter DialogContent
-                applies for every dialog (docs/RESPONSIVE.md). */}
-            <DialogContent className="bg-background p-4 rounded-md pt-8 sm:max-w-sm dark:border border-foreground/30">
+            {/* sm:max-w-md: three type cards in a row (QuestionTypeButton, since 2026-11-08;
+                three full-width stacked buttons before). The width that fits "Type The Answer"
+                on one line inside its card. `w-fit` used to be here and did nothing useful
+                while fighting the phone gutter DialogContent applies (docs/RESPONSIVE.md). */}
+            <DialogContent className="bg-background p-4 rounded-md pt-8 sm:max-w-md dark:border border-foreground/30">
               <DialogHeader>
                 <DialogTitle className="flex items-center justify-center">
                   Choose the type of question
                 </DialogTitle>
               </DialogHeader>
-              <div className="flex flex-col gap-4 mt-4">
+              <div className="grid grid-cols-3 gap-3 mt-4">
                 <CreateQuestionForm
                   languages={languagesQuery.data || []}
                   categories={categoriesQuery.data || []}
