@@ -37,7 +37,7 @@ namespace QuizAPI.Repositories.Interfaces
         /// True if <paramref name="name"/> (compared lower-cased) is held by another counted
         /// account in EITHER name column — its immutable name or its current display name. One
         /// namespace for both, so a rename can't take the name someone else is known by
-        /// (docs/adr/0017-one-namespace-for-names.md). <paramref name="exceptUserId"/> excludes the
+        /// (docs/adr/0043-one-namespace-for-names.md). <paramref name="exceptUserId"/> excludes the
         /// caller's own row, so re-casing your own name ("alice" → "Alice") is allowed.
         /// </summary>
         Task<bool> NameTakenAsync(string name, Guid? exceptUserId, CancellationToken ct = default);

@@ -353,7 +353,7 @@ report volumes, and if it comes, hide from *new* sessions only, with a threshold
 
 ## Documentation owed
 
-- **ADR 0017** (0004 and 0016 are taken) when Phase 2/3 land: grounding before generation, verification
+- **The next free ADR number** when Phase 2/3 land: grounding before generation, verification
   that annotates while the shared parser decides, and why the verifier reads the source instead of
   answering from memory.
 - Pipeline behaviour goes into `ai-quiz-generation-flow.md` (the living doc), not a new

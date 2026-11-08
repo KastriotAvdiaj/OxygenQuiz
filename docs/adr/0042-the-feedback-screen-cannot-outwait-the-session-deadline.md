@@ -1,4 +1,4 @@
-# 16. The feedback screen cannot outwait the session deadline
+# 42. The feedback screen cannot outwait the session deadline
 
 Date: 2026-09-26
 Status: Accepted

@@ -77,7 +77,7 @@ submit button affects both singleplayer and multiplayer** — verify both when e
    the user clicks Next/Finish). The countdown is 3 s, or longer for a result carrying the question's
    explanation — scaled to its length and capped by the `readingAllowanceSeconds` the server sent
    ([question-explanations.md](question-explanations.md),
-   [ADR 0016](../adr/0016-the-feedback-screen-cannot-outwait-the-session-deadline.md)).
+   [ADR 0042](../adr/0042-the-feedback-screen-cannot-outwait-the-session-deadline.md)).
 
 Timeouts: `QuestionDisplay.handleTimeUp` submits `onSubmit(null, undefined, true)` once, shows the
 "Time's Up" banner, and suppresses per-option red/green feedback for that question.

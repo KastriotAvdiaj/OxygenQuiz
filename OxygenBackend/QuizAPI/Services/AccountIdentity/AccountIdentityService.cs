@@ -10,7 +10,7 @@ namespace QuizAPI.Services.AccountIdentity
 {
     /// <summary>
     /// Email and display-name changes. See docs/auth/account-identity-changes.md for the flow and
-    /// docs/adr/0017-one-namespace-for-names.md for the naming rule.
+    /// docs/adr/0043-one-namespace-for-names.md for the naming rule.
     /// </summary>
     public sealed class AccountIdentityService(
         IUserRepository userRepository,

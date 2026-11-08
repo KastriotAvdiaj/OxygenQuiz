@@ -7,7 +7,7 @@ namespace QuizAPI.Models
     {
         public Guid Id { get; set; }
 
-        // Two names, one namespace (docs/adr/0017-one-namespace-for-names.md):
+        // Two names, one namespace (docs/adr/0043-one-namespace-for-names.md):
         //   ImmutableName — the lower-cased name chosen at signup, never changed afterwards. The
         //                   stable handle: chat identity, /Users/username/{name}, old mentions.
         //   Username      — the display name. Changeable (PUT /Users/me/username), rate-limited.

@@ -148,7 +148,7 @@ wizard only), and when a read finds it expired or unreadable.
 
 ## What the user sees
 
-**Manual and board builders** ([ADR 0019](../adr/0019-unfinished-builders-restore-silently-and-guard-the-exit.md)):
+**Manual and board builders** ([ADR 0044](../adr/0044-unfinished-builders-restore-silently-and-guard-the-exit.md)):
 the draft is restored silently — the half-built quiz is its own explanation — with a quiet
 "Draft saved" by the submit button. Leaving while the builder holds work worth keeping asks
 first: `useNavigationGuard` opens `LeaveUnfinishedQuizDialog` for in-app navigation, and the

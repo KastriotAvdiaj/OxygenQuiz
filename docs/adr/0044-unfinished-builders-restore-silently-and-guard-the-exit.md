@@ -1,4 +1,4 @@
-# 19. Unfinished builders restore silently and guard the exit
+# 44. Unfinished builders restore silently and guard the exit
 
 Date: 2026-10-06
 Status: Accepted — partly supersedes [ADR 0009](0009-a-restored-draft-is-announced-not-asked-about.md)

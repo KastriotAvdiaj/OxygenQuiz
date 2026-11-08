@@ -58,7 +58,7 @@ namespace QuizAPI.Migrations
             // above. An expression index, which EF can't model, hence raw SQL (Postgres). Together
             // with ImmutableName's index this backs the app-level NameTakenAsync check; the
             // cross-column half of the rule (my display name vs. your immutable one) can't be an
-            // index and stays in code. See docs/adr/0017-one-namespace-for-names.md.
+            // index and stays in code. See docs/adr/0043-one-namespace-for-names.md.
             //
             // If this migration fails on an existing database, it found real duplicates (two live
             // accounts sharing an email or a name, which the app-level checks were meant to

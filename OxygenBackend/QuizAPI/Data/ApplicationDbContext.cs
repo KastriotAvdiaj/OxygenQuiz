@@ -185,7 +185,7 @@ namespace QuizAPI.Data
             // created in the AddIdentityChanges migration's raw SQL. Case-insensitive, because
             // "Alice" and "alice" are the same name to a reader. The rule that a name must be free
             // ACROSS the two columns (my display name vs. your immutable one) is not something an
-            // index can express, and stays app-level. See docs/adr/0017-one-namespace-for-names.md.
+            // index can express, and stays app-level. See docs/adr/0043-one-namespace-for-names.md.
             const string countsForUniqueness =
                 "NOT \"IsDeleted\" OR (\"DeletionRequestedAt\" IS NOT NULL AND \"AnonymisedAt\" IS NULL)";
 

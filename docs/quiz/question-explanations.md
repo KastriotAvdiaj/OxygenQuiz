@@ -75,7 +75,7 @@ is optional in the parser.
   explained question in an instant-feedback quiz. A first version paused auto-advance until Next,
   and a player who read every explanation could be abandoned mid-quiz. See
   [session-lifecycle.md](session-lifecycle.md), "The timing rules", and
-  [ADR 0016](../adr/0016-the-feedback-screen-cannot-outwait-the-session-deadline.md).
+  [ADR 0042](../adr/0042-the-feedback-screen-cannot-outwait-the-session-deadline.md).
 - **Results review:** under each answer in `question-review.tsx`.
 
 ## Not covered yet

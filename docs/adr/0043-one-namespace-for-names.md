@@ -1,4 +1,4 @@
-# 17. One namespace for names
+# 43. One namespace for names
 
 Date: 2026-09-27
 Status: Accepted

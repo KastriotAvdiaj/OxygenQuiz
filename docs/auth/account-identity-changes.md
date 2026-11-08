@@ -17,7 +17,7 @@ pointed at your own address — see that doc.
 - **Only the display name changes.** `ImmutableName` — the handle chat, `/Users/username/{name}` and
   old links use — is never touched.
 - **The name must be free in both name columns of every other counted account**, ignoring case.
-  This is the rule in [ADR 0017](../adr/0017-one-namespace-for-names.md), and signup now asks the
+  This is the rule in [ADR 0043](../adr/0043-one-namespace-for-names.md), and signup now asks the
   same question.
 - **Once per 30 days.** Changing only the case of your current name is exempt.
 - 3–50 characters, the same bounds as signup — a rename can't be a way around them.

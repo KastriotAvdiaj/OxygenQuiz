@@ -195,7 +195,7 @@ ReadingAllowanceSeconds
 
 `ReadingAllowanceSeconds` travels with `Explanation`: the longest the client may hold the feedback
 screen, equal to the slack the session's deadline sets aside for reading — see
-[ADR 0016](../adr/0016-the-feedback-screen-cannot-outwait-the-session-deadline.md).
+[ADR 0042](../adr/0042-the-feedback-screen-cannot-outwait-the-session-deadline.md).
 
 The correct-answer fields are populated **only when the answer was wrong or timed out** (so a
 correct answer never reveals more than needed). `Explanation` is the exception: it is sent with

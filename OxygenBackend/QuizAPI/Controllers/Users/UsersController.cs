@@ -299,7 +299,7 @@ namespace QuizAPI.Controllers.Users
 
         /// <summary>
         /// Change the caller's display name. The immutable name never changes; the new name must be
-        /// free in both name columns of every other account (docs/adr/0017-one-namespace-for-names.md)
+        /// free in both name columns of every other account (docs/adr/0043-one-namespace-for-names.md)
         /// and the name can change once per 30 days.
         /// </summary>
         [HttpPut("me/username")]

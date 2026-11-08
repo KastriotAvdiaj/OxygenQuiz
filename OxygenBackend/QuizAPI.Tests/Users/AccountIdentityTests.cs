@@ -17,7 +17,7 @@ namespace QuizAPI.Tests.Users;
 
 /// <summary>
 /// Changing who an account is: the one-namespace rule for names
-/// (docs/adr/0017-one-namespace-for-names.md) and the confirm-link email change
+/// (docs/adr/0043-one-namespace-for-names.md) and the confirm-link email change
 /// (docs/auth/account-identity-changes.md).
 ///
 /// <para>Real repositories over an in-memory database, like EmailReservationTests: the claims are

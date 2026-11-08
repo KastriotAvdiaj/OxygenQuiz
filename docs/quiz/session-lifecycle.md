@@ -103,7 +103,7 @@ The reading allowance is per question so a quiz with explanations on only some q
 exactly that much, and a quiz with none is unchanged. It is also the **longest the client will
 wait** on the feedback screen before auto-advancing: the server sends it with each result as
 `ReadingAllowanceSeconds`, so the client's wait can't outgrow the slack the deadline set aside for
-it — see [ADR 0016](../adr/0016-the-feedback-screen-cannot-outwait-the-session-deadline.md).
+it — see [ADR 0042](../adr/0042-the-feedback-screen-cannot-outwait-the-session-deadline.md).
 
 **An Associations session has no questions**, so the arithmetic above would give it a total timeout
 of zero. `GetAbandonmentDeadlineAsync` branches on the quiz's format first: a Board session's

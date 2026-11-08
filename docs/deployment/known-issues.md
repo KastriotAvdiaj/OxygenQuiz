@@ -1380,7 +1380,7 @@ loading-states.md §6, §6.2):
 
 - ~~**P3 — The board builder has no local draft.**~~ **Fixed 2026-10-06.** `AssociationBoardForm`
   autosaves to the `quiz-associations` slot and guards the exit, like the Classic builder
-  (docs/quiz/quiz-draft-persistence.md, ADR 0019).
+  (docs/quiz/quiz-draft-persistence.md, ADR 0044).
 - ~~**P3 — Quizzes (both formats) could only be edited from the admin dashboard.**~~ **Fixed
   2026-09-23.** The player dashboard mounts the editors at `/my-dashboard/quizzes/edit/:id` (and
   `…/board`); the shared table links within its own dashboard (`useQuizEditPath`). Only an owner
