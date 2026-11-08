@@ -63,7 +63,16 @@ const COOL_AFTER_LEAVE_MS = 400;
  */
 function useWarmBody() {
   const [warm, setWarm] = React.useState(false);
-  const [host] = React.useState(() => document.createElement("div"));
+  // Whether the current press began inside the form. Recorded on pointerdown because Radix
+  // judges "outside" later, on the click — by when a control that replaces itself ("Add an
+  // explanation" → its textarea) is gone from the page and no longer "inside" anything.
+  // The press event itself, not a flag, so a press Radix never judges can't leak into the next.
+  const lastPressInside = React.useRef<Event | null>(null);
+  const [host] = React.useState(() => {
+    const node = document.createElement("div");
+    node.addEventListener("pointerdown", (e) => (lastPressInside.current = e), true);
+    return node;
+  });
   const timer = React.useRef<ReturnType<typeof setTimeout>>();
   const isOpenRef = React.useRef(false);
   // While closing, Radix hands focus back to the trigger. Warming on that focus would keep the
@@ -89,6 +98,8 @@ function useWarmBody() {
   return {
     warm,
     host,
+    /** Whether this press (Radix's `originalEvent`) began inside the form. */
+    pressBeganInside: (press: Event) => press === lastPressInside.current,
     /** Ref for the slot inside the panel: moves the pre-rendered form in, before focus is placed. */
     slotRef: React.useCallback((node: HTMLDivElement | null) => node?.appendChild(host), [host]),
     triggerHandlers: {
@@ -171,8 +182,8 @@ export const FormDrawer = ({
           // drawer. Inside means inside the moved-in form, or a dropdown/popover it opened.
           const target = e.detail.originalEvent.target;
           if (
-            target instanceof Element &&
-            (body.host.contains(target) || target.closest("[data-radix-popper-content-wrapper]"))
+            body.pressBeganInside(e.detail.originalEvent) ||
+            (target instanceof Element && target.closest("[data-radix-popper-content-wrapper]"))
           ) {
             e.preventDefault();
           }

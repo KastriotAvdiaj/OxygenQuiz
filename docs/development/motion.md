@@ -123,7 +123,10 @@ Two traps this works around, so don't "simplify" them away:
   the whole page) and `RemoveScroll` (locks scrolling).
 - **Radix judges "click outside" by the React tree.** The form is portalled in from outside
   `DrawerContent`'s tree, so without the `onPointerDownOutside` guard every click on it — and on
-  a dropdown it opens — would close the drawer. The form's autofocus also happened while
+  a dropdown it opens — would close the drawer. The guard matches the press by its
+  `pointerdown`, not by asking whether the clicked element is inside: Radix judges on the
+  `click`, by which time a control that replaces itself ("Add an explanation" → its textarea)
+  has left the page, and every such click closed the drawer until 2026-11-08. The form's autofocus also happened while
   detached, so `onOpenAutoFocus` focuses its first field.
 
 The account drawer's first frame still waits ~100ms at 4× for its own render — small enough to

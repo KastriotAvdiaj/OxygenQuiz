@@ -8,6 +8,9 @@ import { uniqueSuffix } from "./support/api";
  * question (use-create-another.ts): each save says "Question created" on the Submit button,
  * empties the form for the next one, and keeps its category, difficulty and language. Closing the
  * drawer ends the batch and closes the type chooser behind it.
+ *
+ * The explanation step guards FormDrawer's outside-click check: "Add an explanation" replaces
+ * itself on click, and the drawer once took that for a click outside and closed.
  */
 
 async function fillMultipleChoice(drawer: Locator, text: string) {
@@ -40,6 +43,8 @@ test("an admin adds two questions in a row without leaving the drawer", async ({
   const second = `Which planet is closest to the Sun? (${uniqueSuffix()})`;
 
   await fillMultipleChoice(drawer, first);
+  await drawer.getByRole("button", { name: /Add an explanation/ }).click();
+  await drawer.getByLabel(/Explanation/).fill("Mars looks red because of iron oxide dust.");
   await choose(page, drawer, "Select category", "Science");
   await choose(page, drawer, "Select difficulty", "Unspecified");
   await choose(page, drawer, "Select language", "English");
