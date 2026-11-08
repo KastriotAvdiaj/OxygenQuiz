@@ -53,6 +53,12 @@ jobs:
       - name: Run unit tests
         run: npx vitest run --project unit
 
+      # The same `tsc -b && vite build` Cloudflare runs to deploy. It is stricter than the
+      # tests (unused imports are errors), and a failure there doesn't show on GitHub — the
+      # site just stops updating, as it did from 2026-11-08 15:15 until this step.
+      - name: Production build
+        run: npm run build
+
   e2e-tests:
     name: End-to-end (Playwright) tests
     runs-on: ubuntu-latest

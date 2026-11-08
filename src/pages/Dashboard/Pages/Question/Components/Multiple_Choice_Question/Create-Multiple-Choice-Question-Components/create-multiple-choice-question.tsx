@@ -11,7 +11,7 @@ import { CategorySelect } from "../../../Entities/Categories/Components/select-q
 import { DifficultySelect } from "../../../Entities/Difficulty/Components/select-question-difficulty";
 import { LanguageSelect } from "../../../Entities/Language/components/select-question-language";
 import { LiftedButton } from "@/common/LiftedButton";
-import { QuestionTypeButton } from "../../question-type-button";
+import { AddQuestionButton, QuestionTypeButton } from "../../question-type-button";
 import { useCreateAnother } from "../../use-create-another";
 import { QuestionType } from "@/types/question-types";
 
@@ -35,12 +35,14 @@ interface CreateMultipleChoiceFormProps {
   difficulties: QuestionDifficulty[];
   languages: QuestionLanguage[];
   /** The author closed the drawer after saving at least one question — the batch is done. */
-  onSuccess: () => void;
+  onSuccess?: () => void;
+  /** Render the trigger as the empty list's "Add a question" instead of a type card. */
+  emptyState?: boolean;
 }
 
 export const CreateMultipleChoiceForm: React.FC<
   CreateMultipleChoiceFormProps
-> = ({ categories, difficulties, languages, onSuccess }) => {
+> = ({ categories, difficulties, languages, onSuccess, emptyState }) => {
   const { addNotification } = useNotifications();
   const [media, setMedia] = useState<MediaSelection | null>(null);
   // Stays open for the next question (use-create-another.ts).
@@ -68,7 +70,13 @@ export const CreateMultipleChoiceForm: React.FC<
       savedSignal={batch.savedCount}
       savedMessage="Question created"
       onClosed={batch.handleClosed}
-      triggerButton={<QuestionTypeButton questionType={QuestionType.MultipleChoice} label="Multiple Choice" />}
+      triggerButton={
+        emptyState ? (
+          <AddQuestionButton />
+        ) : (
+          <QuestionTypeButton questionType={QuestionType.MultipleChoice} label="Multiple Choice" />
+        )
+      }
       title="Create a New Multiple Choice Question"
       submitButton={
         <Button

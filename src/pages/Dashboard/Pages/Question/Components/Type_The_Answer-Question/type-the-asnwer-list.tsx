@@ -1,3 +1,4 @@
+import { EmptyQuestionList } from "../empty-question-list";
 import { TypeTheAnswerQuestionCard } from "./type-the-asnwer-question-card";
 import { useQuestionCategoryData } from "../../Entities/Categories/api/get-question-categories";
 import { useQuestionDifficultyData } from "../../Entities/Difficulty/api/get-question-difficulties";
@@ -18,18 +19,14 @@ export const TypeTheAnswerQuestionList = ({
 
   if (questions.length === 0) {
     return (
-      <p className="text-center text-muted-foreground py-8">
-        No "Type the Answer" questions found matching your criteria. <br />
-        Add some questions to get started!
-        <p className="mt-4">
-          <CreateTypeAnswerQuestionForm
-            languages={languagesQuery.data || []}
-            categories={categoriesQuery.data || []}
-            difficulties={difficultiesQuery.data || []}
-            title="+ Add New"
-          />
-        </p>
-      </p>
+      <EmptyQuestionList typeName="Type the Answer">
+        <CreateTypeAnswerQuestionForm
+          languages={languagesQuery.data || []}
+          categories={categoriesQuery.data || []}
+          difficulties={difficultiesQuery.data || []}
+          emptyState
+        />
+      </EmptyQuestionList>
     );
   }
 

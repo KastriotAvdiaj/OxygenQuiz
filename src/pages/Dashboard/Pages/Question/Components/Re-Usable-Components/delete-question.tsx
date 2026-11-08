@@ -1,9 +1,8 @@
 // src/components/questions/DeleteQuestion.tsx
-import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/dialog";
 import { useNotifications } from "@/common/Notifications";
 import { useDeleteQuestion } from "../../api/delete-question";
-import { Trash } from "lucide-react";
+import { Trash, Trash2 } from "lucide-react";
 import { AnyQuestion, QuestionType } from "@/types/question-types";
 import { Authorization } from "@/lib/authorization";
 import { IconButtonWithTooltip } from "./icon-button-with-tooltip";
@@ -50,12 +49,13 @@ export const DeleteQuestion = ({ questionType, question }: DeleteUserProps) => {
           <LiftedButton
             isPending={deleteQuestionMutation.isPending}
             type="button"
-            className="w-full justify-center whitespace-nowrap bg-destructive text-white sm:w-auto py-1 text-sm sm:text-base rounded-md"
-            liftColor="red-400" // red-400 — depth layers match the face
+            className="flex w-full items-center justify-center gap-2 whitespace-nowrap bg-red-600 text-white sm:w-auto"
+            liftColor="red-700"
             onClick={() => {
               deleteQuestionMutation.mutate({ questionId: question.id });
             }}
           >
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
             Delete
           </LiftedButton>
         }

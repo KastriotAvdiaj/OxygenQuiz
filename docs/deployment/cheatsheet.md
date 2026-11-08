@@ -86,7 +86,7 @@ The deploy also ships a small Worker script (`worker/index.js`) that runs **only
 `/play/shared/*`, for link previews; everything else is plain static files. What it does, the
 `_headers`/`robots.txt` files and how to test it locally: [`frontend-worker.md`](frontend-worker.md).
 
-⚠️ Backend rebuild does NOT deploy frontend changes, and vice-versa — a push to `main` deploys only the frontend; the API still needs the VPS `git pull` + rebuild. A manual `wrangler deploy` ships whatever is already in `dist/` — always `npm run build` first. Every deploy replaces the whole site with one build, so deploy from `main` (with everything merged), never from a feature branch.
+⚠️ Backend rebuild does NOT deploy frontend changes, and vice-versa — a push to `main` deploys only the frontend; the API still needs the VPS `git pull` + rebuild. A manual `wrangler deploy` ships whatever is already in `dist/` — always `npm run build` first. Every deploy replaces the whole site with one build, so deploy from `main` (with everything merged), never from a feature branch. A failed Cloudflare build shows only in the Cloudflare dashboard — the site just keeps the last good build — so CI runs the same `npm run build` (`tests.yml`, *Production build*); a red check there means the push won't go live.
 
 ## Quick reference
 

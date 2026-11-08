@@ -10,8 +10,7 @@ import {
   createTrueFalseQuestionInputSchema,
   useCreateTrueFalseQuestion,
 } from "../../api/True_False-Question/create-true_false-question";
-import { LiftedButton } from "@/common/LiftedButton";
-import { QuestionTypeButton } from "../question-type-button";
+import { AddQuestionButton, QuestionTypeButton } from "../question-type-button";
 import { useCreateAnother } from "../use-create-another";
 import { QuestionType } from "@/types/question-types";
 import { MediaPicker } from "@/features/media/components/media-picker";
@@ -28,12 +27,13 @@ interface CreateTrueFalseQuestionFormProps {
   difficulties: QuestionDifficulty[];
   languages: QuestionLanguage[];
   onSuccess?: () => void;
-  title?: string;
+  /** Render the trigger as the empty list's "Add a question" instead of a type card. */
+  emptyState?: boolean;
 }
 
 export const CreateTrueFalseQuestionForm: React.FC<
   CreateTrueFalseQuestionFormProps
-> = ({ categories, difficulties, languages, onSuccess, title }) => {
+> = ({ categories, difficulties, languages, onSuccess, emptyState }) => {
   const [media, setMedia] = useState<MediaSelection | null>(null);
   // Stays open for the next question (use-create-another.ts).
   const batch = useCreateAnother(onSuccess);
@@ -55,8 +55,8 @@ export const CreateTrueFalseQuestionForm: React.FC<
       savedMessage="Question created"
       onClosed={batch.handleClosed}
       triggerButton={
-        title ? (
-          <LiftedButton>{title}</LiftedButton>
+        emptyState ? (
+          <AddQuestionButton />
         ) : (
           <QuestionTypeButton questionType={QuestionType.TrueFalse} label="True / False" />
         )

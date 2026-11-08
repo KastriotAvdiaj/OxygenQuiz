@@ -1,3 +1,4 @@
+import { EmptyQuestionList } from "../empty-question-list";
 import { TrueFalseQuestionCard } from "./true-false-question-card";
 import CreateTrueFalseQuestionForm from "./create-true_false-questions";
 import { useQuestionCategoryData } from "../../Entities/Categories/api/get-question-categories";
@@ -18,19 +19,14 @@ export const TrueFalseQuestionList = ({
 
   if (questions.length === 0) {
     return (
-      <p className="text-center text-muted-foreground py-8">
-        No true/false questions found matching your criteria.
-        <br />
-        Add some questions to get started!
-        <p className="mt-4">
-          <CreateTrueFalseQuestionForm
-            languages={languagesQuery.data || []}
-            categories={categoriesQuery.data || []}
-            difficulties={difficultiesQuery.data || []}
-            title="+ Add New"
-          />
-        </p>
-      </p>
+      <EmptyQuestionList typeName="true/false">
+        <CreateTrueFalseQuestionForm
+          languages={languagesQuery.data || []}
+          categories={categoriesQuery.data || []}
+          difficulties={difficultiesQuery.data || []}
+          emptyState
+        />
+      </EmptyQuestionList>
     );
   }
 

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Plus } from "lucide-react";
 
 import { LiftedButton } from "@/common/LiftedButton";
 import { TypeGlyph } from "@/pages/Dashboard/Pages/Quiz/components/AI-Quiz/components/question-type-options";
@@ -37,3 +38,25 @@ export const QuestionTypeButton = React.forwardRef<HTMLButtonElement, QuestionTy
   ),
 );
 QuestionTypeButton.displayName = "QuestionTypeButton";
+
+/**
+ * "Add a question" under an empty list — the create drawer's trigger when there is nothing yet.
+ * Secondary rank (muted, CLAUDE.md button rank), not primary blue: the empty state is a hint,
+ * and the page's own "Add Question" button is already the loud one.
+ */
+export const AddQuestionButton = React.forwardRef<
+  HTMLButtonElement,
+  React.ButtonHTMLAttributes<HTMLButtonElement>
+>((props, ref) => (
+  <LiftedButton
+    ref={ref}
+    type="button"
+    {...props}
+    liftColor="muted-foreground"
+    className="flex items-center gap-2 bg-muted px-4 py-1.5 text-sm text-foreground"
+  >
+    <Plus className="h-4 w-4" aria-hidden="true" />
+    Add a question
+  </LiftedButton>
+));
+AddQuestionButton.displayName = "AddQuestionButton";
