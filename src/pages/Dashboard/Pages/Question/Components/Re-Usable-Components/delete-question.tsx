@@ -7,6 +7,7 @@ import { Trash } from "lucide-react";
 import { AnyQuestion, QuestionType } from "@/types/question-types";
 import { Authorization } from "@/lib/authorization";
 import { IconButtonWithTooltip } from "./icon-button-with-tooltip";
+import { LiftedButton } from "@/common/LiftedButton";
 
 interface DeleteUserProps {
   questionType: QuestionType;
@@ -46,15 +47,17 @@ export const DeleteQuestion = ({ questionType, question }: DeleteUserProps) => {
           />
         }
         confirmButton={
-          <Button
+          <LiftedButton
             isPending={deleteQuestionMutation.isPending}
             type="button"
-            variant="destructive"
+            className="w-full justify-center whitespace-nowrap bg-destructive text-white sm:w-auto py-1 text-sm sm:text-base rounded-md"
+            liftColor="red-400" // red-400 — depth layers match the face
             onClick={() => {
               deleteQuestionMutation.mutate({ questionId: question.id });
-            }}>
-            Delete Question
-          </Button>
+            }}
+          >
+            Delete
+          </LiftedButton>
         }
       />
     </Authorization>
