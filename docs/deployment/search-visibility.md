@@ -16,7 +16,30 @@ weeks.
 | Real HTML for public quiz listings (`/q/…`) and `/sitemap.xml` | the Worker — [`frontend-worker.md`](./frontend-worker.md) | before 2026-11-07 |
 | `robots.txt` keeping dashboards, settings and play screens out | `public/robots.txt` | before 2026-11-07 |
 | Search Console: a **Domain** property for `oxygenquiz.com`, verified by a `google-site-verification` TXT record on `@` in Cloudflare DNS — **keep that record**, or verification lapses | Search Console, Cloudflare DNS | 2026-11-07 |
-| Sitemap submitted (15 URLs: home, catalogue, 13 public quizzes). It showed *Couldn't fetch* straight after submitting, while the file served fine — Google hadn't read it yet; recheck, and resubmit if it persists | Search Console → Sitemaps | 2026-11-07 |
+| Sitemap submitted (15 URLs then: home, catalogue, 13 public quizzes). Read with status *Success* the same day; it grows as quizzes are published, and Google rereads it on its own | Search Console → Sitemaps | 2026-11-07 |
+| A canonical link on every SPA page — its own address, no query string or trailing slash | `src/lib/canonical-link.tsx` | 2026-11-09 |
+| `X-Robots-Tag: noindex` on every API response, so `api.oxygenquiz.com` stays out of search | `OxygenBackend/QuizAPI/Program.cs` | 2026-11-09 |
+| A real `/favicon.ico` (the SPA fallback answered it with HTML) | [`../development/favicon.md`](../development/favicon.md) | 2026-11-08 |
+
+## Reading the *Page indexing* report
+
+Google emails "New reasons prevent pages from being indexed" whenever a new reason first appears.
+The **Domain** property covers every host — `http://`, `www.` and `api.oxygenquiz.com` too — so it
+lists more than the `https://oxygenquiz.com/` URL-prefix property. What each reason meant on
+2026-11-09, and whether it needs anything:
+
+| Reason | What it is here | Action |
+|---|---|---|
+| Page with redirect | `http://`, `www.` and `/q/15` (no slug) 301 to the real address | None — correct |
+| Blocked by robots.txt | `/dashboard`, `/settings`, `/quiz/…` play screens and the rest of `public/robots.txt` | None — intended |
+| Duplicate without user-selected canonical | every SPA route serves the same `index.html`; and API JSON | Canonical link and API `noindex` (above) |
+| Soft 404 | a 200 for a page that isn't one: unknown SPA paths, API endpoints | API `noindex`. An unknown SPA path still answers 200 — only the Worker could 404 it, and it doesn't run on every path. Harmless: no link points there |
+| Server error (5xx) | API URLs during a backend restart (the quiz pages fail open to the shell, never 5xx) | API `noindex` |
+
+A page in these buckets is not an error to fix one by one. What matters is that the sitemap's
+pages — the home page, the catalogue and every `/q/…` — end up **Indexed**; check those with URL
+Inspection. Once the API is `noindex`, its URLs move to *Excluded by 'noindex' tag*, which is the
+intended end state.
 
 ## Still to do
 

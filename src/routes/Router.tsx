@@ -1,5 +1,6 @@
 import { lazy, useMemo } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { CanonicalLink } from "@/lib/canonical-link";
 import {
   adminAuthLoader,
   permissionAuthLoader,
@@ -176,12 +177,17 @@ const UserProfile = lazy(() =>
 const createAppRouter = (queryClient: QueryClient) =>
   createBrowserRouter([
     {
-      // Pathless root that exists solely to own `errorElement`. Every route below
+      // Pathless root that owns `errorElement` and the page's canonical link (CanonicalLink). Every route below
       // inherits it, so no route can ship without error handling and React Router's raw
       // "Unexpected Application Error!" default can never reach a user. Routes with
       // their own errorElement still win — this is the floor.
       // See src/pages/UtilityPages/Error/Route-Error-Element.tsx.
-      element: <Outlet />,
+      element: (
+        <>
+          <CanonicalLink />
+          <Outlet />
+        </>
+      ),
       errorElement: <RouteErrorElement />,
       children: [
     {

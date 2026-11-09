@@ -1,6 +1,7 @@
 import { listingPath } from "../worker/listing-url.js";
 import { expect, test } from "./support/fixtures";
 import { SAMPLE_QUESTIONS } from "./support/sample-quiz";
+import { API_URL } from "./support/stack";
 
 /**
  * The quiz listing (docs/quiz/quiz-listing.md): the public page a Public quiz's link opens. The
@@ -19,6 +20,16 @@ test("a Public quiz's link opens its listing, and Play starts it for a signed-ou
   // An old or mistyped slug still finds the quiz by its id, and lands on the current URL.
   await page.goto(`/q/${sampleQuiz.id}/an-old-title`);
   await expect(page).toHaveURL(canonical);
+  // The page names its clean address as canonical (CanonicalLink) — without it Google files every
+  // SPA route as an unlabelled duplicate.
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    "href",
+    new URL(canonical, page.url()).href,
+  );
+  // The API answers for the listing, but keeps itself out of search: Search Console counts
+  // api.oxygenquiz.com as part of the site.
+  const api = await page.request.get(`${API_URL}/quiz/${sampleQuiz.id}/listing`);
+  expect(api.headers()["x-robots-tag"]).toBe("noindex");
 
   await expect(page.getByRole("heading", { level: 1, name: sampleQuiz.title })).toBeVisible();
   await expect(page.getByText("Created by the end-to-end suite.")).toBeVisible();
