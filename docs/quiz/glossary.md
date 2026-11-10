@@ -53,16 +53,16 @@ Every saved question, reusable across quizzes and filed by category, language an
 [`question-bank.md`](./question-bank.md).
 _Avoid_: question pool, public pool
 
-**Shared question**:
-A question in the bank that every author and player can read (`Visibility = Global`). Only Admins
-and SuperAdmins file one.
-_Avoid_: public question (`Public` is a quiz `Status`), global question in prose (fine for the
-enum value)
+**Public question**:
+A question in the bank that every author and player can read. Only Admins and SuperAdmins make
+one. Stored as `QuestionVisibility.Global` until that value is renamed `Public`.
+_Avoid_: shared question ("shared" is kept for sharing with friends, should that come), global
+question in prose
 
 **Private question**:
 A question only its owner can read on its own (`Visibility = Private`) — it still plays inside any
 quiz the reader may see. What every builder, AI and user-made question is.
-_Avoid_: hidden question (that is Hidden media), draft question
+_Avoid_: hidden question (that is Hidden media), draft question, personal question
 
 **Screenshot import**:
 Making questions from images: a model reads the questions shown in a screenshot or photo, and a
