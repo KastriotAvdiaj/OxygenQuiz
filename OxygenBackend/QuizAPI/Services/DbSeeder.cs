@@ -203,7 +203,7 @@ namespace QuizAPI.Services
                     {
                         Text = "What was the primary programming language used to create the first version of the Android OS?",
                         UserId = adminUserId,
-                        Visibility = QuestionVisibility.Global,
+                        Visibility = QuestionVisibility.Public,
                         LanguageId = englishLangId,
                         DifficultyId = mediumDiffId,
                         CategoryId = techCatId,
@@ -219,7 +219,7 @@ namespace QuizAPI.Services
                     {
                         Text = "The Great Wall of China is visible from the Moon with the naked eye.",
                         UserId = adminUserId,
-                        Visibility = QuestionVisibility.Global,
+                        Visibility = QuestionVisibility.Public,
                         LanguageId = englishLangId,
                         DifficultyId = easyDiffId,
                         CategoryId = historyCatId,
@@ -229,7 +229,7 @@ namespace QuizAPI.Services
                     {
                         Text = "What is the chemical symbol for water?",
                         UserId = adminUserId,
-                        Visibility = QuestionVisibility.Global,
+                        Visibility = QuestionVisibility.Public,
                         LanguageId = englishLangId,
                         DifficultyId = easyDiffId,
                         CategoryId = scienceCatId,

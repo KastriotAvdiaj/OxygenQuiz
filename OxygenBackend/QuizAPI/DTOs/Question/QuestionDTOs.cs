@@ -68,7 +68,7 @@ namespace QuizAPI.DTOs.Question
         public int DifficultyId { get; set; }
         public int CategoryId { get; set; }
         public int LanguageId { get; set; }
-        /// <summary>"Global" (staff only) or "Private"; anything else is Private. docs/quiz/question-bank.md.</summary>
+        /// <summary>"Public" (staff only; "Global" also accepted) or "Private"; anything else is Private. docs/quiz/question-bank.md.</summary>
         public string? Visibility { get; set; }
     }
 

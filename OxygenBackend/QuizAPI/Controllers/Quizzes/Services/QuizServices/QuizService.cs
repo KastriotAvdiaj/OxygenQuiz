@@ -289,6 +289,18 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         }
 
         // ── Writes ────────────────────────────────────────────────────────────────
+        internal const string NotAttachableMessage =
+            "You can add your own questions or public ones — not someone else's private question.";
+
+        // Picking (docs/quiz/question-bank.md): a quiz may take the caller's own questions and
+        // Public ones, whoever the caller is. Checked after existence, so a stranger's id reads
+        // the same as any other refusal of it.
+        private async Task EnsureAttachableAsync(IReadOnlyCollection<int> questionIds, Guid userId)
+        {
+            if (!await _quizzes.AllQuestionsAttachableAsync(questionIds, userId))
+                throw new ForbiddenException(NotAttachableMessage);
+        }
+
         public async Task<QuizDTO> CreateQuizAsync(Guid userId, QuizCM quizCM)
         {
             using var transaction = await _quizzes.BeginTransactionAsync();
@@ -307,6 +319,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 var questionIds = quizCM.Questions.Select(q => q.QuestionId).ToList();
                 if (!await _quizzes.AllQuestionsExistAsync(questionIds))
                     throw new InvalidOperationException("One or more questions do not exist.");
+                await EnsureAttachableAsync(questionIds, userId);
 
                 var quiz = quizCM.ToEntity();
                 quiz.UserId = userId;
@@ -360,6 +373,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                     .ToList();
                 if (existingIds.Count > 0 && !await _quizzes.AllQuestionsExistAsync(existingIds))
                     throw new InvalidOperationException("One or more selected questions do not exist.");
+                await EnsureAttachableAsync(existingIds, userId);
 
                 // The generated questions inherit the quiz's category + language, and a question may
                 // never be stored as the seeded "Unspecified" row — so refuse here rather than
@@ -574,6 +588,10 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 var questionIds = quizUM.Questions.Select(q => q.QuestionId).ToList();
                 if (!await _quizzes.AllQuestionsExistAsync(questionIds))
                     throw new InvalidOperationException("One or more questions do not exist");
+                // Only questions this save adds are checked: a quiz an admin edits keeps its
+                // owner's private questions, which the admin could never have added themselves.
+                var liveIds = quiz.QuizQuestions.Where(qq => qq.IsLive).Select(qq => qq.QuestionId).ToHashSet();
+                await EnsureAttachableAsync(questionIds.Where(id => !liveIds.Contains(id)).ToList(), userId);
 
                 var newStatus = QuizMappers.ParseStatus(quizUM.Status);
                 var newVersion = quiz.Version + 1;

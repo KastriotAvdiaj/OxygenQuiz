@@ -12,7 +12,7 @@ import type { QuestionType } from "@/types/question-types";
 export const questionKeys = {
   all: ["questions"] as const,
   search: (query: FilterQuery) => [...questionKeys.all, "search", query] as const,
-  typedSearch: (scope: "all" | "mine", type: QuestionType, query: FilterQuery) =>
+  typedSearch: (scope: "all" | "mine" | "public", type: QuestionType, query: FilterQuery) =>
     [...questionKeys.all, "typed-search", scope, type, query] as const,
   detail: (questionId: number) =>
     [...questionKeys.all, "detail", questionId] as const,

@@ -639,9 +639,10 @@ namespace QuizAPI.Controllers.DataTransfer
             return _importer.Parse<T>(stream, format);
         }
 
-        // "Global" / "Private" — defaults to Global on anything unrecognised.
+        // "Public" / "Private" ("Global" is Public's old name) — defaults to Public on anything
+        // unrecognised: the importer is staff-only, and staff questions start public.
         private static string NormalizeVisibility(string? raw) =>
-            string.Equals(raw?.Trim(), "Private", StringComparison.OrdinalIgnoreCase) ? "Private" : "Global";
+            string.Equals(raw?.Trim(), "Private", StringComparison.OrdinalIgnoreCase) ? "Private" : "Public";
 
         // Quiz status (Draft / Unlisted / Public). Defaults to Draft on anything unrecognised so an
         // imported quiz is never accidentally published. Legacy values from older exports are mapped:

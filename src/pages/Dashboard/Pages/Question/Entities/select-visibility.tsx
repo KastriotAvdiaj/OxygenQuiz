@@ -25,7 +25,7 @@ export const VisibilitySelect: React.FC<VisibilitySelectProps> = ({
   error,
   clearErrors,
 }) => {
-  const visibilityOptions = ["Global", "Private"];
+  const visibilityOptions = ["Public", "Private"];
   const isValueValid = visibilityOptions.includes(value);
 
   return (
@@ -60,7 +60,7 @@ export const VisibilitySelect: React.FC<VisibilitySelectProps> = ({
 };
 
 /**
- * Whether the signed-in user may file questions in the shared question bank (`Global`) — Admin and
+ * Whether the signed-in user may file questions as public questions (`Public`) — Admin and
  * SuperAdmin. Fast feedback only: the gate is `QuestionService.ResolveNewVisibility` /
  * `ApplyVisibilityChange` on the API, which answers 403 to anyone else (docs/quiz/question-bank.md).
  */
@@ -72,12 +72,12 @@ export const useCanShareQuestions = () => {
 };
 
 /**
- * The visibility a new question on the Questions page starts with: staff file into the shared
- * bank, everyone else keeps it to themselves. It is a default, not carried from the last save
- * (use-create-another.ts), so a batch starts in the bank every time.
+ * The visibility a new question on the Questions page starts with: staff make it public, everyone
+ * else keeps it to themselves. It is a default, not carried from the last save
+ * (use-create-another.ts), so a batch starts public every time.
  */
-export const useNewQuestionVisibility = (): "Global" | "Private" =>
-  useCanShareQuestions() ? "Global" : "Private";
+export const useNewQuestionVisibility = (): "Public" | "Private" =>
+  useCanShareQuestions() ? "Public" : "Private";
 
 /** The visibility select, shown to staff only. Everyone else's questions stay `Private`. */
 export const QuestionVisibilityField: React.FC<VisibilitySelectProps> = (props) =>

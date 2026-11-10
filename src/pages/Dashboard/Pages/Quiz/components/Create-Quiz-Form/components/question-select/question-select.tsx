@@ -40,7 +40,7 @@ interface SelectQuestionComponentProps {
 
 const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
   maxSelections,
-  title = "Select Questions from Pool",
+  title = "Choose questions",
   triggerButton,
   open: openProp,
   onOpenChange,
@@ -59,6 +59,12 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
   const [selectedDifficultyIds, setSelectedDifficultyIds] = useState<number[]>([]);
   const [selectedLanguageIds, setSelectedLanguageIds] = useState<number[]>([]);
   const [activeTab, setActiveTab] = useState(QuestionType.MultipleChoice);
+  /**
+   * Whose questions: your own (first — reusing your own is the common case) or the Public ones.
+   * Never anyone else's private question, admins included; the server enforces it
+   * (docs/quiz/question-bank.md, "Picking"), these tabs only choose which list to ask for.
+   */
+  const [source, setSource] = useState<"mine" | "public">("mine");
 
   const {
     tempSelectedQuestionsCount,
@@ -103,7 +109,7 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchTerm, selectedCategoryIds, selectedDifficultyIds, selectedLanguageIds, activeTab]);
+  }, [debouncedSearchTerm, selectedCategoryIds, selectedDifficultyIds, selectedLanguageIds, activeTab, source]);
 
   // The context's modal flag is what actually enables selection — CommonSelectQuestionCard
   // disables every checkbox while it's false. It must track the dialog's real visibility, not
@@ -141,7 +147,7 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
       ) : isControlled ? null : (
         <LiftedButton onClick={handleOpen} liftColor="muted" className="h-fit bg-muted text-foreground border border-foreground/20" type="button">
           <Plus className="h-4 w-4" />
-          Browse Public Pool
+          Choose questions
         </LiftedButton>
       )}
 
@@ -264,6 +270,16 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
             {/* ── Scrollable content ── */}
             <div className="flex-1 overflow-y-auto px-6 py-4">
               <Tabs
+                value={source}
+                onValueChange={(value) => setSource(value as "mine" | "public")}
+                className="w-full"
+              >
+                <TabsList className="grid grid-cols-2 mb-3">
+                  <TabsTrigger value="mine">Your questions</TabsTrigger>
+                  <TabsTrigger value="public">Public questions</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <Tabs
                 value={activeTab}
                 onValueChange={(value) => setActiveTab(value as QuestionType)}
                 className="w-full"
@@ -275,13 +291,13 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
                 </TabsList>
 
                 <TabsContent value={QuestionType.MultipleChoice}>
-                  <QuestionTabContent questionType={QuestionType.MultipleChoice} queryParams={queryParams} onPageChange={(p) => setCurrentPage(p)} page="user" isModalOpen={isOpen} />
+                  <QuestionTabContent questionType={QuestionType.MultipleChoice} queryParams={queryParams} onPageChange={(p) => setCurrentPage(p)} page="user" scope={source} isModalOpen={isOpen} />
                 </TabsContent>
                 <TabsContent value={QuestionType.TrueFalse}>
-                  <QuestionTabContent questionType={QuestionType.TrueFalse} queryParams={queryParams} onPageChange={(p) => setCurrentPage(p)} page="user" isModalOpen={isOpen} />
+                  <QuestionTabContent questionType={QuestionType.TrueFalse} queryParams={queryParams} onPageChange={(p) => setCurrentPage(p)} page="user" scope={source} isModalOpen={isOpen} />
                 </TabsContent>
                 <TabsContent value={QuestionType.TypeTheAnswer}>
-                  <QuestionTabContent questionType={QuestionType.TypeTheAnswer} queryParams={queryParams} onPageChange={(p) => setCurrentPage(p)} page="user" isModalOpen={isOpen} />
+                  <QuestionTabContent questionType={QuestionType.TypeTheAnswer} queryParams={queryParams} onPageChange={(p) => setCurrentPage(p)} page="user" scope={source} isModalOpen={isOpen} />
                 </TabsContent>
               </Tabs>
             </div>

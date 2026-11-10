@@ -138,6 +138,20 @@ namespace QuizAPI.Repositories
             return existingCount == distinctIds.Count;
         }
 
+        public async Task<bool> AllQuestionsAttachableAsync(
+            IReadOnlyCollection<int> questionIds, Guid userId, CancellationToken ct = default)
+        {
+            var distinctIds = questionIds.Distinct().ToList();
+            if (distinctIds.Count == 0) return true;
+
+            // Explicit, not left to the query filter: that one lets admins see everything and
+            // anyone see a question inside a quiz they may play — neither is a licence to reuse it.
+            var attachable = await _context.Questions.CountAsync(
+                q => distinctIds.Contains(q.Id)
+                     && (q.UserId == userId || q.Visibility == QuestionVisibility.Public), ct);
+            return attachable == distinctIds.Count;
+        }
+
         // ── Writes ────────────────────────────────────────────────────────────────
         public async Task AddAsync(Quiz quiz, CancellationToken ct = default) =>
             await _context.Quizzes.AddAsync(quiz, ct);

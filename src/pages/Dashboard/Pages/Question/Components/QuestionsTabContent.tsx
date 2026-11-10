@@ -10,7 +10,7 @@ import {
   type TrueFalseQuestion,
   type TypeTheAnswerQuestion,
 } from "@/types/question-types";
-import { useTypedQuestionSearch } from "../api/search-questions-typed";
+import { useTypedQuestionSearch, type QuestionSearchScope } from "../api/search-questions-typed";
 import { toFilterQuery, type QuestionQueryParams } from "../api/question-filter-query";
 import { pagedResponseToPagination } from "@/lib/pagination-query";
 
@@ -20,9 +20,10 @@ interface QuestionTabContentProps {
   onPageChange: (newPage: number) => void;
   page?: string;
   isModalOpen: boolean;
-  // "all"  → admin endpoints (every question)
-  // "mine" → ownership forced server-side (only the current user's). Defaults to "all".
-  scope?: "all" | "mine";
+  // "all"    → every question to an admin; own + Public to anyone else (server-side).
+  // "mine"   → ownership forced server-side (only the current user's).
+  // "public" → Public questions only. Defaults to "all". See search-questions-typed.ts.
+  scope?: QuestionSearchScope;
 }
 
 export const QuestionTabContent = ({

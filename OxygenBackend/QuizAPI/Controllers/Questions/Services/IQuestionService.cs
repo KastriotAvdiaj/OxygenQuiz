@@ -24,15 +24,22 @@ namespace QuizAPI.Controllers.Questions.Services
         // Shared filtering framework (operators + search + sort + body-envelope pagination).
         // SearchQuestionsAsync returns lightweight base DTOs; the typed variants return the
         // rich per-type DTOs the type-tabbed UI needs. See docs/quiz/filtering.md.
+        // Clamps, applied before the caller's filters so no query parameter can widen them:
+        // restrictToUserId = that user's own; ownOrPublicFor = that user's own plus Public ones
+        // (a non-admin's "all"); publicOnly = Public only (the picker's Public tab, for everyone).
         Task<PagedResponse<QuestionBaseDTO>> SearchQuestionsAsync(
-            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default);
+            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default,
+            Guid? ownOrPublicFor = null, bool publicOnly = false);
 
         Task<PagedResponse<MultipleChoiceQuestionDTO>> SearchMultipleChoiceQuestionsAsync(
-            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default);
+            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default,
+            Guid? ownOrPublicFor = null, bool publicOnly = false);
         Task<PagedResponse<TrueFalseQuestionDTO>> SearchTrueFalseQuestionsAsync(
-            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default);
+            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default,
+            Guid? ownOrPublicFor = null, bool publicOnly = false);
         Task<PagedResponse<TypeTheAnswerQuestionDTO>> SearchTypeTheAnswerQuestionsAsync(
-            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default);
+            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default,
+            Guid? ownOrPublicFor = null, bool publicOnly = false);
         Task<QuestionBaseDTO> GetQuestionByIdAsync(int id);
         Task<List<QuestionBaseDTO>> GetQuestionsByCategoryAsync(int categoryId);
         Task<List<QuestionBaseDTO>> GetQuestionsByDifficultyAsync(int difficultyId);

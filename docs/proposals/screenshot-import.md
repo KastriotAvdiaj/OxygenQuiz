@@ -101,8 +101,8 @@ The app is public, so this ships dark: `Ai:ScreenshotImport:Enabled` is false in
 
 ## 5. Phases
 
-1. **This branch** (`question-bank-rules-and-image-import`): the `Global` → `Public` rename and the
-   picker's two tabs with server-side scoping.
+1. **Done 2026-11-10** on `question-bank-rules-and-image-import`: the `Global` → `Public` rename and
+   the picker's two tabs with server-side scoping — now in [`../quiz/question-bank.md`](../quiz/question-bank.md).
 2. **New branch:** Paste questions in the builder, for every user.
 3. **New branch:** screenshot import, then the mixed image search
    ([`mixed-image-sources.md`](./mixed-image-sources.md), on `image-sources-proposal`).

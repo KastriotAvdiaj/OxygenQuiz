@@ -101,27 +101,35 @@ namespace QuizAPI.Controllers.Questions.Services
                 throw new AppValidationException("Pick a language for this question — \"Unspecified\" isn't allowed.");
         }
 
-        // ── Shared bank (docs/quiz/question-bank.md) ───────────────────────────────
-        // A Global question is readable by every caller, guests included (the QuestionBase query
+        // ── Public questions (docs/quiz/question-bank.md) ───────────────────────────────
+        // A Public question is readable by every caller, guests included (the QuestionBase query
         // filter's rule 3), so putting one there is a staff decision. Anything unrecognised —
         // a missing value, "Public", a stray number — lands Private: the safe side of a
         // privacy default is the one that shows nobody. Until 2026-11-08 two of the three
-        // creates fell back to Global instead.
+        // creates fell back to Public (then called Global) instead.
 
         internal const string SharedBankForbidden =
-            "Only admins can add questions to the shared question bank.";
+            "Only admins can make a question public.";
 
-        private static bool TryParseVisibility(string? raw, out QuestionVisibility visibility) =>
-            Enum.TryParse(raw?.Trim(), true, out visibility)
-            && Enum.IsDefined(visibility)
-            && !int.TryParse(raw, out _);
+        private static bool TryParseVisibility(string? raw, out QuestionVisibility visibility)
+        {
+            // "Global" is the value's name until 2026-11-10 — older clients and import files.
+            if (string.Equals(raw?.Trim(), "Global", StringComparison.OrdinalIgnoreCase))
+            {
+                visibility = QuestionVisibility.Public;
+                return true;
+            }
+            return Enum.TryParse(raw?.Trim(), true, out visibility)
+                && Enum.IsDefined(visibility)
+                && !int.TryParse(raw, out _);
+        }
 
         private static QuestionVisibility ResolveNewVisibility(string? requested, bool canShare)
         {
             if (!TryParseVisibility(requested, out var visibility))
                 return QuestionVisibility.Private;
 
-            if (visibility == QuestionVisibility.Global && !canShare)
+            if (visibility == QuestionVisibility.Public && !canShare)
                 throw new ForbiddenException(SharedBankForbidden);
 
             return visibility;
@@ -135,7 +143,7 @@ namespace QuizAPI.Controllers.Questions.Services
             if (!TryParseVisibility(requested, out var visibility) || visibility == question.Visibility)
                 return;
 
-            if (visibility == QuestionVisibility.Global && !canShare)
+            if (visibility == QuestionVisibility.Public && !canShare)
                 throw new ForbiddenException(SharedBankForbidden);
 
             question.Visibility = visibility;
@@ -189,12 +197,10 @@ namespace QuizAPI.Controllers.Questions.Services
         /// client's filters, so a caller can never widen their scope via query params.
         /// </summary>
         public async Task<PagedResponse<QuestionBaseDTO>> SearchQuestionsAsync(
-            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default)
+            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default,
+            Guid? ownOrPublicFor = null, bool publicOnly = false)
         {
-            IQueryable<QuestionBase> q = _questions.Query();
-
-            if (restrictToUserId is { } uid)
-                q = q.Where(x => x.UserId == uid);
+            IQueryable<QuestionBase> q = Clamp(_questions.Query(), restrictToUserId, ownOrPublicFor, publicOnly);
 
             q = FilterEngine.Apply(q, query, QuestionFilterFields.Fields);
 
@@ -206,19 +212,38 @@ namespace QuizAPI.Controllers.Questions.Services
         // Typed variants of the search above — same framework, but they return the rich
         // per-type DTOs (answer options, correct answer, …) the type-tabbed UI renders.
         public Task<PagedResponse<MultipleChoiceQuestionDTO>> SearchMultipleChoiceQuestionsAsync(
-            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default) =>
+            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default,
+            Guid? ownOrPublicFor = null, bool publicOnly = false) =>
             SearchTypedAsync(
-                _questions.QueryMultipleChoice(), QuestionMappers.ProjectMultipleChoice, query, restrictToUserId, ct);
+                _questions.QueryMultipleChoice(), QuestionMappers.ProjectMultipleChoice, query, restrictToUserId, ct, ownOrPublicFor, publicOnly);
 
         public Task<PagedResponse<TrueFalseQuestionDTO>> SearchTrueFalseQuestionsAsync(
-            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default) =>
+            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default,
+            Guid? ownOrPublicFor = null, bool publicOnly = false) =>
             SearchTypedAsync(
-                _questions.QueryTrueFalse(), QuestionMappers.ProjectTrueFalse, query, restrictToUserId, ct);
+                _questions.QueryTrueFalse(), QuestionMappers.ProjectTrueFalse, query, restrictToUserId, ct, ownOrPublicFor, publicOnly);
 
         public Task<PagedResponse<TypeTheAnswerQuestionDTO>> SearchTypeTheAnswerQuestionsAsync(
-            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default) =>
+            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default,
+            Guid? ownOrPublicFor = null, bool publicOnly = false) =>
             SearchTypedAsync(
-                _questions.QueryTypeTheAnswer(), QuestionMappers.ProjectTypeTheAnswer, query, restrictToUserId, ct);
+                _questions.QueryTypeTheAnswer(), QuestionMappers.ProjectTypeTheAnswer, query, restrictToUserId, ct, ownOrPublicFor, publicOnly);
+
+        // The server-side scope of a search (docs/quiz/question-bank.md, "Picking"). Explicit Wheres,
+        // because the QuestionBase query filter is about reading, not reuse: it shows admins
+        // everything and anyone a question inside a quiz they may play.
+        private static IQueryable<T> Clamp<T>(
+            IQueryable<T> source, Guid? ownerId, Guid? ownOrPublicFor, bool publicOnly)
+            where T : QuestionBase
+        {
+            if (ownerId is { } uid)
+                source = source.Where(x => x.UserId == uid);
+            if (ownOrPublicFor is { } viewer)
+                source = source.Where(x => x.UserId == viewer || x.Visibility == QuestionVisibility.Public);
+            if (publicOnly)
+                source = source.Where(x => x.Visibility == QuestionVisibility.Public);
+            return source;
+        }
 
         // Shared core for the typed searches: scope clamp → framework filter → project → page.
         // The repository supplies the type-specific base query (with its includes) and the caller
@@ -226,11 +251,11 @@ namespace QuizAPI.Controllers.Questions.Services
         // logic lives in exactly one place.
         private async Task<PagedResponse<TDto>> SearchTypedAsync<TEntity, TDto>(
             IQueryable<TEntity> source, Expression<Func<TEntity, TDto>> projection,
-            FilterQuery query, Guid? restrictToUserId, CancellationToken ct)
+            FilterQuery query, Guid? restrictToUserId, CancellationToken ct,
+            Guid? ownOrPublicFor, bool publicOnly)
             where TEntity : QuestionBase
         {
-            if (restrictToUserId is { } uid)
-                source = source.Where(x => x.UserId == uid);
+            source = Clamp(source, restrictToUserId, ownOrPublicFor, publicOnly);
 
             source = FilterEngine.Apply(source, query, QuestionFilterFields.For<TEntity>());
 

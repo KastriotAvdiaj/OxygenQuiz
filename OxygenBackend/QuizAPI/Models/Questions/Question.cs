@@ -11,10 +11,15 @@ namespace QuizAPI.Models
 {
    
 
+    /// <summary>
+    /// Who can read a question on its own (docs/quiz/question-bank.md). Stored as an int, so the
+    /// 2026-11-10 rename of <c>Global</c> to <see cref="Public"/> needed no migration; the API
+    /// still accepts "Global" on input.
+    /// </summary>
     public enum QuestionVisibility
     {
-        Global,   
-        Private  
+        Public = 0,
+        Private = 1,
     }
 
     public enum QuestionType

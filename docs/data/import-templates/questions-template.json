@@ -5,7 +5,7 @@
     "CategoryId": 1,
     "DifficultyId": 2,
     "LanguageId": 3,
-    "Visibility": "Global",
+    "Visibility": "Public",
     "Options": "Paris|London|Berlin|Madrid",
     "CorrectOptions": "Paris",
     "AllowMultipleSelections": false,
@@ -17,7 +17,7 @@
     "CategoryId": 1,
     "DifficultyId": 2,
     "LanguageId": 3,
-    "Visibility": "Global",
+    "Visibility": "Public",
     "Options": "2|3|4|9",
     "CorrectOptions": "2|3",
     "AllowMultipleSelections": true
@@ -28,7 +28,7 @@
     "CategoryId": 1,
     "DifficultyId": 2,
     "LanguageId": 3,
-    "Visibility": "Global",
+    "Visibility": "Public",
     "CorrectAnswer": true
   },
   {
@@ -37,7 +37,7 @@
     "CategoryId": 1,
     "DifficultyId": 2,
     "LanguageId": 3,
-    "Visibility": "Global",
+    "Visibility": "Public",
     "TypeAnswer": "Carbon Dioxide",
     "AcceptableAnswers": "CO2|carbon dioxide",
     "IsCaseSensitive": false,

@@ -81,21 +81,42 @@ namespace QuizAPI.Controllers.Questions
         // DTOs. Each has a "mine/…" twin whose ownership is forced server-side, so a caller's
         // filters can only ever narrow within their own questions.
 
+        // "All" means everything only to an admin (the Questions page, which is moderation). Anyone
+        // else gets their own questions plus Public ones — never someone else's private question,
+        // which the query filter alone would show when it sits in a quiz they may play.
+        // docs/quiz/question-bank.md, "Picking".
+        private Guid? OwnOrPublicUnlessAdmin =>
+            _currentUserService.IsAdmin ? null : _currentUserService.UserId ?? Guid.Empty;
+
         [HttpGet("search")]
         public async Task<IActionResult> SearchQuestions([FromQuery] FilterQuery query, CancellationToken ct)
-            => Ok(await _questionService.SearchQuestionsAsync(query, ct: ct));
+            => Ok(await _questionService.SearchQuestionsAsync(query, ct: ct, ownOrPublicFor: OwnOrPublicUnlessAdmin));
 
         [HttpGet("multiplechoice/search")]
         public async Task<IActionResult> SearchMultipleChoice([FromQuery] FilterQuery query, CancellationToken ct)
-            => Ok(await _questionService.SearchMultipleChoiceQuestionsAsync(query, ct: ct));
+            => Ok(await _questionService.SearchMultipleChoiceQuestionsAsync(query, ct: ct, ownOrPublicFor: OwnOrPublicUnlessAdmin));
 
         [HttpGet("truefalse/search")]
         public async Task<IActionResult> SearchTrueFalse([FromQuery] FilterQuery query, CancellationToken ct)
-            => Ok(await _questionService.SearchTrueFalseQuestionsAsync(query, ct: ct));
+            => Ok(await _questionService.SearchTrueFalseQuestionsAsync(query, ct: ct, ownOrPublicFor: OwnOrPublicUnlessAdmin));
 
         [HttpGet("typetheanswer/search")]
         public async Task<IActionResult> SearchTypeTheAnswer([FromQuery] FilterQuery query, CancellationToken ct)
-            => Ok(await _questionService.SearchTypeTheAnswerQuestionsAsync(query, ct: ct));
+            => Ok(await _questionService.SearchTypeTheAnswerQuestionsAsync(query, ct: ct, ownOrPublicFor: OwnOrPublicUnlessAdmin));
+
+        // The quiz builder's "Public questions" tab: Public only, for everyone, admins included —
+        // an admin building a quiz picks from the same public questions as anyone.
+        [HttpGet("public/multiplechoice/search")]
+        public async Task<IActionResult> SearchPublicMultipleChoice([FromQuery] FilterQuery query, CancellationToken ct)
+            => Ok(await _questionService.SearchMultipleChoiceQuestionsAsync(query, ct: ct, publicOnly: true));
+
+        [HttpGet("public/truefalse/search")]
+        public async Task<IActionResult> SearchPublicTrueFalse([FromQuery] FilterQuery query, CancellationToken ct)
+            => Ok(await _questionService.SearchTrueFalseQuestionsAsync(query, ct: ct, publicOnly: true));
+
+        [HttpGet("public/typetheanswer/search")]
+        public async Task<IActionResult> SearchPublicTypeTheAnswer([FromQuery] FilterQuery query, CancellationToken ct)
+            => Ok(await _questionService.SearchTypeTheAnswerQuestionsAsync(query, ct: ct, publicOnly: true));
 
         [HttpGet("mine/multiplechoice/search")]
         [Authorize]

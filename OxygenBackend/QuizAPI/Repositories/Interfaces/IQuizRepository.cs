@@ -66,6 +66,13 @@ namespace QuizAPI.Repositories.Interfaces
         /// <summary>True if every distinct id in <paramref name="questionIds"/> exists.</summary>
         Task<bool> AllQuestionsExistAsync(IReadOnlyCollection<int> questionIds, CancellationToken ct = default);
 
+        /// <summary>
+        /// True when every id is a question <paramref name="userId"/> owns or a Public one — what
+        /// anyone, admins included, may add to a quiz (docs/quiz/question-bank.md, "Picking").
+        /// </summary>
+        Task<bool> AllQuestionsAttachableAsync(
+            IReadOnlyCollection<int> questionIds, Guid userId, CancellationToken ct = default);
+
         // ── Writes ────────────────────────────────────────────────────────────────
         Task AddAsync(Quiz quiz, CancellationToken ct = default);
         Task AddQuizQuestionsAsync(IEnumerable<QuizQuestion> quizQuestions, CancellationToken ct = default);

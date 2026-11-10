@@ -101,7 +101,7 @@ namespace QuizAPI.DTOs.DataTransfer
         public int CategoryId { get; set; }
         public int DifficultyId { get; set; }
         public int LanguageId { get; set; }
-        public string Visibility { get; set; } = "Global";
+        public string Visibility { get; set; } = "Public";
         public string? Explanation { get; set; }        // optional; shown to players after they answer
 
         // MultipleChoice

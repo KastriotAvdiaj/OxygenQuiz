@@ -4,9 +4,16 @@ import { QuestionType } from "@/types/question-types";
 import { questionKeys } from "@/lib/query-keys";
 
 // Typed question search over the shared filtering framework (see docs/quiz/filtering.md).
-// One hook for all three question types and both scopes; the type/scope only pick the URL.
+// One hook for all three question types and every scope; the type/scope only pick the URL.
 
-export type QuestionSearchScope = "all" | "mine";
+/**
+ * - `all` — every question to an admin (the Questions page); to anyone else the server narrows
+ *   it to their own plus Public ones.
+ * - `mine` — the caller's own.
+ * - `public` — Public questions only, for everyone (the quiz builder's "Public questions").
+ * The narrowing is the server's (docs/quiz/question-bank.md, "Picking"); the URL only asks.
+ */
+export type QuestionSearchScope = "all" | "mine" | "public";
 
 const URL_SEGMENT: Record<QuestionType, string> = {
   [QuestionType.MultipleChoice]: "multiplechoice",
@@ -15,9 +22,9 @@ const URL_SEGMENT: Record<QuestionType, string> = {
 };
 
 const buildUrl = (type: QuestionType, scope: QuestionSearchScope) =>
-  scope === "mine"
-    ? `/questions/mine/${URL_SEGMENT[type]}/search`
-    : `/questions/${URL_SEGMENT[type]}/search`;
+  scope === "all"
+    ? `/questions/${URL_SEGMENT[type]}/search`
+    : `/questions/${scope}/${URL_SEGMENT[type]}/search`;
 
 const searchTypedQuestions = <T>(
   type: QuestionType,

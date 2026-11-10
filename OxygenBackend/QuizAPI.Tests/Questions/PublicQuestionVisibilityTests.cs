@@ -11,10 +11,10 @@ using Xunit;
 namespace QuizAPI.Tests.Questions;
 
 /// <summary>
-/// Who may put a question in the shared bank (<c>Visibility = Global</c>), and what an unknown
+/// Who may make a question public (<c>Visibility = Public</c>), and what an unknown
 /// value means. docs/quiz/question-bank.md.
 /// </summary>
-public class SharedBankVisibilityTests
+public class PublicQuestionVisibilityTests
 {
     private static readonly Guid OwnerId = Guid.Parse("22222222-2222-2222-2222-222222222222");
 
@@ -49,7 +49,7 @@ public class SharedBankVisibilityTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    [InlineData("Public")]
+    [InlineData("Shared")]
     [InlineData("1")]
     [InlineData("nonsense")]
     public async Task An_unrecognised_visibility_creates_a_private_question(string? visibility)
@@ -62,59 +62,72 @@ public class SharedBankVisibilityTests
     }
 
     [Fact]
-    public async Task Staff_can_create_a_shared_question()
+    public async Task Staff_can_create_a_public_question()
     {
         var (service, _, added) = Build();
 
-        await service.CreateTrueFalseQuestionAsync(New("Global"), OwnerId, canShare: true);
+        await service.CreateTrueFalseQuestionAsync(New("Public"), OwnerId, canShare: true);
 
-        Assert.Equal(QuestionVisibility.Global, Assert.Single(added).Visibility);
+        Assert.Equal(QuestionVisibility.Public, Assert.Single(added).Visibility);
     }
 
     [Fact]
-    public async Task A_user_cannot_create_a_shared_question()
+    public async Task A_user_cannot_create_a_public_question()
     {
         var (service, _, added) = Build();
 
         var ex = await Assert.ThrowsAsync<ForbiddenException>(
-            () => service.CreateTrueFalseQuestionAsync(New("Global"), OwnerId, canShare: false));
+            () => service.CreateTrueFalseQuestionAsync(New("Public"), OwnerId, canShare: false));
 
         Assert.Equal(QuestionService.SharedBankForbidden, ex.Message);
         Assert.Empty(added);
     }
 
     [Fact]
-    public async Task A_user_cannot_move_their_question_into_the_shared_bank()
+    public async Task A_user_cannot_make_their_question_public()
     {
         var question = new TrueFalseQuestion { Id = 7, UserId = OwnerId, Visibility = QuestionVisibility.Private };
         var (service, repo, _) = Build(question);
 
         await Assert.ThrowsAsync<ForbiddenException>(
-            () => service.UpdateTrueFalseQuestionAsync(Edit("Global"), OwnerId, canUpdateAny: false, canShare: false));
+            () => service.UpdateTrueFalseQuestionAsync(Edit("Public"), OwnerId, canUpdateAny: false, canShare: false));
 
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
-    public async Task A_user_can_keep_an_already_shared_question_shared_while_editing_it()
+    public async Task A_user_can_keep_an_already_public_question_public_while_editing_it()
     {
-        var question = new TrueFalseQuestion { Id = 7, UserId = OwnerId, Visibility = QuestionVisibility.Global };
+        var question = new TrueFalseQuestion { Id = 7, UserId = OwnerId, Visibility = QuestionVisibility.Public };
         var (service, _, _) = Build(question);
 
-        await service.UpdateTrueFalseQuestionAsync(Edit("Global"), OwnerId, canUpdateAny: false, canShare: false);
+        await service.UpdateTrueFalseQuestionAsync(Edit("Public"), OwnerId, canUpdateAny: false, canShare: false);
 
-        Assert.Equal(QuestionVisibility.Global, question.Visibility);
+        Assert.Equal(QuestionVisibility.Public, question.Visibility);
     }
 
     [Fact]
-    public async Task A_user_can_take_their_question_out_of_the_shared_bank()
+    public async Task A_user_can_make_their_public_question_private()
     {
-        var question = new TrueFalseQuestion { Id = 7, UserId = OwnerId, Visibility = QuestionVisibility.Global };
+        var question = new TrueFalseQuestion { Id = 7, UserId = OwnerId, Visibility = QuestionVisibility.Public };
         var (service, _, _) = Build(question);
 
         await service.UpdateTrueFalseQuestionAsync(Edit("Private"), OwnerId, canUpdateAny: false, canShare: false);
 
         Assert.Equal(QuestionVisibility.Private, question.Visibility);
+    }
+
+    [Theory]
+    [InlineData("Global")]
+    [InlineData("global")]
+    [InlineData("Public")]
+    public async Task Global_is_still_accepted_as_Public(string visibility)
+    {
+        var (service, _, added) = Build();
+
+        await service.CreateTrueFalseQuestionAsync(New(visibility), OwnerId, canShare: true);
+
+        Assert.Equal(QuestionVisibility.Public, Assert.Single(added).Visibility);
     }
 
     [Fact]

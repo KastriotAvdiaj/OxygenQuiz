@@ -55,7 +55,7 @@ _Avoid_: question pool, public pool
 
 **Public question**:
 A question in the bank that every author and player can read. Only Admins and SuperAdmins make
-one. Stored as `QuestionVisibility.Global` until that value is renamed `Public`.
+one (`QuestionVisibility.Public`, called `Global` until 2026-11-10).
 _Avoid_: shared question ("shared" is kept for sharing with friends, should that come), global
 question in prose
 

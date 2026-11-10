@@ -57,7 +57,7 @@ export interface AddQuestionMenuProps {
 }
 
 /**
- * "+ Add a question": a menu offering the public pool or a new question, then — for a new one —
+ * "+ Add a question": a menu offering existing questions (yours or public ones) or a new question, then — for a new one —
  * the choice of type. Lifted out of `create-quiz.tsx` so the desktop builder's header and the
  * overview's bottom bar open the same flow.
  */
@@ -122,7 +122,7 @@ export const AddQuestionMenu = ({
             }}
           >
             <Plus className="h-3.5 w-3.5" />
-            Browse Public Pool
+            Choose questions
           </LiftedButton>
 
           <div className="flex items-center gap-3">

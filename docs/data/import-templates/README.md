@@ -36,7 +36,7 @@ The richest list. Fill only the columns relevant to each row's `Type`:
 | `Type` | all | `MultipleChoice`, `TrueFalse`, or `TypeTheAnswer` |
 | `Text` | all | the question text |
 | `CategoryId`, `DifficultyId`, `LanguageId` | all | integer IDs that **must already exist** (export those lists to find them) |
-| `Visibility` | all | `Global` or `Private` |
+| `Visibility` | all | `Public` or `Private` (`Global`, the old name for `Public`, is still accepted; blank → `Public`) |
 | `Explanation` | all | optional — the "why" players see after answering, up to 1000 characters. Leave blank for none. See [`../../quiz/question-explanations.md`](../../quiz/question-explanations.md) |
 | `Options` | MultipleChoice | choices, pipe-separated: `Paris\|London\|Berlin` |
 | `CorrectOptions` | MultipleChoice | which option(s) are correct (subset of `Options`) |
@@ -46,7 +46,7 @@ The richest list. Fill only the columns relevant to each row's `Type`:
 | `AcceptableAnswers` | TypeTheAnswer | accepted alternates, pipe-separated |
 | `IsCaseSensitive`, `AllowPartialMatch` | TypeTheAnswer | true/false |
 
-> Note: a question's `Visibility` (`Global` / `Private`) is separate from a quiz's `Status` below — they are different concepts.
+> Note: a question's `Visibility` (`Public` / `Private`) is separate from a quiz's `Status` below — they are different concepts.
 
 ## Quizzes
 
