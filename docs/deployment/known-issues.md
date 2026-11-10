@@ -239,6 +239,10 @@ None open in code. The fix below is live only once the backend is rebuilt on the
   `Mapping/EntityMappers.cs` (`ProjectMultipleChoice`),
   `DTOs/Question/QuestionDTOs.cs` (`AnswerOptionDTO.IsCorrect`),
   `src/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/components/question-select/`
+- **Proposal — screenshot import and pasted questions (accepted 2026-11-10, not built).** Admins
+  make questions from screenshots; every user pastes questions from their own AI into the
+  builder; the picker stops offering other people's private questions (it does today, through
+  query-filter rule 4). [`../proposals/screenshot-import.md`](../proposals/screenshot-import.md).
 - **Proposal — one media pipeline for quizzes and questions.** Phase 1 (pipeline, R2, uploads,
   quotas, sweep) is built — [`../media/media-pipeline.md`](../media/media-pipeline.md) — and phase 2
   (reports, moderation, picked catalogue) — [`../media/moderation.md`](../media/moderation.md) — and
