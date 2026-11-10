@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { ClipboardPaste, Plus } from "lucide-react";
 
 import { LiftedButton } from "@/common/LiftedButton";
 import {
@@ -22,6 +22,7 @@ import {
 } from "../constants";
 import type { NewAnyQuestion } from "../types";
 import SelectQuestionComponent from "./question-select/question-select";
+import { PasteQuestions } from "./paste-questions/paste-questions";
 import { QuestionTypeButton } from "@/pages/Dashboard/Pages/Question/Components/question-type-button";
 import { QuestionType } from "@/types/question-types";
 
@@ -54,6 +55,11 @@ export interface AddQuestionMenuProps {
    * has been added. The overview uses it to open the editor straight onto the blank question.
    */
   onCreated?: (question: NewAnyQuestion) => void;
+  /**
+   * Offer *Paste questions* in the menu too — for the overview, whose bottom bar has room for one
+   * button beside Publish. The desktop builder shows Paste as its own button instead.
+   */
+  withPaste?: boolean;
 }
 
 /**
@@ -66,12 +72,14 @@ export const AddQuestionMenu = ({
   side = "bottom",
   outerClassName,
   onCreated,
+  withPaste = false,
 }: AddQuestionMenuProps) => {
   const { addQuestionToQuiz } = useQuiz();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   // Owned here rather than inside the menu, so each survives the menu closing.
   const [isPoolOpen, setIsPoolOpen] = useState(false);
   const [isTypeChooserOpen, setIsTypeChooserOpen] = useState(false);
+  const [isPasteOpen, setIsPasteOpen] = useState(false);
 
   const create = (make: (id: number) => NewAnyQuestion) => {
     const question = make(-Date.now());
@@ -144,10 +152,30 @@ export const AddQuestionMenu = ({
             <Plus className="h-3.5 w-3.5" />
             Create New
           </LiftedButton>
+
+          {withPaste && (
+            <LiftedButton
+              type="button"
+              size="sm"
+              outerClassName="w-full"
+              liftColor="muted"
+              className="w-full justify-center flex items-center gap-1.5 bg-muted text-foreground border border-foreground/20"
+              onClick={() => {
+                setIsMenuOpen(false);
+                setIsPasteOpen(true);
+              }}
+            >
+              <ClipboardPaste className="h-3.5 w-3.5" />
+              Paste questions
+            </LiftedButton>
+          )}
         </PopoverContent>
       </Popover>
 
       <SelectQuestionComponent open={isPoolOpen} onOpenChange={setIsPoolOpen} />
+      {withPaste && (
+        <PasteQuestions showTrigger={false} open={isPasteOpen} onOpenChange={setIsPasteOpen} />
+      )}
 
       <Dialog open={isTypeChooserOpen} onOpenChange={setIsTypeChooserOpen}>
         <DialogContent className="bg-background p-4 rounded-md pt-8 sm:max-w-md dark:border border-foreground/30">

@@ -52,6 +52,14 @@ interface QuizContextType {
   addedQuestionsCount: number;
   addQuestionToQuiz: (questionObject: QuizQuestion) => void;
   /**
+   * Append several new questions with their settings at once — Paste questions
+   * (components/paste-questions). They are marked pasted until the builder is left, so each
+   * shows *Pasted — check*: nobody has looked at them in the editor yet.
+   */
+  addPastedQuestions: (items: Array<{ question: QuizQuestion; settings: QuestionSettings }>) => void;
+  /** Whether a question came in through Paste questions in this session. */
+  isPasted: (questionId: number) => boolean;
+  /**
    * Removes at once, no questions asked, and records the removal for Undo. UI should call
    * `requestRemoveQuestion` instead, which confirms first.
    */
@@ -428,6 +436,28 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     });
   }, []);
 
+  // Ids added by Paste questions. Session-only on purpose: the mark asks for a first look, and
+  // a restored draft (quiz-draft-persistence.md) has been in front of its author before.
+  const [pastedIds, setPastedIds] = useState<ReadonlySet<number>>(() => new Set());
+
+  const addPastedQuestions = (
+    items: Array<{ question: QuizQuestion; settings: QuestionSettings }>
+  ): void => {
+    if (items.length === 0) return;
+    const start = addedQuestions.length;
+    setAddedQuestions((prev) => [...prev, ...items.map((i) => i.question)]);
+    setQuestionSettings((prev) => {
+      const next = { ...prev };
+      items.forEach(({ question, settings }, i) => {
+        next[question.id] = { ...settings, orderInQuiz: start + i };
+      });
+      return next;
+    });
+    setPastedIds((prev) => new Set([...prev, ...items.map((i) => i.question.id)]));
+    setDisplayQuestion(items[0].question);
+    setActiveTab("questions");
+  };
+
   // Permanent quiz selection functions
   const addQuestionToQuiz = (questionObject: QuizQuestion): void => {
     setAddedQuestions((prevSelected) => {
@@ -767,6 +797,8 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     addedQuestions,
     addedQuestionsCount: addedQuestions.length,
     addQuestionToQuiz,
+    addPastedQuestions,
+    isPasted: (questionId: number) => pastedIds.has(questionId),
     removeQuestionFromQuiz,
     requestRemoveQuestion,
     lastRemoval: peekRemoval(removedStack),

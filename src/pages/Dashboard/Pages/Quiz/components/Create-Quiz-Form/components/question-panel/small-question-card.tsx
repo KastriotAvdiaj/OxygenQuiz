@@ -1,6 +1,7 @@
 import React from "react";
 import { QuestionType } from "@/types/question-types";
 import { isSavedShape } from "../../edit-copy";
+import { useQuiz } from "../../Quiz-questions-context";
 import {
   ExistingSmallQuestionCardProps,
   NewSmallQuestionCardProps,
@@ -18,7 +19,25 @@ import { NewSmallTypeTheAnswerCard } from "./new-small-question-card-components/
 //   | ExistingSmallQuestionCardProps
 //   | NewSmallQuestionCardProps;
 
+/**
+ * The builder list's card, with *Pasted — check* above it for a question that came in through
+ * Paste questions this session (components/paste-questions) — nobody has looked at it yet.
+ */
 export const SmallQuestionCard: React.FC<SmallQuestionCardProps> = (props) => {
+  const { isPasted } = useQuiz();
+  const card = <SmallQuestionCardBody {...props} />;
+  if (!isPasted(props.question.id)) return card;
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="self-start rounded-sm border border-dashed border-foreground/40 px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+        Pasted — check
+      </span>
+      {card}
+    </div>
+  );
+};
+
+const SmallQuestionCardBody: React.FC<SmallQuestionCardProps> = (props) => {
   // By shape, not id sign: a saved question being edited in place keeps its positive id but is
   // draft-shaped, and the "existing" cards read lookups as objects it no longer has (edit-copy.ts).
   const isExisting = isSavedShape(props.question);

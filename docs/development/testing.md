@@ -173,6 +173,8 @@ interesting part, so we fake it with Moq (pattern C below).
 | `src/lib/__tests__/token-store.test.ts` | In-memory access-token get/set/clear. |
 | `src/lib/__tests__/date-format.test.ts` | Date formatting + graceful fallbacks. |
 | `src/lib/__tests__/canonical-link.test.tsx` | The canonical link is the route's own address — no query string, no trailing slash — and updates the Worker's link rather than adding a second. |
+| `src/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/components/paste-questions/__tests__/paste-format.test.ts` | Paste questions' format: its own example parses with `parseAiOutput` into one Private draft of each type; difficulty names are the live ones, never Unspecified. |
+| `src/pages/Quiz/components/quiz-filters/__tests__/default-language.test.ts` | The catalogue starts on English (by name), the visitor's own language choice wins and is remembered, a late-arriving lookup still applies the default, and a page reset isn't remembered. |
 | `src/common/Notifications/__tests__/notifications.test.ts` | Notifications store (pre-existing). |
 | `src/hooks/__tests__/use-disclosure.test.ts` | `useDisclosure` hook (pre-existing). |
 | `src/components/ui/dialog/__tests__/dialog.test.tsx` | Dialog component (pre-existing). |

@@ -51,6 +51,7 @@ import { useNavigationGuard } from "@/hooks/use-navigation-guard";
 import { DraftSavedIndicator, LeaveUnfinishedQuizDialog } from "../draft-notices";
 import { DESKTOP_QUERY, useMediaQuery } from "@/hooks/use-media-query";
 import { AddQuestionMenu } from "./components/add-question-menu";
+import { PasteQuestions } from "./components/paste-questions/paste-questions";
 import { QuizDetailsFields } from "./components/quiz-details-fields";
 import { selectionFrom } from "@/features/media/api/upload-media";
 import { QuizOverview } from "./components/overview/quiz-overview";
@@ -1040,8 +1041,11 @@ const CreateQuizForm = ({
               {/* Main Quiz Creator Area */}
               <Card className="bg-background border-2 border-primary/30 rounded-xl shadow-lg flex flex-col items-center w-full min-w-0 lg:h-full lg:overflow-hidden">
                 <CardHeader className="w-full relative bg-primary/10 p-3 text-center border-b border-primary/30 flex-none">
-                  <section className="flex justify-center rounded-lg">
+                  {/* Add first, Paste beside it as the muted alternative (CLAUDE.md, button
+                      rank). Paste questions: docs/quiz/pasted-questions.md. */}
+                  <section className="flex flex-wrap justify-center gap-3 rounded-lg">
                     <AddQuestionMenu />
+                    <PasteQuestions />
                   </section>
                 </CardHeader>
 

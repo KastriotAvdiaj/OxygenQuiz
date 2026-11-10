@@ -482,6 +482,7 @@ export const QuizOverview = ({
               <AddQuestionMenu
                 variant="secondary"
                 side="top"
+                withPaste
                 onCreated={(question) => openEditor(question.id)}
               />
               {submitButton}
