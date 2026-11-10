@@ -41,6 +41,9 @@ export const QuizSelectionDialog = ({
   const [scope, setScope] = useState<LobbyQuizScope>("public");
   // The facet panel is tucked behind a toggle — dialog space is tight.
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // Read before the facets: they start on English (default-language.ts), as /choose-quiz does.
+  // Undefined until loaded — the default appears once they arrive.
+  const { data: languages } = useQuestionLanguageData({});
 
   const debouncedSearch = useDebounce(searchQuery, 400);
 
@@ -52,12 +55,11 @@ export const QuizSelectionDialog = ({
     filters,
     activeCount: facetCount,
     selectionKey,
-  } = useQuizFilterState();
+  } = useQuizFilterState(undefined, undefined, languages);
   const showUnspecified = useCanSelectUnspecifiedLookup();
 
   const { data: categories = [] } = useQuestionCategoryData({});
   const { data: difficulties = [] } = useQuestionDifficultyData({});
-  const { data: languages = [] } = useQuestionLanguageData({});
 
   // No sort control in the dialog — space is tight, so it always uses the
   // "variety" default (same as /choose-quiz; docs/quiz/quiz-discovery.md).
@@ -116,7 +118,7 @@ export const QuizSelectionDialog = ({
       showUnspecified={showUnspecified}
       categories={categories}
       difficulties={difficulties}
-      languages={languages}
+      languages={languages ?? []}
       selections={selections}
       onToggleFacet={toggle}
       onClearFacets={clearFacets}

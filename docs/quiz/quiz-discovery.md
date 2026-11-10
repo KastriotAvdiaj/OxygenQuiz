@@ -80,11 +80,37 @@ the variety option is just the landing default. The two pickers do **not** share
 entry: `/choose-quiz` asks for the Picked half and the lobby for both (`scope`), so their keys
 differ.
 
+### Starting in English
+
+> **Status: implemented (2026-11-10).**
+
+Both pickers open with **English** ticked in the Language filter
+(`quiz-filters/default-language.ts`). The first page is a new visitor's first impression, and most
+of the catalogue is written for an English-speaking audience; a grid of quizzes in a language they
+can't read is a worse start than a shorter grid. It is a real, visible filter, not a sort: the
+visitor sees why the list is English and unticks it in one click.
+
+- **The visitor's choice wins, and is remembered** in this browser (`localStorage`, key
+  `oxygen.quiz-languages`) — ticking or unticking a language, or *Clear all*, which is remembered
+  as "every language". From then on the default no longer applies, in either picker.
+- **English is matched by name**, like `?category=`, because ids differ between dev and live. A
+  site with no English row starts unfiltered.
+- **No English quizzes in view** (only English narrows the list) → `/choose-quiz` drops the default
+  and says *No English quizzes here yet — here's every language.* Not remembered, so English is
+  tried again next visit.
+- **Derived, not copied into state** (`useQuizFilterState`'s `languages` argument): the lobby
+  dialog's languages can arrive after it mounts, and the default appears when they do.
+
+**Why not by region yet:** Cloudflare can attach the visitor's country (`CF-IPCountry`), which
+would let Kosovo and Albania start on Albanian. Not worth it while the catalogue has few
+non-English quizzes — a regional default that finds nothing would only fall back to English.
+
 ### How `/choose-quiz` loads
 
 The route loader (`loaders/quiz-selection.loader.tsx`) starts page 1, the three filter lookups
 and the page's chunks together, and the page arrives with all of them cached — no loader of its
-own. The query is built in one place, `pages/Quiz/catalogue-query.ts`, by both the page and the
+own. Page 1 waits for the language lookup, because it starts filtered to English (below) and only
+the lookup knows English's id. The query is built in one place, `pages/Quiz/catalogue-query.ts`, by both the page and the
 loader, so they can't drift onto different keys (they did until 2026-10-30; see
 [`../development/loading-states.md`](../development/loading-states.md) §6). Changing page, filter,
 sort or search keeps the current cards on screen, dimmed, until the next ones arrive

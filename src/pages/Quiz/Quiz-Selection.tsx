@@ -35,6 +35,7 @@ import {
   CATEGORY_PARAM,
   QuizFilterPanel,
   findCategoryByName,
+  DEFAULT_LANGUAGE_NAME,
   useQuizFilterState,
   type QuizFacetKey,
 } from "./components/quiz-filters";
@@ -135,9 +136,14 @@ export function QuizSelection() {
     clear: clearFacets,
     filters,
     activeCount: facetCount,
+    usingLanguageDefault,
+    dropLanguageDefault,
   } = useQuizFilterState(
     resetPage,
-    arrival?.id != null ? { categoryIds: [arrival.id] } : undefined
+    arrival?.id != null ? { categoryIds: [arrival.id] } : undefined,
+    // Starts on English until the visitor picks languages (default-language.ts). The loader
+    // has cached the languages, so the first query already carries the filter.
+    languages
   );
 
   // Format: quizzes, Associations boards, or both. Offered only to someone who can see boards —
@@ -194,12 +200,31 @@ export function QuizSelection() {
   const [arrivalWasEmpty, setArrivalWasEmpty] = useState(false);
   const showingArrivalOnly =
     arrival?.id != null &&
-    facetCount === 1 &&
+    selections.categoryIds.length === 1 &&
     selections.categoryIds[0] === arrival.id &&
+    selections.difficultyIds.length === 0 &&
     !debouncedSearch;
   if (!arrivalWasEmpty && showingArrivalOnly && quizData && quizData.totalItems === 0) {
     setArrivalWasEmpty(true);
-    clearFacets();
+    clearFacets({ remember: false });
+  }
+
+  /**
+   * The same for the starting English (default-language.ts): no English quiz in this view, so
+   * show every language and say so — not remembered, so English is tried again next visit.
+   * Only while English is ours, not the visitor's, and nothing else narrows the list.
+   */
+  const [languageDefaultWasEmpty, setLanguageDefaultWasEmpty] = useState(false);
+  if (
+    usingLanguageDefault &&
+    facetCount === 1 &&
+    !debouncedSearch &&
+    !isPlaceholderData &&
+    quizData &&
+    quizData.totalItems === 0
+  ) {
+    setLanguageDefaultWasEmpty(true);
+    dropLanguageDefault();
   }
 
   // The note stays until the visitor filters or searches for something themselves.
@@ -209,7 +234,9 @@ export function QuizSelection() {
     facetCount === 0 &&
     !searchQuery
       ? `No ${arrival.name} quizzes yet — here's everything else.`
-      : null;
+      : languageDefaultWasEmpty && facetCount === 0 && !searchQuery
+        ? `No ${DEFAULT_LANGUAGE_NAME} quizzes here yet — here's every language.`
+        : null;
 
   const quizzes = quizData?.items ?? [];
   const pagination = quizData ? pagedResponseToPagination(quizData) : undefined;
