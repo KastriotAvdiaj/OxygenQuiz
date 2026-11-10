@@ -3,7 +3,7 @@ import { render, screen, fireEvent, act } from "@testing-library/react";
 
 import { QuestionDisplay } from "../question-display";
 import { QuestionType } from "@/types/question-types";
-import type { CurrentQuestion } from "@/types/quiz-session-types";
+import { AnswerStatus, type CurrentQuestion, type InstantFeedbackAnswerResult } from "@/types/quiz-session-types";
 import { useNotifications } from "@/common/Notifications";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
@@ -117,6 +117,44 @@ describe("QuestionDisplay", () => {
     expect(option("Berlin")).toHaveProperty("disabled", true);
     expect(screen.queryByRole("button", { name: "Submit" })).toBeNull();
     expect(useNotifications.getState().notifications).toHaveLength(1);
+  });
+
+  it("shows the correct answer and the explanation after a timeout, without marking the pick wrong", () => {
+    const q = question({ timeRemainingInSeconds: 3 });
+    const tree = (answerResult: InstantFeedbackAnswerResult | null) => (
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <QuestionDisplay
+            question={q}
+            onSubmit={vi.fn()}
+            isSubmitting={false}
+            instantFeedback
+            answerResult={answerResult}
+          />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+    const { rerender } = render(tree(null));
+
+    fireEvent.click(option("Berlin"));
+    act(() => void vi.advanceTimersByTime(3500));
+    // The server's reply to the timeout: it carries the key and the explanation.
+    rerender(
+      tree({
+        status: AnswerStatus.TimedOut,
+        scoreAwarded: 0,
+        isQuizComplete: false,
+        timeSpentInSeconds: 3,
+        correctOptionId: 12,
+        correctOptionIds: [12],
+        explanation: "Paris has been the capital since 987.",
+      }),
+    );
+
+    expect(option("Paris").className).toContain("border-green-500");
+    // Berlin was selected but never submitted: not judged, so not red.
+    expect(option("Berlin").className).not.toContain("border-red-500");
+    expect(screen.getByText("Paris has been the capital since 987.")).toBeTruthy();
   });
 
   it("does not also time out a question that was answered in time", () => {

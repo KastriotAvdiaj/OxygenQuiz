@@ -618,9 +618,15 @@ if (environment.IsProduction())
 // executable. File exports already force Content-Disposition: attachment via the File(...,
 // fileDownloadName) overload; nosniff is the defense-in-depth complement against content-sniffing
 // of user-supplied data in those downloads (see docs/deployment/known-issues.md).
+// X-Robots-Tag: noindex keeps the API out of search. The Domain property in Search Console covers
+// api.oxygenquiz.com too, and Google was indexing JSON endpoints and uploads it found in the SPA's
+// bundle — duplicates, soft 404s, and 5xx during restarts (2026-11-09). A header rather than a
+// robots.txt Disallow: blocked URLs can still be listed, and link-preview crawlers that obey
+// robots.txt would stop fetching quiz images. See docs/deployment/search-visibility.md.
 app.Use(async (context, next) =>
 {
     context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Robots-Tag"] = "noindex";
     await next();
 });
 

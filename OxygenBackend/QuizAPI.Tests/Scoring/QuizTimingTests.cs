@@ -93,4 +93,37 @@ public class QuizTimingTests
         var effective = QuizTiming.EffectiveElapsed(server, clientElapsedMs: 1200);
         Assert.Equal(TimeSpan.FromMilliseconds(1200), effective);
     }
+
+    // ── IsLate: the single-player timeout (ADR 0042) ─────────────────────────────────────────
+
+    private static readonly TimeSpan Limit = TimeSpan.FromSeconds(30);
+
+    [Fact]
+    public void LastSecondClick_ArrivingAfterTheLimit_IsNotLate()
+    {
+        // Clicked at 29.5s by the player's clock; the request reached the server at 30.9s.
+        // Judged on the raw server clock this was a timeout — the bug of 2026-11-08.
+        Assert.False(QuizTiming.IsLate(TimeSpan.FromMilliseconds(30_900), 29_500, Limit, Credit));
+    }
+
+    [Fact]
+    public void ClickAfterTheLimit_IsLate()
+    {
+        Assert.True(QuizTiming.IsLate(TimeSpan.FromMilliseconds(31_200), 30_400, Limit, Credit));
+    }
+
+    [Fact]
+    public void ClaimBeyondTheLatencyCredit_CannotEscapeTheTimeout()
+    {
+        // Arrived at 35s claiming 29s: a 6s "round trip" is past the 2s credit, so the claim is
+        // ignored and the server's 35s stands.
+        Assert.True(QuizTiming.IsLate(TimeSpan.FromSeconds(35), 29_000, Limit, Credit));
+    }
+
+    [Fact]
+    public void NoClientValue_IsJudgedOnTheServerClock()
+    {
+        Assert.True(QuizTiming.IsLate(TimeSpan.FromMilliseconds(30_100), null, Limit, Credit));
+        Assert.False(QuizTiming.IsLate(TimeSpan.FromMilliseconds(29_900), null, Limit, Credit));
+    }
 }

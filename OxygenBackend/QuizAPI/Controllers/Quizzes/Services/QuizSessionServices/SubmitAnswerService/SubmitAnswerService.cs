@@ -122,20 +122,19 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerS
             var timeLimit = session.CurrentQuizQuestion!.TimeLimitInSeconds + _options.GracePeriodSeconds;
             var serverElapsed = DateTime.UtcNow - questionStartTime;
 
-            // A timeout is tripped by either the server-side clock OR the client's own timer flag
-            // (the client may have expired before the request arrived). Dropping model.IsTimedOut —
-            // as this service did originally — let late client submissions score as live answers.
-            // NOTE: the timeout decision deliberately uses the raw SERVER window, never the
-            // client-reported elapsed — a client must not be able to talk its way out of a timeout.
-            var isTimedOut = serverElapsed.TotalSeconds > timeLimit || model.IsTimedOut;
-
             // For SCORING, prefer the client-measured think time (question rendered → answered)
             // when it survives validation, so a player's ping doesn't eat their speed bonus.
             // See Services/Scoring/QuizTiming for the trust model.
-            var effectiveElapsed = QuizTiming.EffectiveElapsed(
-                serverElapsed,
-                model.ClientElapsedMs,
-                TimeSpan.FromSeconds(_options.MaxLatencyCreditSeconds));
+            var credit = TimeSpan.FromSeconds(_options.MaxLatencyCreditSeconds);
+            var effectiveElapsed = QuizTiming.EffectiveElapsed(serverElapsed, model.ClientElapsedMs, credit);
+
+            // A timeout is the client's own flag (its timer ran out — it sends no answer then) OR
+            // an answer that arrived after the limit by the same validated time it is scored with.
+            // Not the raw server clock: with no grace period, a click in the last second arrived
+            // late by its own round trip and scored 0 while keeping the pick (ADR 0042). The
+            // client can still claim back no more than the latency credit.
+            var isTimedOut = model.IsTimedOut
+                || QuizTiming.IsLate(serverElapsed, model.ClientElapsedMs, TimeSpan.FromSeconds(timeLimit), credit);
 
             _logger.LogInformation(
                 "Session {SessionId}: ServerElapsed={ServerElapsedSeconds}s, ClientElapsedMs={ClientElapsedMs}, EffectiveElapsed={EffectiveElapsedSeconds}s, Limit={TimeLimitSeconds}s, TimedOut={TimedOut}",

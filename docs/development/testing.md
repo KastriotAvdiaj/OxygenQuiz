@@ -170,6 +170,7 @@ interesting part, so we fake it with Moq (pattern C below).
 | `src/lib/__tests__/authHelpers.test.ts` | `encode`/`decode`, `hash`, `sanitizeUser`, `requireAdmin`. |
 | `src/lib/__tests__/token-store.test.ts` | In-memory access-token get/set/clear. |
 | `src/lib/__tests__/date-format.test.ts` | Date formatting + graceful fallbacks. |
+| `src/lib/__tests__/canonical-link.test.tsx` | The canonical link is the route's own address — no query string, no trailing slash — and updates the Worker's link rather than adding a second. |
 | `src/common/Notifications/__tests__/notifications.test.ts` | Notifications store (pre-existing). |
 | `src/hooks/__tests__/use-disclosure.test.ts` | `useDisclosure` hook (pre-existing). |
 | `src/components/ui/dialog/__tests__/dialog.test.tsx` | Dialog component (pre-existing). |

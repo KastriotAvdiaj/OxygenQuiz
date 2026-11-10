@@ -3,6 +3,7 @@ import { QueryClient, hashKey, type QueryKey } from "@tanstack/react-query";
 import { quizSelectionLoader } from "../quiz-selection.loader";
 import { catalogueQueryOptions } from "@/pages/Quiz/catalogue-query";
 import { DEFAULT_SORT } from "@/pages/Quiz/components/quiz-sort";
+import { rule } from "@/lib/filtering";
 
 // The chunks are real dynamic imports; the loader's job with them is only to start them.
 vi.mock("@/routes/route-chunks", () => ({
@@ -45,5 +46,31 @@ describe("quizSelectionLoader", () => {
         hashKey(["getQuestionLanguages"]),
       ]),
     );
+  });
+
+  // The page starts on English (default-language.ts), so once the language lookup is in, page 1's
+  // key carries the English id — warming the unfiltered key would miss again.
+  it("warms page 1 filtered to English once the languages are known", async () => {
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(["getQuestionLanguages"], [
+      { id: 1, language: "Albanian", createdAt: "" },
+      { id: 3, language: "English", createdAt: "" },
+    ]);
+    const prefetch = vi.spyOn(queryClient, "prefetchQuery").mockResolvedValue(undefined);
+    await quizSelectionLoader(queryClient)({
+      request: new Request("http://localhost/choose-quiz"),
+      params: {},
+      context: {},
+    });
+    const keys = prefetch.mock.calls.map(([options]) => hashKey(options.queryKey as QueryKey));
+
+    const english = catalogueQueryOptions({
+      page: 1,
+      search: "",
+      sortBy: DEFAULT_SORT,
+      filters: [rule.in("languageId", [3])],
+      catalogue: "picked",
+    });
+    expect(keys).toContain(hashKey(english.queryKey));
   });
 });

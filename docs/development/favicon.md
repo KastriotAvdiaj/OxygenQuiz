@@ -11,6 +11,7 @@ production tab are tellable apart at a glance when both are open.
 |---|---|---|
 | `production` (`npm run build`) | O₂ brand mark, white on a brand-blue rounded badge | `public/favicon.svg` |
 | both | the same badge as a 180×180 PNG, for iOS home screens and search engines | `public/apple-touch-icon.png` |
+| both | the same badge at 16, 32 and 48 px, for anything that asks for `/favicon.ico` unprompted | `public/favicon.ico` |
 | `development` (`npm run dev`, `npm run build:dev`) | generic Vite mark | `public/vite.svg` |
 
 ---
@@ -79,6 +80,8 @@ Then regenerate the PNG from the SVG (any SVG rasteriser; with librsvg):
 
 ```bash
 rsvg-convert -w 180 -h 180 public/favicon.svg -o public/apple-touch-icon.png
+rsvg-convert -w 48 -h 48 public/favicon.svg -o /tmp/favicon-48.png
+python -c "from PIL import Image; Image.open('/tmp/favicon-48.png').save('public/favicon.ico', sizes=[(16,16),(32,32),(48,48)])"
 ```
 
 **A search result's icon changes on Google's schedule, not ours.** It is fetched when Google
@@ -90,6 +93,7 @@ speeds it up. It must be square and at least 48 px, which both files are.
 ## Scope / not included
 
 `rel="icon"` and `rel="apple-touch-icon"` are wired up. If the app later needs to be
-installable, add a web app manifest with 192 and 512 PNGs. A legacy `favicon.ico` was skipped on purpose: SVG
-favicons are supported by all current browsers, and older ones degrade to no icon rather
-than a broken one.
+installable, add a web app manifest with 192 and 512 PNGs. `favicon.ico` is not linked from `index.html` —
+browsers use the SVG — but it exists because crawlers, feed readers and old browsers request
+`/favicon.ico` without being told to. Until 2026-11-08 there was none, and the Worker's SPA
+fallback answered that request with the app's HTML (status 200), which is worse than a 404.

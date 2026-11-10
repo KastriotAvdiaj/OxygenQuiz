@@ -98,7 +98,8 @@ export function MultipleChoiceQuestion({
       return selectedIds.includes(optionId) ? "correct" : "default";
     }
     if (correctIds.includes(optionId)) return "correct";
-    if (selectedIds.includes(optionId)) return "incorrect";
+    // A timed-out pick was never submitted, so it isn't wrong — only the key is shown.
+    if (selectedIds.includes(optionId) && answerResult.status !== "TimedOut") return "incorrect";
     return "default";
   };
 

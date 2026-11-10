@@ -64,11 +64,12 @@ How each type fills it:
 
 1. Validate the session exists, isn't completed, and that the submitted `QuizQuestionId` matches the
    session's current question.
-2. Compute `serverElapsed = now − CurrentQuestionStartTime`. It's a **timeout** if
-   `serverElapsed > TimeLimitInSeconds + GracePeriodSeconds` **or** the client set `IsTimedOut`.
-   The timeout decision always uses the raw server clock.
-3. Compute the **effective** elapsed for scoring (`QuizTiming.EffectiveElapsed`) and stamp
-   `SubmittedTime = QuestionStartTime + effectiveElapsed`, `QuestionStartTime = CurrentQuestionStartTime`.
+2. Compute `serverElapsed = now − CurrentQuestionStartTime` and the **effective** elapsed
+   (`QuizTiming.EffectiveElapsed`, below), and stamp `SubmittedTime = QuestionStartTime +
+   effectiveElapsed`, `QuestionStartTime = CurrentQuestionStartTime`.
+3. It's a **timeout** if the client set `IsTimedOut` **or** the effective elapsed is past
+   `TimeLimitInSeconds + GracePeriodSeconds` (`QuizTiming.IsLate`). Not the raw server clock: that
+   window holds the round trip, so a last-second click arrived late by its own latency (ADR 0042).
 4. Then:
    - **Timed out** → status `TimedOut`, score `0`.
    - **Instant-feedback quiz** (`Quiz.ShowFeedbackImmediately`) → graded **synchronously** and the
@@ -169,8 +170,10 @@ on a bad connection legitimately gets back (≤ ~33 points on a 30s question). C
 server window is rejected outright. This is the standard trade-off for a quiz game: full anti-cheat
 (signed timestamps, attestation) costs far more than the exposure.
 
-**What the client can never do:** talk its way out of a timeout. `IsTimedOut` and the grace-period
-check run on the raw server clock, before and independently of any client-reported value.
+**The timeout uses the same validated time** (ADR 0042, since 2026-11-08). A client can claim back
+at most the latency credit on the timeout too, so an answer clicked in the last second counts and
+one later than limit + 2s still times out. Before, the timeout ran on the raw server clock with no
+grace, and a last-second click scored 0 while keeping the pick.
 
 `SubmittedTime` is persisted as `QuestionStartTime + effectiveElapsed` rather than the raw arrival
 time, so the row is self-describing: instant grading, the Hangfire background grader, the results

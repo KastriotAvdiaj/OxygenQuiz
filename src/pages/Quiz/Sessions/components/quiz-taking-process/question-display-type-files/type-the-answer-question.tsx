@@ -49,6 +49,9 @@ export function TypeTheAnswerQuestion({
   };
 
   const isCorrect = answerResult?.status === "Correct";
+  // Whether the typed text was judged. A timed-out answer wasn't submitted, so its box stays
+  // neutral; the correct answer is still shown below it.
+  const isJudged = instantFeedback && !!answerResult && answerResult.status !== "TimedOut";
   const isAnswered = instantFeedback && !!answerResult;
   const isDisabled = isAnswered || isTimedOut;
 
@@ -70,7 +73,7 @@ export function TypeTheAnswerQuestion({
               h-12 sm:h-16 text-lg sm:text-xl text-center border-3 rounded-xl transition-all duration-300
               ${isDisabled ? "cursor-not-allowed" : ""}
               ${
-                instantFeedback && answerResult
+                isJudged
                   ? isCorrect
                     ? "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
                     : "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300"
@@ -79,7 +82,7 @@ export function TypeTheAnswerQuestion({
             `}
             style={{
               borderColor:
-                instantFeedback && answerResult
+                isJudged
                   ? isCorrect
                     ? "#10b981"
                     : "#ef4444"
@@ -87,7 +90,7 @@ export function TypeTheAnswerQuestion({
                   ? ANSWER_SELECTED_BORDER
                   : undefined,
               backgroundColor:
-                instantFeedback && answerResult
+                isJudged
                   ? isCorrect
                     ? "#10b98115"
                     : "#ef444415"
@@ -99,7 +102,7 @@ export function TypeTheAnswerQuestion({
           />
 
           {/* Feedback icon inside input */}
-          {instantFeedback && answerResult && (
+          {isJudged && (
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
