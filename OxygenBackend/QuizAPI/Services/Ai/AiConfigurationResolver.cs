@@ -68,6 +68,7 @@ namespace QuizAPI.Services.Ai
             // Only a vendor entry can open Source mode (AiVendorOptions.AllowsSourceMode), so a flat
             // Ai:SourceModeEnabled in some environment file is ignored rather than trusted.
             options.SourceModeEnabled = false;
+            options.ImagesEnabled = false;
 
             // ── 1. Transport. "How we fetch a completion", never "from whom".
             var providerName = string.IsNullOrWhiteSpace(options.Provider)
@@ -156,6 +157,8 @@ namespace QuizAPI.Services.Ai
             // AI itself is off, so the flag never claims more than Enabled does.
             if (useFake) options.SourceModeEnabled = true;
             if (!options.Enabled) options.SourceModeEnabled = false;
+            if (useFake) options.ImagesEnabled = true;
+            if (!options.Enabled) options.ImagesEnabled = false;
 
             var message = status switch
             {
@@ -195,6 +198,7 @@ namespace QuizAPI.Services.Ai
                 options.InputCostPerMillionUsd = vendor.InputCostPerMillionUsd;
                 options.OutputCostPerMillionUsd = vendor.OutputCostPerMillionUsd;
                 options.SourceModeEnabled = vendor.AllowsSourceMode;
+                options.ImagesEnabled = vendor.AllowsImages;
                 source = $"Ai:Vendors:{key}";
             }
             else if (options.Vendors.Count > 0)

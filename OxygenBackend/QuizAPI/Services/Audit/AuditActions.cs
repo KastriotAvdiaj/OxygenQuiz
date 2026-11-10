@@ -61,6 +61,9 @@ namespace QuizAPI.Services.Audit
         /// pairing this with the QuizCreated entry that follows it.
         /// </summary>
         public const string AiQuizGenerated = "AiQuizGenerated";
+        /// <summary>An admin had one image's questions read (docs/quiz/screenshot-import.md). The
+        /// questions they keep are logged as QuestionCreated when saved.</summary>
+        public const string ScreenshotRead = "ScreenshotRead";
         public const string QuizUpdated = "QuizUpdated";
         public const string QuizDeleted = "QuizDeleted";
 

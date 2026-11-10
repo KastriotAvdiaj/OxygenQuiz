@@ -77,5 +77,12 @@ namespace QuizAPI.Services.Ai
         /// how the mode opens; no code change, no frontend flag.</para>
         /// </summary>
         public bool AllowsSourceMode { get; set; }
+
+        /// <summary>
+        /// Whether the model reads images — what screenshot import needs (docs/quiz/screenshot-import.md).
+        /// A property of the model, like <see cref="AllowsSourceMode"/>: a text-only model sent an
+        /// image fails the call, so only an entry that says so opens the feature.
+        /// </summary>
+        public bool AllowsImages { get; set; }
     }
 }

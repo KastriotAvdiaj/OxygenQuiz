@@ -25,10 +25,18 @@ namespace QuizAPI.Services.Ai
         /// <c>QuestionsReturned</c> — are left at their defaults on these rows, and nothing
         /// should read them without filtering on <c>Mode</c> first.</para>
         ///
-        /// <para>Palette rows never occupy a quota slot: they are admin-only and go straight to
-        /// <see cref="AiGenerationStatus.Succeeded"/> or are released.</para>
+        /// <para>Palette rows never occupy a quota slot: the slot count reads only Topic and Source
+        /// rows (it read every Succeeded row until 2026-11-10, so a palette took one of an
+        /// Admin's two daily quiz slots).</para>
         /// </summary>
-        PaletteProposal = 2
+        PaletteProposal = 2,
+
+        /// <summary>
+        /// An admin had a screenshot's questions read (docs/quiz/screenshot-import.md). One row per
+        /// image: Succeeded counts against the per-image daily allowance, never against quiz
+        /// generation's slots.
+        /// </summary>
+        ScreenshotImport = 3,
     }
 
     /// <summary>Lifecycle of a quota reservation. See docs/quiz/ai-quiz-generation-flow.md §4.</summary>

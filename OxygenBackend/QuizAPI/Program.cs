@@ -145,6 +145,7 @@ builder.Services.AddScoped<IQuestionCategoryRepository, QuestionCategoryReposito
 builder.Services.AddScoped<IQuestionDifficultyRepository, QuestionDifficultyRepository>();
 builder.Services.AddScoped<IQuestionLanguageRepository, QuestionLanguageRepository>();
 builder.Services.AddScoped<ICategoryPaletteService, CategoryPaletteService>();
+builder.Services.AddScoped<QuizAPI.Services.Ai.ScreenshotImport.IScreenshotImportService, QuizAPI.Services.Ai.ScreenshotImport.ScreenshotImportService>();
 
 // Exception Handling services
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();

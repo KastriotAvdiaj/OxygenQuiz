@@ -54,6 +54,14 @@ namespace QuizAPI.Middleware
         public const string AiPolicy = "ai";
 
         /// <summary>
+        /// Screenshot import's reads: one request per image, an import being up to ten sent three at a
+        /// time — more than <see cref="AiPolicy"/>'s six a minute allows. Staff-only, and the daily
+        /// per-image allowance is the real ceiling; this is the burst guard
+        /// (docs/quiz/screenshot-import.md).
+        /// </summary>
+        public const string ScreenshotPolicy = "screenshot";
+
+        /// <summary>
         /// Media uploads: 30 an hour per account (docs/media/media-pipeline.md, "Upload limits").
         /// The daily media quota counts what a save attaches, not what is uploaded, so on its own
         /// it can't stop a script uploading thousands of files that are never saved — this can.
@@ -93,7 +101,7 @@ namespace QuizAPI.Middleware
                     // for them by name, and an unknown policy name throws) but never limits.
                     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(
                         _ => RateLimitPartition.GetNoLimiter("disabled"));
-                    foreach (var policy in new[] { AuthPolicy, GuestPolicy, AiPolicy, MediaUploadPolicy, MediaSearchPolicy })
+                    foreach (var policy in new[] { AuthPolicy, GuestPolicy, AiPolicy, ScreenshotPolicy, MediaUploadPolicy, MediaSearchPolicy })
                         options.AddPolicy(policy, _ => RateLimitPartition.GetNoLimiter("disabled"));
                     return;
                 }
@@ -163,6 +171,17 @@ namespace QuizAPI.Middleware
                         factory: _ => new SlidingWindowRateLimiterOptions
                         {
                             PermitLimit = 6,
+                            Window = TimeSpan.FromMinutes(1),
+                            SegmentsPerWindow = 6,
+                            QueueLimit = 0,
+                        }));
+
+                options.AddPolicy(ScreenshotPolicy, httpContext =>
+                    RateLimitPartition.GetSlidingWindowLimiter(
+                        partitionKey: UserOrIp(httpContext),
+                        factory: _ => new SlidingWindowRateLimiterOptions
+                        {
+                            PermitLimit = 20,
                             Window = TimeSpan.FromMinutes(1),
                             SegmentsPerWindow = 6,
                             QueueLimit = 0,

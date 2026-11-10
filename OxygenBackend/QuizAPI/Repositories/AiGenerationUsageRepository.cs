@@ -30,7 +30,17 @@ namespace QuizAPI.Repositories
             _context.AiGenerationUsages
                 .Where(u => u.UserId == userId
                             && u.CreatedAt >= sinceUtc
-                            && u.Status != AiGenerationStatus.Released)
+                            && u.Status != AiGenerationStatus.Released
+                            // Quiz generation's slots only: palettes and screenshot reads keep
+                            // their own rows here for the spending caps, not for this count.
+                            && (u.Mode == AiGenerationMode.Topic || u.Mode == AiGenerationMode.Source))
+                .CountAsync(ct);
+
+        public Task<int> CountSucceededSinceAsync(
+            Guid userId, AiGenerationMode mode, DateTime sinceUtc, CancellationToken ct = default) =>
+            _context.AiGenerationUsages
+                .Where(u => u.UserId == userId && u.Mode == mode && u.CreatedAt >= sinceUtc
+                            && u.Status == AiGenerationStatus.Succeeded)
                 .CountAsync(ct);
 
         public async Task AddAsync(AiGenerationUsage usage, CancellationToken ct = default) =>

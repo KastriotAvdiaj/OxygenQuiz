@@ -105,5 +105,7 @@ The app is public, so this ships dark: `Ai:ScreenshotImport:Enabled` is false in
    the picker's two tabs with server-side scoping — now in [`../quiz/question-bank.md`](../quiz/question-bank.md).
 2. **Done 2026-11-10** (on the same branch, to keep one test cycle): Paste questions in the builder,
    for every user — now [`../quiz/pasted-questions.md`](../quiz/pasted-questions.md).
-3. **New branch:** screenshot import, then the mixed image search
+3. **Built 2026-11-10, switched off** (same branch): screenshot import — now
+   [`../quiz/screenshot-import.md`](../quiz/screenshot-import.md); Wikipedia checking of suggested
+   answers (Q30) is not built yet. Then the mixed image search
    ([`mixed-image-sources.md`](./mixed-image-sources.md), on `image-sources-proposal`).

@@ -1571,3 +1571,17 @@ Deferred: a renderer (KaTeX) has to be added to every surface that shows questio
   changes. _Before reopening it to players:_ enough packs, each large enough that two quizzes on it
   differ — and a pack's size shown before building. → `docs/quiz/fact-quizzes.md`,
   `OxygenBackend/QuizAPI/Controllers/Quizzes/FactQuizController.cs`
+
+## Screenshot import (2026-11-10 — built, switched off)
+
+- **Suggested answers aren't checked against a source yet.** Decided (proposal Q30: grounding via
+  ADR 0038/0039) but not built; they're only marked *Answer suggested — check*. Decide from the test
+  set in [`../quiz/screenshot-import.md`](../quiz/screenshot-import.md) whether to build it before
+  switching the feature on.
+- **The test set itself is outstanding** — ~20 real screenshots, thinking `none` vs `low`, accuracy
+  and real cost. `Ai:ScreenshotImport:Enabled` stays false until it passes.
+- **A question whose picture is the question isn't supported** — it needs two images (asked, and
+  shown after answering). Such rows are shown greyed out and skipped.
+- **Audit is per image, not per import** — the server never sees an "import", only images. The
+  questions saved are logged as `QuestionCreated`.
+

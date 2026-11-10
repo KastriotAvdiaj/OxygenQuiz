@@ -56,9 +56,56 @@ namespace QuizAPI.Services.Ai
 
         public string Model => "fake-provider";
 
+        /// <summary>
+        /// Screenshot import's read, with an image (docs/quiz/screenshot-import.md). The canned reply
+        /// covers every review-row state: an answer on the image, one the model must fill in, a
+        /// true/false, a picture-is-the-question row, and a question the sample data already has
+        /// (a possible duplicate). The image itself is ignored.
+        /// </summary>
+        public async Task<AiProviderResult> CompleteJsonAsync(
+            string prompt, int? maxOutputTokens, AiCallOptions call, CancellationToken ct)
+        {
+            if (!prompt.Contains(ScreenshotImport.ScreenshotImportPrompts.ReadMarker, StringComparison.Ordinal))
+                return await CompleteJsonAsync(prompt, maxOutputTokens, ct);
+
+            await Task.Delay(NormalDelay, ct);
+            return Reply("""
+                {"questions":[
+                  {"text":"What is the capital of Kosovo?","seenType":"MultipleChoice",
+                   "shownOptions":["Prishtina","Prizren","Peja","Gjakova"],"shownAnswer":"Prishtina",
+                   "needsItsPicture":false,"imageQuery":null,"category":"Geography","difficulty":"Easy","language":"English"},
+                  {"text":"In which year did Skanderbeg die?","seenType":"TypeTheAnswer",
+                   "shownOptions":[],"shownAnswer":null,
+                   "needsItsPicture":false,"imageQuery":"Skanderbeg","category":"History","difficulty":null,"language":"English"},
+                  {"text":"The Danube flows into the Black Sea.","seenType":"TrueFalse",
+                   "shownOptions":[],"shownAnswer":"true",
+                   "needsItsPicture":false,"imageQuery":null,"category":"Geography","difficulty":null,"language":"English"},
+                  {"text":"Tell me what is missing from this flag","seenType":"TypeTheAnswer",
+                   "shownOptions":[],"shownAnswer":null,
+                   "needsItsPicture":true,"imageQuery":"Flag of Montenegro","category":"Geography","difficulty":null,"language":"English"},
+                  {"text":"What is the capital of France?","seenType":"MultipleChoice",
+                   "shownOptions":["Paris","London","Berlin","Madrid"],"shownAnswer":"Paris",
+                   "needsItsPicture":false,"imageQuery":null,"category":"Geography","difficulty":"Easy","language":"English"}
+                ]}
+                """);
+        }
+
         public async Task<AiProviderResult> CompleteJsonAsync(
             string prompt, int? maxOutputTokens, CancellationToken ct)
         {
+            // Screenshot import's second call: fills in what the image didn't show.
+            if (prompt.Contains(ScreenshotImport.ScreenshotImportPrompts.CompleteMarker, StringComparison.Ordinal))
+            {
+                await Task.Delay(NormalDelay, ct);
+                return Reply("""
+                    {"answers":[
+                      {"index":0,"correctAnswer":"Prishtina","wrongOptions":["Prizren","Peja","Gjakova"],"acceptableAnswers":["Pristina"],"explanation":"Prishtina is Kosovo's capital."},
+                      {"index":1,"correctAnswer":"1468","wrongOptions":["1443","1479","1450"],"acceptableAnswers":[],"explanation":"Skanderbeg died in Lezhë in 1468."},
+                      {"index":4,"correctAnswer":"Paris","wrongOptions":["London","Berlin","Madrid"],"acceptableAnswers":[],"explanation":null}
+                    ]}
+                    """);
+            }
+
             // Palette proposals share this provider but not the question pipeline, so they are
             // answered before the question scenarios are consulted. Same delay, same shape as a
             // real reply — including a deliberately unusable candidate, so the strict validator

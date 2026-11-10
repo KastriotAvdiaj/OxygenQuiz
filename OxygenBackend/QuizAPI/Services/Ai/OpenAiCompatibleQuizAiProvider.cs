@@ -66,8 +66,12 @@ namespace QuizAPI.Services.Ai
 
         public string Model => _options.Model;
 
-        public async Task<AiProviderResult> CompleteJsonAsync(
+        public Task<AiProviderResult> CompleteJsonAsync(
             string prompt, int? maxOutputTokens, CancellationToken ct)
+            => CompleteJsonAsync(prompt, maxOutputTokens, new AiCallOptions(), ct);
+
+        public async Task<AiProviderResult> CompleteJsonAsync(
+            string prompt, int? maxOutputTokens, AiCallOptions call, CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(_options.ApiKey))
                 throw new AiProviderException(AiErrorCodes.FeatureDisabled, "The AI provider is not configured.");
@@ -93,11 +97,15 @@ namespace QuizAPI.Services.Ai
                 // Null unless configured, and null is not serialised — see the property. On a
                 // reasoning model this is what keeps the thinking inside MaxTokens rather than
                 // consuming it and returning an empty completion.
+                // A call's own effort wins (screenshot import reads with none); blank means the
+                // vendor's. Only sent to a vendor that has one, so a non-reasoning model never sees it.
                 ReasoningEffort = string.IsNullOrWhiteSpace(_options.ReasoningEffort)
                     ? null
-                    : _options.ReasoningEffort.Trim(),
+                    : string.IsNullOrWhiteSpace(call.ReasoningEffort)
+                        ? _options.ReasoningEffort.Trim()
+                        : call.ReasoningEffort.Trim(),
                 ResponseFormat = new ResponseFormat("json_object"),
-                Messages = new[] { new ChatMessage("user", prompt) }
+                Messages = new[] { new ChatMessage("user", BuildContent(prompt, call.Image)) }
             };
 
             for (var attempt = 1; ; attempt++)
@@ -297,9 +305,30 @@ namespace QuizAPI.Services.Ai
             [JsonPropertyName("response_format")] public ResponseFormat? ResponseFormat { get; init; }
         }
 
+        // Content is a string for a text prompt and an array of parts when an image comes with it
+        // — the ChatCompletions vision shape: a text part, then an image_url part holding a data
+        // URL. Data, not a link: the image is ours, re-encoded, and never hosted anywhere.
         private sealed record ChatMessage(
             [property: JsonPropertyName("role")] string Role,
-            [property: JsonPropertyName("content")] string Content);
+            [property: JsonPropertyName("content")] object Content);
+
+        // A reply's content is always text; kept apart from ChatMessage, whose content may be parts.
+        private sealed record ReplyMessage(
+            [property: JsonPropertyName("role")] string? Role,
+            [property: JsonPropertyName("content")] string? Content);
+
+        private static object BuildContent(string prompt, AiImage? image) =>
+            image is null
+                ? prompt
+                : new object[]
+                {
+                    new { type = "text", text = prompt },
+                    new
+                    {
+                        type = "image_url",
+                        image_url = new { url = $"data:{image.ContentType};base64,{Convert.ToBase64String(image.Bytes)}" },
+                    },
+                };
 
         private sealed record ResponseFormat(
             [property: JsonPropertyName("type")] string Type);
@@ -312,7 +341,7 @@ namespace QuizAPI.Services.Ai
 
         private sealed class Choice
         {
-            [JsonPropertyName("message")] public ChatMessage? Message { get; init; }
+            [JsonPropertyName("message")] public ReplyMessage? Message { get; init; }
             [JsonPropertyName("finish_reason")] public string? FinishReason { get; init; }
         }
 

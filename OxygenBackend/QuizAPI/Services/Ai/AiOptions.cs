@@ -215,6 +215,15 @@ namespace QuizAPI.Services.Ai
         /// </summary>
         public bool SourceModeEnabled { get; set; }
 
+        /// <summary>
+        /// Resolved, like <see cref="SourceModeEnabled"/>: true only when the selected vendor entry
+        /// sets <c>AllowsImages</c> (or the fake runs). Never read from a flat setting.
+        /// </summary>
+        public bool ImagesEnabled { get; set; }
+
+        /// <summary>Screenshot import (docs/quiz/screenshot-import.md). Off unless switched on.</summary>
+        public ScreenshotImport.ScreenshotImportOptions ScreenshotImport { get; set; } = new();
+
         // ── Input caps ──
 
         public int MaxQuestionsPerGeneration { get; set; } = 15;

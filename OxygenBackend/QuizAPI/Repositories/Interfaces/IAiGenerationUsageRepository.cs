@@ -33,6 +33,10 @@ namespace QuizAPI.Repositories.Interfaces
 
         Task AddAsync(AiGenerationUsage usage, CancellationToken ct = default);
 
+        /// <summary>Succeeded rows of one mode since a time — screenshot import's per-image allowance.</summary>
+        Task<int> CountSucceededSinceAsync(
+            Guid userId, Services.Ai.AiGenerationMode mode, DateTime sinceUtc, CancellationToken ct = default);
+
         /// <summary>Tracked lookup — the caller is about to mutate the row's status.</summary>
         Task<AiGenerationUsage?> GetTrackedByIdAsync(Guid id, CancellationToken ct = default);
 

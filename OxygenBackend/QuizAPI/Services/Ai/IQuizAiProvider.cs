@@ -28,7 +28,27 @@ namespace QuizAPI.Services.Ai
         /// </param>
         Task<AiProviderResult> CompleteJsonAsync(
             string prompt, int? maxOutputTokens, CancellationToken ct);
+
+        /// <summary>
+        /// The same call with an image beside the prompt and/or its own reasoning effort —
+        /// screenshot import (docs/quiz/screenshot-import.md). A provider that can't send images
+        /// refuses rather than dropping the image and answering from the text alone.
+        /// </summary>
+        Task<AiProviderResult> CompleteJsonAsync(
+            string prompt, int? maxOutputTokens, AiCallOptions call, CancellationToken ct)
+            => call.Image is null && call.ReasoningEffort is null
+                ? CompleteJsonAsync(prompt, maxOutputTokens, ct)
+                : throw new AiProviderException(
+                    AiErrorCodes.FeatureDisabled, "This AI provider can't read images.");
     }
+
+    /// <param name="Image">An image sent with the prompt, already re-encoded by us.</param>
+    /// <param name="ReasoningEffort">Overrides the vendor's setting for this call; null keeps it.</param>
+    public sealed record AiCallOptions(AiImage? Image = null, string? ReasoningEffort = null);
+
+    /// <param name="Bytes">The image, as we encoded it (never the upload as received).</param>
+    /// <param name="ContentType">e.g. image/webp.</param>
+    public sealed record AiImage(byte[] Bytes, string ContentType);
 
     /// <param name="Content">The model's raw reply text.</param>
     /// <param name="Usage">Token counts for cost accounting. Zero if the provider omits them.</param>

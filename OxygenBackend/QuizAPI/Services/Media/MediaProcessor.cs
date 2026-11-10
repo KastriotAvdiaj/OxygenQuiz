@@ -45,7 +45,9 @@ namespace QuizAPI.Services.Media
             || (b.Length >= 8 && b[..8].SequenceEqual(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A })) // PNG
             || (b.Length >= 12 && b[..4].SequenceEqual("RIFF"u8) && b[8..12].SequenceEqual("WEBP"u8)); // WebP
 
-        public static ProcessedImage ProcessImage(byte[] bytes, MediaOptions o)
+        /// <param name="maxEdge">The long edge to shrink to, or null for <c>ImageMaxEdge</c>. Screenshot
+        /// import passes the edge the model reads, and keeps nothing it returns.</param>
+        public static ProcessedImage ProcessImage(byte[] bytes, MediaOptions o, int? maxEdge = null)
         {
             if (bytes.Length > o.ImageMaxSourceBytes)
                 throw new AppValidationException($"Images can be up to {o.ImageMaxSourceBytes / (1024 * 1024)} MB.");
@@ -90,11 +92,12 @@ namespace QuizAPI.Services.Media
                 image.Mutate(x => x.AutoOrient());
                 StripMetadata(image);
 
-                if (Math.Max(image.Width, image.Height) > o.ImageMaxEdge)
+                var edge = maxEdge ?? o.ImageMaxEdge;
+                if (Math.Max(image.Width, image.Height) > edge)
                     image.Mutate(x => x.Resize(new ResizeOptions
                     {
                         Mode = ResizeMode.Max,
-                        Size = new Size(o.ImageMaxEdge, o.ImageMaxEdge),
+                        Size = new Size(edge, edge),
                     }));
 
                 var encoder = new WebpEncoder { Quality = o.WebpQuality, FileFormat = WebpFileFormatType.Lossy };

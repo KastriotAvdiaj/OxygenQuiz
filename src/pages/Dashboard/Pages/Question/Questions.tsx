@@ -27,6 +27,10 @@ import { QuestionFilters } from "./Components/Re-Usable-Components/question-filt
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QuestionTabContent } from "./Components/QuestionsTabContent";
 import { QuestionType } from "@/types/question-types";
+import {
+  ScreenshotImportCard,
+  useScreenshotImportAvailable,
+} from "./Components/Screenshot-Import/screenshot-import-card";
 // import { Authorization, ROLES } from "@/lib/authorization";
 // import { DataTransferControls } from "@/components/data-transfer/DataTransferControls";
 
@@ -55,6 +59,7 @@ export const Questions = () => {
     close: closeAddQuestionDialog,
   } = useDisclosure();
 
+  const screenshotImportAvailable = useScreenshotImportAvailable();
   const categoriesQuery = useQuestionCategoryData({});
   const difficultiesQuery = useQuestionDifficultyData({});
   const languagesQuery = useQuestionLanguageData({});
@@ -151,7 +156,9 @@ export const Questions = () => {
                   Choose the type of question
                 </DialogTitle>
               </DialogHeader>
-              <div className="grid grid-cols-3 gap-3 mt-4">
+              {/* A fourth card, From a screenshot, once that feature is on: then two by two,
+                  since four don't fit the dialog's width in a row (docs/quiz/screenshot-import.md). */}
+              <div className={screenshotImportAvailable ? "grid grid-cols-2 gap-3 mt-4" : "grid grid-cols-3 gap-3 mt-4"}>
                 <CreateQuestionForm
                   languages={languagesQuery.data || []}
                   categories={categoriesQuery.data || []}
@@ -169,6 +176,11 @@ export const Questions = () => {
                   categories={categoriesQuery.data || []}
                   difficulties={difficultiesQuery.data || []}
                   onSuccess={closeAddQuestionDialog}
+                />
+                <ScreenshotImportCard
+                  languages={languagesQuery.data || []}
+                  categories={categoriesQuery.data || []}
+                  difficulties={difficultiesQuery.data || []}
                 />
               </div>
             </DialogContent>
