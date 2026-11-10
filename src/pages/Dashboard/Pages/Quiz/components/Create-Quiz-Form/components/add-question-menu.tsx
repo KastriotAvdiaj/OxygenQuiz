@@ -22,6 +22,8 @@ import {
 } from "../constants";
 import type { NewAnyQuestion } from "../types";
 import SelectQuestionComponent from "./question-select/question-select";
+import { QuestionTypeButton } from "@/pages/Dashboard/Pages/Question/Components/question-type-button";
+import { QuestionType } from "@/types/question-types";
 
 const newQuestionOfType = {
   multipleChoice: (id: number): NewAnyQuestion => ({
@@ -148,40 +150,31 @@ export const AddQuestionMenu = ({
       <SelectQuestionComponent open={isPoolOpen} onOpenChange={setIsPoolOpen} />
 
       <Dialog open={isTypeChooserOpen} onOpenChange={setIsTypeChooserOpen}>
-        <DialogContent className="bg-background p-4 rounded-md pt-8 dark:border border-foreground/30">
+        <DialogContent className="bg-background p-4 rounded-md pt-8 sm:max-w-md dark:border border-foreground/30">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-center">
               Choose the type of question
             </DialogTitle>
           </DialogHeader>
-          {/* A grid, not a flex row: flex shrinks the labels' content boxes while the padding
-              stays, so three fixed-padding buttons wrapped mid-phrase at three widths. Equal
-              columns, stacked below `sm`. See docs/RESPONSIVE.md, "Rows of buttons". */}
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <LiftedButton
-              type="button"
-              outerClassName="w-full"
-              className="h-full w-full text-center text-sm leading-tight"
+          {/* The question bank's type cards (QuestionTypeButton), so the type dialog looks the
+              same in the builder and on the Questions page. sm:max-w-md is the width that fits
+              "Type The Answer" on one line inside its card. */}
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            <QuestionTypeButton
+              questionType={QuestionType.MultipleChoice}
+              label="Multiple Choice"
               onClick={() => create(newQuestionOfType.multipleChoice)}
-            >
-              Multiple Choice
-            </LiftedButton>
-            <LiftedButton
-              type="button"
-              outerClassName="w-full"
-              className="h-full w-full text-center text-sm leading-tight"
+            />
+            <QuestionTypeButton
+              questionType={QuestionType.TrueFalse}
+              label="True / False"
               onClick={() => create(newQuestionOfType.trueFalse)}
-            >
-              True/False
-            </LiftedButton>
-            <LiftedButton
-              type="button"
-              outerClassName="w-full"
-              className="h-full w-full text-center text-sm leading-tight"
+            />
+            <QuestionTypeButton
+              questionType={QuestionType.TypeTheAnswer}
+              label="Type The Answer"
               onClick={() => create(newQuestionOfType.typeTheAnswer)}
-            >
-              Type The Answer
-            </LiftedButton>
+            />
           </div>
         </DialogContent>
       </Dialog>
