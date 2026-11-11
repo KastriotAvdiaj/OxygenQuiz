@@ -1580,8 +1580,9 @@ Deferred: a renderer (KaTeX) has to be added to every surface that shows questio
   switching the feature on.
 - **The test set itself is outstanding** — ~20 real screenshots, thinking `none` vs `low`, accuracy
   and real cost. `Ai:ScreenshotImport:Enabled` stays false until it passes.
-- **A question whose picture is the question isn't supported** — it needs two images (asked, and
-  shown after answering). Such rows are shown greyed out and skipped.
+- **A question needing a second picture after answering isn't supported** ("what is missing from
+  this flag?"): a question has one picture. A picture-is-the-question row takes one the reviewer
+  adds (2026-11-11); this kind still has to be skipped or removed.
 - **Audit is per image, not per import** — the server never sees an "import", only images. The
   questions saved are logged as `QuestionCreated`.
 

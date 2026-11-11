@@ -63,6 +63,7 @@ const meta = {
     difficulties,
     languages,
     onChange: fn(),
+    onRemove: fn(),
   },
 } satisfies Meta<typeof ScreenshotReviewRow>;
 

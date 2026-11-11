@@ -302,6 +302,10 @@ export const ScreenshotImportDialog = ({
   const updateRow = (key: string, patch: Partial<ReviewRow>) =>
     setRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)));
 
+  // Out of the list for good — an image whose question isn't wanted at all (a picture question
+  // with no picture to hand, a wrong read). Its image stays above.
+  const removeRow = (key: string) => setRows((prev) => prev.filter((r) => r.key !== key));
+
   const toSave = rows.filter(isSavable);
 
   const save = async () => {
@@ -362,7 +366,9 @@ export const ScreenshotImportDialog = ({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className="bg-background p-5 sm:max-w-3xl max-h-[90vh] overflow-y-auto dark:border border-foreground/30"
+        // One fixed height, whatever the number of questions: the controls stay put and only the
+        // question list scrolls (its own box, below). A flex column, so the list takes the rest.
+        className="flex h-[min(88vh,56rem)] flex-col gap-4 overflow-hidden bg-background p-5 sm:max-w-3xl dark:border border-foreground/30"
         onInteractOutside={(e) => {
           if (hasWork) e.preventDefault();
         }}
@@ -553,52 +559,53 @@ export const ScreenshotImportDialog = ({
           </AnimatePresence>
         </div>
 
-        {/* Holds the list's place before anything is read: says what this space is for, and keeps
-            Save from sitting right under the Read row. */}
-        <AnimatePresence initial={false}>
-          {!hasRows && readingImages.length === 0 && (
-            <motion.div
-              key="empty-list"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={transition}
-              className="overflow-hidden"
-            >
-              <div className="flex min-h-24 flex-col items-center justify-center gap-1 rounded-md border border-dashed border-foreground/30 px-4 py-6 text-center text-sm text-muted-foreground">
+        {/* The only part that scrolls. px-1/-mx-1: room for the rows' borders and focus rings. */}
+        <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
+          {/* Holds the list's place before anything is read: says what this space is for. */}
+          <AnimatePresence initial={false} mode="popLayout">
+            {!hasRows && readingImages.length === 0 && (
+              <motion.div
+                key="empty-list"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={transition}
+                className="flex h-full min-h-24 flex-col items-center justify-center gap-1 rounded-md border border-dashed border-foreground/30 px-4 py-6 text-center text-sm text-muted-foreground"
+              >
                 <ScanText className="h-5 w-5" aria-hidden="true" />
                 {images.length === 0
                   ? "The questions on your screenshots will appear here once they're read."
                   : "Press Read and the questions on your images will appear here, ready to check."}
-              </div>
-            </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {(hasRows || readingImages.length > 0) && (
+            <ul className="space-y-2 pb-1" aria-live="polite">
+              <AnimatePresence initial={false}>
+                {sortedRows.map((row) => (
+                  <motion.li key={row.key} layout={!reduceMotion} {...enter} transition={transition}>
+                    <ScreenshotReviewRow
+                      row={row}
+                      categories={categories}
+                      difficulties={difficulties}
+                      languages={languages}
+                      onChange={(patch) => updateRow(row.key, patch)}
+                      onRemove={() => removeRow(row.key)}
+                    />
+                  </motion.li>
+                ))}
+                {readingImages.map((img) => (
+                  <motion.li key={`reading-${img.id}`} layout={!reduceMotion} {...enter} transition={transition}>
+                    <ReadingPlaceholder number={img.number} />
+                  </motion.li>
+                ))}
+              </AnimatePresence>
+            </ul>
           )}
-        </AnimatePresence>
+        </div>
 
-        {(hasRows || readingImages.length > 0) && (
-          <ul className="space-y-2" aria-live="polite">
-            <AnimatePresence initial={false}>
-              {sortedRows.map((row) => (
-                <motion.li key={row.key} layout={!reduceMotion} {...enter} transition={transition}>
-                  <ScreenshotReviewRow
-                    row={row}
-                    categories={categories}
-                    difficulties={difficulties}
-                    languages={languages}
-                    onChange={(patch) => updateRow(row.key, patch)}
-                  />
-                </motion.li>
-              ))}
-              {readingImages.map((img) => (
-                <motion.li key={`reading-${img.id}`} layout={!reduceMotion} {...enter} transition={transition}>
-                  <ReadingPlaceholder number={img.number} />
-                </motion.li>
-              ))}
-            </AnimatePresence>
-          </ul>
-        )}
-
-        <div className="mt-1 flex flex-wrap justify-end gap-3">
+        <div className="flex flex-wrap justify-end gap-3">
           <LiftedButton
             type="button"
             className={hasRows ? primary : muted}

@@ -37,11 +37,16 @@ describe("screenshot import review rows", () => {
     expect(toReviewRow(q({ duplicateOfId: 412 }), 1, 0).keep).toBe(false);
   });
 
-  it("can never keep a picture-is-the-question row", () => {
+  it("keeps a picture-is-the-question row only once a picture is added", () => {
     const row = toReviewRow(q({ needsItsPicture: true }), 1, 0);
     expect(row.keep).toBe(false);
     expect(isSavable({ ...row, keep: true })).toBe(false);
-    expect(rowProblems(row)).toEqual(["Needs its picture — not supported yet"]);
+    expect(rowProblems(row)).toEqual(["Add its picture"]);
+
+    const media = { assetId: "a1", url: "https://x/y.webp", kind: "Image" } as unknown as NonNullable<typeof row.media>;
+    const withPicture = { ...row, keep: true, media };
+    expect(isSavable(withPicture)).toBe(true);
+    expect(toCreateRequest(withPicture).data.mediaAssetId).toBe("a1");
   });
 
   it("asks for the category and language the model couldn't match", () => {

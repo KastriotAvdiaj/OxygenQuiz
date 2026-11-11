@@ -58,9 +58,16 @@ the reply always carries the answer, three wrong options and alternates. The typ
 with no wrong options back, a row stays multiple choice and asks *Add wrong options*. **Any row can
 be made True / False** — the reviewer then rewrites it as a statement (*Your statement — check the
 answer*); the model never rewrites, it copies.
-Rows start **Public**, with a switch. A question whose picture *is* the question ("what is missing
-from this flag?") shows greyed out as *Needs its picture — not supported yet*: it would need two
-images, the one asked about and the one shown after answering.
+Rows start **Public**, with a switch. **Any row can take a picture** — the builder's media picker
+(upload, or search free images); uploading stores it, saving the question attaches it, an unsaved
+upload is swept. A question whose picture *is* the question ("what language is this?") starts
+unticked as *Needs its picture — add one below*: the screenshot's picture is never kept, so the
+reviewer adds one, and the row ticks itself when they do. One that would also need a picture shown
+*after* answering ("what is missing from this flag?") still can't be built — one picture per
+question. **Any row can be removed** (✕ in its corner); its image stays.
+
+The dialog is one fixed height: the images and controls stay put, the question list scrolls in its
+own box.
 
 ## Allowance, cost, record
 

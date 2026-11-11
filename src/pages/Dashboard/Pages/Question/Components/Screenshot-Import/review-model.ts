@@ -1,3 +1,4 @@
+import type { MediaSelection } from "@/features/media/api/upload-media";
 import { QuestionType } from "@/types/question-types";
 import { UnspecifiedIds } from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/constants";
 import type { ScreenshotQuestion } from "./screenshot-import-api";
@@ -69,6 +70,11 @@ export interface ReviewRow {
    * line and isn't saved. Unticking does the same, but says nothing about why.
    */
   useExisting: boolean;
+  /**
+   * A picture the reviewer attached (uploaded or found through the media dialog). Uploading
+   * stores it; saving the question attaches it — an unsaved upload is swept (ADR 0033).
+   */
+  media: MediaSelection | null;
   visibility: ReviewVisibility;
 }
 
@@ -98,6 +104,7 @@ export const toReviewRow = (q: ScreenshotQuestion, imageNumber: number, index: n
   duplicateOfId: q.duplicateOfId,
   alsoOnImage: null,
   useExisting: false,
+  media: null,
   visibility: "Public",
   };
 };
@@ -134,7 +141,8 @@ export const needsStatement = (row: ReviewRow) =>
  * rules (classification required, an answer to grade against); the API is still the gate.
  */
 export const rowProblems = (row: ReviewRow): string[] => {
-  if (row.needsItsPicture) return ["Needs its picture — not supported yet"];
+  // The picture on the screenshot isn't kept (images are never stored), so the reviewer adds one.
+  if (row.needsItsPicture && !row.media) return ["Add its picture"];
   const problems: string[] = [];
   if (!row.text.trim()) problems.push("Write the question");
   if (needsStatement(row)) problems.push("Rewrite it as a statement to judge true or false");
@@ -158,7 +166,7 @@ export const toCreateRequest = (row: ReviewRow): CreateRequest => {
     difficultyId: row.difficultyId ?? UnspecifiedIds.difficultyId,
     visibility: row.visibility,
     explanation: row.explanation.trim(),
-    mediaAssetId: null,
+    mediaAssetId: row.media?.assetId ?? null,
   };
   switch (row.type) {
     case QuestionType.TrueFalse:

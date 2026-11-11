@@ -8,7 +8,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SegmentedControl } from "@/components/ui/segmented-control";
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
+import { MediaPicker } from "@/features/media/components/media-picker";
 import { VisibilitySelect } from "../../Entities/select-visibility";
 import { cn } from "@/utils/cn";
 import {
@@ -35,6 +36,8 @@ export interface ScreenshotReviewRowProps {
   difficulties: QuestionDifficulty[];
   languages: QuestionLanguage[];
   onChange: (patch: Partial<ReviewRow>) => void;
+  /** Takes the row out of the list (its image stays). */
+  onRemove: () => void;
 }
 
 /**
@@ -50,9 +53,11 @@ export const ScreenshotReviewRow = ({
   difficulties,
   languages,
   onChange,
+  onRemove,
 }: ScreenshotReviewRowProps) => {
   const problems = row.keep ? rowProblems(row) : [];
-  const disabled = row.needsItsPicture;
+  // A picture-is-the-question row waits for its picture: the screenshot's own isn't kept.
+  const disabled = row.needsItsPicture && !row.media;
   const suggested =
     !row.answerFromImage || (row.type === QuestionType.MultipleChoice && !row.optionsFromImage);
   const id = `shot-${row.key}`;
@@ -76,12 +81,7 @@ export const ScreenshotReviewRow = ({
     );
 
   return (
-    <div
-      className={cn(
-        "flex gap-3 rounded-md border bg-card p-3 dark:border-foreground/30",
-        disabled && "opacity-60",
-      )}
-    >
+    <div className="flex gap-3 rounded-md border bg-card p-3 dark:border-foreground/30">
       <Checkbox
         className="mt-1"
         checked={row.keep}
@@ -93,7 +93,7 @@ export const ScreenshotReviewRow = ({
         <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
           <span className="text-muted-foreground">Image {row.imageNumber}</span>
           {disabled ? (
-            <Badge tone="muted">Needs its picture — not supported yet</Badge>
+            <Badge tone="warning">Needs its picture — add one below</Badge>
           ) : row.type === QuestionType.TrueFalse && row.seenType !== QuestionType.TrueFalse ? (
             <Badge tone="warning">Your statement — check the answer</Badge>
           ) : suggested ? (
@@ -111,7 +111,15 @@ export const ScreenshotReviewRow = ({
             />
           )}
           {row.alsoOnImage !== null && <Badge tone="danger">Also on image {row.alsoOnImage}</Badge>}
-          {row.imageQuery && !disabled && <Badge tone="muted">Picture idea: {row.imageQuery}</Badge>}
+          {row.imageQuery && <Badge tone="muted">Picture idea: {row.imageQuery}</Badge>}
+          <button
+            type="button"
+            onClick={onRemove}
+            aria-label="Remove this question from the list"
+            className="ml-auto rounded p-0.5 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-600"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
         </div>
 
         <Field label={needsStatement(row) ? "Statement — rewrite the question as one" : "Question"} htmlFor={`${id}-text`}>
@@ -129,6 +137,18 @@ export const ScreenshotReviewRow = ({
             }}
           />
         </Field>
+
+        {/* Any row can take a picture; a picture-is-the-question row needs one before it can be
+            kept. Uploading only stores it — the save attaches it (MediaPicker). */}
+        <MediaPicker
+          value={row.media}
+          onChange={(media) =>
+            onChange(
+              row.needsItsPicture && media && !row.media ? { media, keep: true } : { media },
+            )
+          }
+          className="mx-0 max-w-full sm:max-w-sm"
+        />
 
         {!disabled && (
           <>
