@@ -32,7 +32,7 @@ generates questions from text on an image and never translates.
 - **While reading:** a spinner over each image's thumbnail, a placeholder row in the list
   (*Reading image 2…*), and *Reading 2 of 4…* on the button. Rows slide in as each image finishes
   (reduced motion: they fade).
-- **One blue button per stage:** *Read* until the first questions arrive, then *Save*; the other is
+- **One blue button per stage:** *Read* (shown once an image is added) until the first questions arrive, then *Save*; the other is
   muted. *Make them* comes before *Read*, since the type is chosen before reading.
 - **The images** sit in one sideways-scrolling row under *Paste* and *Add more*, and fold into
   *4 images read · Show* once all are read — they stop pushing the questions down.

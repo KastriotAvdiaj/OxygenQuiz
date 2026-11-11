@@ -505,25 +505,38 @@ export const ScreenshotImportDialog = ({
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm text-muted-foreground">Make them</span>
           <SegmentedControl value={makeType} onValueChange={setMakeType} options={MAKE_OPTIONS} aria-label="Make them" />
-          <LiftedButton
-            type="button"
-            outerClassName="ml-auto"
-            className={readIsPrimary ? primary : muted}
-            liftColor={readIsPrimary ? undefined : "muted-foreground"}
-            disabled={waiting === 0 || reading}
-            onClick={readAll}
-          >
-            {reading ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            ) : (
-              <ScanText className="h-4 w-4" aria-hidden="true" />
+          {/* Not there until there's an image: a button with nothing to act on is only noise. */}
+          <AnimatePresence initial={false}>
+            {images.length > 0 && (
+              <motion.div
+                key="read"
+                className="ml-auto"
+                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                transition={transition}
+              >
+                <LiftedButton
+                  type="button"
+                  className={readIsPrimary ? primary : muted}
+                  liftColor={readIsPrimary ? undefined : "muted-foreground"}
+                  disabled={waiting === 0 || reading}
+                  onClick={readAll}
+                >
+                  {reading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <ScanText className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  {reading && progress
+                    ? `Reading ${Math.min(progress.done + 1, progress.total)} of ${progress.total}…`
+                    : waiting > 0
+                      ? `Read ${waiting} image${waiting === 1 ? "" : "s"}`
+                      : "Read images"}
+                </LiftedButton>
+              </motion.div>
             )}
-            {reading && progress
-              ? `Reading ${Math.min(progress.done + 1, progress.total)} of ${progress.total}…`
-              : waiting > 0
-                ? `Read ${waiting} image${waiting === 1 ? "" : "s"}`
-                : "Read images"}
-          </LiftedButton>
+          </AnimatePresence>
         </div>
 
         {(hasRows || readingImages.length > 0) && (
