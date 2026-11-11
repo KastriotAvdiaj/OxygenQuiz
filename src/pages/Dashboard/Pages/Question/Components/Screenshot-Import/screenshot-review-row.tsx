@@ -8,6 +8,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { Check } from "lucide-react";
+import { VisibilitySelect } from "../../Entities/select-visibility";
 import { cn } from "@/utils/cn";
 import {
   QuestionType,
@@ -55,6 +57,24 @@ export const ScreenshotReviewRow = ({
     !row.answerFromImage || (row.type === QuestionType.MultipleChoice && !row.optionsFromImage);
   const id = `shot-${row.key}`;
 
+  // The reviewer took the bank's question: one quiet line, with the way back.
+  if (row.useExisting && row.duplicateOfId !== null)
+    return (
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-dashed bg-card px-3 py-2 text-sm dark:border-foreground/30">
+        <Check className="h-4 w-4 shrink-0 text-green-600" aria-hidden="true" />
+        <span className="min-w-0 flex-1 truncate text-muted-foreground">
+          Image {row.imageNumber}: using #{row.duplicateOfId} from the bank — “{row.text}” isn't saved
+        </span>
+        <button
+          type="button"
+          className="text-xs font-medium text-primary hover:underline"
+          onClick={() => onChange({ useExisting: false })}
+        >
+          Undo
+        </button>
+      </div>
+    );
+
   return (
     <div
       className={cn(
@@ -83,7 +103,13 @@ export const ScreenshotReviewRow = ({
           ) : (
             <Badge tone="success">Answer from the image</Badge>
           )}
-          {row.duplicateOfId !== null && <DuplicatePreview questionId={row.duplicateOfId} />}
+          {row.duplicateOfId !== null && (
+            <DuplicatePreview
+              questionId={row.duplicateOfId}
+              onUseExisting={() => onChange({ useExisting: true, keep: false })}
+              onSaveMine={() => onChange({ useExisting: false, keep: true })}
+            />
+          )}
           {row.alsoOnImage !== null && <Badge tone="danger">Also on image {row.alsoOnImage}</Badge>}
           {row.imageQuery && !disabled && <Badge tone="muted">Picture idea: {row.imageQuery}</Badge>}
         </div>
@@ -106,13 +132,20 @@ export const ScreenshotReviewRow = ({
 
         {!disabled && (
           <>
+            {/* A select, not tabs: one row already carries a lot, and the type is set once. */}
             <Field label="Type">
-              <SegmentedControl
-                value={row.type}
-                onValueChange={(type) => onChange({ type })}
-                options={ALL_TYPES.map((t) => ({ value: t, label: TYPE_LABEL[t] }))}
-                aria-label="Question type"
-              />
+              <Select value={row.type} onValueChange={(type) => onChange({ type: type as QuestionType })}>
+                <SelectTrigger variant="minimal" aria-label="Question type" className="sm:max-w-56">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent variant="minimal">
+                  {ALL_TYPES.map((t) => (
+                    <SelectItem variant="minimal" key={t} value={t}>
+                      {TYPE_LABEL[t]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
 
             {row.type === QuestionType.TrueFalse ? (
@@ -189,18 +222,10 @@ export const ScreenshotReviewRow = ({
                 />
               </Field>
               <Field label="Visibility">
-                <Select
+                <VisibilitySelect
                   value={row.visibility}
-                  onValueChange={(value) => onChange({ visibility: value as ReviewRow["visibility"] })}
-                >
-                  <SelectTrigger variant="minimal" aria-label="Visibility">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Public">Public</SelectItem>
-                    <SelectItem value="Private">Private</SelectItem>
-                  </SelectContent>
-                </Select>
+                  onChange={(value) => onChange({ visibility: value as ReviewRow["visibility"] })}
+                />
               </Field>
             </div>
           </>
@@ -208,8 +233,23 @@ export const ScreenshotReviewRow = ({
 
         {row.duplicateOfId !== null && !row.keep && (
           <p className="text-xs text-muted-foreground">
-            Unticked because it looks like a question already in the bank — open the badge to compare.
-            Tick it to save this one anyway.
+            Unticked: it looks like #{row.duplicateOfId}, already in the bank — open the badge to compare.{" "}
+            <button
+              type="button"
+              className="font-medium text-primary hover:underline"
+              onClick={() => onChange({ useExisting: true })}
+            >
+              Use #{row.duplicateOfId}
+            </button>{" "}
+            or{" "}
+            <button
+              type="button"
+              className="font-medium text-primary hover:underline"
+              onClick={() => onChange({ keep: true })}
+            >
+              save mine too
+            </button>
+            .
           </p>
         )}
         {problems.length > 0 && <p className="text-xs text-destructive">{problems.join(" · ")}</p>}

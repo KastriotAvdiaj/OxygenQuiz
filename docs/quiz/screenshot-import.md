@@ -22,7 +22,7 @@ generates questions from text on an image and never translates.
 | Call 2: complete | text only, the vendor's reasoning — only for questions missing an answer, wrong options or alternates, or written in capitals. If it fails, what was read is still offered; rows with no answer are dropped |
 | Letter case | the read keeps capitals however it's asked, so call 2 returns the question in sentence case, proper nouns kept. Code accepts that only if it differs **in letter case alone** — never reworded. No usable reply: the question goes to plain sentence case (a proper noun past the first word loses its capital — the reviewer fixes it), while answers and options stay as shown, so *NATO* never becomes *Nato* |
 | Decided by code | `ScreenshotImportService.Build` ([ADR 0003](../adr/0003-the-model-proposes-the-code-decides.md)): category, difficulty and language matched by name to existing rows only, never Unspecified (no match → the reviewer chooses); an `imageQuery` that looks like a link is dropped; the answer is never also a wrong option |
-| Duplicates | same wording as a question in the bank → *Possible duplicate of #id*, unticked, never blocked. The badge opens the existing question (text, options or answer, category) beside a line saying why the row is unticked — the reviewer compares and ticks it to save theirs anyway |
+| Duplicates | same wording as a question in the bank → *Possible duplicate of #id*, unticked, never blocked. The badge opens the existing question (text, options or answer, category) with **Use #id** — the row folds to one line, isn't saved, and has an *Undo* — and **Save mine too**, which ticks it. The same two choices sit in the line under the row |
 
 ## The review list
 
@@ -35,8 +35,11 @@ generates questions from text on an image and never translates.
   (reduced motion: they fade).
 - **One blue button per stage:** *Read* (shown once an image is added) until the first questions arrive, then *Save*; the other is
   muted. *Make them* comes before *Read*, since the type is chosen before reading.
-- **The images** sit in one sideways-scrolling row under *Paste* and *Add more*, and fold into
-  *4 images read · Show* once all are read — they stop pushing the questions down.
+- **The images** sit in one sideways-scrolling row under *Paste* and *Add more* — the row scrolls,
+  never the dialog — with ‹ › buttons at its ends (a phone has no scrollbar) that move one image
+  at a time. Each thumbnail's border says its state: green read, blue reading, red failed, amber
+  nothing found, plain waiting. They fold into *4 images read · Show* once all are read.
+- **The type is a select** in each row; the tabs it replaced made a busy row busier.
 - **Removing an image keeps its questions** — they're read; unticking a row skips it, so nothing is
   ever deleted and nothing needs an undo.
 - **The same question on two images** — the later row says *Also on image 3* and starts unticked.

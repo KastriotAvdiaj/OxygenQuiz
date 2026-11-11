@@ -4,6 +4,8 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Check,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ClipboardPaste,
   ImagePlus,
   Loader2,
@@ -82,6 +84,15 @@ const MAKE_OPTIONS: { value: ScreenshotMakeType; label: string }[] = [
   { value: "AsTheyAppear", label: "As they appear" },
   { value: "TypeTheAnswer", label: "Type the answer" },
 ];
+
+/** Each image's state at a glance: read green, reading blue, failed red, waiting plain. */
+const THUMB_BORDER: Record<ImageStatus, string> = {
+  waiting: "border-foreground/20",
+  reading: "border-primary",
+  done: "border-green-600",
+  empty: "border-amber-500",
+  failed: "border-red-600",
+};
 
 const STATUS_LABEL: Record<ImageStatus, string> = {
   waiting: "Waiting",
@@ -373,7 +384,9 @@ export const ScreenshotImportDialog = ({
 
         {/* The same two tiles before and after the first image — only the hint goes once an image
             is in, so nothing changes shape under the reader's pointer. */}
-        <div className="space-y-2">
+        {/* min-w-0: DialogContent is a grid, and a grid item is as wide as its content by default —
+            so ten thumbnails widened the whole dialog instead of scrolling inside their row. */}
+        <div className="min-w-0 space-y-2">
           {images.length < maxImages && (
             <div className="flex flex-wrap gap-2">
               {canReadClipboard() && (
@@ -438,15 +451,16 @@ export const ScreenshotImportDialog = ({
                   transition={transition}
                   className="overflow-hidden"
                 >
-                  <div className="flex gap-2 overflow-x-auto pb-1">
+                  <ThumbnailStrip>
                     {images.map((img) => (
-                      <figure key={img.id} className="relative w-24 shrink-0">
+                      <figure key={img.id} className="relative w-24 shrink-0 snap-start">
                         <div className="relative">
                           <img
                             src={img.url}
                             alt={`Image ${img.number}`}
                             className={cn(
-                              "h-16 w-24 rounded-md border object-cover dark:border-foreground/30",
+                              "h-16 w-24 rounded-md border-2 object-cover transition-[border-color,opacity] duration-200",
+                              THUMB_BORDER[img.status],
                               img.status === "reading" && "opacity-50",
                             )}
                           />
@@ -460,7 +474,7 @@ export const ScreenshotImportDialog = ({
                           {img.number}. {STATUS_LABEL[img.status]}
                           {img.error && <span className="block text-destructive">{img.error}</span>}
                         </figcaption>
-                        <div className="absolute right-0.5 top-0.5 flex gap-0.5">
+                        <div className="absolute right-1 top-1 flex gap-0.5">
                           {img.status === "failed" && (
                             <button
                               type="button"
@@ -474,7 +488,7 @@ export const ScreenshotImportDialog = ({
                           {img.status !== "reading" && (
                             <button
                               type="button"
-                              className="rounded bg-background/90 p-0.5"
+                              className="rounded bg-red-600 p-0.5 text-white transition-colors hover:bg-red-700"
                               onClick={() => removeImage(img.id)}
                               aria-label={`Remove image ${img.number}`}
                             >
@@ -484,7 +498,7 @@ export const ScreenshotImportDialog = ({
                         </div>
                       </figure>
                     ))}
-                  </div>
+                  </ThumbnailStrip>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -633,6 +647,84 @@ export const ScreenshotImportDialog = ({
     </Dialog>
   );
 };
+
+/** How far an arrow moves the strip: one thumbnail (w-24) and its gap (gap-2). */
+const THUMB_STEP = 104;
+
+/**
+ * The thumbnails' row: scrolls sideways on its own (the dialog never does), with ‹ › buttons at
+ * each end — a phone has no scrollbar to drag — that move one image at a time and show only when
+ * there is somewhere to go.
+ */
+const ThumbnailStrip = ({ children }: { children: React.ReactNode }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [edges, setEdges] = useState({ left: false, right: false });
+
+  const measure = () => {
+    const el = ref.current;
+    if (!el) return;
+    setEdges({ left: el.scrollLeft > 1, right: el.scrollLeft + el.clientWidth < el.scrollWidth - 1 });
+  };
+
+  // External system: the element's size and its content's width (images added, dialog resized).
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    Array.from(el.children).forEach((c) => observer.observe(c));
+    const mutations = new MutationObserver(() => {
+      Array.from(el.children).forEach((c) => observer.observe(c));
+      measure();
+    });
+    mutations.observe(el, { childList: true });
+    measure();
+    return () => {
+      observer.disconnect();
+      mutations.disconnect();
+    };
+  }, []);
+
+  const scrollBy = (direction: 1 | -1) => ref.current?.scrollBy({ left: direction * THUMB_STEP, behavior: "smooth" });
+
+  return (
+    <div className="relative">
+      <div
+        ref={ref}
+        onScroll={measure}
+        className="flex snap-x gap-2 overflow-x-auto scroll-smooth pb-1 motion-reduce:scroll-auto [scrollbar-width:thin]"
+      >
+        {children}
+      </div>
+      <AnimatePresence>
+        {edges.left && <StripArrow key="left" side="left" onClick={() => scrollBy(-1)} />}
+        {edges.right && <StripArrow key="right" side="right" onClick={() => scrollBy(1)} />}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const StripArrow = ({ side, onClick }: { side: "left" | "right"; onClick: () => void }) => (
+  <motion.button
+    type="button"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    transition={{ duration: 0.15 }}
+    onClick={onClick}
+    aria-label={side === "left" ? "Previous image" : "Next image"}
+    className={cn(
+      "absolute top-5 flex h-7 w-7 items-center justify-center rounded-full border bg-background/95 shadow-md transition-colors hover:bg-muted dark:border-foreground/30",
+      side === "left" ? "left-1" : "right-1",
+    )}
+  >
+    {side === "left" ? (
+      <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+    ) : (
+      <ChevronRight className="h-4 w-4" aria-hidden="true" />
+    )}
+  </motion.button>
+);
 
 /** A dashed tile that adds images — Paste, or Add more (which also takes a drop). */
 const AddTile = ({

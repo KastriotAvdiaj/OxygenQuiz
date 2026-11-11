@@ -5,12 +5,16 @@ import { IndividualQuestion } from "@/types/question-types";
 import { questionKeys } from "@/lib/query-keys";
 
 
-export const getIndividualQuestion = ({
+// The client's interceptor hands back the whole axios response, so the body is `.data` — this
+// returned the response itself until 2026-11-11, which nothing noticed until the screenshot
+// import's duplicate preview became its first reader.
+export const getIndividualQuestion = async ({
   questionId,
-}:{
+}: {
   questionId: number;
-} ): Promise< IndividualQuestion> => {
-  return api.get(`/questions/${questionId}`);
+}): Promise<IndividualQuestion> => {
+  const response = await api.get(`/questions/${questionId}`);
+  return response.data;
 };
 
 export const getIndividualQuestionQueryOptions = (

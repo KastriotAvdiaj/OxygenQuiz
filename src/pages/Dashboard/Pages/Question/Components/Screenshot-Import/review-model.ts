@@ -64,6 +64,11 @@ export interface ReviewRow {
   duplicateOfId: number | null;
   /** The same question was already read from this earlier image in this import. */
   alsoOnImage: number | null;
+  /**
+   * The reviewer chose the bank's question (`duplicateOfId`) over this one: the row folds to a
+   * line and isn't saved. Unticking does the same, but says nothing about why.
+   */
+  useExisting: boolean;
   visibility: ReviewVisibility;
 }
 
@@ -92,6 +97,7 @@ export const toReviewRow = (q: ScreenshotQuestion, imageNumber: number, index: n
   languageId: q.languageId,
   duplicateOfId: q.duplicateOfId,
   alsoOnImage: null,
+  useExisting: false,
   visibility: "Public",
   };
 };
@@ -140,7 +146,8 @@ export const rowProblems = (row: ReviewRow): string[] => {
   return problems;
 };
 
-export const isSavable = (row: ReviewRow) => row.keep && rowProblems(row).length === 0;
+export const isSavable = (row: ReviewRow) =>
+  row.keep && !row.useExisting && rowProblems(row).length === 0;
 
 /** The create call a row becomes. Difficulty may stay Unspecified; it's rated later. */
 export const toCreateRequest = (row: ReviewRow): CreateRequest => {
