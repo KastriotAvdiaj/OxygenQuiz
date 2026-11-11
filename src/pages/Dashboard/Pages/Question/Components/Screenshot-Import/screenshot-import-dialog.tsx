@@ -361,7 +361,7 @@ export const ScreenshotImportDialog = ({
   // before the first image was added).
   const readIsPrimary = waiting > 0 && !hasRows;
   const primary = "flex items-center gap-2";
-  const muted = "flex items-center gap-2 bg-muted text-foreground";
+  const muted = "flex items-center gap-2 bg-muted text-foreground"; // LiftedButton adds its border
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>

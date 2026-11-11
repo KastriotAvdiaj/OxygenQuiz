@@ -109,7 +109,8 @@ Full version, including the two failure modes this project has actually hit:
     `--face` on the start modal).
   - **Secondary** (a real alternative beside the primary): **muted** —
     `className="bg-muted text-foreground"` with `liftColor="muted-foreground"`, as *Host a
-    lobby* on the home hero and *Host for a class* in the quiz start modal. Never a second
+    lobby* on the home hero and *Host for a class* in the quiz start modal. `LiftedButton` gives
+    that lift a `border-foreground/20` hairline itself — don't add one. Never a second
     coloured button: two loud buttons side by side means neither is the obvious one.
   - **Cancel / back out**: a lifted outline — `bg-background border border-foreground/30
     text-foreground` with `liftColor="muted"` (see the dialog footer rule below).

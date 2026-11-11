@@ -290,6 +290,10 @@ export const LiftedButton = React.forwardRef<
             front.rest,
             `transition-transform [transition-duration:600ms] ${springOut}`,
             !isDisabled && cn(front.hover, front.active, springHover, snapActive),
+            // The muted (secondary) button — `bg-muted` on a `muted-foreground` lift — has a face
+            // the same grey as the surfaces it sits on, so it gets a hairline edge here, once,
+            // rather than in every caller. Before `className`, so a caller can still override it.
+            liftColor === "muted-foreground" && "border border-foreground/20",
             className
           )}
         >
