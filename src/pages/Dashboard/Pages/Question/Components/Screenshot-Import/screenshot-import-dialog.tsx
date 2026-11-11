@@ -539,6 +539,28 @@ export const ScreenshotImportDialog = ({
           </AnimatePresence>
         </div>
 
+        {/* Holds the list's place before anything is read: says what this space is for, and keeps
+            Save from sitting right under the Read row. */}
+        <AnimatePresence initial={false}>
+          {!hasRows && readingImages.length === 0 && (
+            <motion.div
+              key="empty-list"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={transition}
+              className="overflow-hidden"
+            >
+              <div className="flex min-h-24 flex-col items-center justify-center gap-1 rounded-md border border-dashed border-foreground/30 px-4 py-6 text-center text-sm text-muted-foreground">
+                <ScanText className="h-5 w-5" aria-hidden="true" />
+                {images.length === 0
+                  ? "The questions on your screenshots will appear here once they're read."
+                  : "Press Read and the questions on your images will appear here, ready to check."}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {(hasRows || readingImages.length > 0) && (
           <ul className="space-y-2" aria-live="polite">
             <AnimatePresence initial={false}>

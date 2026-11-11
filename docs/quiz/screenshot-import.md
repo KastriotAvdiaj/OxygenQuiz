@@ -29,6 +29,7 @@ generates questions from text on an image and never translates.
 > Reworked 2026-11-11 after the first real test: types were sent as numbers, so every row's type
 > box started empty; fields had no labels; nothing showed an image being read.
 
+- **Before reading:** a dashed box where the list will be says the questions will appear there.
 - **While reading:** a spinner over each image's thumbnail, a placeholder row in the list
   (*Reading image 2…*), and *Reading 2 of 4…* on the button. Rows slide in as each image finishes
   (reduced motion: they fade).
