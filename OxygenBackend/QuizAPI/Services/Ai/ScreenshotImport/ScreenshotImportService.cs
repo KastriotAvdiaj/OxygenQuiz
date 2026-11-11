@@ -118,6 +118,11 @@ namespace QuizAPI.Services.Ai.ScreenshotImport
             {
                 await RecordAsync(userId, usage, 0, AiErrorCodes.ProviderUnavailable, ct);
                 _logger.LogWarning(ex, "Screenshot read failed upstream.");
+                // A refused key fails every image the same way, so "try again" would be a lie.
+                // Staff-only feature: naming the setting is fine here, unlike in player-facing text.
+                if (ex.UpstreamStatus is 401 or 403)
+                    throw new ServiceUnavailableException(
+                        "The AI service refused this site's API key, so no image can be read. Check Ai:ApiKey — trying again won't help.");
                 throw new ServiceUnavailableException("The image couldn't be read right now. Try this one again.");
             }
             catch (ScreenshotReplyException ex)

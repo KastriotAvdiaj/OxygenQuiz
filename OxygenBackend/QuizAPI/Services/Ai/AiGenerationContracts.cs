@@ -291,8 +291,19 @@ namespace QuizAPI.Services.Ai
     /// </summary>
     public sealed class AiProviderException : Exception
     {
-        public AiProviderException(string errorCode, string message, Exception? inner = null)
-            : base(message, inner) => ErrorCode = errorCode;
+        public AiProviderException(string errorCode, string message, Exception? inner = null, int? upstreamStatus = null)
+            : base(message, inner)
+        {
+            ErrorCode = errorCode;
+            UpstreamStatus = upstreamStatus;
+        }
+
+        /// <summary>
+        /// The vendor's HTTP status when it refused the call, so a caller can tell a bad key
+        /// (401/403 — retrying never helps) from an outage. The code stays ProviderUnavailable for
+        /// both, so every existing mapping of codes is unchanged.
+        /// </summary>
+        public int? UpstreamStatus { get; }
 
         /// <summary>One of <see cref="AiErrorCodes"/>.</summary>
         public string ErrorCode { get; }

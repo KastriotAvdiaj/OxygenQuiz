@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Check, ImagePlus, RotateCcw, ScanText, Trash2, X } from "lucide-react";
+import { Check, ClipboardPaste, ImagePlus, RotateCcw, ScanText, Trash2, X } from "lucide-react";
 
 import { LiftedButton } from "@/common/LiftedButton";
 import { useNotifications } from "@/common/Notifications";
@@ -36,6 +36,15 @@ const ACCEPTED = ["image/jpeg", "image/png", "image/webp"];
 const MAX_BYTES = 10 * 1024 * 1024;
 /** Images read at once: quick enough, and gentle on the rate limit. */
 const CONCURRENCY = 3;
+
+/**
+ * The Async Clipboard API's image read — Chrome 76+, Firefox 127+, Safari 13.1+. Where it's
+ * missing, the Paste button isn't shown and Ctrl+V (the paste event) still works.
+ */
+const canReadClipboard = () =>
+  typeof navigator !== "undefined" && typeof navigator.clipboard?.read === "function";
+
+const isMac = () => typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.userAgent);
 
 type ImageStatus = "waiting" | "reading" | "done" | "empty" | "failed";
 
@@ -95,6 +104,35 @@ export const ScreenshotImportDialog = ({
   useEffect(() => () => urls.current.forEach((u) => URL.revokeObjectURL(u)), []);
 
   const reading = images.some((i) => i.status === "reading");
+  const mac = isMac();
+  const pasteKeys = mac ? "⌘V" : "Ctrl+V";
+
+  /**
+   * The visible way to paste: most people who take a screenshot don't know it's already on their
+   * clipboard, or that Ctrl+V would work here. The browser asks for permission the first time
+   * (Firefox shows its own small Paste button instead).
+   */
+  const pasteFromClipboard = async () => {
+    try {
+      const items = await navigator.clipboard.read();
+      const files: File[] = [];
+      for (const item of items) {
+        const type = item.types.find((t) => ACCEPTED.includes(t));
+        if (!type) continue;
+        const blob = await item.getType(type);
+        files.push(new File([blob], `pasted-${Date.now()}.${type.split("/")[1]}`, { type }));
+      }
+      if (files.length === 0) {
+        setAddError(
+          `There's no picture on your clipboard. Take a screenshot (${mac ? "⌘ Shift 4" : "Windows + Shift + S"}) or copy an image, then press Paste.`,
+        );
+        return;
+      }
+      addFiles(files);
+    } catch {
+      setAddError(`Your browser didn't let us read the clipboard. Click here and press ${pasteKeys} instead.`);
+    }
+  };
 
   const reset = () => {
     abort.current?.abort();
@@ -273,20 +311,70 @@ export const ScreenshotImportDialog = ({
               </div>
             </figure>
           ))}
-          {images.length < maxImages && (
-            <button
-              type="button"
-              onClick={() => fileInput.current?.click()}
+          {images.length === 0 ? (
+            // Nothing added yet: say every way in, plainly — not everyone knows they can paste.
+            <div
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
                 e.preventDefault();
                 addFiles(e.dataTransfer.files);
               }}
-              className="flex h-16 min-w-[12rem] flex-1 items-center justify-center gap-2 rounded-md border border-dashed border-foreground/40 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+              className="flex w-full flex-col items-center gap-3 rounded-md border border-dashed border-foreground/40 px-4 py-6 text-center"
             >
-              <ImagePlus className="h-4 w-4" aria-hidden="true" />
-              Drop, paste or choose images
-            </button>
+              <div className="flex flex-wrap justify-center gap-3">
+                {canReadClipboard() && (
+                  <LiftedButton
+                    type="button"
+                    className="flex items-center gap-2"
+                    onClick={pasteFromClipboard}
+                  >
+                    <ClipboardPaste className="h-4 w-4" aria-hidden="true" />
+                    Paste screenshot
+                  </LiftedButton>
+                )}
+                <LiftedButton
+                  type="button"
+                  className="flex items-center gap-2 bg-muted text-foreground"
+                  liftColor="muted-foreground"
+                  onClick={() => fileInput.current?.click()}
+                >
+                  <ImagePlus className="h-4 w-4" aria-hidden="true" />
+                  Choose images
+                </LiftedButton>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Or drag them here, or press {pasteKeys}. Took a screenshot with{" "}
+                {mac ? "⌘ Shift 4" : "Windows + Shift + S"}? It's already copied — just paste it.
+              </p>
+            </div>
+          ) : (
+            images.length < maxImages && (
+              <div className="flex min-w-[12rem] flex-1 gap-2">
+                {canReadClipboard() && (
+                  <button
+                    type="button"
+                    onClick={pasteFromClipboard}
+                    className="flex h-16 flex-1 items-center justify-center gap-2 rounded-md border border-dashed border-foreground/40 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                  >
+                    <ClipboardPaste className="h-4 w-4" aria-hidden="true" />
+                    Paste
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => fileInput.current?.click()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    addFiles(e.dataTransfer.files);
+                  }}
+                  className="flex h-16 flex-1 items-center justify-center gap-2 rounded-md border border-dashed border-foreground/40 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                >
+                  <ImagePlus className="h-4 w-4" aria-hidden="true" />
+                  Add more
+                </button>
+              </div>
+            )
           )}
           <input
             ref={fileInput}

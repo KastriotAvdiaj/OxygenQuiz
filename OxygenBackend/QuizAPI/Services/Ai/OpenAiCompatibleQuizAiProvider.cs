@@ -162,9 +162,16 @@ namespace QuizAPI.Services.Ai
                             "AI provider {Model} at {BaseUrl} failed with {Status} after {Attempt} attempt(s). {Detail}",
                             _options.Model, _options.BaseUrl, (int)response.StatusCode, attempt, detail);
 
+                        if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+                            _logger.LogError(
+                                "AI provider {Model} refused the API key ({Status}). Check Ai:ApiKey is this vendor's key " +
+                                "(OpenRouter keys start sk-or-) with no quotes or spaces — e.g. dotnet user-secrets list.",
+                                _options.Model, (int)response.StatusCode);
+
                         throw new AiProviderException(
                             AiErrorCodes.ProviderUnavailable,
-                            "The quiz generator is unavailable right now. Please try again in a moment.");
+                            "The quiz generator is unavailable right now. Please try again in a moment.",
+                            upstreamStatus: (int)response.StatusCode);
                     }
 
                     var payload = await response.Content.ReadFromJsonAsync<ChatResponse>(SerializerOptions, timeoutCts.Token);

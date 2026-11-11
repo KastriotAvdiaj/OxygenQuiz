@@ -215,6 +215,33 @@ public class ScreenshotImportServiceTests
     }
 
     [Fact]
+    public async Task A_refused_api_key_says_so_instead_of_try_again()
+    {
+        var w = new World();
+        w.Provider.Setup(p => p.CompleteJsonAsync(
+                It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<AiCallOptions>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new AiProviderException(AiErrorCodes.ProviderUnavailable, "unavailable", upstreamStatus: 401));
+
+        var ex = await Assert.ThrowsAsync<ServiceUnavailableException>(() => Read(w));
+
+        Assert.Contains("API key", ex.Message);
+        Assert.DoesNotContain("Try this one again", ex.Message);
+    }
+
+    [Fact]
+    public async Task An_outage_still_says_try_again()
+    {
+        var w = new World();
+        w.Provider.Setup(p => p.CompleteJsonAsync(
+                It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<AiCallOptions>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new AiProviderException(AiErrorCodes.ProviderUnavailable, "unavailable", upstreamStatus: 503));
+
+        var ex = await Assert.ThrowsAsync<ServiceUnavailableException>(() => Read(w));
+
+        Assert.Contains("Try this one again", ex.Message);
+    }
+
+    [Fact]
     public async Task Screenshot_reads_never_take_a_quiz_generation_slot()
     {
         var w = new World();
