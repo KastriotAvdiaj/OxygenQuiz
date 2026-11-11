@@ -320,7 +320,10 @@ export const ScreenshotImportDialog = ({
       };
   const transition = { duration: 0.25, ease: "easeOut" as const };
 
-  // Button colours, one blue per stage: Read until questions arrive, Save after.
+  // Button colours, one blue per stage: Read while there are images to read and no questions yet,
+  // Save once questions are in. With nothing to read, Read is muted (it was blue — and disabled —
+  // before the first image was added).
+  const readIsPrimary = waiting > 0 && !hasRows;
   const primary = "flex items-center gap-2";
   const muted = "flex items-center gap-2 bg-muted text-foreground";
 
@@ -395,21 +398,22 @@ export const ScreenshotImportDialog = ({
                   </AddTile>
                 </>
               )}
-              {allRead && hasRows && (
-                <button
-                  type="button"
-                  onClick={() => setShowImages((s) => !s)}
-                  aria-expanded={!folded}
-                  className="flex h-11 items-center gap-1.5 rounded-md px-3 text-sm text-muted-foreground hover:text-foreground"
-                >
-                  {images.length} image{images.length === 1 ? "" : "s"} read · {folded ? "Show" : "Hide"}
-                  <ChevronDown
-                    className={cn("h-4 w-4 transition-transform", !folded && "rotate-180")}
-                    aria-hidden="true"
-                  />
-                </button>
-              )}
             </div>
+
+            {allRead && hasRows && (
+              <button
+                type="button"
+                onClick={() => setShowImages((s) => !s)}
+                aria-expanded={!folded}
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+              >
+                {images.length} image{images.length === 1 ? "" : "s"} read · {folded ? "Show" : "Hide"}
+                <ChevronDown
+                  className={cn("h-4 w-4 transition-transform", !folded && "rotate-180")}
+                  aria-hidden="true"
+                />
+              </button>
+            )}
 
             {/* Below the add buttons, one row that scrolls sideways — on a phone ten thumbnails
                 would otherwise stack into a wall above the questions. */}
@@ -494,8 +498,8 @@ export const ScreenshotImportDialog = ({
           <LiftedButton
             type="button"
             outerClassName="ml-auto"
-            className={hasRows ? muted : primary}
-            liftColor={hasRows ? "muted-foreground" : undefined}
+            className={readIsPrimary ? primary : muted}
+            liftColor={readIsPrimary ? undefined : "muted-foreground"}
             disabled={waiting === 0 || reading}
             onClick={readAll}
           >
@@ -585,7 +589,7 @@ const AddTile = ({
           }
         : undefined
     }
-    className="flex h-11 min-w-[8rem] flex-1 items-center justify-center gap-2 rounded-md border border-dashed border-foreground/40 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary sm:flex-none sm:px-6"
+    className="flex h-16 min-w-[8rem] flex-1 items-center justify-center gap-2 rounded-md border border-dashed border-foreground/40 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary"
   >
     {icon}
     {children}
