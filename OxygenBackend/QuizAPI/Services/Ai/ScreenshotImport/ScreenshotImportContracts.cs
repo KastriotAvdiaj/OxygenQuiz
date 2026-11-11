@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using QuizAPI.Models;
 
 namespace QuizAPI.Services.Ai.ScreenshotImport
@@ -16,10 +17,14 @@ namespace QuizAPI.Services.Ai.ScreenshotImport
     /// <summary>One question read from an image, proposed — nothing is saved until a person does.</summary>
     public sealed class ScreenshotQuestionDTO
     {
-        /// <summary>The type the reviewer starts on: the import's choice applied to what was seen.</summary>
+        /// <summary>The type the reviewer starts on: the import's choice applied to what was seen.
+        /// Sent by name ("MultipleChoice"), as the frontend's enum is — the API has no global
+        /// string-enum setting, and a number here left every row's type box empty.</summary>
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public QuestionType Type { get; init; }
 
         /// <summary>The type it looked like on the image.</summary>
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public QuestionType SeenType { get; init; }
 
         public string Text { get; init; } = string.Empty;

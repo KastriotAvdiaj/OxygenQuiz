@@ -1,6 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Check, ClipboardPaste, ImagePlus, RotateCcw, ScanText, Trash2, X } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import {
+  Check,
+  ChevronDown,
+  ClipboardPaste,
+  ImagePlus,
+  Loader2,
+  RotateCcw,
+  ScanText,
+  Trash2,
+  X,
+} from "lucide-react";
 
 import { LiftedButton } from "@/common/LiftedButton";
 import { useNotifications } from "@/common/Notifications";
@@ -14,6 +25,7 @@ import {
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { apiErrorMessage } from "@/lib/Api-client";
 import { myQuestionKeys, questionKeys } from "@/lib/query-keys";
+import { cn } from "@/utils/cn";
 import {
   QuestionType,
   type QuestionCategory,
@@ -23,7 +35,7 @@ import {
 import { createMultipleChoiceQuestion } from "../../api/Multiple_Choice_Question/create-multiple-choice-question";
 import { createTrueFalseQuestion } from "../../api/True_False-Question/create-true_false-question";
 import { createTypeTheAnswerQuestion } from "../../api/Type_The_Answer-Question/create-type-the-answer-question";
-import { isSavable, toCreateRequest, toReviewRow, type ReviewRow } from "./review-model";
+import { isSavable, markRepeats, toCreateRequest, toReviewRow, type ReviewRow } from "./review-model";
 import {
   readScreenshot,
   screenshotImportStatusQueryOptions,
@@ -46,12 +58,19 @@ const canReadClipboard = () =>
 
 const isMac = () => typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.userAgent);
 
+/** The file's contents, hashed — so the same screenshot isn't read (and charged) twice. */
+const fingerprint = async (file: File) => {
+  const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+};
+
 type ImageStatus = "waiting" | "reading" | "done" | "empty" | "failed";
 
 interface ImageItem {
   id: number;
   number: number;
   file: File;
+  hash: string;
   url: string;
   status: ImageStatus;
   error?: string;
@@ -62,6 +81,14 @@ const MAKE_OPTIONS: { value: ScreenshotMakeType; label: string }[] = [
   { value: "AsTheyAppear", label: "As they appear" },
   { value: "TypeTheAnswer", label: "Type the answer" },
 ];
+
+const STATUS_LABEL: Record<ImageStatus, string> = {
+  waiting: "Waiting",
+  reading: "Reading…",
+  done: "Read",
+  empty: "No questions found",
+  failed: "Didn't read",
+};
 
 export interface ScreenshotImportDialogProps {
   open: boolean;
@@ -77,7 +104,10 @@ export interface ScreenshotImportDialogProps {
  * Screenshot import (docs/quiz/screenshot-import.md): add up to ten images, read them, review what
  * was read, save what you keep. Reading writes nothing; saving goes through the ordinary create
  * endpoints, one question at a time, so every rule a hand-written question meets applies.
- * Images stay in this browser tab — the server reads and discards them.
+ *
+ * One blue button per stage (CLAUDE.md, button rank): *Read* until the first questions arrive,
+ * then *Save*. Removing an image never removes its questions — once read, the questions are what
+ * matter, and a row is skipped by unticking it, so nothing here needs an undo.
  */
 export const ScreenshotImportDialog = ({
   open,
@@ -90,11 +120,14 @@ export const ScreenshotImportDialog = ({
 }: ScreenshotImportDialogProps) => {
   const queryClient = useQueryClient();
   const { addNotification } = useNotifications();
+  const reduceMotion = useReducedMotion();
   const [images, setImages] = useState<ImageItem[]>([]);
   const [rows, setRows] = useState<ReviewRow[]>([]);
   const [makeType, setMakeType] = useState<ScreenshotMakeType>("MultipleChoice");
   const [addError, setAddError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [showImages, setShowImages] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const nextId = useRef(1);
   const abort = useRef<AbortController | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -103,9 +136,63 @@ export const ScreenshotImportDialog = ({
   const urls = useRef<string[]>([]);
   useEffect(() => () => urls.current.forEach((u) => URL.revokeObjectURL(u)), []);
 
-  const reading = images.some((i) => i.status === "reading");
   const mac = isMac();
   const pasteKeys = mac ? "⌘V" : "Ctrl+V";
+  const shotKeys = mac ? "⌘ Shift 4" : "Windows + Shift + S";
+
+  const reading = images.some((i) => i.status === "reading");
+  const waiting = images.filter((i) => i.status === "waiting" || i.status === "failed").length;
+  const hasRows = rows.length > 0;
+  // Once every image is read and their questions are in the list, the thumbnails fold into one
+  // line: they stop pushing the questions down. A new image unfolds them again.
+  const allRead = images.length > 0 && images.every((i) => i.status === "done" || i.status === "empty");
+  const folded = allRead && hasRows && !showImages;
+
+  const reset = () => {
+    abort.current?.abort();
+    urls.current.forEach((u) => URL.revokeObjectURL(u));
+    urls.current = [];
+    setImages([]);
+    setRows([]);
+    setAddError(null);
+    setShowImages(false);
+    setProgress(null);
+    nextId.current = 1;
+  };
+
+  const handleOpenChange = (next: boolean) => {
+    if (!next) reset();
+    onOpenChange(next);
+  };
+
+  const addFiles = async (files: FileList | File[]) => {
+    const list = Array.from(files);
+    const known = new Map(images.map((i) => [i.hash, i.number]));
+    const accepted: ImageItem[] = [];
+    const notes: string[] = [];
+    let refused = 0;
+    for (const file of list) {
+      if (!ACCEPTED.includes(file.type) || file.size > MAX_BYTES || images.length + accepted.length >= maxImages) {
+        refused++;
+        continue;
+      }
+      const hash = await fingerprint(file);
+      const same = known.get(hash);
+      if (same !== undefined) {
+        notes.push(`That image is the same as image ${same} — not added again.`);
+        continue;
+      }
+      const url = URL.createObjectURL(file);
+      urls.current.push(url);
+      const id = nextId.current++;
+      known.set(hash, id);
+      accepted.push({ id, number: id, file, hash, url, status: "waiting" });
+    }
+    setImages((prev) => [...prev, ...accepted]);
+    if (refused > 0)
+      notes.push(`${refused} not added — JPEG, PNG or WebP up to 10 MB, at most ${maxImages} images.`);
+    setAddError(notes.length > 0 ? notes.join(" ") : null);
+  };
 
   /**
    * The visible way to paste: most people who take a screenshot don't know it's already on their
@@ -124,59 +211,21 @@ export const ScreenshotImportDialog = ({
       }
       if (files.length === 0) {
         setAddError(
-          `There's no picture on your clipboard. Take a screenshot (${mac ? "⌘ Shift 4" : "Windows + Shift + S"}) or copy an image, then press Paste.`,
+          `There's no picture on your clipboard. Take a screenshot (${shotKeys}) or copy an image, then press Paste.`,
         );
         return;
       }
-      addFiles(files);
+      await addFiles(files);
     } catch {
       setAddError(`Your browser didn't let us read the clipboard. Click here and press ${pasteKeys} instead.`);
     }
   };
 
-  const reset = () => {
-    abort.current?.abort();
-    urls.current.forEach((u) => URL.revokeObjectURL(u));
-    urls.current = [];
-    setImages([]);
-    setRows([]);
-    setAddError(null);
-    nextId.current = 1;
-  };
-
-  const handleOpenChange = (next: boolean) => {
-    if (!next) reset();
-    onOpenChange(next);
-  };
-
-  const addFiles = (files: FileList | File[]) => {
-    const list = Array.from(files);
-    const room = maxImages - images.length;
-    const accepted: ImageItem[] = [];
-    let refused = 0;
-    for (const file of list) {
-      if (!ACCEPTED.includes(file.type) || file.size > MAX_BYTES || accepted.length >= room) {
-        refused++;
-        continue;
-      }
-      const url = URL.createObjectURL(file);
-      urls.current.push(url);
-      const id = nextId.current++;
-      accepted.push({ id, number: id, file, url, status: "waiting" });
-    }
-    setImages((prev) => [...prev, ...accepted]);
-    setAddError(
-      refused > 0
-        ? `${refused} not added — JPEG, PNG or WebP up to 10 MB, at most ${maxImages} images.`
-        : null,
-    );
-  };
-
+  // Its questions stay: they're read, and unticking a row is how one is skipped.
   const removeImage = (id: number) => {
     const item = images.find((i) => i.id === id);
     if (item) URL.revokeObjectURL(item.url);
     setImages((prev) => prev.filter((i) => i.id !== id));
-    setRows((prev) => prev.filter((r) => r.imageNumber !== item?.number));
   };
 
   const setStatus = (id: number, status: ImageStatus, error?: string) =>
@@ -188,6 +237,10 @@ export const ScreenshotImportDialog = ({
     if (queue.length === 0) return;
     const controller = new AbortController();
     abort.current = controller;
+    const total = queue.length;
+    let done = 0;
+    setProgress({ done, total });
+    setShowImages(false);
 
     const work = async () => {
       for (let item = queue.shift(); item; item = queue.shift()) {
@@ -195,20 +248,23 @@ export const ScreenshotImportDialog = ({
         try {
           const result = await readScreenshot(item.file, makeType, controller.signal);
           const number = item.number;
-          setRows((prev) => [
-            ...prev.filter((r) => r.imageNumber !== number),
-            ...result.questions.map((q, i) => toReviewRow(q, number, i)),
-          ]);
+          setRows((prev) => {
+            const others = prev.filter((r) => r.imageNumber !== number);
+            return [...others, ...markRepeats(others, result.questions.map((q, i) => toReviewRow(q, number, i)))];
+          });
           setStatus(item.id, result.questions.length === 0 ? "empty" : "done");
         } catch (error) {
           if (controller.signal.aborted) return;
           setStatus(item.id, "failed", apiErrorMessage(error));
         }
+        setProgress({ done: ++done, total });
       }
     };
     await Promise.all(Array.from({ length: CONCURRENCY }, work));
-    if (!controller.signal.aborted)
+    if (!controller.signal.aborted) {
+      setProgress(null);
       queryClient.invalidateQueries({ queryKey: screenshotImportStatusQueryOptions().queryKey });
+    }
   };
 
   const updateRow = (key: string, patch: Partial<ReviewRow>) =>
@@ -237,10 +293,7 @@ export const ScreenshotImportDialog = ({
     await queryClient.invalidateQueries({ queryKey: myQuestionKeys.all });
 
     if (failed === 0) {
-      addNotification({
-        type: "success",
-        title: `Saved ${saved.size} question${saved.size === 1 ? "" : "s"}`,
-      });
+      addNotification({ type: "success", title: `Saved ${saved.size} question${saved.size === 1 ? "" : "s"}` });
       handleOpenChange(false);
     } else {
       // The ones that failed stay in the list, so nothing is lost.
@@ -253,14 +306,30 @@ export const ScreenshotImportDialog = ({
     }
   };
 
-  const waiting = images.filter((i) => i.status === "waiting" || i.status === "failed").length;
+  const readingImages = images.filter((i) => i.status === "reading");
+  const sortedRows = [...rows].sort((a, b) => a.imageNumber - b.imageNumber);
+
+  // Motion (docs/development/motion.md): rows arrive, placeholders give way; reduced motion
+  // arrives without travelling.
+  const enter = reduceMotion
+    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
+    : {
+        initial: { opacity: 0, y: 12 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, height: 0, marginTop: 0 },
+      };
+  const transition = { duration: 0.25, ease: "easeOut" as const };
+
+  // Button colours, one blue per stage: Read until questions arrive, Save after.
+  const primary = "flex items-center gap-2";
+  const muted = "flex items-center gap-2 bg-muted text-foreground";
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         className="bg-background p-5 sm:max-w-3xl max-h-[90vh] overflow-y-auto dark:border border-foreground/30"
         onPaste={(e) => {
-          if (e.clipboardData.files.length > 0) addFiles(e.clipboardData.files);
+          if (e.clipboardData.files.length > 0) void addFiles(e.clipboardData.files);
         }}
       >
         <DialogHeader>
@@ -275,167 +344,206 @@ export const ScreenshotImportDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-wrap gap-2">
-          {images.map((img) => (
-            <figure key={img.id} className="relative w-24">
-              <img
-                src={img.url}
-                alt={`Image ${img.number}`}
-                className="h-16 w-24 rounded-md border object-cover dark:border-foreground/30"
-              />
-              <figcaption className="mt-0.5 text-[11px] leading-tight text-muted-foreground">
-                {img.number}. {STATUS_LABEL[img.status]}
-                {img.error && <span className="block text-destructive">{img.error}</span>}
-              </figcaption>
-              <div className="absolute right-0.5 top-0.5 flex gap-0.5">
-                {img.status === "failed" && (
-                  <button
-                    type="button"
-                    className="rounded bg-background/90 p-0.5"
-                    onClick={() => setStatus(img.id, "waiting")}
-                    aria-label={`Try image ${img.number} again`}
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-                  </button>
-                )}
-                {img.status !== "reading" && (
-                  <button
-                    type="button"
-                    className="rounded bg-background/90 p-0.5"
-                    onClick={() => removeImage(img.id)}
-                    aria-label={`Remove image ${img.number}`}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                  </button>
-                )}
-              </div>
-            </figure>
-          ))}
-          {images.length === 0 ? (
-            // Nothing added yet: say every way in, plainly — not everyone knows they can paste.
-            <div
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                addFiles(e.dataTransfer.files);
-              }}
-              className="flex w-full flex-col items-center gap-3 rounded-md border border-dashed border-foreground/40 px-4 py-6 text-center"
-            >
-              <div className="flex flex-wrap justify-center gap-3">
-                {canReadClipboard() && (
-                  <LiftedButton
-                    type="button"
-                    className="flex items-center gap-2"
-                    onClick={pasteFromClipboard}
-                  >
-                    <ClipboardPaste className="h-4 w-4" aria-hidden="true" />
-                    Paste screenshot
-                  </LiftedButton>
-                )}
-                <LiftedButton
-                  type="button"
-                  className="flex items-center gap-2 bg-muted text-foreground"
-                  liftColor="muted-foreground"
-                  onClick={() => fileInput.current?.click()}
-                >
-                  <ImagePlus className="h-4 w-4" aria-hidden="true" />
-                  Choose images
+        {images.length === 0 ? (
+          // Nothing added yet: say every way in, plainly — not everyone knows they can paste.
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              void addFiles(e.dataTransfer.files);
+            }}
+            className="flex w-full flex-col items-center gap-3 rounded-md border border-dashed border-foreground/40 px-4 py-6 text-center"
+          >
+            <div className="flex flex-wrap justify-center gap-3">
+              {canReadClipboard() && (
+                <LiftedButton type="button" className={primary} onClick={pasteFromClipboard}>
+                  <ClipboardPaste className="h-4 w-4" aria-hidden="true" />
+                  Paste screenshot
                 </LiftedButton>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Or drag them here, or press {pasteKeys}. Took a screenshot with{" "}
-                {mac ? "⌘ Shift 4" : "Windows + Shift + S"}? It's already copied — just paste it.
-              </p>
+              )}
+              <LiftedButton
+                type="button"
+                className={muted}
+                liftColor="muted-foreground"
+                onClick={() => fileInput.current?.click()}
+              >
+                <ImagePlus className="h-4 w-4" aria-hidden="true" />
+                Choose images
+              </LiftedButton>
             </div>
-          ) : (
-            images.length < maxImages && (
-              <div className="flex min-w-[12rem] flex-1 gap-2">
-                {canReadClipboard() && (
-                  <button
-                    type="button"
-                    onClick={pasteFromClipboard}
-                    className="flex h-16 flex-1 items-center justify-center gap-2 rounded-md border border-dashed border-foreground/40 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+            <p className="text-xs text-muted-foreground">
+              Or drag them here, or press {pasteKeys}. Took a screenshot with {shotKeys}? It's
+              already copied — just paste it.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-2">
+              {images.length < maxImages && (
+                <>
+                  {canReadClipboard() && (
+                    <AddTile onClick={pasteFromClipboard} icon={<ClipboardPaste className="h-4 w-4" aria-hidden="true" />}>
+                      Paste
+                    </AddTile>
+                  )}
+                  <AddTile
+                    onClick={() => fileInput.current?.click()}
+                    onDrop={(files) => void addFiles(files)}
+                    icon={<ImagePlus className="h-4 w-4" aria-hidden="true" />}
                   >
-                    <ClipboardPaste className="h-4 w-4" aria-hidden="true" />
-                    Paste
-                  </button>
-                )}
+                    Add more
+                  </AddTile>
+                </>
+              )}
+              {allRead && hasRows && (
                 <button
                   type="button"
-                  onClick={() => fileInput.current?.click()}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    addFiles(e.dataTransfer.files);
-                  }}
-                  className="flex h-16 flex-1 items-center justify-center gap-2 rounded-md border border-dashed border-foreground/40 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                  onClick={() => setShowImages((s) => !s)}
+                  aria-expanded={!folded}
+                  className="flex h-11 items-center gap-1.5 rounded-md px-3 text-sm text-muted-foreground hover:text-foreground"
                 >
-                  <ImagePlus className="h-4 w-4" aria-hidden="true" />
-                  Add more
+                  {images.length} image{images.length === 1 ? "" : "s"} read · {folded ? "Show" : "Hide"}
+                  <ChevronDown
+                    className={cn("h-4 w-4 transition-transform", !folded && "rotate-180")}
+                    aria-hidden="true"
+                  />
                 </button>
-              </div>
-            )
-          )}
-          <input
-            ref={fileInput}
-            type="file"
-            accept={ACCEPTED.join(",")}
-            multiple
-            hidden
-            onChange={(e) => {
-              if (e.target.files) addFiles(e.target.files);
-              e.target.value = "";
-            }}
-          />
-        </div>
+              )}
+            </div>
+
+            {/* Below the add buttons, one row that scrolls sideways — on a phone ten thumbnails
+                would otherwise stack into a wall above the questions. */}
+            <AnimatePresence initial={false}>
+              {!folded && (
+                <motion.div
+                  key="strip"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={transition}
+                  className="overflow-hidden"
+                >
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {images.map((img) => (
+                      <figure key={img.id} className="relative w-24 shrink-0">
+                        <div className="relative">
+                          <img
+                            src={img.url}
+                            alt={`Image ${img.number}`}
+                            className={cn(
+                              "h-16 w-24 rounded-md border object-cover dark:border-foreground/30",
+                              img.status === "reading" && "opacity-50",
+                            )}
+                          />
+                          {img.status === "reading" && (
+                            <span className="absolute inset-0 flex items-center justify-center">
+                              <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden="true" />
+                            </span>
+                          )}
+                        </div>
+                        <figcaption className="mt-0.5 text-[11px] leading-tight text-muted-foreground">
+                          {img.number}. {STATUS_LABEL[img.status]}
+                          {img.error && <span className="block text-destructive">{img.error}</span>}
+                        </figcaption>
+                        <div className="absolute right-0.5 top-0.5 flex gap-0.5">
+                          {img.status === "failed" && (
+                            <button
+                              type="button"
+                              className="rounded bg-background/90 p-0.5"
+                              onClick={() => setStatus(img.id, "waiting")}
+                              aria-label={`Try image ${img.number} again`}
+                            >
+                              <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+                            </button>
+                          )}
+                          {img.status !== "reading" && (
+                            <button
+                              type="button"
+                              className="rounded bg-background/90 p-0.5"
+                              onClick={() => removeImage(img.id)}
+                              aria-label={`Remove image ${img.number}`}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                            </button>
+                          )}
+                        </div>
+                      </figure>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+        <input
+          ref={fileInput}
+          type="file"
+          accept={ACCEPTED.join(",")}
+          multiple
+          hidden
+          onChange={(e) => {
+            if (e.target.files) void addFiles(e.target.files);
+            e.target.value = "";
+          }}
+        />
         {addError && <p className="text-xs text-destructive">{addError}</p>}
 
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm text-muted-foreground">Make them</span>
-          <SegmentedControl
-            value={makeType}
-            onValueChange={setMakeType}
-            options={MAKE_OPTIONS}
-            aria-label="Question type"
-          />
+          <SegmentedControl value={makeType} onValueChange={setMakeType} options={MAKE_OPTIONS} aria-label="Make them" />
           <LiftedButton
             type="button"
             outerClassName="ml-auto"
-            className="flex items-center gap-2 bg-muted text-foreground"
-            liftColor="muted-foreground"
+            className={hasRows ? muted : primary}
+            liftColor={hasRows ? "muted-foreground" : undefined}
             disabled={waiting === 0 || reading}
             onClick={readAll}
           >
-            <ScanText className="h-4 w-4" aria-hidden="true" />
-            {reading ? "Reading…" : waiting > 0 ? `Read ${waiting} image${waiting === 1 ? "" : "s"}` : "Read images"}
+            {reading ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <ScanText className="h-4 w-4" aria-hidden="true" />
+            )}
+            {reading && progress
+              ? `Reading ${Math.min(progress.done + 1, progress.total)} of ${progress.total}…`
+              : waiting > 0
+                ? `Read ${waiting} image${waiting === 1 ? "" : "s"}`
+                : "Read images"}
           </LiftedButton>
         </div>
 
-        {rows.length > 0 && (
-          <ul className="space-y-2">
-            {[...rows]
-              .sort((a, b) => a.imageNumber - b.imageNumber)
-              .map((row) => (
-                <ScreenshotReviewRow
-                  key={row.key}
-                  row={row}
-                  categories={categories}
-                  difficulties={difficulties}
-                  languages={languages}
-                  onChange={(patch) => updateRow(row.key, patch)}
-                />
+        {(hasRows || readingImages.length > 0) && (
+          <ul className="space-y-2" aria-live="polite">
+            <AnimatePresence initial={false}>
+              {sortedRows.map((row) => (
+                <motion.li key={row.key} layout={!reduceMotion} {...enter} transition={transition}>
+                  <ScreenshotReviewRow
+                    row={row}
+                    categories={categories}
+                    difficulties={difficulties}
+                    languages={languages}
+                    onChange={(patch) => updateRow(row.key, patch)}
+                  />
+                </motion.li>
               ))}
+              {readingImages.map((img) => (
+                <motion.li key={`reading-${img.id}`} layout={!reduceMotion} {...enter} transition={transition}>
+                  <ReadingPlaceholder number={img.number} />
+                </motion.li>
+              ))}
+            </AnimatePresence>
           </ul>
         )}
 
         <div className="mt-1 flex flex-wrap justify-end gap-3">
           <LiftedButton
             type="button"
-            className="flex items-center gap-2"
+            className={hasRows ? primary : muted}
+            liftColor={hasRows ? undefined : "muted-foreground"}
             disabled={toSave.length === 0 || saving || reading}
             onClick={save}
           >
-            <Check className="h-4 w-4" aria-hidden="true" />
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Check className="h-4 w-4" aria-hidden="true" />}
             {saving ? "Saving…" : `Save ${toSave.length} question${toSave.length === 1 ? "" : "s"}`}
           </LiftedButton>
           <LiftedButton
@@ -453,10 +561,45 @@ export const ScreenshotImportDialog = ({
   );
 };
 
-const STATUS_LABEL: Record<ImageStatus, string> = {
-  waiting: "Waiting",
-  reading: "Reading…",
-  done: "Read",
-  empty: "No questions found",
-  failed: "Didn't read",
-};
+/** A dashed tile that adds images — Paste, or Add more (which also takes a drop). */
+const AddTile = ({
+  onClick,
+  onDrop,
+  icon,
+  children,
+}: {
+  onClick: () => void;
+  onDrop?: (files: FileList) => void;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    onDragOver={onDrop ? (e) => e.preventDefault() : undefined}
+    onDrop={
+      onDrop
+        ? (e) => {
+            e.preventDefault();
+            onDrop(e.dataTransfer.files);
+          }
+        : undefined
+    }
+    className="flex h-11 min-w-[8rem] flex-1 items-center justify-center gap-2 rounded-md border border-dashed border-foreground/40 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary sm:flex-none sm:px-6"
+  >
+    {icon}
+    {children}
+  </button>
+);
+
+/** Holds an image's place in the list while it's read, in the shape a row will have. */
+export const ReadingPlaceholder = ({ number }: { number: number }) => (
+  <div className="flex gap-3 rounded-md border bg-card p-3 dark:border-foreground/30">
+    <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin text-primary" aria-hidden="true" />
+    <div className="flex-1 space-y-2">
+      <p className="text-xs text-muted-foreground">Reading image {number}…</p>
+      <div className="h-9 w-full animate-pulse rounded-md bg-muted" />
+      <div className="h-9 w-2/3 animate-pulse rounded-md bg-muted" />
+    </div>
+  </div>
+);

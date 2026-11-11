@@ -242,6 +242,28 @@ public class ScreenshotImportServiceTests
     }
 
     [Fact]
+    public async Task Multiple_choice_sticks_even_when_no_wrong_options_came_back()
+    {
+        var w = new World(complete: """{"answers":[]}""");
+        var result = await Read(w, ScreenshotMakeType.MultipleChoice);
+
+        // Skanderbeg: no answer on the image and the completion gave nothing — dropped; the
+        // Kosovo row still carries its shown options.
+        Assert.All(result.Questions.Where(q => !q.NeedsItsPicture && q.SeenType != QuestionType.TrueFalse),
+            q => Assert.Equal(QuestionType.MultipleChoice, q.Type));
+    }
+
+    [Fact]
+    public void Types_are_sent_by_name_not_number()
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(
+            new ScreenshotQuestionDTO { Type = QuestionType.TypeTheAnswer, SeenType = QuestionType.MultipleChoice });
+
+        Assert.Contains("\"Type\":\"TypeTheAnswer\"", json);
+        Assert.Contains("\"SeenType\":\"MultipleChoice\"", json);
+    }
+
+    [Fact]
     public async Task Screenshot_reads_never_take_a_quiz_generation_slot()
     {
         var w = new World();

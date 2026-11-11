@@ -3,8 +3,9 @@ import { fn } from "@storybook/test";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { QuestionType } from "@/types/question-types";
-import { toReviewRow } from "./review-model";
+import { markRepeats, toReviewRow } from "./review-model";
 import type { ScreenshotQuestion } from "./screenshot-import-api";
+import { ReadingPlaceholder } from "./screenshot-import-dialog";
 import { ScreenshotReviewRow } from "./screenshot-review-row";
 
 /**
@@ -50,9 +51,9 @@ const meta = {
   decorators: [
     (Story) => (
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { enabled: false } } })}>
-        <ul className="max-w-2xl">
+        <div className="max-w-2xl">
           <Story />
-        </ul>
+        </div>
       </QueryClientProvider>
     ),
   ],
@@ -123,6 +124,26 @@ export const NeedsItsPicture: Story = {
   },
 };
 
+export const AlsoOnAnEarlierImage: Story = {
+  args: {
+    row: markRepeats([toReviewRow(base, 3, 0)], [toReviewRow(base, 4, 0)])[0],
+  },
+};
+
+/** Switched to True / False: the reviewer has to write the question as a statement. */
+export const TurnedTrueFalse: Story = {
+  args: { row: { ...toReviewRow(base, 1, 0), type: QuestionType.TrueFalse } },
+};
+
+export const NoWrongOptionsYet: Story = {
+  args: { row: toReviewRow({ ...base, wrongOptions: [], optionsFromImage: false }, 2, 0) },
+};
+
 export const MissingCategory: Story = {
   args: { row: toReviewRow({ ...base, categoryId: null }, 1, 1) },
+};
+
+/** What holds an image's place in the list while it's being read. */
+export const Reading: Story = {
+  render: () => <ReadingPlaceholder number={2} />,
 };

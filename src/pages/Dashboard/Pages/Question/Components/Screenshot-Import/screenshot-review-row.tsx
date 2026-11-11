@@ -1,5 +1,5 @@
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/form";
+import { Input, Label, Textarea } from "@/components/ui/form";
 import {
   Select,
   SelectContent,
@@ -7,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { cn } from "@/utils/cn";
 import {
   QuestionType,
@@ -17,7 +18,7 @@ import {
 import { CategorySelect } from "../../Entities/Categories/Components/select-question-category";
 import { DifficultySelect } from "../../Entities/Difficulty/Components/select-question-difficulty";
 import { LanguageSelect } from "../../Entities/Language/components/select-question-language";
-import { rowProblems, typesFor, type ReviewRow } from "./review-model";
+import { ALL_TYPES, needsStatement, rowProblems, type ReviewRow } from "./review-model";
 
 const TYPE_LABEL: Record<QuestionType, string> = {
   [QuestionType.MultipleChoice]: "Multiple choice",
@@ -35,9 +36,10 @@ export interface ScreenshotReviewRowProps {
 
 /**
  * One question read from a screenshot, in the review list (docs/quiz/screenshot-import.md). Its
- * badges say where each part came from — *Answer from the image* or *Suggested — check* — so the
- * reviewer knows which answers to look at hardest. A picture-is-the-question row is shown greyed
- * out and can't be kept: it needs two images, which isn't supported yet.
+ * badges say where each part came from — *Answer from the image* or *Answer suggested — check* —
+ * so the reviewer knows which answers to look at hardest. Every field is labelled and uses the
+ * builder's own minimal fields, in the app font: the reviewer is editing the question as it will
+ * be played. A picture-is-the-question row is shown greyed out and can't be kept.
  */
 export const ScreenshotReviewRow = ({
   row,
@@ -48,10 +50,12 @@ export const ScreenshotReviewRow = ({
 }: ScreenshotReviewRowProps) => {
   const problems = row.keep ? rowProblems(row) : [];
   const disabled = row.needsItsPicture;
-  const suggested = !row.answerFromImage || (row.type === QuestionType.MultipleChoice && !row.optionsFromImage);
+  const suggested =
+    !row.answerFromImage || (row.type === QuestionType.MultipleChoice && !row.optionsFromImage);
+  const id = `shot-${row.key}`;
 
   return (
-    <li
+    <div
       className={cn(
         "flex gap-3 rounded-md border bg-card p-3 dark:border-foreground/30",
         disabled && "opacity-60",
@@ -64,11 +68,13 @@ export const ScreenshotReviewRow = ({
         onCheckedChange={(checked) => onChange({ keep: checked === true })}
         aria-label={row.keep ? "Keep this question" : "Skip this question"}
       />
-      <div className="min-w-0 flex-1 space-y-2">
+      <div className="min-w-0 flex-1 space-y-3">
         <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
           <span className="text-muted-foreground">Image {row.imageNumber}</span>
           {disabled ? (
             <Badge tone="muted">Needs its picture — not supported yet</Badge>
+          ) : row.type === QuestionType.TrueFalse && row.seenType !== QuestionType.TrueFalse ? (
+            <Badge tone="warning">Your statement — check the answer</Badge>
           ) : suggested ? (
             <Badge tone="warning">
               {row.answerFromImage ? "Options suggested — check" : "Answer suggested — check"}
@@ -79,122 +85,151 @@ export const ScreenshotReviewRow = ({
           {row.duplicateOfId !== null && (
             <Badge tone="danger">Possible duplicate of #{row.duplicateOfId}</Badge>
           )}
+          {row.alsoOnImage !== null && <Badge tone="danger">Also on image {row.alsoOnImage}</Badge>}
           {row.imageQuery && !disabled && <Badge tone="muted">Picture idea: {row.imageQuery}</Badge>}
         </div>
 
-        <Input
-          variant="settings"
-          value={row.text}
-          disabled={disabled}
-          onChange={(e) => onChange({ text: e.target.value })}
-          aria-label="Question"
-        />
+        <Field label={needsStatement(row) ? "Statement — rewrite the question as one" : "Question"} htmlFor={`${id}-text`}>
+          <Textarea
+            id={`${id}-text`}
+            variant="minimal"
+            rows={1}
+            className="w-full resize-none !max-h-40 leading-snug [field-sizing:content]"
+            value={row.text}
+            disabled={disabled}
+            onChange={(e) => onChange({ text: e.target.value })}
+            onKeyDown={(e) => {
+              // One line of data, like the builder's question: Enter never inserts a newline.
+              if (e.key === "Enter") e.preventDefault();
+            }}
+          />
+        </Field>
 
         {!disabled && (
           <>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[auto_1fr]">
-              <Select
+            <Field label="Type">
+              <SegmentedControl
                 value={row.type}
-                onValueChange={(value) => onChange({ type: value as QuestionType })}
-                disabled={typesFor(row).length === 1}
-              >
-                <SelectTrigger className="h-9 min-w-[160px] text-sm" aria-label="Question type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {typesFor(row).map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {TYPE_LABEL[t]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onValueChange={(type) => onChange({ type })}
+                options={ALL_TYPES.map((t) => ({ value: t, label: TYPE_LABEL[t] }))}
+                aria-label="Question type"
+              />
+            </Field>
 
-              {row.type === QuestionType.TrueFalse ? (
-                <Select
-                  value={row.correctAnswer}
-                  onValueChange={(value) => onChange({ correctAnswer: value })}
-                >
-                  <SelectTrigger className="h-9 text-sm" aria-label="Answer">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="true">True</SelectItem>
-                    <SelectItem value="false">False</SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : (
+            {row.type === QuestionType.TrueFalse ? (
+              <Field label="Answer">
+                <SegmentedControl
+                  value={row.tfAnswer}
+                  onValueChange={(tfAnswer) => onChange({ tfAnswer })}
+                  options={[
+                    { value: "true", label: "True" },
+                    { value: "false", label: "False" },
+                  ]}
+                  aria-label="Answer"
+                />
+              </Field>
+            ) : (
+              <Field label="Answer" htmlFor={`${id}-answer`}>
                 <Input
-                  variant="settings"
+                  id={`${id}-answer`}
+                  variant="minimal"
                   value={row.correctAnswer}
                   onChange={(e) => onChange({ correctAnswer: e.target.value })}
-                  aria-label="Answer"
                   placeholder="The answer"
                 />
-              )}
-            </div>
+              </Field>
+            )}
 
             {row.type === QuestionType.MultipleChoice && (
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                {row.wrongOptions.map((option, i) => (
-                  <Input
-                    key={i}
-                    variant="settings"
-                    value={option}
-                    placeholder={`Wrong option ${i + 1}`}
-                    aria-label={`Wrong option ${i + 1}`}
-                    onChange={(e) => {
-                      const next = [...row.wrongOptions] as ReviewRow["wrongOptions"];
-                      next[i] = e.target.value;
-                      onChange({ wrongOptions: next });
-                    }}
-                  />
-                ))}
-              </div>
+              <Field label="Wrong options">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  {row.wrongOptions.map((option, i) => (
+                    <Input
+                      key={i}
+                      variant="minimal"
+                      value={option}
+                      placeholder={`Wrong option ${i + 1}`}
+                      aria-label={`Wrong option ${i + 1}`}
+                      onChange={(e) => {
+                        const next = [...row.wrongOptions] as ReviewRow["wrongOptions"];
+                        next[i] = e.target.value;
+                        onChange({ wrongOptions: next });
+                      }}
+                    />
+                  ))}
+                </div>
+              </Field>
             )}
 
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <CategorySelect
-                categories={categories}
-                value={row.categoryId?.toString() ?? ""}
-                onChange={(v) => onChange({ categoryId: parseInt(v, 10) })}
-                includeAllOption={false}
-              />
-              <DifficultySelect
-                difficulties={difficulties}
-                value={row.difficultyId?.toString() ?? ""}
-                onChange={(v) => onChange({ difficultyId: parseInt(v, 10) })}
-                includeAllOption={false}
-              />
-              <LanguageSelect
-                languages={languages}
-                value={row.languageId?.toString() ?? ""}
-                onChange={(v) => onChange({ languageId: parseInt(v, 10) })}
-                includeAllOption={false}
-              />
-              <Select
-                value={row.visibility}
-                onValueChange={(value) => onChange({ visibility: value as ReviewRow["visibility"] })}
-              >
-                <SelectTrigger className="h-9 text-sm" aria-label="Visibility">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Public">Public</SelectItem>
-                  <SelectItem value="Private">Private</SelectItem>
-                </SelectContent>
-              </Select>
+              <Field label="Category">
+                <CategorySelect
+                  categories={categories}
+                  fieldVariant="minimal"
+                  value={row.categoryId?.toString() ?? ""}
+                  onChange={(v) => onChange({ categoryId: parseInt(v, 10) })}
+                  includeAllOption={false}
+                />
+              </Field>
+              <Field label="Difficulty">
+                <DifficultySelect
+                  difficulties={difficulties}
+                  fieldVariant="minimal"
+                  value={row.difficultyId?.toString() ?? ""}
+                  onChange={(v) => onChange({ difficultyId: parseInt(v, 10) })}
+                  includeAllOption={false}
+                />
+              </Field>
+              <Field label="Language">
+                <LanguageSelect
+                  languages={languages}
+                  fieldVariant="minimal"
+                  value={row.languageId?.toString() ?? ""}
+                  onChange={(v) => onChange({ languageId: parseInt(v, 10) })}
+                  includeAllOption={false}
+                />
+              </Field>
+              <Field label="Visibility">
+                <Select
+                  value={row.visibility}
+                  onValueChange={(value) => onChange({ visibility: value as ReviewRow["visibility"] })}
+                >
+                  <SelectTrigger variant="minimal" aria-label="Visibility">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Public">Public</SelectItem>
+                    <SelectItem value="Private">Private</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
             </div>
           </>
         )}
 
-        {problems.length > 0 && (
-          <p className="text-xs text-destructive">{problems.join(" · ")}</p>
-        )}
+        {problems.length > 0 && <p className="text-xs text-destructive">{problems.join(" · ")}</p>}
       </div>
-    </li>
+    </div>
   );
 };
+
+/** A small quiet heading over a field — what each box is, without reading like a settings form. */
+const Field = ({
+  label,
+  htmlFor,
+  children,
+}: {
+  label: string;
+  htmlFor?: string;
+  children: React.ReactNode;
+}) => (
+  <div className="min-w-0 space-y-1">
+    <Label htmlFor={htmlFor} className="text-xs font-medium text-muted-foreground">
+      {label}
+    </Label>
+    {children}
+  </div>
+);
 
 const TONES = {
   success: "bg-green-500/10 text-green-700 dark:text-green-400",

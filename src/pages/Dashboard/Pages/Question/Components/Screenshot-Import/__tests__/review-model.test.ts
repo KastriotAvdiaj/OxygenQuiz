@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import { QuestionType } from "@/types/question-types";
 import { UnspecifiedIds } from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/constants";
-import { isSavable, rowProblems, toCreateRequest, toReviewRow, typesFor } from "../review-model";
+import {
+  isSavable,
+  markRepeats,
+  normalizeType,
+  rowProblems,
+  toCreateRequest,
+  toReviewRow,
+} from "../review-model";
 import type { ScreenshotQuestion } from "../screenshot-import-api";
 
 const q = (over: Partial<ScreenshotQuestion> = {}): ScreenshotQuestion => ({
@@ -43,12 +50,41 @@ describe("screenshot import review rows", () => {
     expect(isSavable(row)).toBe(false);
   });
 
-  it("lets true/false stay true/false, and swaps the other two freely", () => {
-    expect(typesFor({ seenType: QuestionType.TrueFalse })).toEqual([QuestionType.TrueFalse]);
-    expect(typesFor({ seenType: QuestionType.TypeTheAnswer })).toEqual([
-      QuestionType.MultipleChoice,
-      QuestionType.TypeTheAnswer,
-    ]);
+  it("reads a type sent by name or by number — a number left every type box empty", () => {
+    expect(normalizeType("MultipleChoice")).toBe(QuestionType.MultipleChoice);
+    expect(normalizeType(0)).toBe(QuestionType.MultipleChoice);
+    expect(normalizeType(1)).toBe(QuestionType.TrueFalse);
+    expect(normalizeType(2)).toBe(QuestionType.TypeTheAnswer);
+    expect(toReviewRow(q({ type: 0 as never }), 1, 0).type).toBe(QuestionType.MultipleChoice);
+  });
+
+  it("asks for wrong options rather than switching away from multiple choice", () => {
+    const row = toReviewRow(q({ wrongOptions: [] }), 1, 0);
+    expect(row.type).toBe(QuestionType.MultipleChoice);
+    expect(rowProblems(row)).toEqual(["Add wrong options"]);
+  });
+
+  it("a question turned true/false must be rewritten as a statement first", () => {
+    const row = { ...toReviewRow(q(), 1, 0), type: QuestionType.TrueFalse };
+    expect(rowProblems(row)).toEqual(["Rewrite it as a statement to judge true or false"]);
+
+    const rewritten = { ...row, text: "Prishtina is the capital of Kosovo.", tfAnswer: "true" as const };
+    expect(rowProblems(rewritten)).toEqual([]);
+    expect(toCreateRequest(rewritten)).toMatchObject({
+      type: QuestionType.TrueFalse,
+      data: { text: "Prishtina is the capital of Kosovo.", correctAnswer: true },
+    });
+    // Switching back keeps the original answer.
+    expect({ ...rewritten, type: QuestionType.MultipleChoice }.correctAnswer).toBe("Prishtina");
+  });
+
+  it("marks a question already read from an earlier image, and leaves it unticked", () => {
+    const first = toReviewRow(q({ text: "The Mid-Atlantic Ridge runs through which country?" }), 3, 0);
+    const [again] = markRepeats([first], [toReviewRow(q({ text: "the mid-atlantic ridge runs through which country" }), 4, 0)]);
+    expect(again).toMatchObject({ alsoOnImage: 3, keep: false });
+
+    const [other] = markRepeats([first], [toReviewRow(q({ text: "Where is Dubai?" }), 4, 1)]);
+    expect(other).toMatchObject({ alsoOnImage: null, keep: true });
   });
 
   it("saves multiple choice as the answer plus the wrong options, difficulty Unspecified when unknown", () => {

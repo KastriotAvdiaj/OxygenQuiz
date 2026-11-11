@@ -39,6 +39,8 @@ namespace QuizAPI.Services.Ai.ScreenshotImport
 
             Rules:
             - Only questions actually on the image. No questions on it → {"questions":[]}.
+            - Text written in capitals: write it in normal sentence case, keeping proper nouns
+              capitalised ("WHERE IS DUBAI?" → "Where is Dubai?"). Change the letter case only, never the words.
             - A statement to judge true or false is "TrueFalse"; its shownAnswer is "true" or "false".
             - At most {{maxQuestions}} questions.
             """;

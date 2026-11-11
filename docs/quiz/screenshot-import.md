@@ -15,7 +15,7 @@ generates questions from text on an image and never translates.
 | Step | |
 |---|---|
 | Where | admin Questions page → *Add Question* → a fourth card, **From a screenshot**, shown only when `GET /api/questions/screenshot-import/status` says it's on |
-| Images | JPEG, PNG or WebP, ≤ 10 MB and ≤ 40 MP each, at most 10 an import — added by choosing, dropping or pasting |
+| Images | JPEG, PNG or WebP, ≤ 10 MB and ≤ 40 MP each, at most 10 an import. Before any is added, the dialog offers **Paste screenshot** (the Async Clipboard API, where the browser has it — Chrome 76+, Firefox 127+, Safari 13.1+) and **Choose images**, with a line saying a screenshot taken with Windows + Shift + S (⌘ Shift 4 on a Mac) is already copied — most people don't know a screenshot lands on their clipboard. Ctrl+V and dragging work too. **The same file twice is refused** (its SHA-256, in the browser): reading it again would be charged again |
 | Per image | `POST /api/questions/screenshot-import/read` (one image per request, three at a time), so each image has its own status, *Try again* and charge |
 | The image | through `MediaProcessor.ProcessImage` — format sniffed from the bytes, the header read before any pixel is decoded (the decompression-bomb defence), one frame — shrunk to 1344 px, metadata stripped, sent as WebP, **discarded**. Never stored |
 | Call 1: read | the image plus a prompt that says copy, don't invent; **reasoning `none`** (`ReadReasoningEffort`): copying text needs no thinking, and thinking is most of a call's cost |
@@ -25,10 +25,30 @@ generates questions from text on an image and never translates.
 
 ## The review list
 
+> Reworked 2026-11-11 after the first real test: types were sent as numbers, so every row's type
+> box started empty; fields had no labels; nothing showed an image being read.
+
+- **While reading:** a spinner over each image's thumbnail, a placeholder row in the list
+  (*Reading image 2…*), and *Reading 2 of 4…* on the button. Rows slide in as each image finishes
+  (reduced motion: they fade).
+- **One blue button per stage:** *Read* until the first questions arrive, then *Save*; the other is
+  muted. *Make them* comes before *Read*, since the type is chosen before reading.
+- **The images** sit in one sideways-scrolling row under *Paste* and *Add more*, and fold into
+  *4 images read · Show* once all are read — they stop pushing the questions down.
+- **Removing an image keeps its questions** — they're read; unticking a row skips it, so nothing is
+  ever deleted and nothing needs an undo.
+- **The same question on two images** — the later row says *Also on image 3* and starts unticked.
+- **Every field is labelled** and uses the builder's minimal fields in the app font: the reviewer is
+  editing the question as it will be played. Capitals on the image come back in normal sentence
+  case (the read prompt asks for it — letter case only, never the words).
+
 Each row says where its answer came from — **Answer from the image** or **Answer suggested — check**
 (or *Options suggested*) — so the reviewer knows which to look at hardest. *Make them* (Multiple choice
 by default, As they appear, Type the answer) sets each row's starting type; a row can switch, because
-the reply always carries the answer, three wrong options and alternates. True/false stays true/false.
+the reply always carries the answer, three wrong options and alternates. The type asked for sticks:
+with no wrong options back, a row stays multiple choice and asks *Add wrong options*. **Any row can
+be made True / False** — the reviewer then rewrites it as a statement (*Your statement — check the
+answer*); the model never rewrites, it copies.
 Rows start **Public**, with a switch. A question whose picture *is* the question ("what is missing
 from this flag?") shows greyed out as *Needs its picture — not supported yet*: it would need two
 images, the one asked about and the one shown after answering.
@@ -40,6 +60,9 @@ images, the one asked about and the one shown after answering.
 - Usage rows are `AiGenerationMode.ScreenshotImport`. Quiz generation's slots count **only** Topic and
   Source rows (`CountSlotsUsedSinceAsync`) — before 2026-11-10 they counted every succeeded row, so a
   category-palette proposal took one of an Admin's two daily quiz slots.
+- **A refused API key** (the vendor answers 401/403) says so — "The AI service refused this site's
+  API key… trying again won't help" — instead of *Try this one again*; the provider logs which setting
+  to check (`AiProviderException.UpstreamStatus`).
 - Burst guard: its own rate limit, 20 reads a minute (`screenshot`), since `ai`'s six would trip on one
   import.
 - One `ScreenshotRead` audit entry **per image** (question count, type choice) — no image, no new

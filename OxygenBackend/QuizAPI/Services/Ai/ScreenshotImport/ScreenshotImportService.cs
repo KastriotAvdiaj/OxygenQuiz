@@ -403,8 +403,8 @@ namespace QuizAPI.Services.Ai.ScreenshotImport
                 ScreenshotMakeType.TypeTheAnswer => QuestionType.TypeTheAnswer,
                 _ => q.SeenType,
             };
-            // Multiple choice needs at least one wrong option to be a choice at all.
-            if (type == QuestionType.MultipleChoice && wrong.Count == 0) type = QuestionType.TypeTheAnswer;
+            // The type asked for sticks, even with no wrong options: the reviewer adds them (the
+            // row says so). Quietly switching to type-the-answer overruled the choice they made.
 
             return new ScreenshotQuestionDTO
             {

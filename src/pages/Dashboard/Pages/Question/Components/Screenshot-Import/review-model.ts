@@ -18,6 +18,25 @@ export type CreateRequest =
 
 export type ReviewVisibility = "Public" | "Private";
 
+const BY_NUMBER = [QuestionType.MultipleChoice, QuestionType.TrueFalse, QuestionType.TypeTheAnswer];
+
+/**
+ * The API sends types by name since 2026-11-11; a number (its enum's position) left every row's
+ * type box empty before that. Accept both, so an old API or a cached reply can't do it again.
+ */
+export const normalizeType = (value: unknown): QuestionType =>
+  typeof value === "number"
+    ? (BY_NUMBER[value] ?? QuestionType.TypeTheAnswer)
+    : Object.values(QuestionType).includes(value as QuestionType)
+      ? (value as QuestionType)
+      : QuestionType.TypeTheAnswer;
+
+/** Same wording, ignoring case, spacing and the closing mark — how "already in the list" is judged. */
+export const sameWording = (a: string, b: string) => {
+  const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim().replace(/[?.!:]+$/, "");
+  return norm(a) === norm(b);
+};
+
 export interface ReviewRow {
   key: string;
   /** Which image it came from (1-based), for the row's caption. */
@@ -26,7 +45,11 @@ export interface ReviewRow {
   type: QuestionType;
   seenType: QuestionType;
   text: string;
+  /** As read — so a row switched to true/false can tell whether it was rewritten as a statement. */
+  originalText: string;
   correctAnswer: string;
+  /** True/false's answer, kept apart so switching type never loses the other answer. */
+  tfAnswer: "true" | "false";
   /** Always three slots, so switching to multiple choice has somewhere to put them. */
   wrongOptions: [string, string, string];
   acceptableAnswers: string[];
@@ -39,18 +62,24 @@ export interface ReviewRow {
   difficultyId: number | null;
   languageId: number | null;
   duplicateOfId: number | null;
+  /** The same question was already read from this earlier image in this import. */
+  alsoOnImage: number | null;
   visibility: ReviewVisibility;
 }
 
 /** What a row starts as. A possible duplicate starts unticked; a picture-is-the-question row can't be ticked. */
-export const toReviewRow = (q: ScreenshotQuestion, imageNumber: number, index: number): ReviewRow => ({
+export const toReviewRow = (q: ScreenshotQuestion, imageNumber: number, index: number): ReviewRow => {
+  const seenType = normalizeType(q.seenType);
+  return {
   key: `${imageNumber}-${index}`,
   imageNumber,
   keep: !q.needsItsPicture && q.duplicateOfId === null,
-  type: q.type,
-  seenType: q.seenType,
+  type: normalizeType(q.type),
+  seenType,
   text: q.text,
-  correctAnswer: q.correctAnswer,
+  originalText: q.text,
+  correctAnswer: seenType === QuestionType.TrueFalse ? "" : q.correctAnswer,
+  tfAnswer: seenType === QuestionType.TrueFalse && q.correctAnswer === "false" ? "false" : "true",
   wrongOptions: [q.wrongOptions[0] ?? "", q.wrongOptions[1] ?? "", q.wrongOptions[2] ?? ""],
   acceptableAnswers: q.acceptableAnswers,
   explanation: q.explanation ?? "",
@@ -62,14 +91,37 @@ export const toReviewRow = (q: ScreenshotQuestion, imageNumber: number, index: n
   difficultyId: q.difficultyId,
   languageId: q.languageId,
   duplicateOfId: q.duplicateOfId,
+  alsoOnImage: null,
   visibility: "Public",
-});
+  };
+};
 
-/** The types a row may switch to: true/false stays true/false; the others swap freely. */
-export const typesFor = (row: Pick<ReviewRow, "seenType">): QuestionType[] =>
-  row.seenType === QuestionType.TrueFalse
-    ? [QuestionType.TrueFalse]
-    : [QuestionType.MultipleChoice, QuestionType.TypeTheAnswer];
+/**
+ * New rows against the ones already listed: a question already read from an earlier image is
+ * marked *Also on image N* and starts unticked — the same screenshot sent twice, or one question
+ * on two slides. Pure, so it's tested without the dialog.
+ */
+export const markRepeats = (existing: ReviewRow[], incoming: ReviewRow[]): ReviewRow[] => {
+  const seen = [...existing];
+  return incoming.map((row) => {
+    const earlier = seen.find((r) => !r.needsItsPicture && sameWording(r.text, row.text));
+    const marked = earlier ? { ...row, alsoOnImage: earlier.imageNumber, keep: false } : row;
+    seen.push(marked);
+    return marked;
+  });
+};
+
+/**
+ * Every row may be any type (proposal Q34). A question turned true/false needs rewriting as a
+ * statement by the reviewer — the model never rewrites, it only copies.
+ */
+export const ALL_TYPES = [QuestionType.MultipleChoice, QuestionType.TrueFalse, QuestionType.TypeTheAnswer];
+
+/** A row switched to true/false from a question, not yet rewritten as a statement. */
+export const needsStatement = (row: ReviewRow) =>
+  row.type === QuestionType.TrueFalse &&
+  row.seenType !== QuestionType.TrueFalse &&
+  sameWording(row.text, row.originalText);
 
 /**
  * Why a ticked row can't be saved yet, in the words the row shows. Empty = ready. Mirrors the API's
@@ -79,9 +131,10 @@ export const rowProblems = (row: ReviewRow): string[] => {
   if (row.needsItsPicture) return ["Needs its picture — not supported yet"];
   const problems: string[] = [];
   if (!row.text.trim()) problems.push("Write the question");
-  if (!row.correctAnswer.trim()) problems.push("Give the answer");
+  if (needsStatement(row)) problems.push("Rewrite it as a statement to judge true or false");
+  if (row.type !== QuestionType.TrueFalse && !row.correctAnswer.trim()) problems.push("Give the answer");
   if (row.type === QuestionType.MultipleChoice && row.wrongOptions.every((o) => !o.trim()))
-    problems.push("Give at least one wrong option");
+    problems.push("Add wrong options");
   if (row.categoryId === null) problems.push("Choose a category");
   if (row.languageId === null) problems.push("Choose a language");
   return problems;
@@ -102,7 +155,7 @@ export const toCreateRequest = (row: ReviewRow): CreateRequest => {
   };
   switch (row.type) {
     case QuestionType.TrueFalse:
-      return { type: QuestionType.TrueFalse, data: { ...common, correctAnswer: row.correctAnswer === "true" } };
+      return { type: QuestionType.TrueFalse, data: { ...common, correctAnswer: row.tfAnswer === "true" } };
     case QuestionType.MultipleChoice: {
       const wrong = row.wrongOptions.map((o) => o.trim()).filter(Boolean);
       return {
