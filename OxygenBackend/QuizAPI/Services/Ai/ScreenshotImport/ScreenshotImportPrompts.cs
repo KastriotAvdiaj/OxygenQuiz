@@ -58,8 +58,9 @@ namespace QuizAPI.Services.Ai.ScreenshotImport
             Reply with JSON only:
             {"answers":[{
               "index": number,                 // the question's index above
-              "correctAnswer": string,         // keep shownAnswer if given; for TrueFalse "true" or "false"
-              "wrongOptions": [string],        // exactly 3 plausible wrong answers; keep shown wrong options first
+              "text": string | null,           // only if the question is written in CAPITALS: the same words in sentence case, proper nouns capitalised ("WHERE IS DUBAI?" → "Where is Dubai?"); otherwise null
+              "correctAnswer": string,         // keep shownAnswer if given (in normal case if it is in capitals); for TrueFalse "true" or "false"
+              "wrongOptions": [string],        // exactly 3 plausible wrong answers; keep shown wrong options first (in normal case)
               "acceptableAnswers": [string],   // other spellings a typed answer should accept; may be empty
               "explanation": string | null     // one or two sentences on why the answer is right
             }]}

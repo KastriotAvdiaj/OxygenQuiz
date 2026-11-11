@@ -16,6 +16,7 @@ import {
 import { LiftedButton } from "@/common/LiftedButton";
 import { useNotifications } from "@/common/Notifications";
 import {
+  ConfirmationDialog,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -128,6 +129,7 @@ export const ScreenshotImportDialog = ({
   const [saving, setSaving] = useState(false);
   const [showImages, setShowImages] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const nextId = useRef(1);
   const abort = useRef<AbortController | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -160,10 +162,29 @@ export const ScreenshotImportDialog = ({
     nextId.current = 1;
   };
 
-  const handleOpenChange = (next: boolean) => {
-    if (!next) reset();
-    onOpenChange(next);
+  // Read questions (or images being read) are work the reader paid for from today's allowance:
+  // closing asks first, and a click outside the dialog does nothing.
+  const hasWork = rows.length > 0 || reading;
+
+  const close = () => {
+    setConfirmDiscard(false);
+    reset();
+    onOpenChange(false);
   };
+
+  const handleOpenChange = (next: boolean) => {
+    if (next) onOpenChange(true);
+    else if (hasWork) setConfirmDiscard(true);
+    else close();
+  };
+
+  // The browser's own "Leave site?" prompt — a tab closed or reloaded loses the list just the same.
+  useEffect(() => {
+    if (!open || !hasWork) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [open, hasWork]);
 
   const addFiles = async (files: FileList | File[]) => {
     const list = Array.from(files);
@@ -294,7 +315,7 @@ export const ScreenshotImportDialog = ({
 
     if (failed === 0) {
       addNotification({ type: "success", title: `Saved ${saved.size} question${saved.size === 1 ? "" : "s"}` });
-      handleOpenChange(false);
+      close();
     } else {
       // The ones that failed stay in the list, so nothing is lost.
       setRows((prev) => prev.filter((r) => !saved.has(r.key)));
@@ -331,6 +352,9 @@ export const ScreenshotImportDialog = ({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         className="bg-background p-5 sm:max-w-3xl max-h-[90vh] overflow-y-auto dark:border border-foreground/30"
+        onInteractOutside={(e) => {
+          if (hasWork) e.preventDefault();
+        }}
         onPaste={(e) => {
           if (e.clipboardData.files.length > 0) void addFiles(e.clipboardData.files);
         }}
@@ -347,58 +371,45 @@ export const ScreenshotImportDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        {images.length === 0 ? (
-          // Nothing added yet: say every way in, plainly — not everyone knows they can paste.
-          <div
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault();
-              void addFiles(e.dataTransfer.files);
-            }}
-            className="flex w-full flex-col items-center gap-3 rounded-md border border-dashed border-foreground/40 px-4 py-6 text-center"
-          >
-            <div className="flex flex-wrap justify-center gap-3">
-              {canReadClipboard() && (
-                <LiftedButton type="button" className={primary} onClick={pasteFromClipboard}>
-                  <ClipboardPaste className="h-4 w-4" aria-hidden="true" />
-                  Paste screenshot
-                </LiftedButton>
-              )}
-              <LiftedButton
-                type="button"
-                className={muted}
-                liftColor="muted-foreground"
-                onClick={() => fileInput.current?.click()}
-              >
-                <ImagePlus className="h-4 w-4" aria-hidden="true" />
-                Choose images
-              </LiftedButton>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Or drag them here, or press {pasteKeys}. Took a screenshot with {shotKeys}? It's
-              already copied — just paste it.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2">
+        {/* The same two tiles before and after the first image — only the hint goes once an image
+            is in, so nothing changes shape under the reader's pointer. */}
+        <div className="space-y-2">
+          {images.length < maxImages && (
             <div className="flex flex-wrap gap-2">
-              {images.length < maxImages && (
-                <>
-                  {canReadClipboard() && (
-                    <AddTile onClick={pasteFromClipboard} icon={<ClipboardPaste className="h-4 w-4" aria-hidden="true" />}>
-                      Paste
-                    </AddTile>
-                  )}
-                  <AddTile
-                    onClick={() => fileInput.current?.click()}
-                    onDrop={(files) => void addFiles(files)}
-                    icon={<ImagePlus className="h-4 w-4" aria-hidden="true" />}
-                  >
-                    Add more
-                  </AddTile>
-                </>
+              {canReadClipboard() && (
+                <AddTile
+                  onClick={pasteFromClipboard}
+                  onDrop={(files) => void addFiles(files)}
+                  icon={<ClipboardPaste className="h-4 w-4" aria-hidden="true" />}
+                >
+                  {images.length === 0 ? "Paste screenshot" : "Paste"}
+                </AddTile>
               )}
+              <AddTile
+                onClick={() => fileInput.current?.click()}
+                onDrop={(files) => void addFiles(files)}
+                icon={<ImagePlus className="h-4 w-4" aria-hidden="true" />}
+              >
+                {images.length === 0 ? "Choose images" : "Add more"}
+              </AddTile>
             </div>
+          )}
+          <AnimatePresence initial={false}>
+            {images.length === 0 && (
+              // Not everyone knows a screenshot is already on the clipboard.
+              <motion.p
+                key="hint"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={transition}
+                className="overflow-hidden text-xs text-muted-foreground"
+              >
+                Or drag them onto a tile, or press {pasteKeys}. Took a screenshot with {shotKeys}? It's
+                already copied — just paste it.
+              </motion.p>
+            )}
+          </AnimatePresence>
 
             {allRead && hasRows && (
               <button
@@ -477,8 +488,7 @@ export const ScreenshotImportDialog = ({
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
-        )}
+        </div>
         <input
           ref={fileInput}
           type="file"
@@ -561,6 +571,30 @@ export const ScreenshotImportDialog = ({
           </LiftedButton>
         </div>
       </DialogContent>
+
+      <ConfirmationDialog
+        isOpen={confirmDiscard}
+        onOpenChange={setConfirmDiscard}
+        icon="danger"
+        title="Discard these questions?"
+        body={
+          reading
+            ? "Images are still being read. Closing stops them, and nothing read so far is saved."
+            : `${rows.length} question${rows.length === 1 ? " hasn't" : "s haven't"} been saved. Closing throws ${rows.length === 1 ? "it" : "them"} away, and reading the images again counts against today's allowance.`
+        }
+        cancelButtonText="Keep editing"
+        confirmButton={
+          <LiftedButton
+            type="button"
+            className="flex items-center gap-2 bg-red-600 text-white py-1 text-sm"
+            liftColor="red-700"
+            onClick={close}
+          >
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+            Discard
+          </LiftedButton>
+        }
+      />
     </Dialog>
   );
 };

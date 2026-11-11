@@ -245,7 +245,8 @@ namespace QuizAPI.Services.Ai.ScreenshotImport
             bool NeedsItsPicture, string? ImageQuery, string? Category, string? Difficulty, string? Language);
 
         internal sealed record Completion(
-            string? CorrectAnswer, List<string> WrongOptions, List<string> AcceptableAnswers, string? Explanation);
+            string? CorrectAnswer, List<string> WrongOptions, List<string> AcceptableAnswers, string? Explanation,
+            string? Text = null);
 
         internal static List<SeenQuestion> ParseRead(string content)
         {
@@ -292,7 +293,8 @@ namespace QuizAPI.Services.Ai.ScreenshotImport
                     Blank(Str(a, "correctAnswer")),
                     Strings(a, "wrongOptions"),
                     Strings(a, "acceptableAnswers"),
-                    Blank(Str(a, "explanation")));
+                    Blank(Str(a, "explanation")),
+                    Blank(Str(a, "text")));
             }
             return map;
         }
@@ -347,6 +349,7 @@ namespace QuizAPI.Services.Ai.ScreenshotImport
 
         private static bool NeedsCompletion(SeenQuestion q) =>
             q.ShownAnswer is null
+            || IsShouting(q.Text) || IsShouting(q.ShownAnswer) || q.ShownOptions.Any(IsShouting)
             || (q.SeenType != QuestionType.TrueFalse && WrongShown(q).Count < 3)
             || q.SeenType == QuestionType.TypeTheAnswer;
 
@@ -359,6 +362,7 @@ namespace QuizAPI.Services.Ai.ScreenshotImport
             IReadOnlyList<DTOs.Question.QuestionDifficultyDTO> difficulties,
             IReadOnlyList<DTOs.Question.QuestionLanguageDTO> languages)
         {
+            q = Recased(q, c);
             var categoryId = MatchId(q.Category, categories.Select(x => (x.Id, (string?)x.Name)));
             var difficultyId = MatchId(q.Difficulty, difficulties.Select(x => (x.ID, (string?)x.Level)));
             var languageId = MatchId(q.Language, languages.Select(x => (x.ID, (string?)x.Language)));
@@ -415,6 +419,53 @@ namespace QuizAPI.Services.Ai.ScreenshotImport
                 Explanation = c?.Explanation, AnswerFromImage = answerFromImage, OptionsFromImage = optionsFromImage,
                 ImageQuery = q.ImageQuery, CategoryId = categoryId, DifficultyId = difficultyId, LanguageId = languageId,
             };
+        }
+
+        // ── Letter case ──────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Quiz screenshots are often all capitals, and the read keeps them however it's asked. The
+        /// completion call gives the same words in normal case; a reply accepted only when it differs
+        /// in case alone, so nothing is reworded. When it gives none, the question goes to plain
+        /// sentence case (proper nouns past the first word lose their capital, for the reviewer to
+        /// fix) while answers and options stay as shown — "NATO" must not become "Nato".
+        /// </summary>
+        internal static SeenQuestion Recased(SeenQuestion q, Completion? c)
+        {
+            string Fix(string s, IEnumerable<string?> offered, bool fallback)
+            {
+                if (!IsShouting(s)) return s;
+                var same = offered.FirstOrDefault(o => o is not null && !IsShouting(o)
+                    && string.Equals(o.Trim(), s.Trim(), StringComparison.OrdinalIgnoreCase));
+                return same?.Trim() ?? (fallback ? SentenceCase(s) : s);
+            }
+
+            var offered = new List<string?> { c?.Text, c?.CorrectAnswer };
+            offered.AddRange(c?.WrongOptions ?? new List<string>());
+            return q with
+            {
+                Text = Fix(q.Text, new[] { c?.Text }, fallback: true),
+                ShownAnswer = q.ShownAnswer is null ? null : Fix(q.ShownAnswer, offered, fallback: false),
+                ShownOptions = q.ShownOptions.Select(o => Fix(o, offered, fallback: false)).ToList(),
+            };
+        }
+
+        /// <summary>
+        /// Written in capitals: at least four cased letters and not one of them lower case. Scripts
+        /// without case never count.
+        /// </summary>
+        internal static bool IsShouting(string? s)
+        {
+            if (s is null) return false;
+            var cased = s.Where(ch => char.IsLetter(ch) && char.ToUpperInvariant(ch) != char.ToLowerInvariant(ch)).ToList();
+            return cased.Count >= 4 && cased.All(char.IsUpper);
+        }
+
+        internal static string SentenceCase(string s)
+        {
+            var lower = s.Trim().ToLowerInvariant();
+            var first = lower.IndexOf(lower.FirstOrDefault(char.IsLetter));
+            return first < 0 ? lower : lower[..first] + char.ToUpperInvariant(lower[first]) + lower[(first + 1)..];
         }
 
         private static int? MatchId(string? name, IEnumerable<(int Id, string? Name)> rows) =>

@@ -223,7 +223,9 @@ const Field = ({
   htmlFor?: string;
   children: React.ReactNode;
 }) => (
-  <div className="min-w-0 space-y-1">
+  // A column, not space-y: a label beside an inline-flex control (the segmented ones) would sit on
+  // the same line as it, with no gap.
+  <div className="flex min-w-0 flex-col items-start gap-1 [&>*:last-child]:w-full">
     <Label htmlFor={htmlFor} className="text-xs font-medium text-muted-foreground">
       {label}
     </Label>

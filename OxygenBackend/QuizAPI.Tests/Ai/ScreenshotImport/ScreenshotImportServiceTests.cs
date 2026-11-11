@@ -254,6 +254,36 @@ public class ScreenshotImportServiceTests
     }
 
     [Fact]
+    public async Task A_question_in_capitals_comes_back_in_normal_case()
+    {
+        var w = new World(
+            read: """{"questions":[{"text":"BAVARIA IS A REGION IN WHAT COUNTRY?","seenType":"TypeTheAnswer","shownOptions":[],"shownAnswer":"GERMANY","needsItsPicture":false}]}""",
+            complete: """{"answers":[{"index":0,"text":"Bavaria is a region in what country?","correctAnswer":"Germany","wrongOptions":[],"acceptableAnswers":[]}]}""");
+        var q = Assert.Single((await Read(w)).Questions);
+
+        Assert.Equal("Bavaria is a region in what country?", q.Text);
+        Assert.Equal("Germany", q.CorrectAnswer);
+    }
+
+    [Fact]
+    public void Recasing_changes_letter_case_only_and_never_spoils_a_short_answer()
+    {
+        var seen = new ScreenshotImportService.SeenQuestion(
+            "WHAT DOES NATO STAND FOR?", QuestionType.TypeTheAnswer, new List<string>(), "NATO",
+            false, null, null, null, null);
+
+        // A reply that rewords is refused: sentence case instead. No reply for the answer: kept.
+        var reworded = new ScreenshotImportService.Completion(
+            "NATO", new List<string>(), new List<string>(), null, Text: "What is NATO short for?");
+        var q = ScreenshotImportService.Recased(seen, reworded);
+
+        Assert.Equal("What does nato stand for?", q.Text);
+        Assert.Equal("NATO", q.ShownAnswer);
+        Assert.False(ScreenshotImportService.IsShouting("Where is Dubai?"));
+        Assert.False(ScreenshotImportService.IsShouting("ბათუმი"));
+    }
+
+    [Fact]
     public void Types_are_sent_by_name_not_number()
     {
         var json = System.Text.Json.JsonSerializer.Serialize(

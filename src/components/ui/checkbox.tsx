@@ -1,8 +1,13 @@
 import * as React from "react"
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox"
+import { Check } from "lucide-react"
 import { cn } from "@/utils/cn"
-import { CheckIcon } from "@radix-ui/react-icons"
 
+/**
+ * shadcn/ui's checkbox, at its current look: a quiet outline until ticked, and a check drawn
+ * smaller than the box so it doesn't touch the edges (the old version drew a 16px check in a
+ * 16px box). Ticking fades in rather than snapping (docs/development/motion.md).
+ */
 const Checkbox = React.forwardRef<
   React.ElementRef<typeof CheckboxPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>
@@ -10,15 +15,13 @@ const Checkbox = React.forwardRef<
   <CheckboxPrimitive.Root
     ref={ref}
     className={cn(
-      "peer h-4 w-4 shrink-0 rounded-sm border border-primary shadow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
+      "peer grid size-4 shrink-0 place-content-center rounded-[4px] border border-foreground/40 shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
       className
     )}
     {...props}
   >
-    <CheckboxPrimitive.Indicator
-      className={cn("flex items-center justify-center text-current")}
-    >
-      <CheckIcon className="h-4 w-4" />
+    <CheckboxPrimitive.Indicator className="grid place-content-center text-current animate-in fade-in-0 zoom-in-75 duration-150 motion-reduce:animate-none">
+      <Check className="size-3.5" strokeWidth={3} aria-hidden="true" />
     </CheckboxPrimitive.Indicator>
   </CheckboxPrimitive.Root>
 ))

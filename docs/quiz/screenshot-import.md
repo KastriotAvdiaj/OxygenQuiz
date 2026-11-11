@@ -15,11 +15,12 @@ generates questions from text on an image and never translates.
 | Step | |
 |---|---|
 | Where | admin Questions page → *Add Question* → a fourth card, **From a screenshot**, shown only when `GET /api/questions/screenshot-import/status` says it's on |
-| Images | JPEG, PNG or WebP, ≤ 10 MB and ≤ 40 MP each, at most 10 an import. Before any is added, the dialog offers **Paste screenshot** (the Async Clipboard API, where the browser has it — Chrome 76+, Firefox 127+, Safari 13.1+) and **Choose images**, with a line saying a screenshot taken with Windows + Shift + S (⌘ Shift 4 on a Mac) is already copied — most people don't know a screenshot lands on their clipboard. Ctrl+V and dragging work too. **The same file twice is refused** (its SHA-256, in the browser): reading it again would be charged again |
+| Images | JPEG, PNG or WebP, ≤ 10 MB and ≤ 40 MP each, at most 10 an import. Two dashed tiles, **Paste screenshot** (the Async Clipboard API, where the browser has it — Chrome 76+, Firefox 127+, Safari 13.1+) and **Choose images** — the same tiles, renamed *Paste* and *Add more*, once an image is in, so nothing changes shape — and before the first image a line saying a screenshot taken with Windows + Shift + S (⌘ Shift 4 on a Mac) is already copied — most people don't know a screenshot lands on their clipboard. Ctrl+V and dragging work too. **The same file twice is refused** (its SHA-256, in the browser): reading it again would be charged again |
 | Per image | `POST /api/questions/screenshot-import/read` (one image per request, three at a time), so each image has its own status, *Try again* and charge |
 | The image | through `MediaProcessor.ProcessImage` — format sniffed from the bytes, the header read before any pixel is decoded (the decompression-bomb defence), one frame — shrunk to 1344 px, metadata stripped, sent as WebP, **discarded**. Never stored |
 | Call 1: read | the image plus a prompt that says copy, don't invent; **reasoning `none`** (`ReadReasoningEffort`): copying text needs no thinking, and thinking is most of a call's cost |
-| Call 2: complete | text only, the vendor's reasoning — only for questions missing an answer, wrong options or alternates. If it fails, what was read is still offered; rows with no answer are dropped |
+| Call 2: complete | text only, the vendor's reasoning — only for questions missing an answer, wrong options or alternates, or written in capitals. If it fails, what was read is still offered; rows with no answer are dropped |
+| Letter case | the read keeps capitals however it's asked, so call 2 returns the question in sentence case, proper nouns kept. Code accepts that only if it differs **in letter case alone** — never reworded. No usable reply: the question goes to plain sentence case (a proper noun past the first word loses its capital — the reviewer fixes it), while answers and options stay as shown, so *NATO* never becomes *Nato* |
 | Decided by code | `ScreenshotImportService.Build` ([ADR 0003](../adr/0003-the-model-proposes-the-code-decides.md)): category, difficulty and language matched by name to existing rows only, never Unspecified (no match → the reviewer chooses); an `imageQuery` that looks like a link is dropped; the answer is never also a wrong option |
 | Duplicates | same wording as a question in the bank → *Possible duplicate of #id*, unticked, never blocked |
 
@@ -39,8 +40,12 @@ generates questions from text on an image and never translates.
   ever deleted and nothing needs an undo.
 - **The same question on two images** — the later row says *Also on image 3* and starts unticked.
 - **Every field is labelled** and uses the builder's minimal fields in the app font: the reviewer is
-  editing the question as it will be played. Capitals on the image come back in normal sentence
-  case (the read prompt asks for it — letter case only, never the words).
+  editing the question as it will be played. Capitals on the image come back in normal case (see
+  *Letter case* above).
+- **Closing never loses work by accident.** With questions in the list (or images being read), a
+  click outside the dialog does nothing, and Cancel, the ✕ or Esc ask *Discard these questions?* —
+  reading them again would count against the allowance. Closing or reloading the tab gets the
+  browser's own *Leave site?* prompt.
 
 Each row says where its answer came from — **Answer from the image** or **Answer suggested — check**
 (or *Options suggested*) — so the reviewer knows which to look at hardest. *Make them* (Multiple choice
