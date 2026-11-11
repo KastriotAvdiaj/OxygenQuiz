@@ -1,7 +1,7 @@
 import { EditPencil } from "@/components/icons/edit-pencil";
 import { PickedQuestionNotice } from "@/features/reports/components/picked-edit-notice";
 import React, { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
@@ -192,14 +192,16 @@ export const UpdateTypeAnswerQuestionForm: React.FC<
                     </Label>
                     <div className="flex space-x-2">
                       <LiftedButton
-                        type="button"
-                        className="text-[12px]"
-                        disabled={addAnswerDisabled}
-                        onClick={() =>
-                          !addAnswerDisabled && append({ value: "" })
-                        }>
-                        + Add Answer
-                      </LiftedButton>
+                      type="button"
+                      size="sm"
+                      className="flex items-center gap-2 bg-muted text-foreground"
+                      liftColor="muted-foreground"
+                      disabled={addAnswerDisabled}
+                      onClick={() => !addAnswerDisabled && append({ value: "" })}
+                    >
+                      <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                      Add answer
+                    </LiftedButton>
                     </div>
                   </div>
                   {addAnswerDisabled && (
@@ -213,6 +215,7 @@ export const UpdateTypeAnswerQuestionForm: React.FC<
                         key={field.id}
                         className="flex items-center justify-between gap-4">
                         <Input
+                          variant="minimal"
                           className={`${
                             formState.errors?.acceptableAnswers?.[index]
                               ? "border-red-500"
@@ -226,14 +229,17 @@ export const UpdateTypeAnswerQuestionForm: React.FC<
                             `acceptableAnswers.${index}.value`
                           )}
                         />
-                        <Button
+                        <LiftedButton
                           type="button"
-                          variant="destructive"
-                          size="sm"
-                          className="rounded-xl"
-                          onClick={() => remove(index)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                          variant="icon"
+                          outerClassName="shrink-0"
+                          className="bg-red-600 text-white"
+                          liftColor="red-700"
+                          onClick={() => remove(index)}
+                          aria-label={`Remove alternative answer ${index + 1}`}
+                        >
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
+                        </LiftedButton>
                       </div>
                     ))}
                   </div>

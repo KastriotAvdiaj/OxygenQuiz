@@ -1,4 +1,3 @@
-import { Trash2 } from "lucide-react";
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
@@ -10,7 +9,8 @@ import { Separator } from "@/components/ui/separator";
 import { CategorySelect } from "../../../Entities/Categories/Components/select-question-category";
 import { DifficultySelect } from "../../../Entities/Difficulty/Components/select-question-difficulty";
 import { LanguageSelect } from "../../../Entities/Language/components/select-question-language";
-import { LiftedButton } from "@/common/LiftedButton";
+import { AddOptionButton } from "../add-option-button";
+import { AnswerOptionField } from "../answer-option-field";
 import { AddQuestionButton, QuestionTypeButton } from "../../question-type-button";
 import { QuestionVisibilityField, useNewQuestionVisibility } from "../../../Entities/select-visibility";
 import { useCreateAnother } from "../../use-create-another";
@@ -234,72 +234,32 @@ export const CreateMultipleChoiceForm: React.FC<
                     </span>
                   )}
                 </div>
-                {fields.map((field, index) => {
-                  const isCorrect = watch(`answerOptions.${index}.isCorrect`);
-
-                  return (
-                    <div
-                      key={field.id}
-                      className="flex items-center justify-between gap-6"
-                    >
-                      <Input
-                        variant="minimal"
-                        className={`${
-                          formState.errors["answerOptions"]
-                            ? "border-red-500"
-                            : ""
-                        } ${isCorrect ? "!border-4 !border-primary" : ""}`}
-                        placeholder={`Answer Option ${index + 1}...`}
-                        error={formState.errors?.answerOptions?.[index]?.text}
-                        registration={register(`answerOptions.${index}.text`)}
-                      />
-                      <div className="flex flex-col items-center">
-                        <Switch
-                          className="shadow-md"
-                          id={`correct-${index}`}
-                          // Four switches all labelled "Correct Answer" are indistinguishable to
-                          // a screen reader (and to a test); this one says which option it marks.
-                          aria-label={`Option ${index + 1} is correct`}
-                          checked={isCorrect}
-                          onCheckedChange={() => handleSwitchChange(index)}
-                        />
-                        <Label
-                          htmlFor={`correct-${index}`}
-                          className="text-xs text-gray-600 mt-1"
-                        >
-                          Correct{" "}
-                          {allowMultipleSelections ? "Option" : "Answer"}
-                        </Label>
-                      </div>
-                      <LiftedButton
-                        variant="icon"
-                        className="rounded-xl bg-red-500"
-                        backgroundColorForBorder="bg-red-700"
-                        onClick={() => remove(index)}
-                        disabled={fields.length <= 2}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </LiftedButton>
-                    </div>
-                  );
-                })}
+                {fields.map((field, index) => (
+                  <AnswerOptionField
+                    key={field.id}
+                    index={index}
+                    registration={register(`answerOptions.${index}.text`)}
+                    error={formState.errors?.answerOptions?.[index]?.text}
+                    isCorrect={!!watch(`answerOptions.${index}.isCorrect`)}
+                    onToggleCorrect={() => handleSwitchChange(index)}
+                    onRemove={() => remove(index)}
+                    removeDisabled={fields.length <= 2}
+                  />
+                ))}
                 {formState.errors?.answerOptions && (
-                  <p className="text-sm text-red-500 font-semibold border border-red-500 p-2 text-center">
+                  <p className="text-sm text-red-500">
                     {formState.errors.answerOptions.message ||
                       "At least one option needs to be correct!"}
                   </p>
                 )}
-                <LiftedButton
-                  type="button"
-                  className="text-sm"
+                <AddOptionButton
                   onClick={() => append({ text: "", isCorrect: false })}
                   disabled={addOptionDisabled}
-                >
-                  + Add Answer Option
-                </LiftedButton>
+                />
               </div>
               <section className="grid grid-cols-2 gap-4 border-t pt-4 dark:border-foreground/30">
                 <CategorySelect
+                  label="Category"
                   categories={categories}
                   value={watch("categoryId")?.toString() || ""}
                   onChange={(selectedValue: string) =>
@@ -310,6 +270,7 @@ export const CreateMultipleChoiceForm: React.FC<
                   clearErrors={() => clearErrors("categoryId")}
                 />
                 <DifficultySelect
+                  label="Difficulty"
                   difficulties={difficulties}
                   value={watch("difficultyId")?.toString() || ""}
                   onChange={(selectedValue: string) =>
@@ -320,6 +281,7 @@ export const CreateMultipleChoiceForm: React.FC<
                   clearErrors={() => clearErrors("difficultyId")}
                 />
                 <LanguageSelect
+                  label="Language"
                   languages={languages}
                   value={watch("languageId")?.toString() || ""}
                   includeAllOption={false}
@@ -330,6 +292,7 @@ export const CreateMultipleChoiceForm: React.FC<
                   clearErrors={() => clearErrors("languageId")}
                 />
                 <QuestionVisibilityField
+                  label="Visibility"
                   value={watch("visibility") ?? newVisibility}
                   onChange={(value: string) => setValue("visibility", value)}
                   error={formState.errors["visibility"]?.message}

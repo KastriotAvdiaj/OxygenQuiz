@@ -8,7 +8,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { CheckCircle, XCircle, ChevronDown, ImageIcon } from "lucide-react";
+import { CheckCircle, XCircle, ImageIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { useIsAdminDashboard } from "@/pages/Dashboard/Pages/Quiz/quiz-paths";
 import { DeleteQuestion } from "../Re-Usable-Components/delete-question";
@@ -163,11 +163,12 @@ export const TrueFalseQuestionCard = ({
       <CardContent className="pb-2 pt-0">
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="details" className="border-b-0">
-            <AccordionTrigger className="py-2 text-sm font-medium flex justify-between">
+            <AccordionTrigger className="py-2 text-sm font-medium flex justify-between hover:no-underline">
               <span className="text-sm font-medium">Correct Answer</span>
-              <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
             </AccordionTrigger>
-            <AccordionContent>
+            {/* overflow-hidden (for the open/close animation) clipped the options' borders at
+                the edges: a pixel of room each side, and the type-the-answer card's spacing. */}
+            <AccordionContent className="px-px pt-1 pb-3">
               <div className="space-y-3">
                 <QuestionMedia mediaUrl={question.mediaUrl} mediaType={question.mediaType} hidden={question.mediaHidden} credit={creditFrom(question.mediaCredit, question.mediaCreditUrl)} className="mb-3" />
 

@@ -38,6 +38,6 @@ describe("a new multiple-choice question", () => {
       </Wrapper>,
     );
     fireEvent.click(screen.getByRole("button", { name: "Multiple Choice" }));
-    expect(await screen.findAllByPlaceholderText(/Answer Option/)).toHaveLength(4);
+    expect(await screen.findAllByPlaceholderText(/Answer option/i)).toHaveLength(4);
   });
 });

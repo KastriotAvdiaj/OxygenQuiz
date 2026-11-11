@@ -180,7 +180,7 @@ export const CreateTrueFalseQuestionForm: React.FC<
 
               <section className="grid grid-cols-2 gap-4 border-t pt-4 dark:border-foreground/30">
                 <CategorySelect
-                  // label="Category"
+                  label="Category"
                   categories={categories}
                   value={watch("categoryId")?.toString() || ""}
                   onChange={(selectedValue: string) =>
@@ -191,7 +191,7 @@ export const CreateTrueFalseQuestionForm: React.FC<
                   clearErrors={() => clearErrors("categoryId")}
                 />
                 <DifficultySelect
-                  // label="Difficulty"
+                  label="Difficulty"
                   difficulties={difficulties}
                   value={watch("difficultyId")?.toString() || ""}
                   onChange={(selectedValue: string) =>
@@ -202,7 +202,7 @@ export const CreateTrueFalseQuestionForm: React.FC<
                   clearErrors={() => clearErrors("difficultyId")}
                 />
                 <LanguageSelect
-                  // label="Language"
+                  label="Language"
                   languages={languages}
                   value={watch("languageId")?.toString() || ""}
                   includeAllOption={false}
@@ -213,6 +213,7 @@ export const CreateTrueFalseQuestionForm: React.FC<
                   clearErrors={() => clearErrors("languageId")}
                 />
                 <QuestionVisibilityField
+                  label="Visibility"
                   value={watch("visibility") ?? newVisibility}
                   onChange={(value: string) => setValue("visibility", value)}
                   error={formState.errors["visibility"]?.message}

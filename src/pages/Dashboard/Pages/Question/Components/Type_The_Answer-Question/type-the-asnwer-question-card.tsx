@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/accordion";
 import {
   ImageIcon,
-  TextCursorInput,
   CaseSensitive,
   SearchCheck,
   SearchX,
@@ -219,9 +218,8 @@ export const TypeTheAnswerQuestionCard = ({
           <AccordionItem value="details" className="border-b-0">
             <AccordionTrigger className="py-2 text-sm font-medium flex justify-between hover:no-underline">
               <span className="text-sm font-medium">Answer Details</span>
-              <TextCursorInput className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
             </AccordionTrigger>
-            <AccordionContent className="pt-1 pb-3">
+            <AccordionContent className="px-px pt-1 pb-3">
               <div className="space-y-4">
                 <QuestionMedia mediaUrl={question.mediaUrl} mediaType={question.mediaType} hidden={question.mediaHidden} credit={creditFrom(question.mediaCredit, question.mediaCreditUrl)} className="mb-3" />
 

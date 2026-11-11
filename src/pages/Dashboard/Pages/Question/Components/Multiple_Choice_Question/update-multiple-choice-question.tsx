@@ -1,6 +1,5 @@
 import { EditPencil } from "@/components/icons/edit-pencil";
 import { PickedQuestionNotice } from "@/features/reports/components/picked-edit-notice";
-import { Trash2 } from "lucide-react";
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
@@ -18,7 +17,8 @@ import { CategorySelect } from "../../Entities/Categories/Components/select-ques
 import { DifficultySelect } from "../../Entities/Difficulty/Components/select-question-difficulty";
 import { LanguageSelect } from "../../Entities/Language/components/select-question-language";
 import { QuestionVisibilityField } from "../../Entities/select-visibility";
-import { LiftedButton } from "@/common/LiftedButton";
+import { AddOptionButton } from "./add-option-button";
+import { AnswerOptionField } from "./answer-option-field";
 import { MediaPicker } from "@/features/media/components/media-picker";
 import { selectionFrom, type MediaSelection } from "@/features/media/api/upload-media";
 import { ExplanationField } from "@/common/QuestionExplanation";
@@ -165,7 +165,7 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
                     }}
                   />
                   <Label htmlFor="allowMultipleSelections">
-                    Allow Multiple Selections
+                    Allow multiple correct answers
                   </Label>
                 </div>
 
@@ -173,62 +173,29 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
 
                 <div className="space-y-4 mt-4">
                   <div className="flex items-center justify-between">
-                    <Label>Answer Options</Label>
+                    <Label className="block text-sm font-medium text-foreground">Answer Options</Label>
                   </div>
-                  {fields.map((field, index) => {
-                    const isCorrect = watch(`answerOptions.${index}.isCorrect`);
-
-                    return (
-                      <div
-                        key={field.id}
-                        className="flex items-center justify-between gap-6">
-                        <Input
-                          className={`${
-                            formState.errors["answerOptions"]
-                              ? "border-red-500"
-                              : ""
-                          } ${isCorrect ? "border-2 border-green-500" : ""}`}
-                          placeholder={`Answer Option ${index + 1}`}
-                          error={formState.errors?.answerOptions?.[index]?.text}
-                          registration={register(`answerOptions.${index}.text`)}
-                        />
-
-                        <div className="flex flex-col items-center">
-                          <Switch
-                            className="shadow-md"
-                            id={`correct-${index}`}
-                            checked={isCorrect}
-                            onCheckedChange={() => handleSwitchChange(index)}
-                          />
-                          <Label
-                            htmlFor={`correct-${index}`}
-                            className="text-xs text-gray-600 mt-1">
-                            Correct
-                          </Label>
-                        </div>
-                        <LiftedButton
-                          variant="icon"
-                          className="rounded-xl bg-red-400"
-                          onClick={() => remove(index)}
-                          disabled={fields.length <= 2}>
-                          <Trash2 className="h-4 w-4 " />
-                        </LiftedButton>
-                      </div>
-                    );
-                  })}
+                  {fields.map((field, index) => (
+                    <AnswerOptionField
+                      key={field.id}
+                      index={index}
+                      registration={register(`answerOptions.${index}.text`)}
+                      error={formState.errors?.answerOptions?.[index]?.text}
+                      isCorrect={!!watch(`answerOptions.${index}.isCorrect`)}
+                      onToggleCorrect={() => handleSwitchChange(index)}
+                      onRemove={() => remove(index)}
+                      removeDisabled={fields.length <= 2}
+                    />
+                  ))}
                   {formState.errors?.answerOptions && (
                     <p className="text-sm text-red-500">
                       At least one option needs to be correct!
                     </p>
                   )}
-                  <Button
-                    type="button"
-                    variant="addSave"
-                    size="sm"
+                  <AddOptionButton
                     onClick={() => append({ text: "", isCorrect: false })}
-                    disabled={addOptionDisabled}>
-                    Add Answer Option
-                  </Button>
+                    disabled={addOptionDisabled}
+                  />
                 </div>
                 <Separator className="bg-gray-500" />
                 <div className="grid grid-cols-2 gap-4 ">

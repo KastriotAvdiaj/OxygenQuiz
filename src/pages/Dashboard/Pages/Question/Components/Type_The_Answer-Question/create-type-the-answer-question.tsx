@@ -1,4 +1,4 @@
-import { Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
@@ -164,13 +164,14 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                   <div className="flex space-x-2">
                     <LiftedButton
                       type="button"
-                      className="text-[12px]"
+                      size="sm"
+                      className="flex items-center gap-2 bg-muted text-foreground"
+                      liftColor="muted-foreground"
                       disabled={addAnswerDisabled}
-                      onClick={() =>
-                        !addAnswerDisabled && append({ value: "" })
-                      }
+                      onClick={() => !addAnswerDisabled && append({ value: "" })}
                     >
-                      + Add Answer
+                      <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                      Add answer
                     </LiftedButton>
                   </div>
                 </div>
@@ -200,15 +201,17 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                           `acceptableAnswers.${index}.value`
                         )}
                       />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        className="rounded-xl"
-                        onClick={() => remove(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <LiftedButton
+                          type="button"
+                          variant="icon"
+                          outerClassName="shrink-0"
+                          className="bg-red-600 text-white"
+                          liftColor="red-700"
+                          onClick={() => remove(index)}
+                          aria-label={`Remove alternative answer ${index + 1}`}
+                        >
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
+                        </LiftedButton>
                     </div>
                   ))}
                 </div>
@@ -287,7 +290,7 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                 </div>
                 <section className="grid grid-cols-2 gap-4 border-t pt-4 dark:border-foreground/30">
                   <CategorySelect
-                    // label="Category"
+                    label="Category"
                     categories={categories}
                     value={watch("categoryId")?.toString() || ""}
                     onChange={(selectedValue: string) =>
@@ -298,7 +301,7 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                     clearErrors={() => clearErrors("categoryId")}
                   />
                   <DifficultySelect
-                    // label="Difficulty"
+                    label="Difficulty"
                     difficulties={difficulties}
                     value={watch("difficultyId")?.toString() || ""}
                     onChange={(selectedValue: string) =>
@@ -309,7 +312,7 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                     clearErrors={() => clearErrors("difficultyId")}
                   />
                   <LanguageSelect
-                    // label="Language"
+                    label="Language"
                     languages={languages}
                     value={watch("languageId")?.toString() || ""}
                     includeAllOption={false}
@@ -320,6 +323,7 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                     clearErrors={() => clearErrors("languageId")}
                   />
                   <QuestionVisibilityField
+                    label="Visibility"
                     value={watch("visibility") ?? newVisibility}
                     onChange={(value: string) => setValue("visibility", value)}
                     error={formState.errors["visibility"]?.message}

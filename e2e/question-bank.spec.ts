@@ -16,7 +16,7 @@ import { uniqueSuffix } from "./support/api";
 async function fillMultipleChoice(drawer: Locator, text: string) {
   await drawer.getByPlaceholder("Enter your question here...").fill(text);
   for (let i = 1; i <= 4; i++) {
-    await drawer.getByPlaceholder(`Answer Option ${i}...`).fill(`${text} — option ${i}`);
+    await drawer.getByPlaceholder(`Answer option ${i}`, { exact: true }).fill(`${text} — option ${i}`);
   }
   await drawer.getByRole("switch", { name: "Option 1 is correct" }).click();
 }
@@ -55,7 +55,7 @@ test("an admin adds two questions in a row without leaving the drawer", async ({
   await expect(drawer.getByRole("status")).toHaveText("Question created.");
   await expect(questionField).toHaveValue("");
   await expect(questionField).toBeFocused();
-  await expect(drawer.getByPlaceholder("Answer Option 1...")).toHaveValue("");
+  await expect(drawer.getByPlaceholder("Answer option 1", { exact: true })).toHaveValue("");
   await expect(drawer.getByRole("combobox").filter({ hasText: "Science" })).toBeVisible();
   await expect(drawer.getByRole("combobox").filter({ hasText: "English" })).toBeVisible();
 

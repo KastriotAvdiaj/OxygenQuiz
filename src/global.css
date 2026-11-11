@@ -460,6 +460,34 @@ input[type="password"]::-ms-clear {
   border-color: hsl(var(--quiz-success));
 }
 
+/* Question forms: a multiple-choice answer option marked correct (answer-option-field.tsx). Like
+   `.board-solution-field` above, but the change is animated — the option is ticked and unticked in
+   place, so the green border, wash and underline fade in over the field's own 200ms instead of
+   snapping. Colours only, so reduced motion needs nothing different. The wash is a
+   background-COLOR mix (animatable), not the `--field-accent` gradient layer (which isn't). */
+.option-field .minimal-input {
+  border: 1px solid transparent;
+  border-bottom: none;
+  transition-property: background-color, border-color;
+}
+
+.option-field--correct .minimal-input {
+  border-color: hsl(var(--quiz-success) / 0.7);
+  background-color: color-mix(in srgb, hsl(var(--quiz-success)) 14%, hsl(var(--muted)));
+}
+
+.option-field--correct .minimal-input-wrapper:before,
+.option-field--correct .minimal-input-wrapper:after,
+.option-field--correct .minimal-input-wrapper:focus-within:before,
+.option-field--correct .minimal-input-wrapper:focus-within:after {
+  border-bottom-color: hsl(var(--quiz-success));
+}
+
+.option-field--correct .minimal-input-wrapper:focus-within .minimal-input {
+  border-color: hsl(var(--quiz-success));
+  background-color: hsl(var(--quiz-success) / 0.2);
+}
+
 /* Associations board builder: the beam that runs down each connector line into the Final's
    dot (BoardConnector in association-board-form.tsx). The paths have pathLength=100, so the
    dash is 14% of a line; the offset runs it from just before the start to just past the end.

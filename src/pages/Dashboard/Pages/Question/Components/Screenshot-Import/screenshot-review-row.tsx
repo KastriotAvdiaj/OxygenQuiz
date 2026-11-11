@@ -18,6 +18,7 @@ import {
 import { CategorySelect } from "../../Entities/Categories/Components/select-question-category";
 import { DifficultySelect } from "../../Entities/Difficulty/Components/select-question-difficulty";
 import { LanguageSelect } from "../../Entities/Language/components/select-question-language";
+import { DuplicatePreview } from "./duplicate-preview";
 import { ALL_TYPES, needsStatement, rowProblems, type ReviewRow } from "./review-model";
 
 const TYPE_LABEL: Record<QuestionType, string> = {
@@ -82,9 +83,7 @@ export const ScreenshotReviewRow = ({
           ) : (
             <Badge tone="success">Answer from the image</Badge>
           )}
-          {row.duplicateOfId !== null && (
-            <Badge tone="danger">Possible duplicate of #{row.duplicateOfId}</Badge>
-          )}
+          {row.duplicateOfId !== null && <DuplicatePreview questionId={row.duplicateOfId} />}
           {row.alsoOnImage !== null && <Badge tone="danger">Also on image {row.alsoOnImage}</Badge>}
           {row.imageQuery && !disabled && <Badge tone="muted">Picture idea: {row.imageQuery}</Badge>}
         </div>
@@ -207,6 +206,12 @@ export const ScreenshotReviewRow = ({
           </>
         )}
 
+        {row.duplicateOfId !== null && !row.keep && (
+          <p className="text-xs text-muted-foreground">
+            Unticked because it looks like a question already in the bank — open the badge to compare.
+            Tick it to save this one anyway.
+          </p>
+        )}
         {problems.length > 0 && <p className="text-xs text-destructive">{problems.join(" · ")}</p>}
       </div>
     </div>

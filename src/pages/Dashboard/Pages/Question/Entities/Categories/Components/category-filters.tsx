@@ -6,8 +6,7 @@ import {
   ActiveFilterPills,
   type ActiveFilterPill,
 } from "@/components/ui/active-filter-pills";
-import { Filter } from "lucide-react";
-import { RiFilterOffLine } from "react-icons/ri";
+import { Filter, X } from "lucide-react";
 import { SearchInput } from "@/lib/Search-Input";
 
 export type CategoryFilterUser = { id: string; username: string };
@@ -110,9 +109,10 @@ export const CategoryFilters = ({
             <Button
               onClick={resetFilters}
               variant="ghost"
-              className="flex items-center gap-1.5 rounded-md text-xs text-red-500 hover:text-red-600 dark:hover:bg-red-950/40 hover:bg-red-50 bg-red-50/50 dark:border-red-900/30 px-2 border border-red-100 h-7 transition-colors">
-              <RiFilterOffLine className="h-3.5 w-3.5" />
-              Clear
+              // Resetting a view isn't destructive: a quiet text button, not a red one.
+              className="flex h-7 items-center gap-1.5 rounded-md px-2 text-xs text-muted-foreground transition-colors hover:text-foreground animate-in fade-in-0 duration-200 motion-reduce:animate-none">
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
+              Clear all
             </Button>
           )}
         </div>

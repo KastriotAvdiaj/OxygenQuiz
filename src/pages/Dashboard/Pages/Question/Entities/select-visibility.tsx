@@ -16,22 +16,32 @@ interface VisibilitySelectProps {
   onChange: (value: string) => void;
   error?: string;
   clearErrors?: () => void;
+  /** Same look as the category, difficulty and language selects beside it. */
+  fieldVariant?: "quiz" | "minimal" | "form";
 }
 
+const VISIBILITY_OPTIONS = ["Public", "Private"] as const;
+
+/**
+ * Built like `CategorySelect`'s form mode — same label, same trigger variant, same error line —
+ * because it always sits in the same grid as it. It used to be the pushable `quiz` trigger with a
+ * bold label, and stood out from its three neighbours.
+ */
 export const VisibilitySelect: React.FC<VisibilitySelectProps> = ({
   label,
   value,
   onChange,
   error,
   clearErrors,
+  fieldVariant = "minimal",
 }) => {
-  const visibilityOptions = ["Public", "Private"];
-  const isValueValid = visibilityOptions.includes(value);
+  const variant = error ? "form-error" : fieldVariant;
+  const isValueValid = (VISIBILITY_OPTIONS as readonly string[]).includes(value);
 
   return (
     <div>
       {label && (
-        <Label className="text-sm font-medium text-foreground">{label}</Label>
+        <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">{label}</Label>
       )}
       <Select
         value={isValueValid ? value : ""}
@@ -40,21 +50,18 @@ export const VisibilitySelect: React.FC<VisibilitySelectProps> = ({
           clearErrors?.();
         }}
       >
-        <SelectTrigger
-          variant="quiz"
-          className={`min-w-[200px] ${error ? "border-red-500" : ""}`}
-        >
-          <SelectValue placeholder="--Select Visibility--" />
+        <SelectTrigger variant={variant} className="min-w-0">
+          <SelectValue className="text-foreground" placeholder="Select visibility" />
         </SelectTrigger>
-        <SelectContent className="min-w-[200px]">
-          {visibilityOptions.map((option) => (
-            <SelectItem key={option} value={option}>
+        <SelectContent variant={variant}>
+          {VISIBILITY_OPTIONS.map((option) => (
+            <SelectItem variant={variant} key={option} value={option}>
               {option}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
     </div>
   );
 };

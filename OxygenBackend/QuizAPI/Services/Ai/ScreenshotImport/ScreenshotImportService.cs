@@ -174,6 +174,14 @@ namespace QuizAPI.Services.Ai.ScreenshotImport
                 result.Add(built);
             }
 
+            // So a run can be checked from the API's console: did capitals come in, and were they fixed?
+            var shouted = seen.Count(q => IsShouting(q.Text));
+            if (shouted > 0)
+                _logger.LogInformation(
+                    "Screenshot read: {Shouted} question(s) in capitals, {Fixed} recased by the completion call.",
+                    shouted, seen.Select((q, i) => completions.GetValueOrDefault(i)?.Text)
+                        .Count(t => t is not null && !IsShouting(t)));
+
             result = await FlagDuplicatesAsync(result, ct);
 
             await RecordAsync(userId, usage, result.Count, errorCode: null, ct);
