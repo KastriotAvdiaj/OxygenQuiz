@@ -3,15 +3,13 @@ import { Plus } from "lucide-react";
 import { LiftedButton } from "@/common/LiftedButton";
 
 /**
- * "Add answer option" in the multiple-choice create and update forms. Secondary (muted): the
- * form's primary action is saving it. Disabled at the four-option maximum.
+ * "Add answer option" in the multiple-choice create and update forms: primary blue, compact
+ * (`text-sm py-1`) so it doesn't outweigh the options above it. Disabled at the four-option maximum.
  */
 export const AddOptionButton = ({ onClick, disabled }: { onClick: () => void; disabled: boolean }) => (
   <LiftedButton
     type="button"
-    size="sm"
-    className="flex items-center gap-2 bg-muted text-foreground"
-    liftColor="muted-foreground"
+    className="flex items-center gap-2 py-1 text-sm"
     onClick={onClick}
     disabled={disabled}
   >

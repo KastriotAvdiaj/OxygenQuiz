@@ -164,9 +164,7 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                   <div className="flex space-x-2">
                     <LiftedButton
                       type="button"
-                      size="sm"
-                      className="flex items-center gap-2 bg-muted text-foreground"
-                      liftColor="muted-foreground"
+                      className="flex items-center gap-2 py-1 text-sm"
                       disabled={addAnswerDisabled}
                       onClick={() => !addAnswerDisabled && append({ value: "" })}
                     >

@@ -12,9 +12,10 @@ interface ExplanationFieldBase {
   className?: string;
   error?: FieldError;
   /**
-   * `settings` (default) is the boxed dashboard field the standalone question forms use.
-   * `minimal` is the quiz builder card's underlined field: it takes the card's type accent
-   * (`--field-accent`) and font, like the question and answers above it.
+   * `minimal` (default) is the underlined field every question form uses, in the app font: on a
+   * quiz builder card it also takes the card's type accent (`--field-accent`). `settings` is the
+   * boxed sans-serif field — the question forms used it until 2026-11-11, and it was the one field
+   * in them that didn't match the rest.
    */
   variant?: "settings" | "minimal";
 }
@@ -75,6 +76,7 @@ export function ExplanationField(props: ExplanationFieldProps) {
   }
 
   const length = props.registration ? undefined : props.value.length;
+  const variant = props.variant ?? "minimal";
 
   return (
     <div className={cn("space-y-1.5", props.className)}>
@@ -89,12 +91,12 @@ export function ExplanationField(props: ExplanationFieldProps) {
       </label>
       <Textarea
         id={props.id ?? "question-explanation"}
-        variant={props.variant ?? "settings"}
+        variant={variant}
         // Minimal fields are capped at one line (`.minimal-input`, 3rem); an explanation is a
         // sentence or two, so it grows to fit instead.
-        rows={props.variant === "minimal" ? 2 : undefined}
+        rows={variant === "minimal" ? 2 : undefined}
         className={
-          props.variant === "minimal"
+          variant === "minimal"
             ? "resize-none !max-h-40 leading-snug [field-sizing:content]"
             : undefined
         }
