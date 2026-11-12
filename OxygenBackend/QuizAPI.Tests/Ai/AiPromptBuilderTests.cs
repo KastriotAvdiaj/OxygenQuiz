@@ -301,4 +301,68 @@ public class AiPromptBuilderTests
         Assert.Contains(fields, f => f.StartsWith($"\"{AiPromptBuilder.SourceQuoteField}\""));
         Assert.Contains(fields, f => f.StartsWith($"\"{AiPromptBuilder.ImageQueryField}\""));
     }
+
+    // ── A broad topic: several articles in one material (flow doc §2f) ───────────────────────
+
+    private static AiGenerationRequest BroadRequest(int questions = 10, int articles = 4)
+    {
+        var titles = new[] { "Solar System", "French Revolution", "Amazon River", "Mount Everest", "Human heart" }
+            .Take(articles).ToList();
+        return InferredRequest() with
+        {
+            Topic = "General Knowledge",
+            QuestionCount = questions,
+            Grounding = new QuizAPI.Services.Ai.Sources.GroundedSource(
+                "wikipedia", "General Knowledge", null,
+                string.Join("\n\n", titles.Select((t, i) => $"[S{i + 1}] {t}\n{t} is a well-known subject.")),
+                "English")
+            {
+                Parts = titles.Select(t => new QuizAPI.Services.Ai.Sources.GroundedSourcePart("wikipedia", t, null)).ToList(),
+            },
+        };
+    }
+
+    [Fact]
+    public void ABroadTopic_IsWrittenFromItsArticlesOnly_WithAQuotePerQuestion()
+    {
+        var prompt = Builder.Build(BroadRequest());
+
+        Assert.Contains("the openings of 4 Wikipedia articles", prompt);
+        Assert.Contains("a quiz about \"General Knowledge\"", prompt);
+        Assert.Contains("based ONLY on it", prompt);
+        // Same contract as one article, so the parser's quote check needs no second path.
+        Assert.Contains($"\"{AiPromptBuilder.SourceQuoteField}\": string", prompt);
+        Assert.Contains("SOURCE MATERIAL:", prompt);
+        Assert.Contains("[S3] Amazon River", prompt);
+        Assert.DoesNotContain("SUBJECT:", prompt);
+    }
+
+    [Theory]
+    [InlineData(10, 4, 4)]  // ceil(10/4) + 1
+    [InlineData(10, 5, 3)]
+    [InlineData(5, 5, 2)]   // never below two: one per article leaves no room when some are thin
+    [InlineData(30, 3, 11)]
+    public void ABroadTopic_SpreadsItsQuestionsAcrossTheArticles(int questions, int articles, int most)
+    {
+        var prompt = Builder.Build(BroadRequest(questions, articles));
+
+        Assert.Contains($"is {articles} separate articles", prompt);
+        Assert.Contains($"take at most {most} question(s) from any one article", prompt);
+        Assert.Contains("never copy a marker line as a quote", prompt);
+    }
+
+    [Fact]
+    public void OneArticle_GetsNoSpreadRule()
+    {
+        var one = InferredRequest() with
+        {
+            Grounding = new QuizAPI.Services.Ai.Sources.GroundedSource(
+                "wikipedia", "French Revolution", null, "The French Revolution began in 1789.", "English"),
+        };
+
+        var prompt = Builder.Build(one);
+
+        Assert.Contains("the opening of the Wikipedia article \"French Revolution\"", prompt);
+        Assert.DoesNotContain("separate articles", prompt);
+    }
 }

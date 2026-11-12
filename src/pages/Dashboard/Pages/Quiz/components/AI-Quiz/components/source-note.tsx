@@ -27,6 +27,9 @@ const CHECK = "Check the answers before you publish.";
  * - **Written from an article** — its source, named and linked, which is also the attribution
  *   the content's licence requires (CC BY-SA on Wikipedia, CC BY on Microsoft Learn).
  *   Blue, like the picture notice: information, not a problem.
+ * - **Written from several articles** — a broad topic such as "General knowledge" (flow doc §2f).
+ *   Every article is named and linked, for the same two reasons one is: the author can see what
+ *   the quiz covers, and each link is that article's attribution.
  * - **A source was down and the author went ahead** — amber. They were warned a step ago, but
  *   the review is where they read the questions, so it is said again here.
  * - **From memory for another reason** — no fitting article, a stub, "none of these", no source
@@ -43,7 +46,32 @@ export const SourceNote = ({ grounding }: SourceNoteProps) => {
 
   let lead: ReactNode;
   let detail: string;
-  if (grounding.status === "Grounded" && grounding.source) {
+  const parts = grounding.status === "Grounded" ? (grounding.source?.parts ?? []) : [];
+  if (grounding.status === "Grounded" && grounding.source && parts.length > 1) {
+    lead = (
+      <>
+        {`Written from ${parts.length} ${sourceLabel(grounding.source.provider)} articles: `}
+        {parts.map((part, index) => (
+          <span key={part.url ?? part.title}>
+            {index > 0 && ", "}
+            {part.url ? (
+              <a
+                href={part.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-2 hover:text-primary"
+              >
+                {part.title}
+              </a>
+            ) : (
+              part.title
+            )}
+          </span>
+        ))}
+      </>
+    );
+    detail = "Each answer is backed by a sentence from one of them — still worth a read before you publish.";
+  } else if (grounding.status === "Grounded" && grounding.source) {
     const { title, url, provider } = grounding.source;
     const facts = provider === "wikidata";
     lead = (
@@ -79,6 +107,10 @@ export const SourceNote = ({ grounding }: SourceNoteProps) => {
         break;
       case "declined":
         lead = "Written from the AI's own knowledge — you chose not to use an article";
+        detail = CHECK;
+        break;
+      case "too-few-articles":
+        lead = "Written from the AI's own knowledge — too few articles were found for a topic this wide";
         detail = CHECK;
         break;
       case "no-source-for-language":

@@ -106,6 +106,49 @@ public class AiGenerationServiceGroundingTests
     }
 
     [Fact]
+    public async Task A_broad_topic_reaches_the_model_as_several_articles_and_the_client_as_their_names()
+    {
+        // The compound source of flow doc §2f: one text for the prompt and the quote check, and
+        // the articles named for the review.
+        var broad = new GroundingResult
+        {
+            Status = GroundingStatus.Grounded,
+            Language = "English",
+            Source = new GroundedSource(
+                "wikipedia", "General Knowledge", null,
+                "[S1] Solar System\nThe Sun holds the Solar System together.\n\n[S2] Amazon River\nThe Amazon is in South America.",
+                "English")
+            {
+                Parts =
+                [
+                    new GroundedSourcePart("wikipedia", "Solar System", "https://en.wikipedia.org/wiki/Solar_System"),
+                    new GroundedSourcePart("wikipedia", "Amazon River", "https://en.wikipedia.org/wiki/Amazon_River"),
+                ],
+            },
+        };
+        var h = Build(broad);
+
+        var outcome = await h.Service.GenerateAsync(Guid.NewGuid(), TopicRequest() with { Topic = "General Knowledge" });
+
+        Assert.True(outcome.Success);
+        var prompt = Assert.Single(h.Prompts);
+        Assert.Contains("the openings of 2 Wikipedia articles", prompt);
+        Assert.Contains("[S2] Amazon River", prompt);
+        Assert.Contains($"\"{AiPromptBuilder.SourceQuoteField}\": string", prompt);
+
+        var dto = QuizAPI.DTOs.Quiz.AiGroundingDTO.From(outcome.Grounding)!;
+        Assert.Equal("General Knowledge", dto.Source!.Title);
+        Assert.Equal(["Solar System", "Amazon River"], dto.Source.Parts!.Select(p => p.Title));
+        Assert.Equal("https://en.wikipedia.org/wiki/Amazon_River", dto.Source.Parts![1].Url);
+    }
+
+    [Fact]
+    public void One_article_goes_to_the_client_without_parts()
+    {
+        Assert.Null(QuizAPI.DTOs.Quiz.AiGroundingDTO.From(Grounded())!.Source!.Parts);
+    }
+
+    [Fact]
     public async Task The_prompt_says_when_Wikidata_facts_follow_the_article()
     {
         var withFacts = Grounded() with

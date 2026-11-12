@@ -27,8 +27,9 @@ has a flawless error rate.
 
 ## What you have to do
 
-1. **Edit [`topics.json`](./topics.json).** This is the part no tool can do for you. Twelve
-   topics are there as a starting shape, six English and six Albanian — replace them with
+1. **Edit [`topics.json`](./topics.json).** This is the part no tool can do for you. Fifteen
+   topics are there as a starting shape, eight English and seven Albanian — three of them broad
+   topics added 2026-11-12 (`en-07`, `en-08`, `sq-07`; flow doc §2f) — replace them with
    subjects your users actually generate, in the proportion they actually use. Keep the `id`s
    stable forever: they are how run 1 and run 7 are compared. Include deliberate traps; two are
    already in there (`Mercury` for ambiguity, a current-records topic for staleness).
@@ -44,7 +45,7 @@ has a flawless error rate.
 ## Running it
 
 ```bash
-npm run eval:generate            # ~5 min: 12 topics, paced under the vendor's tokens/min ceiling
+npm run eval:generate            # ~6 min: 15 topics, paced under the vendor's tokens/min ceiling
 npm run eval:parse               # defaults to the run you just made
 npm run eval:label               # opens a local page; label there, not in the JSON
 npm run eval:score

@@ -80,6 +80,67 @@ namespace QuizAPI.Services.Ai.Sources
 
         /// <summary><c>Ai:Source:WikidataFacts</c> — the facts added under a Wikipedia article.</summary>
         public WikidataFactsOptions WikidataFacts { get; set; } = new();
+
+        /// <summary><c>Ai:Source:Broad</c> — topics that span many subjects, read from several articles.</summary>
+        public BroadTopicOptions Broad { get; set; } = new();
+    }
+
+    /// <summary>
+    /// A topic that is a selection across subjects ("General knowledge") is planned by the model
+    /// and read from several articles (docs/quiz/ai-quiz-generation-flow.md §2f, ADR 0045).
+    /// </summary>
+    public sealed class BroadTopicOptions
+    {
+        /// <summary>
+        /// On whenever grounding is. Off, every topic is one subject again — the behaviour before
+        /// 2026-11-12. <b>Switch it off on a vendor with a small per-minute token allowance</b>
+        /// (Groq's free tier): eight article openings are about 20,000 characters of prompt, three
+        /// times what <see cref="SourceOptions.MaxSourceChars"/> was sized to fit there.
+        /// </summary>
+        public bool Enabled { get; set; } = true;
+
+        /// <summary>
+        /// How many subtopics the model is asked for. More than <see cref="MaxSources"/> on
+        /// purpose: some won't resolve to a clear, long-enough article and are dropped.
+        /// </summary>
+        public int SubtopicsToAsk { get; set; } = 10;
+
+        /// <summary>The most articles one quiz is written from.</summary>
+        public int MaxSources { get; set; } = 8;
+
+        /// <summary>
+        /// Fewer resolved articles than this and the quiz is written from memory and says so. Two
+        /// articles under "General knowledge" would be a quiz about those two things.
+        /// </summary>
+        public int MinSources { get; set; } = 3;
+
+        /// <summary>
+        /// The opening of each article, cut at a paragraph. 2,500 characters is the lead and the
+        /// first section or two — the densest part — and eight of them stay near 5,000 tokens.
+        /// </summary>
+        public int MaxCharsPerSource { get; set; } = 2_500;
+
+        /// <summary>How many lookups run at once. Wikimedia answers a burst with HTTP 429.</summary>
+        public int LookupConcurrency { get; set; } = 3;
+
+        /// <summary>
+        /// The whole set of lookups gets this long; what hasn't answered by then is left out. The
+        /// generation still has the model's 10–40 s to spend under Cloudflare's ~100 s.
+        /// </summary>
+        public int LookupBudgetSeconds { get; set; } = 15;
+
+        /// <summary>Room for the plan's answer: a kind and ten titles.</summary>
+        public int PlanMaxOutputTokens { get; set; } = 400;
+
+        /// <summary>
+        /// The planning call's own reasoning effort, like screenshot import's read: sorting a
+        /// phrase and naming ten articles needs no long think, and the author is waiting. Blank
+        /// keeps the vendor's.
+        /// </summary>
+        public string? PlanReasoningEffort { get; set; } = "none";
+
+        /// <summary>How long a (language, topic) plan is kept, so asking twice plans once.</summary>
+        public int PlanCacheMinutes { get; set; } = 720;
     }
 
     public sealed class WikidataFactsOptions

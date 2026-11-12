@@ -41,6 +41,42 @@ export const Grounded: Story = {
   },
 };
 
+/** A broad topic, read from several articles: each one is named and linked. */
+export const GroundedOnSeveralArticles: Story = {
+  args: {
+    grounding: {
+      status: "Grounded",
+      language: "English",
+      source: {
+        provider: "wikipedia",
+        title: "General Knowledge",
+        url: null,
+        text: "…",
+        language: "English",
+        parts: [
+          "Solar System",
+          "French Revolution",
+          "Photosynthesis",
+          "Amazon River",
+          "Leonardo da Vinci",
+          "Human heart",
+          "Olympic Games",
+          "Printing press",
+        ].map((title) => ({
+          provider: "wikipedia",
+          title,
+          url: `https://en.wikipedia.org/wiki/${title.replace(/ /g, "_")}`,
+        })),
+      },
+    },
+  },
+};
+
+/** A broad topic whose subtopics found too few articles: written from memory, and said. */
+export const FromMemoryTooFewArticles: Story = {
+  args: { grounding: { status: "Ungrounded", language: "Albanian", reason: "too-few-articles" } },
+};
+
 /** A Wikipedia article with Wikidata's facts about its subject below it: the note counts them. */
 export const GroundedWithWikidataFacts: Story = {
   args: {

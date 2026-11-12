@@ -927,6 +927,22 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   (`ppprop=disambiguation`); choosing between real articles is not. Proposed gates, source tiers
   and rejected alternatives:
   [`proposals/topic-disambiguation-and-source-tiers.md`](../proposals/topic-disambiguation-and-source-tiers.md).
+- **P2 — Broad topics are unmeasured on the real model (flow doc §2f, ADR 0045).** Built
+  2026-11-12 with unit tests only: nothing has shown how DeepSeek sorts topics into one subject or
+  many, whether its article titles resolve, or whether the questions spread across the articles.
+  _Before trusting it:_ run the eval's `en-07`, `en-08` and `sq-07`, and check that the older
+  topics are still planned as single subjects ("World War II in the Balkans" is the borderline
+  one). Switch: `Ai:Source:Broad:Enabled`.
+- **P3 — The topic plan ignores the author's extra instructions.** "General knowledge — only
+  Europe" plans for general knowledge; the instruction still reaches the quiz prompt, which can
+  only use the articles it was given. Pass it to `TopicPlanner` (and into its cache key).
+- **P3 — A broad quiz's questions don't say which article they came from.** The review lists the
+  articles once. Asking for a source marker per question and showing it on the row would let the
+  author check a question against its article in one click.
+- **P3 — No source beyond Wikipedia and Microsoft Learn for topics they cover badly** (recent
+  events, niche subjects). A search-then-quote tier — our code searches and fetches, the model
+  still only reads what it is handed — is the shape that keeps the quote check; ADR 0045 records
+  why a model-driven web search was not chosen.
 - **P3 — Fact quizzes: the Albanian forms were written without a native speaker's review.** The
   genitive and definite forms in `capitals-of-europe.json` (`forms`) were drafted on 2026-11-01;
   the less certain ones are *Moldavisë/Moldavia* (Wikidata says *Molldavi*), *Kopenhaga*,
@@ -1562,6 +1578,11 @@ Deferred: a renderer (KaTeX) has to be added to every surface that shows questio
   docs/TYPOGRAPHY.md for the current font rules. **More pressing since 2026-11-07:** DynaPuff is
   now the default ([ADR 0041](../adr/0041-the-app-font-defaults-to-dynapuff.md)), so this is what
   every visitor sees, not only those who picked a display face.
+
+## Quick play (2026-11-12 — proposal only)
+
+- **Open proposal:** Play asks for a category and a difficulty and starts a quiz, instead of
+  opening the catalogue. → [`../proposals/quick-play.md`](../proposals/quick-play.md)
 
 ## Fact quizzes (2026-11-08)
 

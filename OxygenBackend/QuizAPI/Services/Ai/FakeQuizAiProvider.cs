@@ -106,6 +106,21 @@ namespace QuizAPI.Services.Ai
                     """);
             }
 
+            // The topic plan in front of grounding (Sources.TopicPlanner): "general knowledge" is
+            // the broad topic, with real article titles so a dev stack with Ai:Source:Enabled reads
+            // them; anything else is one subject, which is what every topic was before.
+            if (prompt.Contains(Sources.TopicPlanner.Marker, StringComparison.Ordinal))
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(200), ct);
+                // Only what follows "TOPIC:" — the instructions above it name the phrase as an example.
+                var topic = prompt[(prompt.LastIndexOf("TOPIC:", StringComparison.Ordinal) + 1)..];
+                return Reply(topic.Contains("general knowledge", StringComparison.OrdinalIgnoreCase)
+                    ? """
+                      {"kind":"broad","subtopics":["Solar System","French Revolution","Photosynthesis","Amazon River","Leonardo da Vinci","Human heart","Olympic Games","Printing press","Mount Everest","Periodic table"]}
+                      """
+                    : """{"kind":"single","subtopics":[]}""");
+            }
+
             // Palette proposals share this provider but not the question pipeline, so they are
             // answered before the question scenarios are consulted. Same delay, same shape as a
             // real reply — including a deliberately unusable candidate, so the strict validator

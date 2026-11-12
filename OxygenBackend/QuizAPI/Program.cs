@@ -400,6 +400,9 @@ builder.Services.AddHttpClient<QuizAPI.Services.Ai.Sources.MicrosoftLearnSourceP
 builder.Services.AddHttpClient<QuizAPI.Services.Ai.Sources.IWikidataFacts, QuizAPI.Services.Ai.Sources.WikidataFacts>();
 builder.Services.AddScoped<QuizAPI.Services.Ai.Sources.IQuizSourceProvider>(
     sp => sp.GetRequiredService<QuizAPI.Services.Ai.Sources.MicrosoftLearnSourceProvider>());
+// Broad topics (§2f, ADR 0045): one small model call says whether a topic is one subject or a
+// selection across many. Off with Ai:Source:Broad:Enabled=false; QuizGrounding takes it optionally.
+builder.Services.AddScoped<QuizAPI.Services.Ai.Sources.ITopicPlanner, QuizAPI.Services.Ai.Sources.TopicPlanner>();
 builder.Services.AddScoped<QuizAPI.Services.Ai.Sources.IQuizGrounding, QuizAPI.Services.Ai.Sources.QuizGrounding>();
 // Fact packs (docs/quiz/fact-quizzes.md): read once from FactPacks/*.json beside the app.
 builder.Services.AddSingleton<QuizAPI.Services.Facts.IFactPackCatalog, QuizAPI.Services.Facts.FactPackCatalog>();

@@ -63,8 +63,10 @@ namespace QuizAPI.Services.Ai
 
         /// <summary>
         /// <see cref="BuildPrompt"/>, grounded the way <see cref="GenerateAsync"/> would ground it
-        /// when the request asks for that (<see cref="AiGenerationRequest.Ground"/>). Free: a
-        /// source lookup, no model and no quota. A result that needs a choice carries no prompt.
+        /// when the request asks for that (<see cref="AiGenerationRequest.Ground"/>). A source
+        /// lookup and no quota slot; the one model call it can make is the topic plan
+        /// (<see cref="Sources.TopicPlanner"/>), small, cached and on the budget ledger. A result
+        /// that needs a choice carries no prompt.
         /// </summary>
         public async Task<(string? Prompt, GroundingResult Grounding)> BuildPromptAsync(
             AiGenerationRequest request, CancellationToken ct = default)
@@ -426,6 +428,8 @@ namespace QuizAPI.Services.Ai
                 r.ExtraInstructions ?? string.Empty,
                 r.Grounding?.Provider ?? string.Empty,
                 r.Grounding?.Title ?? string.Empty,
+                // A broad topic's title is the topic itself; its articles are what was read.
+                string.Join('|', r.Grounding?.Parts.Select(p => p.Title) ?? Array.Empty<string>()),
                 r.AddImages);
 
             return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(material))).ToLowerInvariant();

@@ -191,6 +191,11 @@ const aiQuizDraftSchema = z.object({
           text: z.string(),
           language: z.string(),
           wikidataFacts: z.number().optional(),
+          // A broad topic's articles. Listed because this object drops keys it doesn't name, and
+          // without them a restored draft would say "written from the article General Knowledge".
+          parts: z
+            .array(z.object({ provider: z.string(), title: z.string(), url: z.string().nullable() }))
+            .nullish(),
         })
         .nullish(),
     })

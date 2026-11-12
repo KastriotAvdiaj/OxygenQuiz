@@ -53,7 +53,16 @@ export type AiUngroundedReason =
   | "not-found"
   | "unavailable"
   | "declined"
-  | "no-source-for-language";
+  | "no-source-for-language"
+  // A broad topic whose subtopics found too few clear articles (flow doc §2f).
+  | "too-few-articles";
+
+/** One article of a broad topic's source — named and linked in the review (its attribution). */
+export interface AiGroundedSourcePart {
+  provider: string;
+  title: string;
+  url: string | null;
+}
 
 export interface AiGroundedSource {
   /** The source: "wikipedia", "microsoft-learn", or "wikidata" for a fact quiz. */
@@ -66,6 +75,13 @@ export interface AiGroundedSource {
   language: string;
   /** How many Wikidata facts followed the article. Absent from drafts saved before 2026-11-05. */
   wikidataFacts?: number;
+  /**
+   * A broad topic ("General knowledge") read from several articles (flow doc §2f): the articles,
+   * in the order they appear in `text`. Then `title` is the author's topic, `url` is null, and
+   * `text` is all of them in one — so the quote check needs to know nothing about parts. Null or
+   * absent for one article.
+   */
+  parts?: AiGroundedSourcePart[] | null;
 }
 
 export interface AiSourceCandidate {

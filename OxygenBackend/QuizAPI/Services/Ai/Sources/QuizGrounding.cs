@@ -41,7 +41,21 @@ namespace QuizAPI.Services.Ai.Sources
     {
         /// <summary>How many Wikidata facts follow the article in <see cref="Text"/>; 0 when none.</summary>
         public int WikidataFacts { get; init; }
+
+        /// <summary>
+        /// A broad topic's articles (docs/quiz/ai-quiz-generation-flow.md §2f). When set, this is a
+        /// <b>compound</b> source: <see cref="Title"/> is the author's topic, <see cref="Url"/> is
+        /// null, and <see cref="Text"/> is every part's opening under a <c>[S1] Title</c> marker
+        /// line — one text, so the prompt and the quote check treat it exactly like one article.
+        /// Empty for an ordinary one-article source.
+        /// </summary>
+        public IReadOnlyList<GroundedSourcePart> Parts { get; init; } = Array.Empty<GroundedSourcePart>();
+
+        public bool IsCompound => Parts.Count > 1;
     }
+
+    /// <summary>One article of a compound source: what the review names and links (the attribution).</summary>
+    public sealed record GroundedSourcePart(string Provider, string Title, string? Url);
 
     public sealed record GroundingResult
     {
@@ -113,6 +127,12 @@ namespace QuizAPI.Services.Ai.Sources
     /// that one isn't sure (<see cref="SourceRouting.Settles"/>); asking again when nothing is
     /// confident.</para>
     ///
+    /// <para><b>Broad topics.</b> Before the article is looked for, <see cref="ITopicPlanner"/> says
+    /// whether the topic is one subject or a selection across many ("General knowledge"). A broad
+    /// topic never asks "which article?": its subtopics are each looked up, the clear matches are
+    /// read together as one compound source, and the rest are dropped (§2f, ADR 0045). An author
+    /// who already picked an article is past that question, so nothing is planned.</para>
+    ///
     /// <para><b>Never fatal.</b> A source that is thin, missing or down makes the generation
     /// ungrounded, never failed — grounding improves generation, it is not a precondition for it.
     /// Asking is the only outcome that stops a generation, and it happens before any quota is
@@ -124,14 +144,20 @@ namespace QuizAPI.Services.Ai.Sources
         private readonly SourceOptions _options;
 
         private readonly IWikidataFacts? _facts;
+        private readonly ITopicPlanner? _planner;
 
         /// <param name="facts">Adds Wikidata's facts under a Wikipedia article. Optional: without it
         /// the article goes alone, which is also what happens when Wikidata doesn't answer in time.</param>
-        public QuizGrounding(IEnumerable<IQuizSourceProvider> providers, IOptions<SourceOptions> options, IWikidataFacts? facts = null)
+        /// <param name="planner">Tells a broad topic from a single subject. Optional: without it
+        /// every topic is one subject, as before 2026-11-12.</param>
+        public QuizGrounding(
+            IEnumerable<IQuizSourceProvider> providers, IOptions<SourceOptions> options,
+            IWikidataFacts? facts = null, ITopicPlanner? planner = null)
         {
             _providers = providers.ToList();
             _options = options.Value;
             _facts = facts;
+            _planner = planner;
         }
 
         /// <summary>
@@ -174,6 +200,15 @@ namespace QuizAPI.Services.Ai.Sources
             var providers = _providers.Where(p => p.SupportsLanguage(language)).ToList();
             if (providers.Count == 0)
                 return Ungrounded(language, "no-source-for-language");
+
+            // ── Broad or single. Only while no article has been picked: a pick answers a question
+            // that is only ever asked about a single subject.
+            if (_planner is not null && _options.Broad.Enabled && string.IsNullOrWhiteSpace(answers.ArticleTitle))
+            {
+                var plan = await _planner.PlanAsync(topic, language, ct);
+                if (plan is { Kind: TopicKind.Broad })
+                    return await GroundBroadAsync(topic, language, plan.Subtopics, providers[0], answers, ct);
+            }
 
             RoutedLookup routed;
             if (string.IsNullOrWhiteSpace(answers.ArticleTitle))
@@ -224,6 +259,123 @@ namespace QuizAPI.Services.Ai.Sources
                     },
                 _ => Ungrounded(language, "not-found"),
             };
+        }
+
+        /// <summary>
+        /// A broad topic: every subtopic the planner named is looked up in the language's first
+        /// source, and the ones that come back as a clear, long-enough article are read together.
+        ///
+        /// <para><b>Dropped, never asked.</b> A subtopic that is unsure, a stub, missing or
+        /// ambiguous is left out. Asking "which article?" eight times is the picker this exists to
+        /// remove, and the author never typed these names — the model did.</para>
+        ///
+        /// <para><b>Too few is not grounded.</b> Under <see cref="BroadTopicOptions.MinSources"/>
+        /// the quiz is written from memory and says so: two articles under "General knowledge"
+        /// would be a quiz about those two things wearing a wider title. When most lookups failed
+        /// because the source was down, that is the outage question, as for a single article.</para>
+        /// </summary>
+        private async Task<GroundingResult> GroundBroadAsync(
+            string topic, string language, IReadOnlyList<string> subtopics, IQuizSourceProvider provider,
+            GroundingAnswers answers, CancellationToken ct)
+        {
+            var broad = _options.Broad;
+            var lookups = await LookupAllAsync(subtopics, language, provider, ct);
+
+            var parts = new List<(GroundedSourcePart Part, string Text)>();
+            foreach (var lookup in lookups.Where(l => l.Outcome == SourceOutcome.Selected))
+            {
+                if (parts.Count >= Math.Max(2, broad.MaxSources)) break;
+                // Two subtopics can redirect to one article ("WWII", "Second World War").
+                if (parts.Any(p => string.Equals(p.Part.Title, lookup.Title, StringComparison.OrdinalIgnoreCase))) continue;
+                var text = Opening(lookup.Text!, broad.MaxCharsPerSource);
+                if (text.Length == 0) continue;
+                parts.Add((new GroundedSourcePart(provider.Name, lookup.Title!, lookup.Url), text));
+            }
+
+            if (parts.Count >= Math.Max(2, broad.MinSources))
+            {
+                var text = string.Join("\n\n", parts.Select((p, i) => $"[S{i + 1}] {p.Part.Title}\n{p.Text}"));
+                return new GroundingResult
+                {
+                    Status = GroundingStatus.Grounded,
+                    Language = language,
+                    Source = new GroundedSource(provider.Name, topic.Trim(), null, text, language)
+                    {
+                        Parts = parts.Select(p => p.Part).ToList(),
+                    },
+                };
+            }
+
+            var down = lookups.Count(l => l.Outcome == SourceOutcome.Unavailable);
+            if (down * 2 > lookups.Count)
+            {
+                var unreachable = new[] { provider.Name };
+                return answers.AcceptFromMemory
+                    ? Ungrounded(language, "unavailable") with { Unreachable = unreachable }
+                    : new GroundingResult
+                    {
+                        Status = GroundingStatus.SourceUnavailable,
+                        Language = language,
+                        Reason = "unavailable",
+                        Unreachable = unreachable,
+                    };
+            }
+
+            return Ungrounded(language, "too-few-articles");
+        }
+
+        /// <summary>
+        /// The subtopics' lookups, a few at a time and inside one overall budget. In the order
+        /// asked, so the planner's own ordering decides which articles are kept when there are
+        /// more than enough. What misses the budget counts as unreachable.
+        /// </summary>
+        private async Task<IReadOnlyList<SourceLookup>> LookupAllAsync(
+            IReadOnlyList<string> subtopics, string language, IQuizSourceProvider provider, CancellationToken ct)
+        {
+            var broad = _options.Broad;
+            using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            budget.CancelAfter(TimeSpan.FromSeconds(Math.Max(1, broad.LookupBudgetSeconds)));
+            using var gate = new SemaphoreSlim(Math.Max(1, broad.LookupConcurrency));
+
+            var tasks = subtopics
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(Math.Max(2, broad.SubtopicsToAsk))
+                .Select(async subtopic =>
+                {
+                    try
+                    {
+                        await gate.WaitAsync(budget.Token);
+                        try { return await provider.LookupAsync(subtopic.Trim(), language, budget.Token); }
+                        finally { gate.Release(); }
+                    }
+                    // Our budget, not the caller's: the caller cancelling must still cancel.
+                    catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                    {
+                        return SourceLookup.Unavailable;
+                    }
+                })
+                .ToList();
+
+            return await Task.WhenAll(tasks);
+        }
+
+        /// <summary>
+        /// The start of an article, cut at the last paragraph break that fits — or, when the first
+        /// paragraph alone is too long, at the last sentence end. Never mid-sentence: a quote the
+        /// model copies has to be a whole sentence of what it was shown.
+        /// </summary>
+        internal static string Opening(string text, int maxChars)
+        {
+            text = text.Trim();
+            if (maxChars <= 0 || text.Length <= maxChars) return text;
+
+            var cut = text[..maxChars];
+            var paragraph = cut.LastIndexOf("\n\n", StringComparison.Ordinal);
+            if (paragraph >= maxChars / 2) return cut[..paragraph].TrimEnd();
+
+            var sentence = Math.Max(cut.LastIndexOf(". ", StringComparison.Ordinal), cut.LastIndexOf(".\n", StringComparison.Ordinal));
+            return sentence > 0 ? cut[..(sentence + 1)].TrimEnd() : cut.TrimEnd();
         }
 
         /// <summary>

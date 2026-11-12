@@ -150,6 +150,10 @@ namespace QuizAPI.Services.Ai
             var sb = new StringBuilder();
             sb.AppendLine(isTopic
                 ? $"You are a quiz-generation engine. Produce EXACTLY {request.QuestionCount} quiz question(s) about the SUBJECT given at the end of this message."
+                : grounding is { IsCompound: true }
+                    // A broad topic (§2f): several article openings in one text. Still "based ONLY
+                    // on it" with a quote per question, so nothing downstream tells it from one article.
+                    ? $"You are a quiz-generation engine. The author asked for a quiz about \"{request.Topic?.Trim()}\". Read the SOURCE MATERIAL at the end of this message — the openings of {grounding.Parts.Count} {SourceName(grounding.Provider)} articles, each under a marker line such as \"[S1] Title\" — and produce EXACTLY {request.QuestionCount} quiz question(s) for that quiz based ONLY on it."
                 : grounding is not null
                     ? $"You are a quiz-generation engine. The author asked for a quiz about \"{request.Topic?.Trim()}\". Read the SOURCE MATERIAL at the end of this message — the opening of the {SourceName(grounding.Provider)} article \"{grounding.Title}\"{(grounding.WikidataFacts > 0 ? ", followed by facts about the same subject from Wikidata" : "")} — and produce EXACTLY {request.QuestionCount} quiz question(s) about that subject based ONLY on it."
                     : $"You are a quiz-generation engine. Read the SOURCE MATERIAL at the end of this message and produce EXACTLY {request.QuestionCount} quiz question(s) based ONLY on it.");
@@ -232,6 +236,18 @@ namespace QuizAPI.Services.Ai
                 // human review step is what actually solves it. See plan §8.
                 ? "Ask only about well-established, verifiable facts that a reference work would agree on. Do NOT write questions about recent events, current office-holders, current prices or statistics, records, or anything phrased as \"the latest\" or \"the most recent\" — your knowledge has a cutoff and those answers go stale. Prefer durable knowledge. If you are not confident an answer is correct, ask a different question instead."
                 : "Base every question strictly on the source material. Do not invent facts that are not present in it. Make sure the answer you mark as correct is actually correct according to the source.");
+
+            if (r.Mode == AiGenerationMode.Topic && r.Grounding is { IsCompound: true } compound)
+            {
+                // Without this a model writes most of the quiz from the first article it reads,
+                // and "General knowledge" becomes a quiz about the Solar System.
+                var perArticle = Math.Max(2, (int)Math.Ceiling((double)r.QuestionCount / compound.Parts.Count) + 1);
+                rules.Add(
+                    $"The SOURCE MATERIAL is {compound.Parts.Count} separate articles. Spread the questions across them: use as many different articles as you can, and take at most {perArticle} question(s) from any one article. "
+                    + "Each question must stand on its own and be answerable from ONE article. "
+                    + "The marker lines (\"[S1] Title\") only show where an article starts — never mention the markers or the articles in a question, an option or an explanation, and never copy a marker line as a quote. "
+                    + "The \"title\" names the quiz the author asked for, not one of the articles.");
+            }
 
             if (!isTopic)
             {

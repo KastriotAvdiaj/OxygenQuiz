@@ -194,6 +194,11 @@ and any other host the search returns. Re-check the licence before a paid launch
 
 ## 5. Rejected
 
+> **Narrowed 2026-11-12** by [ADR 0045](../adr/0045-a-broad-topic-is-planned-by-the-model-and-read-from-several-articles.md):
+> a model *is* now asked, before the article, whether a topic is one subject or a selection across
+> many ("General knowledge") — and only for names that code then looks up. Asking it to judge
+> ambiguity, below, is still rejected.
+
 **Asking the model whether the topic is ambiguous.** A model unreliable enough to state wrong
 answers confidently is unreliable at knowing when it is confused, and in a single call it has
 already committed to an interpretation before the question is put. A pre-flight call to ask costs
@@ -213,11 +218,11 @@ The tiered allowlist keeps the set small enough to check deliberately.
   with a model strong at translation, and measure it before trusting it.
 - ~~The close-contest ratio (§4a bis).~~ Replaced by title matching; its thresholds (coverage ½,
   precision ¾) are fitted the same way, and the eval's ask rate is what tests them.
-- **A quiz from several articles.** Grounding is one article per quiz, so "C# 12 and .NET 8" or
-  "comparing programming languages" is grounded in whichever one article the author picks. Letting
-  the author tick several — some questions from a Learn page, some from Wikipedia — is a prompt and
-  card change, but splits the free tier's 6,000-character budget between them; worth it with a
-  vendor that allows more.
+- ~~**A quiz from several articles.**~~ **Built 2026-11-12 for broad topics** (flow doc §2f,
+  ADR 0045): the model names the subjects, code resolves them, and several Wikipedia articles are
+  read as one source. Still open from the original question: letting the *author* tick several
+  articles for a single subject ("C# 12 and .NET 8"), and mixing a Learn page with a Wikipedia
+  article in one quiz.
 - Does a grounded generation cost the same quota slot? It is up to two calls instead of one.
 - Caching. Two HTTP 429s came back inside a dozen probe requests, so the plan's
   `IMemoryCache` by (language, title) is load-bearing, not an optimisation.

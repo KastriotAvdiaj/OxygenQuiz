@@ -161,6 +161,12 @@ namespace QuizAPI.DTOs.Quiz
                 Text = g.Source.Text,
                 Language = g.Source.Language,
                 WikidataFacts = g.Source.WikidataFacts,
+                Parts = g.Source.IsCompound
+                    ? g.Source.Parts.Select(p => new AiGroundedSourcePartDTO
+                    {
+                        Provider = p.Provider, Title = p.Title, Url = p.Url,
+                    }).ToList()
+                    : null,
             },
             Articles = g.Status == GroundingStatus.NeedsArticle
                 ? g.Candidates.Select(c => new AiSourceCandidateDTO
@@ -185,6 +191,21 @@ namespace QuizAPI.DTOs.Quiz
 
         /// <summary>How many Wikidata facts follow the article in <see cref="Text"/> — the review says so.</summary>
         public int WikidataFacts { get; set; }
+
+        /// <summary>
+        /// A broad topic's articles, in the order they appear in <see cref="Text"/> — what the
+        /// review names and links. Null for an ordinary one-article source, where
+        /// <see cref="Title"/> and <see cref="Url"/> are the article's own; here Title is the
+        /// author's topic and Url is null (docs/quiz/ai-quiz-generation-flow.md §2f).
+        /// </summary>
+        public List<AiGroundedSourcePartDTO>? Parts { get; set; }
+    }
+
+    public class AiGroundedSourcePartDTO
+    {
+        public string Provider { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string? Url { get; set; }
     }
 
     public class AiSourceCandidateDTO

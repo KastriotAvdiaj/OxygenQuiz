@@ -37,6 +37,14 @@ namespace QuizAPI.Services.Ai
         /// generation's slots.
         /// </summary>
         ScreenshotImport = 3,
+
+        /// <summary>
+        /// Not a quiz: the small call that says whether a topic is one subject or a selection
+        /// across many, and names the subjects (<see cref="TopicPlanner"/>,
+        /// docs/quiz/ai-quiz-generation-flow.md §2f). Here for the same reason as a palette — the
+        /// budget caps read this table — and, like one, it never takes a quota slot.
+        /// </summary>
+        TopicPlan = 4,
     }
 
     /// <summary>Lifecycle of a quota reservation. See docs/quiz/ai-quiz-generation-flow.md §4.</summary>

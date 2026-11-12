@@ -128,6 +128,7 @@ worst case is a wrong-but-real category on a Draft quiz that a human is looking 
 | Source tiers | `Services/Ai/Sources/IQuizSourceProvider.cs`, `WikipediaSourceProvider.cs`, `MicrosoftLearnSourceProvider.cs` | Search, title check and article fetch for one source: Wikipedia (English, Albanian), Microsoft Learn (English). |
 | Source routing | `Services/Ai/Sources/SourceRouting.cs` | Every source for the language is searched at once; this picks between their answers (§2e, "More than one source"). |
 | Article choice | `Services/Ai/Sources/SourceSelection.cs`, `TitleMatch.cs` | Pure: which search hit is the topic's article, or whether to ask. §2e. |
+| Topic plan | `Services/Ai/Sources/TopicPlanner.cs` | One small model call before the article: one subject, or a selection across many — and, for that, which articles to read. Its own ledger row, cached, never fatal. §2f. |
 | Topic language | `Services/Ai/Sources/TopicLanguage.cs` | English, Albanian or unsure, from a topic's own words. §2e. |
 | Source language | `Services/Ai/SourceLanguageDetector.cs` | English, Albanian or neither, from function-word counts. Decides the questions' language and whether Source mode runs at all. §2d. |
 | Quality checks | `AI-Quiz/question-checks.ts` | Pure checks the parser runs on every question, both paths: duplicate options, contradictory key, giveaway, repeat, source quote not in the material. Plan: [`ai-question-accuracy-plan.md`](./ai-question-accuracy-plan.md). |
@@ -464,10 +465,11 @@ At most 800 characters (`Ai:Source:WikidataFacts:MaxChars`, about 200 tokens), i
 review not mentioning facts. Learn pages get none — they have no Wikidata item. Off with
 `Ai:Source:WikidataFacts:Enabled=false`.
 
-**One article per quiz.** A quiz is written from one article, so a topic spanning several
-("C# 12 *and* .NET 8", "comparing programming languages") is asked about and grounded in the one
-picked. Several articles in one prompt — some questions from Learn, some from Wikipedia — is open
-in the proposal's §6; the free tier's 6,000-character budget would have to be split between them.
+**One article per single subject.** A topic that names two things ("C# 12 *and* .NET 8",
+"comparing programming languages") is asked about and grounded in the one picked — unless the
+planner calls it a selection across subjects, in which case §2f reads several Wikipedia articles.
+Mixing sources in one prompt — some questions from Learn, some from Wikipedia — is still not
+built: §2f reads the language's first source only.
 
 **Why ask about language at all.** Ungrounded, the model infers it while writing, and never got it
 wrong in Phase 0 (0 of 116) — which is why there is no language picker. Grounding needs it first,
@@ -505,8 +507,106 @@ referring to it in any language.
 URL, and anything but a Learn documentation URL is refused unfetched), `sourceDeclined` or
 `sourceAcceptFromMemory`. A question comes back as **409 `SourceNeedsChoice`** with `grounding`
 holding the options — candidates carry `provider` and `key`; an outage carries `unreachable`; every grounded or ungrounded response carries `grounding` with the article (title,
-URL, text — the text is what the quote check needs) or the reason there is none. `ai-prompt`
+URL, text — the text is what the quote check needs; for a broad topic also `parts`, §2f) or the reason there is none. `ai-prompt`
 grounds only when the request says `ground: true` — the eval does; the own-AI page doesn't yet.
+
+## 2f. Broad topics — planned by the model, written from several articles
+
+> **Status: built 2026-11-12, on with grounding (`Ai:Source:Broad:Enabled`). Not yet measured
+> against the real model** — the planner's judgement and the questions' spread are untested
+> outside unit tests; the eval set has three broad topics for that (`en-07`, `en-08`, `sq-07`).
+> Decision: [ADR 0045](../adr/0045-a-broad-topic-is-planned-by-the-model-and-read-from-several-articles.md).
+
+§2e assumes a topic *is* a subject: it matches the topic's words against article titles and reads
+the one that fits. Two real topics broke that on 2026-11-12. **"General Knowledge"** matches the
+article *General knowledge* perfectly, so the quiz was about the concept of general knowledge.
+**"History's most significant events"** matches no title, so the author was asked to pick a
+Wikipedia page for a topic no single page answers. Neither is a search problem. Both are topics
+that ask for a *selection across* subjects, and title matching has no way to know that.
+
+**One more step, between the language and the article:**
+
+| Step | Decides | When unsure |
+|---|---|---|
+| 1. Language | as §2e | Ask, as §2e |
+| 1b. Plan (`TopicPlanner`) | One small model call: is this **one subject** or a **selection across many**? For the second, ten article titles to read | No plan — treated as one subject |
+| 2. Article(s) | **Single:** §2e, unchanged. **Broad:** every subtopic looked up in the language's first source; the clear, long-enough matches are read together | Single: ask, as §2e. Broad: **drop it, never ask** |
+
+**The model proposes, the code decides** ([ADR 0003](../adr/0003-the-model-proposes-the-code-decides.md)).
+The plan is a list of names. Each goes through the same `LookupAsync` and the same title rule as
+a topic an author typed, and only `Selected` — a clear title match over the stub floor — is read.
+An invented title, a misspelt one, a disambiguation page or a stub is left out. Nothing the model
+says reaches the prompt as fact.
+
+**A broad topic never asks "which article?".** That question is the picker this exists to
+remove, and the author never typed these names. So an unsure subtopic is dropped, and the quiz is
+written from the rest.
+
+**Too few is not grounded.** Under `MinSources` (3) resolved articles, the generation runs from
+memory with reason `too-few-articles`, and the review says so. Two articles under "General
+knowledge" would be a quiz about those two things under a wider title. Albanian is where this
+will happen most: sq.wikipedia has far fewer long articles (the proposal's §1).
+
+**An outage is the same question as for one article.** When more than half the lookups could not
+reach the source, the author gets `SourceUnavailable` and chooses to wait or to go from memory.
+
+### The compound source
+
+A broad topic's articles travel as **one** `GroundedSource` with `Parts`:
+
+- `Text` is every article's opening (`MaxCharsPerSource`, 2,500, cut at a paragraph or a sentence)
+  under a marker line — `[S1] Solar System`, `[S2] French Revolution`, …
+- `Title` is the author's topic and `Url` is null. `Parts` holds each article's provider, title
+  and URL, in the order they appear in the text.
+
+One text on purpose. The prompt is the grounded prompt of §2e — "based ONLY on it", a
+`sourceQuote` per question — and `parse-ai-output.ts` checks each quote against
+`grounding.source.text` exactly as it does for one article. Neither the parser nor the own-AI
+path needed a second code path. What the prompt adds for a compound source is the **spread rule**:
+use as many articles as possible, at most ⌈questions ÷ articles⌉ + 1 from any one, never mention
+the markers. Without it a model writes most of the quiz from the first article it reads.
+
+**The review names every article**, each linked (`SourceNote`, story
+`GroundedOnSeveralArticles`). Same two jobs as the single link: the author sees what the quiz
+covers, and each link is that article's CC BY-SA attribution.
+
+### What the plan costs, and who pays
+
+The plan is a model call made **before** the quota reservation, so it has its own rules:
+
+- **Its own ledger row** — `AiGenerationUsage` with `Mode = TopicPlan`, like a palette proposal.
+  The spending caps read it; it never takes a quiz slot (the slot count reads Topic and Source
+  rows only).
+- **Not made when it couldn't be used** — nobody signed in, no generation left today, a spending
+  cap reached, AI off, or `Broad:Enabled` false. Otherwise every topic typed after the last slot
+  would be a small unmetered call.
+- **Cached** by (language, topic) for `PlanCacheMinutes` (12 hours), so answering grounding's
+  question and coming back, or trying a topic twice, plans once.
+- **Small** — `PlanMaxOutputTokens` 400, and its own reasoning effort (`PlanReasoningEffort`,
+  `none`), like screenshot import's read. About 500 tokens in and under 100 out.
+- **Never fatal** — a provider error, a timeout or an unreadable reply is "no plan", and the topic
+  is grounded as one subject, which is what happened before this existed.
+
+**Not planned at all:** a request that already carries `sourceTitle` or `sourceDeclined`. Those
+answer a question only a single subject is ever asked, so the author is past the fork.
+
+`ai-prompt` with `ground: true` plans too (the eval uses it), so that endpoint is no longer
+model-free; it still takes no slot.
+
+### Known limits
+
+- **The planner sees only the topic**, not the author's extra instructions. "General knowledge —
+  only about Europe" plans for general knowledge. → `known-issues.md`.
+- **A question doesn't say which article it came from.** The quote identifies it, but the review
+  lists the articles once, above the questions, not per question.
+- **Wikipedia only.** Subtopics go to the language's first source; Microsoft Learn is not asked.
+- **No Wikidata facts** under a compound source — they are fetched per article and would crowd
+  eight openings.
+- **A borderline topic can be planned either way** ("World War II in the Balkans"). The prompt
+  says *if in doubt, single*; the eval is what will show how it actually falls.
+
+Settings: `Ai:Source:Broad` (`BroadTopicOptions`), listed in
+[`../deployment/configuration.md`](../deployment/configuration.md).
 
 ## 3. One request, end to end
 
@@ -877,8 +977,10 @@ it server-side would invite someone to start trusting it.
 
 ### `POST /api/quiz/ai-prompt`
 
-Same request body, returns `{ "prompt": "..." }`. No quota, no provider call. This is what
-copy-paste mode will call once slice 2.1 retires the duplicate in `prompt.ts`.
+Same request body, returns `{ "prompt": "..." }`. No quota slot. No provider call either, with one
+exception: a request with `ground: true` may make the small topic-plan call of §2f. This is what
+copy-paste mode calls — `AiPromptBuilder.cs` is the only prompt (slice 2.1 retired the duplicate
+in `prompt.ts`).
 
 ### `GET /api/quiz/ai-quota`
 

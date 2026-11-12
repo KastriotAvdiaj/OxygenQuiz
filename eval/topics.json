@@ -37,6 +37,11 @@
     { "id": "en-06", "language": "English", "topic": "The 2024 Summer Olympics",
       "note": "RECENCY TRAP — near or past the training cutoff. Medal counts invite confident invention." },
 
+    { "id": "en-07", "language": "English", "topic": "General Knowledge",
+      "note": "BROAD TOPIC (flow doc §2f), added 2026-11-12. The article 'General knowledge' is an exact title match and the wrong source: a grounded run must read several articles, not that one. Watch the spread across them." },
+    { "id": "en-08", "language": "English", "topic": "History's most significant events",
+      "note": "BROAD TOPIC with no matching title — before §2f the author was asked to pick a page. No sourceTitle on purpose: a run that asks 'which article?' here has planned it as one subject." },
+
     { "id": "sq-01", "language": "Albanian", "topic": "Historia e Kosovës në shekullin XX",
       "note": "national history — the best-covered Albanian case. If grounding fails here it fails everywhere in sq.",
       "noSource": true },
@@ -51,6 +56,8 @@
       "noSource": true },
     { "id": "sq-06", "language": "Albanian", "topic": "Bazat e programimit në Python",
       "note": "TECHNICAL-VOCABULARY STRESS CASE. Almost no Albanian corpus for this; translation-flavoured output should show here first.",
-      "noSource": true }
+      "noSource": true },
+    { "id": "sq-07", "language": "Albanian", "topic": "Njohuri të përgjithshme",
+      "note": "BROAD TOPIC in Albanian, added 2026-11-12. sq.wikipedia is thin, so this is where 'too few articles' — written from memory — is most likely; that outcome is information, not a failure." }
   ]
 }

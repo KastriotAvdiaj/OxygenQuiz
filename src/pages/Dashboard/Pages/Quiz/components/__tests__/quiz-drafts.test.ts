@@ -236,6 +236,31 @@ describe("parsing stored drafts", () => {
     expect(parseAiQuizDraft(JSON.parse(JSON.stringify(draft)))).toEqual(draft);
   });
 
+  it("round-trips the articles a broad topic was written from", () => {
+    // The source object keeps only the keys its schema names, so `parts` has to be one of them:
+    // without it a refresh turns "written from 2 articles" into "the article General Knowledge".
+    const draft = {
+      ...untouchedAiDraft(),
+      payload: '{"questions":[]}',
+      grounding: {
+        status: "Grounded" as const,
+        language: "English",
+        source: {
+          provider: "wikipedia",
+          title: "General Knowledge",
+          url: null,
+          text: "[S1] Solar System\nThe Sun holds it together.\n\n[S2] Amazon River\nIt is in South America.",
+          language: "English",
+          parts: [
+            { provider: "wikipedia", title: "Solar System", url: "https://en.wikipedia.org/wiki/Solar_System" },
+            { provider: "wikipedia", title: "Amazon River", url: null },
+          ],
+        },
+      },
+    };
+    expect(parseAiQuizDraft(JSON.parse(JSON.stringify(draft)))).toEqual(draft);
+  });
+
   it("drops an unreadable grounding but keeps the draft it came with", () => {
     // A generation cost the user quota; a provenance line that no longer parses must not
     // throw the questions away with it.
