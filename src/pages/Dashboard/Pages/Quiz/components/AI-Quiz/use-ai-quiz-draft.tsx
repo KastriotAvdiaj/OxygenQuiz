@@ -516,7 +516,11 @@ export const useAiQuizDraft = () => {
               {/* Grounding: what the questions came from. First, because it frames the rest. */}
               <SourceNote grounding={grounding} />
               <ImportNotices result={parseResult} />
-              <AutoImageNotice requested={autoImages.requested} notFound={autoImages.notFound} />
+              <AutoImageNotice
+                requested={autoImages.requested}
+                notFound={autoImages.notFound}
+                asked={addImages}
+              />
             </>
           }
           // The quiz exists on the server now, so the reply that produced it is no longer

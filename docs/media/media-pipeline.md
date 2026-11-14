@@ -199,7 +199,11 @@ pictures** switch under its options, **off by default**. On, the prompt asks the
 `imageQuery` — a short search phrase such as "Flag of Kosovo" — to **only** the questions a picture
 helps (a flag, a landmark, a painting, an animal, a person, a map), at most 10, never a URL, and
 never one that gives the answer away unless the question is about identifying the picture
-(`AiPromptBuilder`, rule and shape field). This is ADR 0003 applied to media: **the model proposes a
+(`AiPromptBuilder`, rule and shape field). Since 2026-11-14 the rule also tells the model to
+*consider* every question, because no generated quiz had come back with a picture — not a quota:
+a quiz with nothing to see still gets none — and the review says *Pictures were on, but the AI
+didn't name one for any question* when that happens, where it used to say nothing
+(`AutoImageNotice`). This is ADR 0003 applied to media: **the model proposes a
 phrase, our code decides the image.**
 
 1. **The parser keeps a phrase, nothing else** (`cleanImageQuery` in `parse-ai-output.ts`): 2–80

@@ -306,6 +306,11 @@ namespace QuizAPI.Services.Ai
                 rules.Add(
                     $"\"{ImageQueryField}\": ONLY on questions where a picture genuinely helps — a flag, a landmark, a famous painting or building, an animal or plant, a well-known person, a map. "
                     + $"Leave it out everywhere else; at most {MaxImageQueries} questions may have one. "
+                    // Added 2026-11-14, when no generated quiz had come back with a picture. The
+                    // cause wasn't confirmed; a model reading "optional" as "skip it" is the likely
+                    // one, and the review now says when none was named (AutoImageNotice). Not a
+                    // quota — a quiz about grammar still gets none.
+                    + "The author switched pictures on, so consider every question: when a question is about a particular thing that can be seen, name it. Leaving every question without one is right only when none of them is about such a thing. "
                     + $"It is a short English search phrase (at most {ImageQueryMaxLength} characters) naming the exact subject as it would be titled on Wikimedia Commons, e.g. \"Flag of Kosovo\", \"Mona Lisa\", \"Eiffel Tower\". "
                     + "Never a URL, a file name or a description of a picture. "
                     + "The picture must not give the answer away, unless the question asks the player to identify what the picture shows.");

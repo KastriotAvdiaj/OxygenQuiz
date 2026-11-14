@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { act, renderHook, waitFor } from "@testing-library/react";
+import { act, cleanup, render, renderHook, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
@@ -13,6 +13,7 @@ import { QuestionType } from "@/types/question-types";
 import { queryConfig } from "@/lib/React-query";
 import { cleanImageQuery, parseAiOutput, MAX_IMAGE_QUERIES } from "../parse-ai-output";
 import { useAutoImages } from "../use-auto-images";
+import { AutoImageNotice } from "../components/auto-images";
 import { parseContext } from "../__fixtures__/ai-quiz.fixtures";
 
 /**
@@ -111,5 +112,35 @@ describe("useAutoImages", () => {
     act(() => hook.current.skip());
     expect(hook.current.pending).toBe(false);
     expect(hook.current.notFound).toEqual([1]);
+  });
+});
+
+describe("the review's note about pictures", () => {
+  const note = () => screen.queryByRole("status")?.textContent ?? null;
+
+  it("says nothing when pictures were off", () => {
+    render(<AutoImageNotice requested={0} notFound={[]} />);
+    expect(note()).toBeNull();
+    cleanup();
+  });
+
+  it("says so when pictures were on and the AI named none", () => {
+    // Before, this showed nothing — and "the AI chose none" looked like a broken feature.
+    render(<AutoImageNotice requested={0} notFound={[]} asked />);
+    expect(note()).toContain("the AI didn't name one for any question");
+    cleanup();
+  });
+
+  it("counts what was added and names the questions that got none", () => {
+    render(<AutoImageNotice requested={3} notFound={[2]} asked />);
+    expect(note()).toContain("Added a picture to 2 questions");
+    expect(note()).toContain("None found for question 2");
+    cleanup();
+  });
+
+  it("says when every search came back empty", () => {
+    render(<AutoImageNotice requested={2} notFound={[1, 2]} asked />);
+    expect(note()).toContain("No pictures were found for the questions that asked for one");
+    cleanup();
   });
 });
