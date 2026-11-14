@@ -6,7 +6,6 @@ using QuizAPI.Models.Ai;
 using QuizAPI.Repositories.Interfaces;
 using QuizAPI.Services.Ai;
 using QuizAPI.Services.Ai.Sources;
-using QuizAPI.Services.CurrentUserService;
 using Xunit;
 
 namespace QuizAPI.Tests.Ai;
@@ -25,8 +24,9 @@ public class TopicPlannerTests
     private static string Pool(int count, string prefix = "A") =>
         $$"""{"kind":"broad","subtopics":[{{string.Join(",", Enumerable.Range(1, count).Select(i => $"\"{prefix}{i}\""))}}]}""";
 
+    /// <param name="User">Who the plan is for — passed to every call, as the generation passes it.</param>
     private sealed record Harness(
-        TopicPlanner Planner, Mock<IQuizAiProvider> Model, List<AiGenerationUsage> Rows, List<string> Prompts);
+        TopicPlanner Planner, Mock<IQuizAiProvider> Model, List<AiGenerationUsage> Rows, List<string> Prompts, Guid? User);
 
     private static Harness Build(
         string reply = Broad,
@@ -75,15 +75,14 @@ public class TopicPlannerTests
              .ReturnsAsync(new AiQuotaStatus(remaining is null ? null : 2, 0, remaining, DateTime.UtcNow));
         quota.Setup(q => q.IsOverBudgetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(overBudget);
 
-        var user = new Mock<ICurrentUserService>();
-        user.SetupGet(u => u.UserId).Returns(signedIn ? userId ?? Guid.NewGuid() : null);
+        Guid? user = signedIn ? userId ?? Guid.NewGuid() : null;
 
         var source = new SourceOptions { Enabled = true };
         source.Broad.Enabled = broadEnabled;
         source.Broad.PlanReasoningEffort = effort;
 
         var planner = new TopicPlanner(
-            model.Object, usages.Object, quota.Object, user.Object,
+            model.Object, usages.Object, quota.Object,
             cache ?? new MemoryCache(new MemoryCacheOptions()),
             Options.Create(new AiOptions
             {
@@ -93,7 +92,7 @@ public class TopicPlannerTests
             NullLogger<TopicPlanner>.Instance,
             new Random(7));
 
-        return new Harness(planner, model, rows, prompts);
+        return new Harness(planner, model, rows, prompts, user);
     }
 
     [Fact]
@@ -101,7 +100,7 @@ public class TopicPlannerTests
     {
         var h = Build();
 
-        var plan = await h.Planner.PlanAsync("General Knowledge", "English", default);
+        var plan = await h.Planner.PlanAsync("General Knowledge", "English", h.User, default);
 
         Assert.Equal(TopicKind.Broad, plan!.Kind);
         // A pool smaller than one quiz draws is drawn whole — in the draw's order, not the model's.
@@ -113,7 +112,7 @@ public class TopicPlannerTests
     {
         var h = Build();
 
-        await h.Planner.PlanAsync("History's most significant events", "Albanian", default);
+        await h.Planner.PlanAsync("History's most significant events", "Albanian", h.User, default);
 
         var prompt = Assert.Single(h.Prompts);
         Assert.Contains("History's most significant events", prompt);
@@ -128,7 +127,7 @@ public class TopicPlannerTests
     {
         var h = Build();
 
-        await h.Planner.PlanAsync("General Knowledge", "English", default);
+        await h.Planner.PlanAsync("General Knowledge", "English", h.User, default);
 
         h.Model.Verify(m => m.CompleteJsonAsync(
             It.IsAny<string>(), 900, It.Is<AiCallOptions>(c => c.ReasoningEffort == "none" && c.Image == null),
@@ -140,7 +139,7 @@ public class TopicPlannerTests
     {
         var h = Build(effort: " ");
 
-        await h.Planner.PlanAsync("General Knowledge", "English", default);
+        await h.Planner.PlanAsync("General Knowledge", "English", h.User, default);
 
         h.Model.Verify(m => m.CompleteJsonAsync(It.IsAny<string>(), 900, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -150,7 +149,7 @@ public class TopicPlannerTests
     {
         var h = Build();
 
-        await h.Planner.PlanAsync("General Knowledge", "English", default);
+        await h.Planner.PlanAsync("General Knowledge", "English", h.User, default);
 
         var row = Assert.Single(h.Rows);
         // The slot count reads Topic and Source rows only, so this mode is what keeps it free.
@@ -166,8 +165,8 @@ public class TopicPlannerTests
     {
         var h = Build(reply: Pool(30));
 
-        await h.Planner.PlanAsync("General Knowledge", "English", default);
-        var again = await h.Planner.PlanAsync("  general knowledge ", "English", default);
+        await h.Planner.PlanAsync("General Knowledge", "English", h.User, default);
+        var again = await h.Planner.PlanAsync("  general knowledge ", "English", h.User, default);
 
         Assert.Equal(TopicKind.Broad, again!.Kind);
         Assert.Single(h.Prompts);
@@ -179,8 +178,8 @@ public class TopicPlannerTests
     {
         var h = Build();
 
-        await h.Planner.PlanAsync("Sport", "English", default);
-        await h.Planner.PlanAsync("Sport", "Albanian", default);
+        await h.Planner.PlanAsync("Sport", "English", h.User, default);
+        await h.Planner.PlanAsync("Sport", "Albanian", h.User, default);
 
         Assert.Equal(2, h.Prompts.Count);
     }
@@ -190,8 +189,8 @@ public class TopicPlannerTests
     {
         var h = Build(reply: "Sure! Here are some ideas…");
 
-        Assert.Null(await h.Planner.PlanAsync("General Knowledge", "English", default));
-        Assert.Null(await h.Planner.PlanAsync("General Knowledge", "English", default));
+        Assert.Null(await h.Planner.PlanAsync("General Knowledge", "English", h.User, default));
+        Assert.Null(await h.Planner.PlanAsync("General Knowledge", "English", h.User, default));
 
         Assert.Equal(2, h.Prompts.Count);
         Assert.All(h.Rows, r =>
@@ -206,12 +205,12 @@ public class TopicPlannerTests
     {
         var h = Build(throws: new AiProviderException(AiErrorCodes.ProviderTimeout, "slow"));
 
-        Assert.Null(await h.Planner.PlanAsync("General Knowledge", "English", default));
+        Assert.Null(await h.Planner.PlanAsync("General Knowledge", "English", h.User, default));
         Assert.Empty(h.Rows);
     }
 
     [Theory]
-    [InlineData(false, 2, false, true, true)]   // nobody signed in: no owner for the row
+    [InlineData(false, 2, false, true, true)]   // no user given: no owner for the row
     [InlineData(true, 0, false, true, true)]    // no generation left today: a plan would be unusable
     [InlineData(true, 2, true, true, true)]     // the spending cap is reached
     [InlineData(true, 2, false, false, true)]   // AI is switched off
@@ -222,7 +221,7 @@ public class TopicPlannerTests
         var h = Build(signedIn: signedIn, remaining: remaining, overBudget: overBudget,
             aiEnabled: aiEnabled, broadEnabled: broadEnabled);
 
-        Assert.Null(await h.Planner.PlanAsync("General Knowledge", "English", default));
+        Assert.Null(await h.Planner.PlanAsync("General Knowledge", "English", h.User, default));
 
         Assert.Empty(h.Prompts);
         Assert.Empty(h.Rows);
@@ -233,7 +232,7 @@ public class TopicPlannerTests
     {
         var h = Build(remaining: null);
 
-        Assert.NotNull(await h.Planner.PlanAsync("General Knowledge", "English", default));
+        Assert.NotNull(await h.Planner.PlanAsync("General Knowledge", "English", h.User, default));
     }
 
     // ── A pool, and a different draw each time ───────────────────────────────────────────────
@@ -243,7 +242,7 @@ public class TopicPlannerTests
     {
         var h = Build(reply: Pool(30));
 
-        var plan = await h.Planner.PlanAsync("General Knowledge", "English", default);
+        var plan = await h.Planner.PlanAsync("General Knowledge", "English", h.User, default);
 
         Assert.Contains("list exactly 30 subtopics", Assert.Single(h.Prompts));
         Assert.Equal(10, plan!.Subtopics.Count);
@@ -258,9 +257,9 @@ public class TopicPlannerTests
         // The bug: two General Knowledge quizzes written from the same eight articles.
         var h = Build(reply: Pool(30));
 
-        var first = await h.Planner.PlanAsync("General Knowledge", "English", default);
-        var second = await h.Planner.PlanAsync("General Knowledge", "English", default);
-        var third = await h.Planner.PlanAsync("General Knowledge", "English", default);
+        var first = await h.Planner.PlanAsync("General Knowledge", "English", h.User, default);
+        var second = await h.Planner.PlanAsync("General Knowledge", "English", h.User, default);
+        var third = await h.Planner.PlanAsync("General Knowledge", "English", h.User, default);
 
         var all = first!.Subtopics.Concat(second!.Subtopics).Concat(third!.Subtopics).ToList();
         Assert.Equal(30, all.Distinct().Count());
@@ -272,8 +271,8 @@ public class TopicPlannerTests
     {
         var h = Build(replyFor: p => p.Contains("do NOT use any of these") ? Pool(30, "B") : Pool(30));
 
-        for (var i = 0; i < 3; i++) await h.Planner.PlanAsync("General Knowledge", "English", default);
-        var fourth = await h.Planner.PlanAsync("General Knowledge", "English", default);
+        for (var i = 0; i < 3; i++) await h.Planner.PlanAsync("General Knowledge", "English", h.User, default);
+        var fourth = await h.Planner.PlanAsync("General Knowledge", "English", h.User, default);
 
         Assert.Equal(2, h.Prompts.Count);
         Assert.Contains("\"A1\"", h.Prompts[1]);
@@ -289,8 +288,8 @@ public class TopicPlannerTests
         // author still gets a broad quiz, from subjects they have had before.
         var h = Build(reply: Pool(30));
 
-        for (var i = 0; i < 3; i++) await h.Planner.PlanAsync("General Knowledge", "English", default);
-        var fourth = await h.Planner.PlanAsync("General Knowledge", "English", default);
+        for (var i = 0; i < 3; i++) await h.Planner.PlanAsync("General Knowledge", "English", h.User, default);
+        var fourth = await h.Planner.PlanAsync("General Knowledge", "English", h.User, default);
 
         Assert.Equal(TopicKind.Broad, fourth!.Kind);
         Assert.Equal(10, fourth.Subtopics.Count);
@@ -304,8 +303,8 @@ public class TopicPlannerTests
         var ana = Build(reply: Pool(30), cache: cache, userId: Guid.NewGuid());
         var ben = Build(reply: Pool(30), cache: cache, userId: Guid.NewGuid());
 
-        for (var i = 0; i < 3; i++) await ana.Planner.PlanAsync("General Knowledge", "English", default);
-        var bens = await ben.Planner.PlanAsync("General Knowledge", "English", default);
+        for (var i = 0; i < 3; i++) await ana.Planner.PlanAsync("General Knowledge", "English", ana.User, default);
+        var bens = await ben.Planner.PlanAsync("General Knowledge", "English", ben.User, default);
 
         // Ana has been through the whole pool; Ben shares it (no second call) and has all of it left.
         Assert.Equal(10, bens!.Subtopics.Count);
@@ -317,8 +316,8 @@ public class TopicPlannerTests
     {
         var h = Build(reply: """{"kind":"single","subtopics":[]}""");
 
-        var first = await h.Planner.PlanAsync("Photosynthesis", "English", default);
-        var second = await h.Planner.PlanAsync("Photosynthesis", "English", default);
+        var first = await h.Planner.PlanAsync("Photosynthesis", "English", h.User, default);
+        var second = await h.Planner.PlanAsync("Photosynthesis", "English", h.User, default);
 
         Assert.Equal(TopicKind.Single, first!.Kind);
         Assert.Equal(TopicKind.Single, second!.Kind);

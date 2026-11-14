@@ -98,7 +98,7 @@ itself. Two surfaces for one error is noise; three is a bug report. Set `skipErr
 request config when the caller renders its own:
 
 ```ts
-api.post("/quiz/ai-generate", data, { skipErrorToast: true });
+api.post("/quiz/ai-jobs", data, { skipErrorToast: true });
 ```
 
 The flag is a typed part of `AxiosRequestConfig` (declaration-merged in `Api-client.ts`), so a
@@ -119,7 +119,7 @@ Current opt-outs and why:
 | `check-availability` (signup) | Inline field hint under the username/email |
 | `Auth.tsx` login / external sign-in | The form's own message, on the step that failed |
 | `auth-config` | Nothing — a failed config fetch falls back to defaults |
-| `quiz/ai-generate` | The wizard's error panel, which offers a different next step per code |
+| `quiz/ai-jobs` (start, poll, collect) | The wizard's error panel, which offers a different next step per code |
 | `quiz/ai-prompt` | A toast the container raises itself, with copy specific to copying |
 | `questioncategories/ai-palette` | A line under the "Suggest colours" button, in the server's own wording |
 

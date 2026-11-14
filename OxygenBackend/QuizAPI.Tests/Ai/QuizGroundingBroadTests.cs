@@ -45,7 +45,7 @@ public class QuizGroundingBroadTests
     private static Mock<ITopicPlanner> Planner(TopicPlan? plan)
     {
         var planner = new Mock<ITopicPlanner>();
-        planner.Setup(p => p.PlanAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        planner.Setup(p => p.PlanAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
                .ReturnsAsync(plan);
         return planner;
     }
@@ -269,7 +269,21 @@ public class QuizGroundingBroadTests
         await Grounding(Source(), planner).GroundAsync(
             "Njohuri të përgjithshme", new GroundingAnswers("Albanian", null), default);
 
-        planner.Verify(p => p.PlanAsync("Njohuri të përgjithshme", "Albanian", It.IsAny<CancellationToken>()), Times.Once);
+        planner.Verify(p => p.PlanAsync("Njohuri të përgjithshme", "Albanian", It.IsAny<Guid?>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task The_plan_is_asked_for_on_behalf_of_the_author_the_generation_named()
+    {
+        // Passed along rather than read from the request: a generation also runs as a background
+        // job, where there is no signed-in request to read it from.
+        var author = Guid.NewGuid();
+        var planner = Planner(BroadPlan());
+
+        await Grounding(Source(), planner).GroundAsync(
+            "General Knowledge", new GroundingAnswers("English", null) { UserId = author }, default);
+
+        planner.Verify(p => p.PlanAsync("General Knowledge", "English", author, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // ── Opening ──────────────────────────────────────────────────────────────────────────────

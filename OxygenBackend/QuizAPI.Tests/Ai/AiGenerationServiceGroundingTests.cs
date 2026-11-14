@@ -142,6 +142,44 @@ public class AiGenerationServiceGroundingTests
         Assert.Equal("https://en.wikipedia.org/wiki/Amazon_River", dto.Source.Parts![1].Url);
     }
 
+    // ── Stages, for the background job's progress card (flow doc §3c) ────────────────────────
+
+    [Fact]
+    public async Task The_stages_are_reported_as_they_start_finding_sources_then_writing()
+    {
+        var h = Build(Grounded());
+        var stages = new List<string>();
+
+        var outcome = await h.Service.GenerateAsync(
+            Guid.NewGuid(), TopicRequest(), stage => { stages.Add(stage); return Task.CompletedTask; });
+
+        Assert.True(outcome.Success);
+        Assert.Equal([AiGenerationStages.FindingSources, AiGenerationStages.Writing], stages);
+    }
+
+    [Fact]
+    public async Task A_question_from_grounding_never_reaches_writing()
+    {
+        var h = Build(new GroundingResult { Status = GroundingStatus.NeedsLanguage, Languages = ["English", "Albanian"] });
+        var stages = new List<string>();
+
+        await h.Service.GenerateAsync(
+            Guid.NewGuid(), TopicRequest(), stage => { stages.Add(stage); return Task.CompletedTask; });
+
+        Assert.Equal([AiGenerationStages.FindingSources], stages);
+    }
+
+    [Fact]
+    public async Task A_progress_report_that_fails_does_not_fail_the_generation()
+    {
+        var h = Build(Grounded());
+
+        var outcome = await h.Service.GenerateAsync(
+            Guid.NewGuid(), TopicRequest(), _ => throw new InvalidOperationException("the card is gone"));
+
+        Assert.True(outcome.Success);
+    }
+
     [Fact]
     public void One_article_goes_to_the_client_without_parts()
     {
@@ -206,9 +244,16 @@ public class AiGenerationServiceGroundingTests
     {
         var h = Build(Grounded());
 
-        await h.Service.GenerateAsync(Guid.NewGuid(), TopicRequest(sourceTitle: "Fotosinteza") with { SourceLanguage = "Albanian" });
+        var author = Guid.NewGuid();
 
-        h.Grounding.Verify(g => g.GroundAsync("Fotosinteza", new GroundingAnswers("Albanian", "Fotosinteza", false, false, null), It.IsAny<CancellationToken>()));
+        await h.Service.GenerateAsync(author, TopicRequest(sourceTitle: "Fotosinteza") with { SourceLanguage = "Albanian" });
+
+        // And who they are for: the topic plan's ledger row and draws belong to the author, who
+        // can't be read from a request when the generation runs as a background job.
+        h.Grounding.Verify(g => g.GroundAsync(
+            "Fotosinteza",
+            new GroundingAnswers("Albanian", "Fotosinteza", false, false, null) { UserId = author },
+            It.IsAny<CancellationToken>()));
     }
 
     [Fact]

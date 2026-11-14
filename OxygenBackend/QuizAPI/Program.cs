@@ -385,6 +385,13 @@ builder.Services.AddScoped<IAiGenerationUsageRepository, AiGenerationUsageReposi
 builder.Services.AddScoped<QuizAPI.Services.Ai.IAiQuotaPolicy, QuizAPI.Services.Ai.ConfigAiQuotaPolicy>();
 builder.Services.AddScoped<QuizAPI.Services.Ai.IAiQuotaService, QuizAPI.Services.Ai.AiQuotaService>();
 builder.Services.AddScoped<QuizAPI.Services.Ai.IAiGenerationService, QuizAPI.Services.Ai.AiGenerationService>();
+// Generation as a background job (docs/quiz/ai-quiz-generation-flow.md §3c, ADR 0046): the queue
+// and the runner live for the process, the worker drains the queue, and each job gets its own scope.
+builder.Services.AddScoped<IAiGenerationJobRepository, AiGenerationJobRepository>();
+builder.Services.AddSingleton<QuizAPI.Services.Ai.Jobs.IAiGenerationJobQueue, QuizAPI.Services.Ai.Jobs.AiGenerationJobQueue>();
+builder.Services.AddSingleton<QuizAPI.Services.Ai.Jobs.AiGenerationJobRunner>();
+builder.Services.AddScoped<QuizAPI.Services.Ai.Jobs.IAiGenerationJobService, QuizAPI.Services.Ai.Jobs.AiGenerationJobService>();
+builder.Services.AddHostedService<QuizAPI.Services.Ai.Jobs.AiGenerationJobWorker>();
 builder.Services.AddScoped<QuizAPI.Services.Ai.ISourceFileReader, QuizAPI.Services.Ai.SourceFileReader>();
 // Grounding (docs/quiz/ai-quiz-generation-flow.md §2e). Off unless Ai:Source:Enabled; when off,
 // QuizGrounding answers "Off" without a request and generation is unchanged. Source tiers are

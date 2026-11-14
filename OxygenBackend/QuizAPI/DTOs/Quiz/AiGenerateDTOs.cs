@@ -122,6 +122,21 @@ namespace QuizAPI.DTOs.Quiz
     }
 
     /// <summary>
+    /// <c>POST /api/quiz/ai-jobs</c>: the same request as <see cref="AiGenerateCM"/>, run in the
+    /// background (docs/quiz/ai-quiz-generation-flow.md §3c).
+    /// </summary>
+    public class AiJobCM : AiGenerateCM
+    {
+        /// <summary>
+        /// The page the author is on — a path inside the app. The "your quiz is ready"
+        /// notification links back to it, since the wizard lives under two dashboards. Anything
+        /// that isn't an in-app path is dropped.
+        /// </summary>
+        [MaxLength(200)]
+        public string? ReturnPath { get; set; }
+    }
+
+    /// <summary>
     /// What grounding concluded, on every response that went through it
     /// (docs/quiz/ai-quiz-generation-flow.md §2e). Absent when grounding is off.
     /// </summary>

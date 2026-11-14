@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.Middleware;
 using QuizAPI.Services.Ai;
+using QuizAPI.Services.Ai.Jobs;
 using QuizAPI.Services.Audit;
 using QuizAPI.Services.CurrentUserService;
 using QuizAPI.Services.Roles;
@@ -28,6 +29,7 @@ namespace QuizAPI.Controllers.Quizzes
     public class AiQuizController : BaseApiController
     {
         private readonly IAiGenerationService _generation;
+        private readonly IAiGenerationJobService _jobs;
         private readonly ISourceFileReader _sourceFiles;
         private readonly ICurrentUserService _currentUser;
         private readonly IAuditService _audit;
@@ -35,12 +37,14 @@ namespace QuizAPI.Controllers.Quizzes
 
         public AiQuizController(
             IAiGenerationService generation,
+            IAiGenerationJobService jobs,
             ISourceFileReader sourceFiles,
             ICurrentUserService currentUser,
             IAuditService audit,
             ILogger<AiQuizController> logger)
         {
             _generation = generation ?? throw new ArgumentNullException(nameof(generation));
+            _jobs = jobs ?? throw new ArgumentNullException(nameof(jobs));
             _sourceFiles = sourceFiles ?? throw new ArgumentNullException(nameof(sourceFiles));
             _currentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
             _audit = audit ?? throw new ArgumentNullException(nameof(audit));
@@ -109,6 +113,86 @@ namespace QuizAPI.Controllers.Quizzes
         }
 
         /// <summary>
+        /// Starts a generation in the background and answers at once with its job
+        /// (docs/quiz/ai-quiz-generation-flow.md §3c). This is what the wizard calls; the
+        /// synchronous <c>ai-generate</c> above does the same work inside the request.
+        ///
+        /// <para>Everything <c>ai-generate</c> can refuse — the kill switch, the quota, a question
+        /// from grounding — arrives as the job's outcome a moment later, in the same body, so the
+        /// client handles both the same way. 202 for a new job; 200 when the author already has
+        /// one running, which is returned instead of starting a second.</para>
+        /// </summary>
+        [HttpPost("ai-jobs")]
+        [EnableRateLimiting(RateLimitingExtensions.AiPolicy)]
+        [ProducesResponseType(typeof(AiGenerationJobDTO), StatusCodes.Status202Accepted)]
+        [ProducesResponseType(typeof(AiGenerationJobDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(AiGenerateErrorResponse), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> StartJob([FromBody] AiJobCM request, CancellationToken ct)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var userId = _currentUser.UserId;
+            if (userId is null) return Unauthorized();
+
+            if (request.ToServiceRequest() is null)
+                return BadRequest(new AiGenerateErrorResponse
+                {
+                    Code = AiErrorCodes.InvalidRequest,
+                    Message = $"'{request.Mode}' is not a valid generation mode.",
+                });
+
+            var job = await _jobs.StartAsync(userId.Value, request, ct);
+            return job.Status == nameof(QuizAPI.Models.Ai.AiGenerationJobStatus.Queued) && job.Stage == AiGenerationStages.Queued
+                ? Accepted(job)
+                : Ok(job);
+        }
+
+        /// <summary>
+        /// The author's newest job that is still theirs to collect — running, or finished and not
+        /// yet taken. What the wizard asks when it opens, so a generation left behind is picked
+        /// back up. 204 when there is none. Not rate-limited as <c>ai</c>: it spends nothing.
+        /// </summary>
+        [HttpGet("ai-jobs/active")]
+        [ProducesResponseType(typeof(AiGenerationJobDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public async Task<IActionResult> GetActiveJob(CancellationToken ct)
+        {
+            var userId = _currentUser.UserId;
+            if (userId is null) return Unauthorized();
+
+            var job = await _jobs.GetUncollectedAsync(userId.Value, ct);
+            return job is null ? NoContent() : Ok(job);
+        }
+
+        /// <summary>
+        /// One job, polled while its card is on screen. 404 for another user's id, the same as for
+        /// one that never existed. Asking is also how the server knows somebody is watching.
+        /// </summary>
+        [HttpGet("ai-jobs/{id:guid}")]
+        [ProducesResponseType(typeof(AiGenerationJobDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetJob(Guid id, CancellationToken ct)
+        {
+            var userId = _currentUser.UserId;
+            if (userId is null) return Unauthorized();
+
+            var job = await _jobs.GetAsync(userId.Value, id, ct);
+            return job is null ? NotFound() : Ok(job);
+        }
+
+        /// <summary>The browser has the result, so it is no longer offered again and no notification is owed.</summary>
+        [HttpPost("ai-jobs/{id:guid}/seen")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> MarkJobSeen(Guid id, CancellationToken ct)
+        {
+            var userId = _currentUser.UserId;
+            if (userId is null) return Unauthorized();
+
+            return await _jobs.MarkSeenAsync(userId.Value, id, ct) ? NoContent() : NotFound();
+        }
+
+        /// <summary>
         /// The prompt the generator would send, for the user to paste into their own LLM. Free:
         /// no quota, no provider call. Exists so copy-paste and in-app generation share one
         /// prompt (plan §5.1) — see the note in <see cref="AiPromptBuilder"/> about the duplicate
@@ -129,7 +213,7 @@ namespace QuizAPI.Controllers.Quizzes
                     Message = $"'{request.Mode}' is not a valid generation mode.",
                 });
 
-            var (prompt, grounding) = await _generation.BuildPromptAsync(serviceRequest, ct);
+            var (prompt, grounding) = await _generation.BuildPromptAsync(serviceRequest, _currentUser.UserId, ct);
             if (prompt is null)
                 return StatusCode(StatusCodes.Status409Conflict, new AiGenerateErrorResponse
                 {

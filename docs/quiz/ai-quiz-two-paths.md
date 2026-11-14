@@ -135,7 +135,7 @@ Until then the card is disabled — "Coming soon" in its foot row, no lift, no a
 
 ## 3. What must stay the same, and what enforces it
 
-- **One prompt.** Both paths call `buildInput()` in the shared hook. `POST /quiz/ai-generate`
+- **One prompt.** Both paths call `buildInput()` in the shared hook. `POST /quiz/ai-jobs`
   takes it as a body; `POST /quiz/ai-prompt` turns the same input into the text you paste
   elsewhere, and the text itself is built in `AiPromptBuilder.cs`. There is no second prompt
   in the codebase to drift (generation plan §5.1) — and *this is the property the split most

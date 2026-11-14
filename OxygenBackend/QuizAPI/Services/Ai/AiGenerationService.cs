@@ -68,13 +68,17 @@ namespace QuizAPI.Services.Ai
         /// (<see cref="Sources.TopicPlanner"/>), small, cached and on the budget ledger. A result
         /// that needs a choice carries no prompt.
         /// </summary>
+        public Task<(string? Prompt, GroundingResult Grounding)> BuildPromptAsync(
+            AiGenerationRequest request, CancellationToken ct = default) =>
+            BuildPromptAsync(request, userId: null, ct);
+
         public async Task<(string? Prompt, GroundingResult Grounding)> BuildPromptAsync(
-            AiGenerationRequest request, CancellationToken ct = default)
+            AiGenerationRequest request, Guid? userId, CancellationToken ct = default)
         {
             var normalised = Normalise(request);
             if (!request.Ground) return (_promptBuilder.Build(normalised), GroundingResult.Off);
 
-            var (grounded, grounding) = await GroundAsync(normalised, ct);
+            var (grounded, grounding) = await GroundAsync(normalised, userId, ct);
             return grounding.NeedsChoice ? (null, grounding) : (_promptBuilder.Build(grounded), grounding);
         }
 
@@ -110,9 +114,21 @@ namespace QuizAPI.Services.Ai
         public async Task<bool> IsSourceModeAvailableAsync(CancellationToken ct = default) =>
             _options.SourceModeEnabled && await IsAvailableAsync(ct);
 
+        public Task<AiGenerationOutcome> GenerateAsync(
+            Guid userId, AiGenerationRequest request, CancellationToken ct = default) =>
+            GenerateAsync(userId, request, onStage: null, ct);
+
         public async Task<AiGenerationOutcome> GenerateAsync(
-            Guid userId, AiGenerationRequest request, CancellationToken ct = default)
+            Guid userId, AiGenerationRequest request, Func<string, Task>? onStage, CancellationToken ct = default)
         {
+            // Progress is a courtesy: it must never be the reason a generation fails.
+            async Task Stage(string stage)
+            {
+                if (onStage is null) return;
+                try { await onStage(stage); }
+                catch (Exception ex) { _logger.LogWarning(ex, "Reporting generation stage {Stage} failed.", stage); }
+            }
+
             // ── 1. Gates. Cheapest checks first; none of them touch the provider or the quota table.
             // The two FeatureDisabled gates below are mirrored by IsAvailableAsync, which is what
             // GET /ai-quota answers with — add a third and add it there too.
@@ -152,7 +168,9 @@ namespace QuizAPI.Services.Ai
 
             // Grounding — before the reservation, so a question put to the author costs nothing,
             // and a slow or failing source costs nothing either (it degrades to ungrounded).
-            var (grounded, grounding) = await GroundAsync(normalised, ct);
+            if (_grounding is not null && normalised.Mode == AiGenerationMode.Topic)
+                await Stage(AiGenerationStages.FindingSources);
+            var (grounded, grounding) = await GroundAsync(normalised, userId, ct);
             if (grounding.NeedsChoice) return AiGenerationOutcome.NeedsChoice(grounding);
             normalised = grounded;
 
@@ -171,6 +189,7 @@ namespace QuizAPI.Services.Ai
 
             try
             {
+                await Stage(AiGenerationStages.Writing);
                 var (payload, usage) = await CallWithOneRetryAsync(prompt, ct);
 
                 if (payload is null)
@@ -286,7 +305,7 @@ namespace QuizAPI.Services.Ai
         /// is left as the instruction it already is.</para>
         /// </summary>
         private async Task<(AiGenerationRequest Request, GroundingResult Grounding)> GroundAsync(
-            AiGenerationRequest r, CancellationToken ct)
+            AiGenerationRequest r, Guid? userId, CancellationToken ct)
         {
             if (_grounding is null || r.Mode != AiGenerationMode.Topic || string.IsNullOrWhiteSpace(r.Topic))
                 return (r, GroundingResult.Off);
@@ -295,7 +314,12 @@ namespace QuizAPI.Services.Ai
                 r.Topic,
                 new GroundingAnswers(
                     r.SourceLanguage ?? r.LanguageName, r.SourceTitle, r.SourceDeclined, r.SourceAcceptFromMemory,
-                    r.SourceProvider),
+                    r.SourceProvider)
+                {
+                    // Passed, not read from the request's HttpContext: a generation also runs as
+                    // a background job, where there is no request to read it from.
+                    UserId = userId,
+                },
                 ct);
             if (grounding.Status is GroundingStatus.Off || grounding.NeedsChoice) return (r, grounding);
 

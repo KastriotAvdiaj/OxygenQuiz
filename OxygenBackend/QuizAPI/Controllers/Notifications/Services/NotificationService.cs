@@ -24,7 +24,22 @@ namespace QuizAPI.Controllers.Notifications.Services
             _logger = logger;
         }
 
-        public async Task<NotificationDTO> CreateAsync(Guid userId, string type, string title, string message, CancellationToken ct = default)
+        public Task<NotificationDTO> CreateAsync(Guid userId, string type, string title, string message, CancellationToken ct = default) =>
+            CreateWithLinkAsync(userId, type, title, message, link: null, ct);
+
+        /// <summary>An in-app path: one leading slash, no scheme, no backslash, short enough to store.</summary>
+        internal static string? SafeLink(string? link)
+        {
+            link = link?.Trim();
+            return string.IsNullOrEmpty(link) || link.Length > 300
+                   || !link.StartsWith('/') || link.StartsWith("//", StringComparison.Ordinal)
+                   || link.Contains('\\') || link.Contains("://", StringComparison.Ordinal)
+                ? null
+                : link;
+        }
+
+        public async Task<NotificationDTO> CreateWithLinkAsync(
+            Guid userId, string type, string title, string message, string? link, CancellationToken ct = default)
         {
             var notification = new Notification
             {
@@ -33,6 +48,7 @@ namespace QuizAPI.Controllers.Notifications.Services
                 Type = string.IsNullOrWhiteSpace(type) ? "info" : type,
                 Title = title,
                 Message = message,
+                Link = SafeLink(link),
                 IsRead = false,
                 CreatedAt = DateTime.UtcNow,
             };
@@ -103,6 +119,7 @@ namespace QuizAPI.Controllers.Notifications.Services
             Type = n.Type,
             Title = n.Title,
             Message = n.Message,
+            Link = n.Link,
             IsRead = n.IsRead,
             CreatedAt = n.CreatedAt,
         };

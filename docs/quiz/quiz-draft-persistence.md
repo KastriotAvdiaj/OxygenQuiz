@@ -47,9 +47,10 @@ one builder for one person, so a draft started behind either is offered behind b
 - **The builder rendered inside AI review.** The wizard above it already persists the payload
   those questions came from. Two snapshots of one quiz would mean two offers to restore it.
   `CreateQuizForm` disables its own draft whenever `aiImportMode` is set.
-- **A generation in flight.** There is no job id to come back to, so a refresh spends the
-  generation and returns nothing — which is what `useNavigationGuard` is armed for on that
-  screen, and the one case where the honest answer is still "keep this tab open".
+- **A generation in flight.** Not a draft's job any more: it is a job on the server, which the
+  wizard rejoins when it is opened again
+  ([`ai-quiz-generation-flow.md`](ai-quiz-generation-flow.md) §3c). Until 2026-11-14 there was
+  no job id to come back to, a refresh spent the generation, and a dialog guarded the exit.
 - **Anything untouched.** A form holding only its defaults stores nothing. See
   [ADR 0009](../adr/0009-a-restored-draft-is-announced-not-asked-about.md) for why that matters
   more than it sounds.

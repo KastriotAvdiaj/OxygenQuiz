@@ -1141,10 +1141,25 @@ are actually *in* the feature.
   Deliberately out of scope for the 2026-08-22 provider rename.
   → `OxygenBackend/QuizAPI/Models/Ai/AiGenerationUsage.cs`,
   `Controllers/Quizzes/Services/QuizServices/QuizService.cs`
-- **P3 — No streaming: the client waits blind for 10–40s.** Why `MaxQuestionsPerGeneration`
-  is capped at 15 — a bigger request risks Cloudflare's 100s proxy timeout with no progress
-  shown. Planned as slice 2.2 (NDJSON + real per-question progress); until it ships, leave
-  the cap alone. → docs/quiz/ai-quiz-generation-plan.md §6.2
+- **P3 — No per-question progress during a generation.** The wait itself is no longer blind or
+  bound to the request: since 2026-11-14 a generation is a background job with real stages and
+  a notification (docs/quiz/ai-quiz-generation-flow.md §3c), so Cloudflare's 100s proxy timeout
+  no longer applies to it. What remains of slice 2.2 is streaming the questions as they are
+  written. → docs/quiz/ai-quiz-generation-plan.md §6.2
+- **P2 — Background generation has not been tried in a browser (2026-11-14).** The server side
+  was run end to end (PostgreSQL, fake provider: start, poll, notify, collect, and the migration
+  `AiGenerationJobsAndNotificationLink` applied to an empty database). The wizard's side has
+  unit tests only: the progress card, *Keep browsing*, the notification's toast and link, and
+  rejoining a job on reopening the wizard all need a pass by hand, and with the real model.
+- **P3 — A restart loses generations in flight.** The job queue is in the API process (ADR
+  0046). An interrupted job ends as a readable failure and its quota slot is released, but the
+  author has to press Generate again. Move the queue out of process before running a second
+  instance.
+- **P3 — A job picked up on another device arrives without its form.** The questions are
+  delivered, but the topic and options live in the first browser's draft; answering a question
+  from grounding there would send an empty topic. Return the job's request with it, or refuse
+  to rejoin a `NeedsChoice` job whose draft is missing.
+- **P3 — A generation can't be cancelled.** Leaving doesn't stop it and nothing else does.
 
 ## Auth enhancements
 

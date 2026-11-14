@@ -3,7 +3,6 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using QuizAPI.Models.Ai;
 using QuizAPI.Repositories.Interfaces;
-using QuizAPI.Services.CurrentUserService;
 
 namespace QuizAPI.Services.Ai.Sources
 {
@@ -30,11 +29,11 @@ namespace QuizAPI.Services.Ai.Sources
     public interface ITopicPlanner
     {
         /// <summary>
-        /// Null when there is no plan to act on — planning is off, the budget is spent, nobody is
-        /// signed in, or the model's reply was unusable. Null always means "treat it as one
+        /// Null when there is no plan to act on — planning is off, the budget is spent, there is
+        /// no <paramref name="userId"/>, or the model's reply was unusable. Null always means "treat it as one
         /// subject", which is what happened before this existed.
         /// </summary>
-        Task<TopicPlan?> PlanAsync(string topic, string language, CancellationToken ct);
+        Task<TopicPlan?> PlanAsync(string topic, string language, Guid? userId, CancellationToken ct);
     }
 
     /// <summary>
@@ -77,7 +76,6 @@ namespace QuizAPI.Services.Ai.Sources
         private readonly IQuizAiProvider _provider;
         private readonly IAiGenerationUsageRepository _usages;
         private readonly IAiQuotaService _quota;
-        private readonly ICurrentUserService _currentUser;
         private readonly IMemoryCache _cache;
         private readonly AiOptions _ai;
         private readonly BroadTopicOptions _options;
@@ -88,7 +86,6 @@ namespace QuizAPI.Services.Ai.Sources
             IQuizAiProvider provider,
             IAiGenerationUsageRepository usages,
             IAiQuotaService quota,
-            ICurrentUserService currentUser,
             IMemoryCache cache,
             IOptions<AiOptions> ai,
             IOptions<SourceOptions> source,
@@ -100,19 +97,20 @@ namespace QuizAPI.Services.Ai.Sources
             _provider = provider;
             _usages = usages;
             _quota = quota;
-            _currentUser = currentUser;
             _cache = cache;
             _ai = ai.Value;
             _options = source.Value.Broad;
             _logger = logger;
         }
 
-        public async Task<TopicPlan?> PlanAsync(string topic, string language, CancellationToken ct)
+        public async Task<TopicPlan?> PlanAsync(string topic, string language, Guid? user, CancellationToken ct)
         {
             if (!_options.Enabled || !_ai.Enabled || string.IsNullOrWhiteSpace(topic)) return null;
 
             // The row needs an owner, and an anonymous caller has no business spending on a model.
-            if (_currentUser.UserId is not { } userId) return null;
+            // Passed in rather than read from the request: a generation also runs as a background
+            // job, where there is no request (docs/quiz/ai-quiz-generation-flow.md §3c).
+            if (user is not { } userId) return null;
 
             var topicKey = $"{language}:{topic.Trim().ToLowerInvariant()}";
             var poolKey = $"topic-plan:{topicKey}";

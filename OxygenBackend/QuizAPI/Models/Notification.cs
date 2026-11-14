@@ -19,6 +19,13 @@ namespace QuizAPI.Models
         [MaxLength(1000)]
         public string Message { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Where clicking it goes, when it is about something to open — a path inside the app
+        /// ("/dashboard/…"), never a full URL. Null for a notification that is only a message.
+        /// </summary>
+        [MaxLength(300)]
+        public string? Link { get; set; }
+
         public bool IsRead { get; set; }
 
         public DateTime CreatedAt { get; set; }

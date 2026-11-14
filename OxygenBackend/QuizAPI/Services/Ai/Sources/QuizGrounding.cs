@@ -107,7 +107,15 @@ namespace QuizAPI.Services.Ai.Sources
     /// </param>
     public sealed record GroundingAnswers(
         string? Language, string? ArticleTitle, bool Declined = false, bool AcceptFromMemory = false,
-        string? ArticleProvider = null);
+        string? ArticleProvider = null)
+    {
+        /// <summary>
+        /// Who the generation is for — not an answer, but it travels with them: the topic plan
+        /// writes a ledger row and remembers an author's earlier draws (<see cref="TopicPlanner"/>).
+        /// Null means nothing is planned.
+        /// </summary>
+        public Guid? UserId { get; init; }
+    }
 
     public interface IQuizGrounding
     {
@@ -205,7 +213,7 @@ namespace QuizAPI.Services.Ai.Sources
             // that is only ever asked about a single subject.
             if (_planner is not null && _options.Broad.Enabled && string.IsNullOrWhiteSpace(answers.ArticleTitle))
             {
-                var plan = await _planner.PlanAsync(topic, language, ct);
+                var plan = await _planner.PlanAsync(topic, language, answers.UserId, ct);
                 if (plan is { Kind: TopicKind.Broad })
                     return await GroundBroadAsync(topic, language, plan.Subtopics, providers[0], answers, ct);
             }

@@ -47,6 +47,26 @@ namespace QuizAPI.Services.Ai
         TopicPlan = 4,
     }
 
+    /// <summary>
+    /// Where a generation has got to — real steps, reported as they start, for the background
+    /// job's progress card (docs/quiz/ai-quiz-generation-flow.md §3c). Strings because they are
+    /// stored on the job row and sent to the browser as they are.
+    /// </summary>
+    public static class AiGenerationStages
+    {
+        /// <summary>Accepted; a worker hasn't picked it up yet.</summary>
+        public const string Queued = "Queued";
+
+        /// <summary>Grounding: planning a broad topic, looking articles up. Skipped when there is nothing to look up.</summary>
+        public const string FindingSources = "FindingSources";
+
+        /// <summary>The model call that writes the questions — nearly all of the wait.</summary>
+        public const string Writing = "Writing";
+
+        /// <summary>Finished, one way or another.</summary>
+        public const string Done = "Done";
+    }
+
     /// <summary>Lifecycle of a quota reservation. See docs/quiz/ai-quiz-generation-flow.md §4.</summary>
     public enum AiGenerationStatus
     {

@@ -9,6 +9,9 @@ namespace QuizAPI.DTOs.Notification
         public string Type { get; set; } = "info";
         public string Title { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
+
+        /// <summary>An in-app path to open on click, or null.</summary>
+        public string? Link { get; set; }
         public bool IsRead { get; set; }
         public DateTime CreatedAt { get; set; }
     }

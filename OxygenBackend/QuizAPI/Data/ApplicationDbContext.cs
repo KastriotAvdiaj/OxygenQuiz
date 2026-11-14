@@ -84,6 +84,9 @@ namespace QuizAPI.Data
         /// <summary>AI generation quota + cost ledger. See docs/quiz/ai-quiz-generation-flow.md §4.</summary>
         public DbSet<Models.Ai.AiGenerationUsage> AiGenerationUsages { get; set; }
 
+        // Generations running in the background (docs/quiz/ai-quiz-generation-flow.md §3c).
+        public DbSet<Models.Ai.AiGenerationJob> AiGenerationJobs { get; set; }
+
         // Classroom (docs/quiz/classroom-plan.md)
         public DbSet<Models.Classroom.TeacherAccessRequest> TeacherAccessRequests { get; set; }
         public DbSet<Models.Classroom.Class> Classes { get; set; }
@@ -402,6 +405,16 @@ namespace QuizAPI.Data
             // Serves the rolling 30-day spend cap.
             modelBuilder.Entity<Models.Ai.AiGenerationUsage>()
                 .HasIndex(u => u.CreatedAt);
+
+            // AI generation jobs: work in progress and its answer, the user's own, so it goes with
+            // the account (unlike the usage ledger above). The index is "this user's newest job".
+            modelBuilder.Entity<Models.Ai.AiGenerationJob>()
+                .HasOne<User>()
+                .WithMany()
+                .HasForeignKey(j => j.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<Models.Ai.AiGenerationJob>()
+                .HasIndex(j => new { j.UserId, j.CreatedAt });
 
             // Notifications: one user -> many, cascade on user delete, fast "my unread" lookups.
             modelBuilder.Entity<Notification>()

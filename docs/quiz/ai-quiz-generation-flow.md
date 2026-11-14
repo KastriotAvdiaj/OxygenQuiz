@@ -833,6 +833,105 @@ form; pressing either marks the offending field invalid, focuses it, and says wh
 A disabled button with a not-allowed cursor says "no" without saying why. The message is derived
 from current state, not stored, so it clears itself as soon as the field is filled.
 
+### 3c. Generation as a background job
+
+> **Status: built 2026-11-14.** The wizard no longer holds a request open while the model
+> writes. Decision: [ADR 0046](../adr/0046-a-generation-is-a-job-the-author-may-walk-away-from.md).
+> The server side was run end to end on 2026-11-14 — PostgreSQL, the fake provider, a job
+> started, polled, notified and collected over HTTP. The wizard's side has unit tests only: it
+> has not been tried in a browser.
+
+Everything in the diagram above still happens, in the same order — but inside a job on the
+server, not inside the request that asked for it. Until 2026-11-14 the generation *was* the
+request: the page had to stay open for 10–40 seconds, a dialog stood in the way of leaving, and
+a closed tab spent a quota slot for nothing. The author also watched a typewriter and five lines
+of status paced from a clock, because the client had no way to know what the server was doing.
+
+```
+POST /quiz/ai-jobs ──► 202 { id, status: Queued }          (the request ends here)
+        │
+        ▼  in-process queue
+   AiGenerationJobWorker ──► AiGenerationService.GenerateAsync(userId, request, onStage)
+        │                          │ FindingSources → Writing
+        ▼                          ▼
+   AiGenerationJobs row:  Stage, then ResultJson + Status
+        ▲
+GET /quiz/ai-jobs/{id}  every 1.5 s, while the card is on screen
+```
+
+**The job stores the body the synchronous endpoint would have returned** — an
+`AiGenerateResponse` on success, an `AiGenerateErrorResponse` otherwise. So a result is handled
+by the same client code whether it is polled live, picked up an hour later, or opened from a
+notification: `runAiJob` resolves and rejects with exactly what `generateAiQuiz` used to, and
+the parser, the review, the error panel and grounding's questions did not change.
+
+| Status | Means | Body |
+|---|---|---|
+| `Queued` / `Running` | Not finished. `stage` says how far: `Queued`, `FindingSources`, `Writing` | — |
+| `Succeeded` | Questions ready | `result` |
+| `NeedsChoice` | Grounding needs the author (§2e). Nothing spent | `error`, code `SourceNeedsChoice` |
+| `Failed` | Any other outcome — quota, kill switch, provider, a restart | `error` |
+
+**Stages are real.** `GenerateAsync` reports `FindingSources` before grounding (when there is
+grounding to do) and `Writing` before the model call, and the card shows them as a short list
+that ticks (`generationSteps`). Nothing on it is paced from a clock except the hint under the
+list, which stops promising "under a minute" after 45 seconds.
+
+**One job at a time per author.** A second `POST` while one is queued or running returns the
+first and starts nothing: a double press, or a second tab, spends once.
+
+#### Leaving, and coming back
+
+- **Leaving stops the watching, not the work.** *Keep browsing* on the card just navigates away;
+  so does any link. The poll loop is aborted when the wizard unmounts and the job carries on.
+- **The server works out that nobody is watching** — from the polls stopping, not from a
+  message the browser sends on its way out. A closed tab, a dead battery and a lost connection
+  never send one. When a job ends and its last poll is more than 6 seconds old, the author is
+  notified straight away. With a recent poll the result is given 25 seconds to be collected, and
+  the notification goes if it wasn't.
+- **The notification links back** to the page the job was started from (`returnPath`, sent with
+  the request and stored only if it is a path inside the app — the wizard lives under two
+  dashboards). It also raises a toast when it arrives, since a bell badge is easy to miss.
+- **The wizard picks up a job left behind.** On open it asks `GET /quiz/ai-jobs/active` once: a
+  running job brings the progress card back; a finished one delivers its outcome as if it had
+  just arrived. A finished success is not allowed to replace questions the draft already holds.
+- **Collected means done.** When the outcome reaches the page it calls
+  `POST /quiz/ai-jobs/{id}/seen`; the job is then neither offered again nor owed a notification.
+
+#### Why the queue is in this process
+
+Hangfire is already here and would survive a restart, but its PostgreSQL storage polls for work
+every fifteen seconds — a quarter of a typical generation spent waiting to start. A channel
+starts the job at once. What that gives up is a job in flight when the process stops: it is
+ended as `Failed` ("the server restarted… nothing was used"), at start-up and again by the
+recurring sweep, and the quota slot is released the same way an abandoned request's always was
+(§4). `Ai:MaxConcurrentJobs` (3) bounds how many run at once; the rest wait as `Queued`.
+
+**Every touch of the job row is its own scope.** The generation owns its scope's `DbContext` —
+it opens a transaction and takes an advisory lock to reserve the slot — so progress is written
+through a short scope of its own, never through that one.
+
+**The author is passed, not read from the request.** A job has no `HttpContext`, so
+`GenerateAsync`'s `userId` now travels to grounding (`GroundingAnswers.UserId`) and on to the
+topic plan, which used to read `ICurrentUserService`.
+
+#### What is kept, and for how long
+
+A job row holds the request, the questions and the source text they were written from. It is
+the author's own (it goes with the account), and the sweep deletes it after
+`Ai:JobRetentionDays` (7). The browser has its own copy — the draft — as soon as it collects.
+
+#### Known limits
+
+- **A restart loses jobs in flight** (above). Fine on one small server; a second instance would
+  need the queue moved out of process.
+- **Picking a job up on another device** delivers the questions, but the form there is empty —
+  the topic and options live in the first browser's draft. A question from grounding answered
+  there would be sent with an empty topic. → `known-issues.md`.
+- **No cancel.** Leaving does not stop a generation, and there is no button that does.
+- **`ai-generate` still exists** and does the same work inside the request. Nothing in the app
+  calls it now; it is kept for tools and for the tests written against it.
+
 ---
 
 ## 4. Quota: the state machine
@@ -992,6 +1091,25 @@ doesn't match a loaded entity yields null and the user picks.
 `payload` is a **string**, not an object, and that is on purpose: it is untrusted text that
 happens to parse, and the only thing qualified to judge it is `parse-ai-output.ts`. Deserialising
 it server-side would invite someone to start trusting it.
+
+### `POST /api/quiz/ai-jobs` and the job it returns
+
+The same request body as `ai-generate`, plus an optional `returnPath`, run in the background
+(§3c). `ai` rate-limit policy, like `ai-generate`.
+
+```jsonc
+// 202 — a new job. 200 with the same shape when the author already has one running.
+{ "id": "5b0c…", "status": "Queued", "stage": "Queued", "result": null, "error": null, "createdAt": "…" }
+```
+
+| Call | Answers |
+|---|---|
+| `GET /api/quiz/ai-jobs/{id}` | The job. `result` is an `ai-generate` 200 body once `Succeeded`; `error` is its error body once `Failed` or `NeedsChoice`. 404 for another user's id, as for one that never existed. Asking is also how the server knows the card is being watched. |
+| `GET /api/quiz/ai-jobs/active` | The author's newest job still theirs to collect — running, or finished and not yet seen, from the last 24 hours. 204 when there is none. |
+| `POST /api/quiz/ai-jobs/{id}/seen` | 204. The browser has the outcome. |
+
+The three reads and the `seen` call spend nothing and are not under the `ai` policy; a poll
+every 1.5 s sits far inside the per-user global limit.
 
 ### `POST /api/quiz/ai-prompt`
 
@@ -1297,16 +1415,16 @@ that would have redirected it immediately — "it works when I'm logged in" — 
 When a bug reproduces on new data, check what's different about the *caller* before concluding it's
 the data.
 
-**12. No streaming, so the client waits blind.** At the current 15-question cap a call runs well
-inside Cloudflare's 100s proxy timeout, but the user sees nothing until it finishes. That is what
-slice 2.2 is for; until then, keep the cap where it is.
+**12. No streaming — but the client no longer waits blind (2026-11-14).** Generation is a
+background job (§3c): the wizard's request ends at once, so Cloudflare's 100s proxy timeout no
+longer bounds a generation, and the card shows the stages the server reports. What is still
+missing is per-question progress — the model's reply arrives whole — so the question cap has no
+reason left to be about the proxy; it is about cost and the model's own ceiling.
 
-`GeneratingOverlay` covers the wait as of 2026-09-10 — a blurred blocking layer over the
-wizard, with a typewriter and one line of status text — but be clear about what it is: those lines
-are paced off a clock, not off anything the server said, because there is nothing to read. It
-makes the wait legible; it does not make it observable. When streaming lands, that copy is the
-first thing that should stop being a guess. `fail-slow` above is how to watch it, and
-`useGenerationWait` is why a fast *failure* does not sit behind it — it detours
+`GeneratingOverlay` covers the wait — a blurred layer over the wizard with a short list of real
+steps and a *Keep browsing* button. Until 2026-11-14 it was a typewriter and status lines paced
+off a clock, because there was nothing to read from the server. `fail-slow` above is how to
+watch it, and `useGenerationWait` is why a fast *failure* does not sit behind it — it detours
 through `aborting`, which fades out on the working copy rather than claiming success
 on the way to an error panel. A success instead gets a floor of 3.6s, a 1.4s beat on
 the questions landing, and a 0.3s fade: at least 5.3s of overlay, which on the normal

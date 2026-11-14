@@ -207,6 +207,20 @@ namespace QuizAPI.Services.Ai
         public int ReservationTimeoutMinutes { get; set; } = 10;
 
         /// <summary>
+        /// How many background generations run at once (docs/quiz/ai-quiz-generation-flow.md §3c).
+        /// Each is mostly waiting on the vendor; the bound keeps a burst of presses from becoming
+        /// a burst of paid calls. The rest wait their turn, shown as "Queued".
+        /// </summary>
+        public int MaxConcurrentJobs { get; set; } = 3;
+
+        /// <summary>
+        /// How long a finished job's row — the questions, and the article text they were written
+        /// from — is kept before the sweeper deletes it. The author's browser has its own copy as
+        /// soon as it collects the result; this is only for a result nobody came back for.
+        /// </summary>
+        public int JobRetentionDays { get; set; } = 7;
+
+        /// <summary>
         /// Whether Source mode (generate from the user's own material) is offered. <b>Resolved,
         /// not configured</b>: <see cref="AiConfigurationResolver"/> copies it from the selected
         /// vendor's <see cref="AiVendorOptions.AllowsSourceMode"/>, and turns it on for the

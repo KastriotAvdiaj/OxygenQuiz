@@ -9,6 +9,14 @@ namespace QuizAPI.Services.Ai
         Task<AiGenerationOutcome> GenerateAsync(Guid userId, AiGenerationRequest request, CancellationToken ct = default);
 
         /// <summary>
+        /// The same generation, reporting where it has got to (<see cref="AiGenerationStages"/>) —
+        /// what the background job shows on its progress card. The callback is awaited, so it
+        /// should be quick; a failure in it fails nothing but the progress display.
+        /// </summary>
+        Task<AiGenerationOutcome> GenerateAsync(
+            Guid userId, AiGenerationRequest request, Func<string, Task>? onStage, CancellationToken ct = default);
+
+        /// <summary>
         /// The prompt that <see cref="GenerateAsync"/> would send, without sending it. Backs
         /// copy-paste mode so both paths share one prompt (plan §5.1). Free: no quota, no provider.
         /// </summary>
@@ -20,6 +28,13 @@ namespace QuizAPI.Services.Ai
         /// </summary>
         Task<(string? Prompt, Sources.GroundingResult Grounding)> BuildPromptAsync(
             AiGenerationRequest request, CancellationToken ct = default);
+
+        /// <summary>
+        /// As above, on behalf of <paramref name="userId"/> — who the topic plan's ledger row
+        /// belongs to (<see cref="Sources.TopicPlanner"/>). Without one nothing is planned.
+        /// </summary>
+        Task<(string? Prompt, Sources.GroundingResult Grounding)> BuildPromptAsync(
+            AiGenerationRequest request, Guid? userId, CancellationToken ct = default);
 
         Task<AiQuotaStatus> GetQuotaStatusAsync(Guid userId, CancellationToken ct = default);
 

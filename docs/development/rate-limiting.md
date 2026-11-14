@@ -30,7 +30,7 @@ Switched by `RateLimiting:Enabled` (default on; off in Development — see "In d
 | **Global**, anonymous | 300 requests | 10 s sliding, per IP | Everything except hub connection traffic |
 | **`auth`** policy | 20 requests | 1 min sliding, per IP | `login`, `signup`, `external-login`/`-signup`, `validate-invite-code`, `verify-email`, `resend-verification`, password reset |
 | **`guest`** policy | 20 requests | 1 min sliding, per IP | `POST /api/guest-quiz-sessions` (guest session creation) |
-| **`ai`** policy | 6 requests | 1 min sliding, **per user** | `POST /api/quiz/ai-generate` only |
+| **`ai`** policy | 6 requests | 1 min sliding, **per user** | `POST /api/quiz/ai-generate` and `POST /api/quiz/ai-jobs` — the two calls that start a generation |
 | **`media-search`** policy | 120 requests | 1 hour fixed, **per user** | `GET /api/media/stock/search` — searching Wikimedia Commons and Pexels. Results are cached an hour, but Pexels allows 200 requests an hour for the whole site, so one account mustn't spend it ([`../media/media-pipeline.md`](../media/media-pipeline.md) §7) |
 | **`media-upload`** policy | 30 requests | 1 hour fixed, **per user** | `POST /api/media` and `POST /api/media/stock/import` (an import stores a file too). The media quota counts saves, not uploads, so this is what stops a script uploading thousands of files nobody saves ([`../media/media-pipeline.md`](../media/media-pipeline.md) §5) |
 
@@ -55,9 +55,12 @@ Switched by `RateLimiting:Enabled` (default on; off in Development — see "In d
   ["Partitioning by user"](#partitioning-by-user) below. It is also the only limit that guards
   something that costs real money, though the hard ceiling there is the per-user daily quota in
   [`ai-quiz-generation-flow.md`](../quiz/ai-quiz-generation-flow.md) §4, not this window.
-  Deliberately attached to `ai-generate` **alone**: the sibling `ai-prompt` and `ai-quota` calls
-  are free, run on page load and on every copy, and are what we point users at when generation
-  fails — throttling them with the same budget would throttle the fallback too.
+  Deliberately attached only to the calls that **start** a generation (`ai-generate`, and
+  `ai-jobs`, which the wizard uses): the sibling `ai-prompt` and `ai-quota` calls are free, run
+  on page load and on every copy, and are what we point users at when generation fails —
+  throttling them with the same budget would throttle the fallback too. The job reads
+  (`GET ai-jobs/{id}`, polled every 1.5 s while the progress card is up, and `ai-jobs/active`)
+  are free for the same reason and fall under the global limit only.
 
 ### Endpoint policies
 
