@@ -200,6 +200,11 @@ ReadingAllowanceSeconds
 screen, equal to the slack the session's deadline sets aside for reading — see
 [ADR 0042](../adr/0042-the-feedback-screen-cannot-outwait-the-session-deadline.md).
 
+A timed-out multiple-choice answer names its correct option(s) like a wrong one does. Until
+2026-11-14 it didn't: the options were only ever loaded by grading, which a timeout skips, so the
+result carried the explanation and no key. `LoadSessionWithDetailsAsync` now includes them
+(`TimedOutAnswerKeyTests`).
+
 The correct-answer fields are populated **only when the answer was wrong or timed out** (so a
 correct answer never reveals more than needed). `Explanation` is the exception: it is sent with
 every instant-feedback result, right or wrong, because a lucky guess is exactly when the "why" is

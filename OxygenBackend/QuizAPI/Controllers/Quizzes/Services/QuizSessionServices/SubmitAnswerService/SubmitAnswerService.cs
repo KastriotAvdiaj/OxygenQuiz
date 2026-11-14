@@ -84,6 +84,12 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerS
                 .Include(s => s.Quiz)
                 .Include(s => s.CurrentQuizQuestion)
                     .ThenInclude(qq => qq!.Question)
+                        // The options too, for a multiple-choice question: BuildResultDto reads the
+                        // correct ones off this entity. A graded answer happened to load them (the
+                        // grading service queries them through the same context), but a timeout is
+                        // never graded — so its result named no correct option and the player saw
+                        // "Time's Up!" with nothing marked (found 2026-11-14).
+                        .ThenInclude(q => (q as MultipleChoiceQuestion)!.AnswerOptions)
                 .FirstOrDefaultAsync(s => s.Id == sessionId);
         }
 
