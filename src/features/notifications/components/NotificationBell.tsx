@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Bell, Check, CheckCheck, Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ArrowRight, Bell, Check, CheckCheck, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +14,7 @@ import {
   useMarkNotificationRead,
   useMarkAllNotificationsRead,
   useDeleteNotification,
+  inAppLink,
   type AppNotification,
 } from "../api/notifications";
 import { useNotificationHub } from "./use-notification-hub";
@@ -24,6 +26,7 @@ import { useNotificationHub } from "./use-notification-hub";
  */
 export const NotificationBell = () => {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
 
   const { data: unreadCount = 0 } = useUnreadCount();
   // Fetch the list lazily — only when the dropdown is open.
@@ -84,6 +87,12 @@ export const NotificationBell = () => {
                 key={n.id}
                 notification={n}
                 onMarkRead={() => !n.isRead && markRead.mutate(n.id)}
+                // A notification about something to open ("Your quiz is ready") goes there on
+                // click, and the menu closes behind it.
+                onOpen={(path) => {
+                  setOpen(false);
+                  navigate(path);
+                }}
                 onDelete={() => remove.mutate(n.id)}
               />
             ))
@@ -97,48 +106,62 @@ export const NotificationBell = () => {
 const NotificationRow = ({
   notification,
   onMarkRead,
+  onOpen,
   onDelete,
 }: {
   notification: AppNotification;
   onMarkRead: () => void;
+  onOpen: (path: string) => void;
   onDelete: () => void;
-}) => (
-  <div
-    onClick={onMarkRead}
-    className={`group flex gap-2.5 px-4 py-3 border-b border-border/60 cursor-pointer transition-colors hover:bg-accent/40 ${
-      notification.isRead ? "" : "bg-primary/5"
-    }`}
-  >
-    <span
-      className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${
-        notification.isRead ? "bg-transparent" : "bg-primary"
-      }`}
-    />
-    <div className="flex-1 min-w-0">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-medium truncate">{notification.title}</p>
-        {!notification.isRead && (
-          <Check className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0" />
-        )}
-      </div>
-      <p className="text-xs text-muted-foreground line-clamp-2">
-        {notification.message}
-      </p>
-      <p className="text-[11px] text-muted-foreground/70 mt-1">
-        {formatDate(notification.createdAt)}
-      </p>
-    </div>
-    <button
-      aria-label="Delete notification"
-      onClick={(e) => {
-        e.stopPropagation();
-        onDelete();
+}) => {
+  const link = inAppLink(notification.link);
+  return (
+    <div
+      onClick={() => {
+        onMarkRead();
+        if (link) onOpen(link);
       }}
-      className="self-start text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+      className={`group flex gap-2.5 px-4 py-3 border-b border-border/60 cursor-pointer transition-colors hover:bg-accent/40 ${
+        notification.isRead ? "" : "bg-primary/5"
+      }`}
     >
-      <Trash2 className="w-3.5 h-3.5" />
-    </button>
-  </div>
-);
+      <span
+        className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${
+          notification.isRead ? "bg-transparent" : "bg-primary"
+        }`}
+      />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-medium truncate">{notification.title}</p>
+          {!notification.isRead && (
+            <Check className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0" />
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground line-clamp-2">
+          {notification.message}
+        </p>
+        <p className="flex items-center gap-2 text-[11px] text-muted-foreground/70 mt-1">
+          {formatDate(notification.createdAt)}
+          {link && (
+            <span className="flex items-center gap-0.5 font-medium text-primary">
+              Open
+              <ArrowRight className="h-3 w-3" aria-hidden="true" />
+            </span>
+          )}
+        </p>
+      </div>
+      <button
+        aria-label="Delete notification"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete();
+        }}
+        className="self-start text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        <Trash2 className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+};
 
 export default NotificationBell;

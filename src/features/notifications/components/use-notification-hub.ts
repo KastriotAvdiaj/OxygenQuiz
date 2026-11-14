@@ -3,6 +3,12 @@ import * as signalR from "@microsoft/signalr";
 import { useQueryClient } from "@tanstack/react-query";
 import { getAccessToken } from "@/lib/token-store";
 import { useUser } from "@/lib/Auth";
+import { useNotifications } from "@/common/Notifications";
+
+import type { AppNotification } from "../api/notifications";
+
+/** `AiGenerationJobRunner.NotificationType` on the server. */
+const AI_QUIZ_NOTIFICATION = "ai-quiz";
 
 // Same origin the rest of the app targets (see Api-client.ts / multiplayer-context.tsx).
 // Derived from VITE_API_URL (which includes /api) so dev → localhost, prod → api.oxygenquiz.com.
@@ -39,8 +45,17 @@ export const useNotificationHub = () => {
       .withAutomaticReconnect()
       .build();
 
-    connection.on("ReceiveNotification", () => {
+    connection.on("ReceiveNotification", (pushed?: Partial<AppNotification>) => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      // A finished AI quiz is something the author is waiting on, usually from another page, so
+      // it also gets a toast — a bell badge alone is easy to miss. Other kinds stay in the bell.
+      if (pushed?.type === AI_QUIZ_NOTIFICATION && pushed.title) {
+        useNotifications.getState().addNotification({
+          type: "info",
+          title: pushed.title,
+          message: pushed.message,
+        });
+      }
     });
 
     connection

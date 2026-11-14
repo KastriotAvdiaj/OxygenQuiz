@@ -1,5 +1,4 @@
 import { apiService } from "@/lib/Api-client";
-import { MutationConfig } from "@/lib/React-query";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 
@@ -241,17 +240,17 @@ export class AiGenerateError extends Error {
  * own-AI page did in production: "Preparing…" and nothing else, permanently.
  *
  * They differ because the calls do. Building a prompt is string concatenation on the server;
- * if it hasn't answered in 15s something is wrong. Generation waits on a model, and the server
- * gives it `Ai:TimeoutSeconds` (90) — so the client has to allow more than that, or it gives up
- * on a request that was about to succeed and the user pays a quota slot for nothing. Quota is
- * decoration and should never make anyone wait.
+ * if it hasn't answered in 15s something is wrong. Quota is decoration and should never make
+ * anyone wait. Reading an uploaded file is the slow one.
  *
- * A global default on the axios instance would have to be the largest of these, which is the
- * same as not having one for the two fast calls.
+ * Generation is no longer here: it used to be one request held open for the model's whole
+ * answer (120s, to outlast the server's 90), and is now a background job whose calls — start,
+ * poll, collect — are each as quick as the rest (docs/quiz/ai-quiz-generation-flow.md §3c).
  */
 const AI_TIMEOUTS_MS = {
   prompt: 15_000,
-  generate: 120_000,
+  // Starting, polling and collecting a background job: each is a quick read or write.
+  job: 15_000,
   quota: 10_000,
   // Upload plus parsing a long PDF on the server. No model call, but a slow uplink matters.
   source: 60_000,
@@ -293,42 +292,96 @@ const toAiGenerateError = (error: unknown): AiGenerateError => {
   );
 };
 
+// ── Generation as a background job (docs/quiz/ai-quiz-generation-flow.md §3c) ───────────────
+//
+// `apiService`, not the raw `api` instance, here and below: only the former unwraps
+// `response.data`. The `api` success interceptor returns the whole `AxiosResponse`, so
+// `api.post(...)` typed as `Promise<T>` compiles and then hands every caller an object whose
+// fields are all `undefined`. See the warning on the `api` export in `src/lib/Api-client.ts`.
+//
+// The wizard no longer holds a request open for the whole generation. It starts a job, polls it
+// while its card is on screen, and takes the outcome in the same two shapes `generateAiQuiz`
+// resolves and rejects with — so everything after the reply (the parser, the review, the error
+// panel, grounding's questions) is unchanged. Leaving the page stops the polling, not the job:
+// the server notices nobody is asking, and sends a notification when it is done.
+
+export type AiJobStatus = "Queued" | "Running" | "Succeeded" | "Failed" | "NeedsChoice";
+
+/** A real step the server reports as it starts — not a line paced from a clock. */
+export type AiJobStage = "Queued" | "FindingSources" | "Writing" | "Done";
+
+export interface AiJob {
+  id: string;
+  status: AiJobStatus;
+  stage: AiJobStage;
+  /** `Succeeded`: what `generateAiQuiz` would have resolved with. */
+  result?: AiGenerateResult | null;
+  /** `Failed` or `NeedsChoice`: the body `generateAiQuiz` would have been rejected with. */
+  error?: ServerErrorBody | null;
+  createdAt: string;
+}
+
+export const isAiJobFinished = (job: AiJob) => job.status !== "Queued" && job.status !== "Running";
+
+/** A finished job's failure as the error the wizard already knows how to show. */
+export const aiJobError = (job: AiJob): AiGenerateError =>
+  new AiGenerateError(
+    (job.error?.code ?? "Unknown") as AiGenerateErrorCode,
+    job.error?.message ?? "Quiz generation failed.",
+    job.error?.retryAfter,
+    job.error?.grounding ?? undefined,
+  );
+
 /**
- * `apiService`, not the raw `api` instance: only the former unwraps `response.data`. The
- * `api` success interceptor returns the whole `AxiosResponse`, so `api.post(...)` typed as
- * `Promise<T>` compiles and then hands every caller an object whose fields are all
- * `undefined`. See the warning on the `api` export in `src/lib/Api-client.ts`.
+ * Starts a generation and returns its job straight away. `returnPath` is the page the author is
+ * on, which the "your quiz is ready" notification links back to. If they already have one
+ * running, the server returns that one and starts nothing — a double press spends once.
  */
-export const generateAiQuiz = (
-  data: AiGenerateInput & AiGroundingAnswers,
-): Promise<AiGenerateResult> =>
+export const startAiJob = (
+  data: AiGenerateInput & AiGroundingAnswers & { returnPath?: string },
+): Promise<AiJob> =>
   apiService
-    .post<AiGenerateResult>("/quiz/ai-generate", data, {
-      // The wizard renders its own error panel, which says what to do next per code —
-      // retry, wait for the reset, verify your email, use copy-paste. The interceptor's
-      // generic "Error" toast on top of that is noise. See docs/development/error-handling.md.
-      skipErrorToast: true,
-      timeout: AI_TIMEOUTS_MS.generate,
-    })
+    .post<AiJob>("/quiz/ai-jobs", data, { skipErrorToast: true, timeout: AI_TIMEOUTS_MS.job })
     .catch((error) => {
       throw toAiGenerateError(error);
     });
 
-type UseGenerateAiQuizOptions = {
-  mutationConfig?: MutationConfig<typeof generateAiQuiz>;
-};
+export const getAiJob = (id: string): Promise<AiJob> =>
+  apiService.get<AiJob>(`/quiz/ai-jobs/${id}`, { skipErrorToast: true, timeout: AI_TIMEOUTS_MS.job });
 
 /**
- * No query invalidation on success: generating creates nothing. The quiz only exists once
- * the user reviews it and the builder posts to `ai-import`, which does its own
- * invalidation. Quota is the one thing that moved, and the result carries the new figure.
+ * The author's newest job still theirs to collect — running, or finished and not yet taken.
+ * `null` when there is none (the server answers 204).
  */
-export const useGenerateAiQuiz = ({
-  mutationConfig,
-}: UseGenerateAiQuizOptions = {}) =>
-  useMutation({
-    mutationFn: generateAiQuiz,
-    ...mutationConfig,
+export const getActiveAiJob = async (): Promise<AiJob | null> => {
+  const job = await apiService.get<AiJob | "" | undefined>("/quiz/ai-jobs/active", {
+    skipErrorToast: true,
+    timeout: AI_TIMEOUTS_MS.job,
+  });
+  return job && typeof job === "object" ? job : null;
+};
+
+/** The result is in the browser now: don't offer it again, and no notification is owed. */
+export const markAiJobSeen = (id: string): Promise<void> =>
+  apiService.post<void>(`/quiz/ai-jobs/${id}/seen`, undefined, {
+    skipErrorToast: true,
+    timeout: AI_TIMEOUTS_MS.job,
+  });
+
+/** Asked once when the wizard opens, so a generation left behind is picked back up. */
+export const useActiveAiJob = ({ enabled = true }: { enabled?: boolean } = {}) =>
+  useQuery({
+    queryKey: ["ai-job", "active"],
+    queryFn: getActiveAiJob,
+    enabled,
+    retry: false,
+    throwOnError: false,
+    // One answer per visit to the wizard. A refetch on focus would hand back a job the page
+    // is already polling.
+    staleTime: Infinity,
+    gcTime: 0,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
 /**

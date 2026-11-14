@@ -310,67 +310,42 @@ export const NoTypesSelected: Story = {
 };
 
 /**
- * The wait. `isGenerating` raises `GeneratingOverlay` over the whole screen — the
- * typewriter, a status line paced off the clock, and a blurred form behind it.
-
+ * The wait. `isGenerating` raises `GeneratingOverlay` over the whole screen — the steps the
+ * server has reported so far, and a blurred form behind it.
+ *
  * What is *not* behind it is the result. The review screen used to mount as soon as the
  * payload parsed, which was while this was still saying the model was writing; it now
  * waits for the overlay to start leaving (`resultsMayShow`) and enters on its own.
  *
- * The overlay is deliberately not a Radix dialog: `LeavingMidGeneration` below opens a
- * real one on top of it, and that pair is the reason. This story is where you check the
- * form is still legible through the blur; that one is where you check the stacking.
+ * This story is where you check the form is still legible through the blur.
  */
 export const Generating: Story = {
-  args: { topic: "The French Revolution", isGenerating: true },
-};
-
-/**
- * The user tried to leave while the model was still writing, and the router blocked it.
- *
- * `showLeaveDialog` is a prop rather than something a `play` function provokes, because the
- * blocker lives in the container (`useNavigationGuard` needs a real router to block) and the
- * view only renders what it is told. That split is what makes this state openable at all —
- * the alternative is a story that has to navigate to reach a dialog.
- *
- * Paired with `isGenerating` on purpose: those are the only circumstances the container can
- * arm it in, and a story showing the dialog over an idle form would be advertising a state
- * that cannot happen.
- */
-export const LeavingMidGeneration: Story = {
   args: {
     topic: "The French Revolution",
     isGenerating: true,
-    showLeaveDialog: true,
-  },
-  play: async () => {
-    // The dialog portals out of `canvasElement`, so it is looked up on the document.
-    const body = within(document.body);
-    await expect(
-      await body.findByText(/still writing/i),
-    ).toBeInTheDocument();
-    // Both ways out are present. A blocked navigation that renders no proceed and no reset
-    // is the multiplayer freeze this dialog exists to avoid — see use-navigation-guard.ts.
-    await expect(
-      body.getByRole("button", { name: /leave and cancel/i }),
-    ).toBeInTheDocument();
-    await expect(
-      body.getByRole("button", { name: /stay on this page/i }),
-    ).toBeInTheDocument();
+    generationStage: "Writing",
+    onKeepBrowsing: fn(),
   },
 };
 
 /**
- * The guard is *not* armed on an idle form. Typing a topic costs nothing to redo, and a
- * confirm on every exit is the kind of prompt people learn to click through — which would
- * blunt the one that matters above.
+ * Leaving is offered, not blocked. The generation is a job on the server, so *Keep browsing*
+ * just goes — there is no "are you sure" in the doorway any more, and no state in which a
+ * navigation is held with nothing on screen to release it.
  */
-export const NoLeaveDialogWhenIdle: Story = {
-  args: { topic: "The French Revolution", showLeaveDialog: false },
-  play: async () => {
-    await expect(
-      within(document.body).queryByText(/still writing/i),
-    ).not.toBeInTheDocument();
+export const KeepBrowsingWhileGenerating: Story = {
+  args: {
+    topic: "The French Revolution",
+    isGenerating: true,
+    generationStage: "FindingSources",
+    onKeepBrowsing: fn(),
+  },
+  play: async ({ args }) => {
+    // The card is a fixed layer, so it is looked up on the document.
+    const body = within(document.body);
+    await userEvent.click(await body.findByRole("button", { name: /keep browsing/i }));
+    await expect(args.onKeepBrowsing).toHaveBeenCalledTimes(1);
+    await expect(body.getByText(/send you a notification/i)).toBeInTheDocument();
   },
 };
 

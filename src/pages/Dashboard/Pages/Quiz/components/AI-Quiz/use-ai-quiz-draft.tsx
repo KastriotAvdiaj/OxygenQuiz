@@ -370,7 +370,7 @@ export const useAiQuizDraft = () => {
    * picked isn't offered, so the model can't second-guess them and we don't pay for the
    * tokens.
    *
-   * Both paths build it: `POST /quiz/ai-generate` takes it as a body, `POST /quiz/ai-prompt`
+   * Both paths build it: `POST /quiz/ai-jobs` takes it as a body, `POST /quiz/ai-prompt`
    * turns it into the text you paste elsewhere. That is what keeps the two paths honest —
    * one request shape, one prompt, no second copy to drift (plan §5.1).
    */
@@ -413,9 +413,9 @@ export const useAiQuizDraft = () => {
    *
    * `payload` is the reason this exists. The typing is cheap to redo; a generation is not —
    * it came out of the user's quota, and losing it to a stray refresh makes them spend it
-   * twice for one quiz. The card has always told people to keep the tab open while a
-   * generation is *in flight* (`useNavigationGuard` enforces it, because there is no job id
-   * to come back to); this covers everything on either side of that moment.
+   * twice for one quiz. A generation still *in flight* is not this hook's concern: it is a job
+   * on the server, and the wizard rejoins it (docs/quiz/ai-quiz-generation-flow.md §3c). This
+   * covers the reply once it is in the browser.
    */
   const { discard: discardStoredDraft } = useDraftAutosave<AiQuizDraft>({
     slot: draftSlot,

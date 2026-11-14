@@ -3,23 +3,17 @@ import type { Decorator, Meta, StoryObj } from "@storybook/react";
 import { GeneratingOverlay } from "./generating-overlay";
 
 /**
- * The screen while the model writes a quiz.
+ * The card while a quiz is being written.
  *
- * <b>What to watch for here.</b> The status line is on a clock, not on the server —
- * there is no streaming, so nothing can be read from the request (known issue 12 in
- * docs/quiz/ai-quiz-generation-flow.md). Sit on a story for half a minute and it walks
- * the whole script: send → draft → options → check → "still going". The last line is the
- * one to judge, because it is the one a real slow generation lands on.
+ * <b>What to watch for here.</b> The steps are real: each story sets the `stage` the server
+ * would have reported (docs/quiz/ai-quiz-generation-flow.md §3c), so stepping through
+ * `Queued` → `FindingSources` → `Writing` → `Landed` is the whole wait. Only the hint under
+ * the list is on a clock — sit on a story for 45 seconds and it stops promising "under a
+ * minute".
  *
- * <b>The backdrop is fake.</b> These stories render a stand-in form behind the overlay so
- * the blur has something to blur; the real thing sits over the wizard. For the genuine
- * article see `Dashboard/Quiz/AiQuizWizardView` → `Generating`, and `LeavingMidGeneration`
- * for the one pairing that matters: the leave dialog opening *on top* of this. That
- * stacking is why this is a plain fixed layer at z-40 rather than a second Radix dialog.
- *
- * <b>Not the app's loader.</b> Every ordinary wait is `BlobLoader`. This is a set-piece
- * for the one action that is slow, metered and uncancellable — see `Typewriter` for why
- * that exception was made and why it should stay at one.
+ * <b>The backdrop is fake.</b> These stories render a stand-in form behind the card so the
+ * blur has something to blur; the real thing sits over the wizard. For the genuine article
+ * see `Dashboard/Quiz/AiQuizWizardView` → `Generating`.
  */
 const withMockedWizard: Decorator = (Story) => (
   <div className="min-h-screen bg-background">
@@ -51,50 +45,51 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Topic mode: the model is inventing the material, so the heading says writing. */
-export const Topic: Story = {
-  args: { phase: "generating", mode: "Topic" },
+const noop = () => {};
+
+/** Just accepted. The first step turns; nothing has been reported yet. */
+export const Queued: Story = {
+  args: { phase: "generating", mode: "Topic", stage: "Queued", onKeepBrowsing: noop },
 };
 
-/**
- * Source mode changes the heading, and only the heading. The user pasted the material —
- * telling them we're "writing" it would misdescribe what they asked for.
- */
+/** Grounding: a broad topic being planned, articles being looked up. */
+export const FindingSources: Story = {
+  args: { phase: "generating", mode: "Topic", stage: "FindingSources", onKeepBrowsing: noop },
+};
+
+/** The model call — nearly all of the wait. */
+export const Writing: Story = {
+  args: { phase: "generating", mode: "Topic", stage: "Writing", onKeepBrowsing: noop },
+};
+
+/** The author's own material: there are no sources to find, so the list is one step shorter. */
 export const SourceMaterial: Story = {
-  args: { phase: "generating", mode: "Source" },
+  args: { phase: "generating", mode: "Source", stage: "Writing", onKeepBrowsing: noop },
+};
+
+/** Without a way to leave (a caller that passes none): the hint and the list stand alone. */
+export const WithoutKeepBrowsing: Story = {
+  args: { phase: "generating", mode: "Topic", stage: "Writing" },
 };
 
 /**
- * The questions landed. The typing stops where it stands, the copy turns over, and
- * `useGenerationWait` holds this for 1.4s — *then* the layer fades and the review step
- * arrives behind it. The review screen is not built until this beat is over: see
- * `resultsMayShow` in ai-quiz-wizard-view.tsx.
- *
- * Read the copy carefully: it says questions, not a saved quiz, because nothing has
- * been saved. The reply is parsed in the browser and the review step is where the user
- * accepts it — a "quiz created" here would be the one lie on a screen whose whole job
- * is to report what happened.
+ * The questions landed. Every step is ticked, the count is named, and the footer has faded —
+ * there is nothing left to leave. Held for a beat before the layer goes.
  */
 export const Landed: Story = {
-  args: { phase: "succeeded", mode: "Topic", questionCount: 12 },
+  args: { phase: "succeeded", mode: "Topic", stage: "Done", questionCount: 12, onKeepBrowsing: noop },
 };
 
-/**
- * The count is optional — a reply that needed a category picked first arrives without
- * one, and the line falls back rather than inventing a number.
- */
+/** Landed, when the count isn't known (the confirm-details card comes next, not the review). */
 export const LandedWithoutCount: Story = {
-  args: { phase: "succeeded", mode: "Topic" },
+  args: { phase: "succeeded", mode: "Topic", stage: "Done", onKeepBrowsing: noop },
 };
 
 /**
- * The failure exit. It fades out still showing the working copy, on purpose: a
- * generation that failed has an error panel waiting behind this, and 300ms of "your
- * questions are ready" over a quota refusal is worse than no animation at all. That is
- * the whole reason `aborting` is a separate phase from `leaving`.
- *
- * Storybook renders it mid-fade; in the app it is gone ~300ms later.
+ * A failure, or a question from grounding: the card fades as it stands, with no tick, because
+ * what comes next is a panel explaining it. Storybook renders it mid-fade; in the app it is
+ * gone ~300ms later.
  */
 export const Aborting: Story = {
-  args: { phase: "aborting", mode: "Topic" },
+  args: { phase: "aborting", mode: "Topic", stage: "FindingSources", onKeepBrowsing: noop },
 };

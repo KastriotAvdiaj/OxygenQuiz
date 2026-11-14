@@ -18,9 +18,25 @@ export type AppNotification = {
   type: string;
   title: string;
   message: string;
+  /** Where clicking it goes — a path inside the app — or null for a notification that is only a message. */
+  link?: string | null;
   isRead: boolean;
   createdAt: string;
 };
+
+/**
+ * A notification's link, if it is safe to navigate to: a path inside this app and nothing else.
+ * The API only stores such paths (NotificationService.SafeLink) — this mirrors that rule rather
+ * than trusting it, because the value ends up in `navigate()`.
+ */
+export const inAppLink = (link: string | null | undefined): string | null =>
+  typeof link === "string" &&
+  link.startsWith("/") &&
+  !link.startsWith("//") &&
+  !link.includes("\\") &&
+  !link.includes("://")
+    ? link
+    : null;
 
 const notificationKeys = {
   all: ["notifications"] as const,

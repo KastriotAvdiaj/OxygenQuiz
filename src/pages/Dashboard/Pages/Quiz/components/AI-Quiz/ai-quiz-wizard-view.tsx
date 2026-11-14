@@ -17,6 +17,7 @@ import type {
   AiGenerationMode,
   AiGrounding,
   AiGroundingAnswers,
+  AiJobStage,
   AiQuotaStatus,
 } from "../../api/generate-ai-quiz";
 import type { ParseResult } from "./parse-ai-output";
@@ -27,7 +28,6 @@ import { ConfirmDetailsCard } from "./components/confirm-details-card";
 import { GenerateErrorPanel } from "./components/generate-error-panel";
 import { GeneratingOverlay } from "./components/generating-overlay";
 import { useGenerationWait } from "./components/use-generation-wait";
-import { LeaveGenerationDialog } from "./components/leave-generation-dialog";
 import {
   GenerationInput,
   type SourceFileInfo,
@@ -113,6 +113,16 @@ export interface AiQuizWizardViewProps {
   // ── Generation ───────────────────────────────────────────────────────────────
   onGenerate: () => void;
   isGenerating: boolean;
+  /**
+   * How far the job has got — a real step the server reported, not a guess from the clock
+   * (docs/quiz/ai-quiz-generation-flow.md §3c). Only read while `isGenerating`.
+   */
+  generationStage?: AiJobStage;
+  /**
+   * "Keep browsing": leave with the generation still running; a notification says when it is
+   * done. Absent in the stories that don't exercise it, and then the button isn't offered.
+   */
+  onKeepBrowsing?: () => void;
   /** Held (not just toasted) because it decides what the panel offers next. */
   generateError: AiGenerateError | null;
   /** null while loading or when the endpoint isn't reachable. */
@@ -143,17 +153,6 @@ export interface AiQuizWizardViewProps {
    * stand-in. See docs/development/storybook.md ("Slot props").
    */
   builderSlot?: ReactNode;
-
-  // ── Leaving mid-generation ───────────────────────────────────────────────────
-  /**
-   * The router blocked a navigation while a generation was in flight. Armed in the
-   * container by `useNavigationGuard`; a prop rather than a hook here so a story can open
-   * the dialog by passing `true`.
-   */
-  showLeaveDialog?: boolean;
-  onConfirmLeave?: () => void;
-  onCancelLeave?: () => void;
-
 }
 
 /**
@@ -210,6 +209,8 @@ export const AiQuizWizardView = ({
   onAddImagesChange,
   onGenerate,
   isGenerating,
+  generationStage = "Queued",
+  onKeepBrowsing,
   generateError,
   quota,
   needsConfirmation,
@@ -220,9 +221,6 @@ export const AiQuizWizardView = ({
   onStartOver,
   parseResult,
   builderSlot,
-  showLeaveDialog = false,
-  onConfirmLeave,
-  onCancelLeave,
 }: AiQuizWizardViewProps) => {
   const navigate = useNavigate();
 
@@ -301,17 +299,6 @@ export const AiQuizWizardView = ({
     generateError?.code === "QuotaExceeded";
 
   /**
-   * Rendered by **every** branch below, not just the wizard.
-   *
-   * The blocker is armed on `isGenerating`, which today can only be true on screen 3 — but
-   * "today" is the whole problem. `useNavigationGuard`'s contract is that a blocked
-   * navigation always has a visible way out, and the multiplayer lobby shipped the other
-   * version of this: the blocker armed on one branch, the dialog defined on another, and a
-   * click that stranded the router in "blocked" with no proceed and no reset, re-rendering
-   * the subtree on every further click until the question timer froze. One element used in
-   * all three returns costs a line each and cannot drift that way.
-   */
-  /**
    * The set-piece for the wait itself, from the first frame to the last.
    * `useGenerationWait` owns the timing: a floor so a fast success can't flash it,
    * a beat on the questions landing, and a straight exit on failure so the error
@@ -331,8 +318,7 @@ export const AiQuizWizardView = ({
   });
 
   /**
-   * Rendered by every branch, like `leaveDialog` below — with one reason of its own.
-   * A successful generation moves the view to the review screen while the overlay may
+   * Rendered by every branch. A successful generation moves the view to the review screen while the overlay may
    * still be holding out its minimum, so the branch it unmounts on is not the branch it
    * mounted on.
    */
@@ -340,6 +326,8 @@ export const AiQuizWizardView = ({
     <GeneratingOverlay
       phase={generationPhase}
       mode={mode}
+      stage={generationStage}
+      onKeepBrowsing={onKeepBrowsing}
       questionCount={parseResult?.ok ? parseResult.questions.length : undefined}
     />
   ) : null;
@@ -369,20 +357,11 @@ export const AiQuizWizardView = ({
   /** The entrance every post-generation screen shares, so they arrive the same way. */
   const arriving = "animate-in fade-in-0 slide-in-from-bottom-3 duration-500 ease-out";
 
-  const leaveDialog = (
-    <LeaveGenerationDialog
-      isOpen={showLeaveDialog}
-      onConfirm={() => onConfirmLeave?.()}
-      onCancel={() => onCancelLeave?.()}
-    />
-  );
-
   // ── Screen 1: still fetching the lookups
   if (isLoadingEntities) {
     return (
       <div className="w-full h-64 flex items-center justify-center">
         <BlobLoader size="lg" />
-        {leaveDialog}
         {generatingOverlay}
       </div>
     );
@@ -402,7 +381,6 @@ export const AiQuizWizardView = ({
       // two-column and sets its own width (docs/quiz/quiz-overview.md, "Wide screens").
       <div className={cn("mx-auto flex w-full max-w-3xl flex-col gap-3 xl:max-w-none", arriving)}>
         <div>{builderSlot}</div>
-        {leaveDialog}
         {generatingOverlay}
       </div>
     );
@@ -651,7 +629,6 @@ export const AiQuizWizardView = ({
         </Card>
       )}
 
-      {leaveDialog}
       {generatingOverlay}
     </div>
   );

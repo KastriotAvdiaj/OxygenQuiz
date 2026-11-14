@@ -1,9 +1,10 @@
-import { useState } from "react";
-
-import { useNavigationGuard } from "@/hooks/use-navigation-guard";
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import {
-  useGenerateAiQuiz,
+  isAiJobFinished,
+  markAiJobSeen,
+  useActiveAiJob,
   useAiQuota,
   useReadAiSource,
   AiGenerateError,
@@ -14,6 +15,7 @@ import type { SourceFileInfo } from "./components/generation-input";
 
 import { AiQuizWizardView } from "./ai-quiz-wizard-view";
 import { useAiQuizDraft } from "./use-ai-quiz-draft";
+import { useAiGenerationJob, type AiJobRun } from "./use-ai-generation-job";
 
 /**
  * Container for the **generate-for-me** path: we call the model, on our budget, and the
@@ -35,8 +37,10 @@ export const AiQuizWizard = () => {
     null,
   );
 
-  const generateMutation = useGenerateAiQuiz();
+  const generation = useAiGenerationJob();
   const quotaQuery = useAiQuota();
+  const navigate = useNavigate();
+  const location = useLocation();
   const readSource = useReadAiSource();
 
   /**
@@ -69,26 +73,6 @@ export const AiQuizWizard = () => {
   };
 
   /**
-   * The request is in flight and the page owns it — there is no job id to come back to, so
-   * a Back click, a refresh or a closed tab spends the generation and returns nothing. The
-   * card has always said "Keep this tab open"; this is what makes that true.
-   *
-   * Armed here rather than in the view because the view holds no hooks by design (see its
-   * header comment) and because `isPending` lives on the mutation, which is this file's one
-   * job. The three pieces come back out as props so every state stays reachable from a
-   * story.
-   *
-   * Only while generating. The typed topic and the details are not guarded: they are cheap
-   * to retype, and confirming every exit from a form nobody has spent anything on is the
-   * kind of prompt people learn to click through — which would blunt this one.
-   */
-  const {
-    showLeaveDialog,
-    confirmNavigation,
-    cancelNavigation,
-  } = useNavigationGuard(generateMutation.isPending);
-
-  /**
    * Grounding's question, while one is open, and the author's answers so far. Answers
    * accumulate — a language, then an article — and go out with every retry of the same request,
    * because the server asks one thing at a time and must not ask the first again.
@@ -97,20 +81,32 @@ export const AiQuizWizard = () => {
   const [sourceChoice, setSourceChoice] = useState<AiGrounding | null>(null);
   const [sourceAnswers, setSourceAnswers] = useState<AiGroundingAnswers>({});
 
-  const runGeneration = (answers: AiGroundingAnswers) => {
+  /**
+   * Runs a job to its end and puts the outcome where a reply has always gone: the questions
+   * into the draft, a failure into the error panel, a question from grounding into its card.
+   *
+   * Either way the job is then marked collected, so the server neither offers it again nor
+   * owes a notification for it. Fire-and-forget: if that call is lost the worst case is a
+   * notification about a quiz already on screen.
+   */
+  const run = (job: AiJobRun) => {
     setGenerateError(null);
-    draft.setPayload(null);
 
-    generateMutation.mutate({ ...draft.buildInput(), ...answers }, {
-      onSuccess: (result) => {
+    generation.mutate(job, {
+      onSuccess: ({ jobId, result }) => {
+        void markAiJobSeen(jobId).catch(() => undefined);
         setSourceChoice(null);
         draft.setPayload(result.payload, result.grounding ?? null);
         void quotaQuery.refetch();
       },
       onError: (error) => {
+        // Stopped watching (a newer run replaced this one): not an outcome.
+        if (!(error instanceof AiGenerateError)) return;
+        if (error.jobId) void markAiJobSeen(error.jobId).catch(() => undefined);
+
         // Not a failure: grounding needs the author. Nothing was spent — the server asks
         // before reserving — so there is no quota to refresh and no error to show.
-        if (error instanceof AiGenerateError && error.code === "SourceNeedsChoice" && error.grounding) {
+        if (error.code === "SourceNeedsChoice" && error.grounding) {
           setSourceChoice(error.grounding);
           return;
         }
@@ -119,14 +115,51 @@ export const AiQuizWizard = () => {
         // beside the button that failed, and it changes what it offers per error code. A
         // toast saying the same thing is a third copy of one message — the request already
         // sets `skipErrorToast` so the shared interceptor stays quiet too.
-        setGenerateError(
-          error instanceof AiGenerateError
-            ? error
-            : new AiGenerateError("Unknown", "Quiz generation failed."),
-        );
+        setGenerateError(error);
+        void quotaQuery.refetch();
       },
     });
   };
+
+  const runGeneration = (answers: AiGroundingAnswers) => {
+    draft.setPayload(null);
+    // Where the "your quiz is ready" notification should bring them back to: this page, under
+    // whichever dashboard it was opened from.
+    run({ input: { ...draft.buildInput(), ...answers, returnPath: location.pathname } });
+  };
+
+  /**
+   * A generation left behind — the author pressed "Keep browsing", closed the tab, or came here
+   * from the notification. Asked once per visit; if there is one, this page joins it: still
+   * running, the progress card comes back; finished, its outcome arrives as if it just had.
+   *
+   * An Effect because it starts watching something outside React (a job on the server) in
+   * response to an answer arriving, and there is no user action to hang it on. The ref makes
+   * it once per job: StrictMode runs Effects twice, and joining twice would poll twice.
+   */
+  const activeJob = useActiveAiJob();
+  const joined = useRef<string | null>(null);
+  const leftBehind = activeJob.data ?? null;
+  useEffect(() => {
+    if (!leftBehind || joined.current === leftBehind.id) return;
+    joined.current = leftBehind.id;
+    // A finished success would overwrite whatever is in the draft; only do that when the
+    // draft has no questions of its own yet. Either way it is collected, so it isn't offered
+    // on every later visit.
+    if (isAiJobFinished(leftBehind) && leftBehind.status === "Succeeded" && draft.parseResult?.ok) {
+      void markAiJobSeen(leftBehind.id).catch(() => undefined);
+      return;
+    }
+    run({ attach: leftBehind });
+    // `run` and `draft` are new each render; this is keyed on the job alone, on purpose.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leftBehind]);
+
+  /**
+   * "Keep browsing": leave the wizard with the job still running. Nothing else to do — the
+   * polling stops when this page unmounts, and that is how the server learns to notify.
+   */
+  const handleKeepBrowsing = () => navigate("/");
 
   /** A fresh press of Generate: any earlier answers belonged to an earlier topic. */
   const handleGenerate = () => {
@@ -185,7 +218,9 @@ export const AiQuizWizard = () => {
       addImages={draft.addImages}
       onAddImagesChange={draft.setAddImages}
       onGenerate={handleGenerate}
-      isGenerating={generateMutation.isPending}
+      isGenerating={generation.isPending}
+      generationStage={generation.stage}
+      onKeepBrowsing={handleKeepBrowsing}
       generateError={generateError}
       quota={quotaQuery.data ?? null}
       needsConfirmation={draft.needsConfirmation}
@@ -196,9 +231,6 @@ export const AiQuizWizard = () => {
       onStartOver={handleStartOver}
       parseResult={draft.parseResult}
       builderSlot={draft.builderSlot}
-      showLeaveDialog={showLeaveDialog}
-      onConfirmLeave={confirmNavigation}
-      onCancelLeave={cancelNavigation}
     />
   );
 };
