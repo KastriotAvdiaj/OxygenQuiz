@@ -118,8 +118,8 @@ pointer went down, so when the dashboard's `<main>` scrolled under a held card t
 away with the content, and `Reorder` decided the new order from that stale offset. The hook places
 the dragged card from the pointer and the list's live layout each frame, keeps it inside the list
 (a card dragged past the end would grow the page and the edge loop would scroll into the room it
-made), and takes a slot once the *pointer* passes a neighbour's middle. The other cards still
-slide with framer's `layout`.
+made), and takes a slot once the *pointer* passes a neighbour's middle (one column) or enters a
+card (the masonry, below). The other cards still slide with framer's `layout`.
 
 **The held card is out of `layout`.** The first version of the hook left it in, and a card jumped
 by up to a card's height for one frame each time it took a new slot: React moved it in the DOM,
@@ -129,10 +129,25 @@ offset is a motion value re-set in a `useLayoutEffect` after each reorder (so it
 against the new DOM before paint), and the held card renders with `layout={false}` until it has
 settled back into its slot on release.
 
-**In the masonry** the same hook reads the cards left to right, top to bottom. The held card
-follows the pointer on both axes (`dragX`/`dragY`, clamped to the list), and a neighbour is passed
-once the pointer is below it, or level with it and past its horizontal middle; in a single column,
-its vertical middle as before. The arrow keys move a card one place: up or left earlier, down or
+**In the masonry** the held card follows the pointer on both axes (`dragX`/`dragY`, clamped to
+the list) and takes the slot of **the card the pointer enters** (`reorderTarget`). Over a gap, or
+beside the list, nothing moves. In a single column it is the neighbour's vertical middle, as
+before.
+
+Until 2026-11-14 the masonry used reading order: a neighbour was passed once the pointer was below
+it, or level with it and past its horizontal middle. That assumes rows, and a masonry has none —
+a card in a short column ends well above its neighbour in a tall one. With the pointer between
+them one card said "go later" and the other "go earlier" on alternate frames, so the order flipped
+every frame and the cards froze mid-slide on top of each other. Simulated on random layouts, a
+still pointer never settled in about a quarter of positions. Two things replaced it:
+
+- **Over a card, not past a row.** Where the pointer is can't contradict itself.
+- **Entering, not being over.** A move shifts every card between the two slots one column
+  along, so a different card can land under a pointer that hasn't moved. After a reorder, whatever
+  is then under the pointer is ignored until the pointer leaves it. A still pointer causes at most
+  one move.
+
+The arrow keys move a card one place: up or left earlier, down or
 right later. The hook re-places the held card after *every* render, not only a reorder — the
 masonry moves its slot in a second render. On release the card settles on both axes before layout
 takes it back; handing it back when only `y` had settled snapped the `x` (a 260px jump, found by

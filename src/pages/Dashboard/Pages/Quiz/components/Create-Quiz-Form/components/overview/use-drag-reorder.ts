@@ -34,6 +34,70 @@ const move = <T>(list: T[], from: number, to: number): T[] => {
   return next;
 };
 
+/** An item's box in the list's own coordinates (its offset box — transforms don't count). */
+export interface ItemBox {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * The index the held item (`from`) should move to, with the pointer at (`px`, `py`) in the
+ * list's coordinates. `from` when it should stay.
+ *
+ * <b>One column</b> (every box at the same left): once the pointer is past the middle of a
+ * neighbour, the held item takes that slot. The pointer, not the card's middle — the card is
+ * clamped to the list, and a tall card held at the bottom could never get its middle past a
+ * shorter last one. It's also what it feels like: it goes where your finger is.
+ *
+ * <b>A grid</b>: the slot of the card the pointer is over, and nowhere else — not over a gap,
+ * not beside the list. Until 2026-11-14 a grid used "reading order": a neighbour counted as
+ * passed once the pointer was below its row, or past its middle within the row. That assumes
+ * rows, and the overview's wide layout is a masonry (use-masonry.ts) — cards of different
+ * heights, so the "row" of a card in a short column ends well above the "row" of its neighbour
+ * in a tall one. With the pointer between them, one card said "you're past me, go later" and
+ * the other "you're before me, go earlier", on alternate frames, forever: the order flipped
+ * sixty times a second and every card froze mid-slide on top of the others.
+ *
+ * Being over a card is a fact about where the pointer is, so it can't disagree with itself.
+ * It can still change when the list re-lays out under a pointer that hasn't moved — a move
+ * shifts every card between the two slots one column over, and on random layouts that alone
+ * kept about one still pointer in twenty reordering. So the caller acts only when the pointer
+ * *enters* a card: whatever lands under it after a reorder is ignored until it leaves that card.
+ */
+export const reorderTarget = (
+  boxes: (ItemBox | undefined)[],
+  from: number,
+  px: number,
+  py: number,
+): number => {
+  if (from < 0 || from >= boxes.length) return from;
+  const isGrid = new Set(boxes.map((b) => b?.left)).size > 1;
+
+  if (isGrid) {
+    const over = boxes.findIndex(
+      (b, j) =>
+        !!b &&
+        j !== from &&
+        px >= b.left &&
+        px <= b.left + b.width &&
+        py >= b.top &&
+        py <= b.top + b.height,
+    );
+    return over < 0 ? from : over;
+  }
+
+  let to = from;
+  boxes.forEach((b, j) => {
+    if (!b || j === from) return;
+    const mid = b.top + b.height / 2;
+    if (j > from && py > mid) to = Math.max(to, j);
+    if (j < from && py < mid) to = Math.min(to, j);
+  });
+  return to;
+};
+
 export interface UseDragReorderOptions<T> {
   items: T[];
   getId: (item: T) => number;
@@ -41,8 +105,8 @@ export interface UseDragReorderOptions<T> {
 }
 
 /**
- * Drag-to-reorder by a grip, for a vertical list or a grid read left to right, top to bottom —
- * the overview lays its questions out in columns on a wide screen. Scrolls the page when you
+ * Drag-to-reorder by a grip, for a vertical list or a grid — the overview lays its questions
+ * out as a masonry on a wide screen. Where the held card goes is `reorderTarget`'s rule. Scrolls the page when you
  * hold a card near the top or bottom edge (docs/quiz/quiz-overview.md, "Reordering").
  *
  * <b>Why not framer-motion's `Reorder`.</b> It was the first version and it can't do the
@@ -91,6 +155,14 @@ export const useDragReorder = <T>({
     wantedTop: number;
     scroller: HTMLElement | null;
     frame: number | null;
+    /**
+     * Grid only. A reorder re-lays the cards out, and a different one can land under a pointer
+     * that hasn't moved. `resyncFrom` is set by a reorder to the index the card left; once the
+     * new order has rendered (the card is no longer at that index), the card then under the
+     * pointer becomes `ignoreId`, and it isn't a target until the pointer has left it.
+     */
+    resyncFrom: number | null;
+    ignoreId: number | null;
   } | null>(null);
 
   /** Put the held card under the pointer, measured against the list as it is laid out *now*. */
@@ -148,33 +220,42 @@ export const useDragReorder = <T>({
       listLeft + list.offsetWidth - el.offsetWidth,
     );
 
-    // 3. Its place in the order: once the *pointer* is past the middle of a neighbour, the
-    //    card takes that slot. The pointer, not the card's middle — the card is clamped to
-    //    the list, and a tall card held at the bottom could never get its middle past a
-    //    shorter last one. It's also what it feels like: it goes where your finger is.
-    //
-    //    "Past" is in reading order. A neighbour in a row above or below is passed once the
-    //    pointer is beyond that row; one in the pointer's own row, by its horizontal middle
-    //    in a grid, or its vertical middle in a single column (where every row is one card).
+    // 3. Its place in the order — `reorderTarget`. Boxes are offsets, so a card still sliding
+    //    to its slot (framer's `layout` transform) counts where it is going, not where it is.
     const { items: current, getId: idOf, onReorder: reorder } = latest.current;
     const from = current.findIndex((item) => idOf(item) === d.id);
-    const els = current.map((item) => itemEls.current.get(idOf(item)));
-    const isGrid = new Set(els.map((e) => e?.offsetLeft)).size > 1;
+    const boxes = current.map((item) => {
+      const other = itemEls.current.get(idOf(item));
+      return (
+        other && {
+          left: other.offsetLeft,
+          top: other.offsetTop,
+          width: other.offsetWidth,
+          height: other.offsetHeight,
+        }
+      );
+    });
     const px = d.pointerX - listLeft;
     const py = d.pointerY - listTop;
-    let to = from;
-    els.forEach((other, j) => {
-      if (!other || j === from) return;
-      const top = other.offsetTop;
-      const bottom = top + other.offsetHeight;
-      const inRow = py >= top && py <= bottom;
-      const midX = other.offsetLeft + other.offsetWidth / 2;
-      const midY = top + other.offsetHeight / 2;
-      const after = py > bottom || (inRow && (isGrid ? px > midX : py > midY));
-      const before = py < top || (inRow && (isGrid ? px < midX : py < midY));
-      if (j > from && after) to = Math.max(to, j);
-      if (j < from && before) to = Math.min(to, j);
-    });
+    let to = reorderTarget(boxes, from, px, py);
+    // In a grid a card is a target only when the pointer *enters* it (see `reorderTarget`).
+    const isGrid = new Set(boxes.map((box) => box?.left)).size > 1;
+    if (isGrid) {
+      const overId = to === from ? null : idOf(current[to]);
+      if (d.resyncFrom !== null) {
+        // Still the old order: the reorder hasn't rendered yet, so there is nothing to read.
+        if (from !== d.resyncFrom) {
+          d.resyncFrom = null;
+          d.ignoreId = overId;
+        }
+        to = from;
+      } else if (overId === null) {
+        d.ignoreId = null;
+      } else if (overId === d.ignoreId) {
+        to = from;
+      }
+      if (to !== from) d.resyncFrom = from;
+    }
     // A reorder re-renders, and the layout effect above re-places the card for the new slot.
     // Without one, place it here.
     if (from >= 0 && to !== from) reorder(move(current, from, to));
@@ -231,6 +312,8 @@ export const useDragReorder = <T>({
         wantedTop: rect.top,
         scroller: findScroller(listRef.current),
         frame: null,
+        resyncFrom: null,
+        ignoreId: null,
       };
       setPositionedId(id);
       setLiftedId(id);
