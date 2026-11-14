@@ -21,6 +21,10 @@ public class TopicPlannerTests
     private const string Broad =
         """{"kind":"broad","subtopics":["Solar System","French Revolution","Amazon River"]}""";
 
+    /// <summary>A broad reply naming <paramref name="count"/> subjects: "A1", "A2", … for prefix "A".</summary>
+    private static string Pool(int count, string prefix = "A") =>
+        $$"""{"kind":"broad","subtopics":[{{string.Join(",", Enumerable.Range(1, count).Select(i => $"\"{prefix}{i}\""))}}]}""";
+
     private sealed record Harness(
         TopicPlanner Planner, Mock<IQuizAiProvider> Model, List<AiGenerationUsage> Rows, List<string> Prompts);
 
@@ -32,7 +36,10 @@ public class TopicPlannerTests
         bool aiEnabled = true,
         bool broadEnabled = true,
         string? effort = "none",
-        Exception? throws = null)
+        Exception? throws = null,
+        Func<string, string>? replyFor = null,
+        Guid? userId = null,
+        IMemoryCache? cache = null)
     {
         var prompts = new List<string>();
         var model = new Mock<IQuizAiProvider>();
@@ -48,10 +55,13 @@ public class TopicPlannerTests
         }
         else
         {
-            withEffort.Callback((string p, int? _, AiCallOptions _, CancellationToken _) => prompts.Add(p))
-                      .ReturnsAsync(new AiProviderResult(reply, new AiTokenUsage(400, 60)));
-            plain.Callback((string p, int? _, CancellationToken _) => prompts.Add(p))
-                 .ReturnsAsync(new AiProviderResult(reply, new AiTokenUsage(400, 60)));
+            AiProviderResult Answer(string p)
+            {
+                prompts.Add(p);
+                return new AiProviderResult(replyFor?.Invoke(p) ?? reply, new AiTokenUsage(400, 60));
+            }
+            withEffort.ReturnsAsync((string p, int? _, AiCallOptions _, CancellationToken _) => Answer(p));
+            plain.ReturnsAsync((string p, int? _, CancellationToken _) => Answer(p));
         }
 
         var rows = new List<AiGenerationUsage>();
@@ -66,7 +76,7 @@ public class TopicPlannerTests
         quota.Setup(q => q.IsOverBudgetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(overBudget);
 
         var user = new Mock<ICurrentUserService>();
-        user.SetupGet(u => u.UserId).Returns(signedIn ? Guid.NewGuid() : null);
+        user.SetupGet(u => u.UserId).Returns(signedIn ? userId ?? Guid.NewGuid() : null);
 
         var source = new SourceOptions { Enabled = true };
         source.Broad.Enabled = broadEnabled;
@@ -74,13 +84,14 @@ public class TopicPlannerTests
 
         var planner = new TopicPlanner(
             model.Object, usages.Object, quota.Object, user.Object,
-            new MemoryCache(new MemoryCacheOptions()),
+            cache ?? new MemoryCache(new MemoryCacheOptions()),
             Options.Create(new AiOptions
             {
                 Enabled = aiEnabled, InputCostPerMillionUsd = 0.15m, OutputCostPerMillionUsd = 0.60m,
             }),
             Options.Create(source),
-            NullLogger<TopicPlanner>.Instance);
+            NullLogger<TopicPlanner>.Instance,
+            new Random(7));
 
         return new Harness(planner, model, rows, prompts);
     }
@@ -93,7 +104,8 @@ public class TopicPlannerTests
         var plan = await h.Planner.PlanAsync("General Knowledge", "English", default);
 
         Assert.Equal(TopicKind.Broad, plan!.Kind);
-        Assert.Equal(["Solar System", "French Revolution", "Amazon River"], plan.Subtopics);
+        // A pool smaller than one quiz draws is drawn whole — in the draw's order, not the model's.
+        Assert.Equal(["Amazon River", "French Revolution", "Solar System"], plan.Subtopics.Order());
     }
 
     [Fact]
@@ -119,7 +131,7 @@ public class TopicPlannerTests
         await h.Planner.PlanAsync("General Knowledge", "English", default);
 
         h.Model.Verify(m => m.CompleteJsonAsync(
-            It.IsAny<string>(), 400, It.Is<AiCallOptions>(c => c.ReasoningEffort == "none" && c.Image == null),
+            It.IsAny<string>(), 900, It.Is<AiCallOptions>(c => c.ReasoningEffort == "none" && c.Image == null),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -130,7 +142,7 @@ public class TopicPlannerTests
 
         await h.Planner.PlanAsync("General Knowledge", "English", default);
 
-        h.Model.Verify(m => m.CompleteJsonAsync(It.IsAny<string>(), 400, It.IsAny<CancellationToken>()), Times.Once);
+        h.Model.Verify(m => m.CompleteJsonAsync(It.IsAny<string>(), 900, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -152,7 +164,7 @@ public class TopicPlannerTests
     [Fact]
     public async Task The_same_topic_is_planned_once()
     {
-        var h = Build();
+        var h = Build(reply: Pool(30));
 
         await h.Planner.PlanAsync("General Knowledge", "English", default);
         var again = await h.Planner.PlanAsync("  general knowledge ", "English", default);
@@ -222,6 +234,95 @@ public class TopicPlannerTests
         var h = Build(remaining: null);
 
         Assert.NotNull(await h.Planner.PlanAsync("General Knowledge", "English", default));
+    }
+
+    // ── A pool, and a different draw each time ───────────────────────────────────────────────
+
+    [Fact]
+    public async Task The_model_is_asked_for_a_pool_and_a_quiz_draws_part_of_it()
+    {
+        var h = Build(reply: Pool(30));
+
+        var plan = await h.Planner.PlanAsync("General Knowledge", "English", default);
+
+        Assert.Contains("list exactly 30 subtopics", Assert.Single(h.Prompts));
+        Assert.Equal(10, plan!.Subtopics.Count);
+        Assert.Equal(10, plan.Subtopics.Distinct().Count());
+        // A draw, not the head of the list: the model names its favourites first, every time.
+        Assert.NotEqual(Enumerable.Range(1, 10).Select(i => $"A{i}"), plan.Subtopics);
+    }
+
+    [Fact]
+    public async Task The_next_quiz_on_the_topic_draws_what_the_last_ones_did_not()
+    {
+        // The bug: two General Knowledge quizzes written from the same eight articles.
+        var h = Build(reply: Pool(30));
+
+        var first = await h.Planner.PlanAsync("General Knowledge", "English", default);
+        var second = await h.Planner.PlanAsync("General Knowledge", "English", default);
+        var third = await h.Planner.PlanAsync("General Knowledge", "English", default);
+
+        var all = first!.Subtopics.Concat(second!.Subtopics).Concat(third!.Subtopics).ToList();
+        Assert.Equal(30, all.Distinct().Count());
+        Assert.Single(h.Prompts);   // three quizzes, one model call
+    }
+
+    [Fact]
+    public async Task When_the_pool_runs_low_a_new_one_is_asked_for_without_what_was_used()
+    {
+        var h = Build(replyFor: p => p.Contains("do NOT use any of these") ? Pool(30, "B") : Pool(30));
+
+        for (var i = 0; i < 3; i++) await h.Planner.PlanAsync("General Knowledge", "English", default);
+        var fourth = await h.Planner.PlanAsync("General Knowledge", "English", default);
+
+        Assert.Equal(2, h.Prompts.Count);
+        Assert.Contains("\"A1\"", h.Prompts[1]);
+        Assert.Contains("\"A30\"", h.Prompts[1]);
+        Assert.All(fourth!.Subtopics, s => Assert.StartsWith("B", s));
+        Assert.Equal(2, h.Rows.Count);   // each call is on the ledger
+    }
+
+    [Fact]
+    public async Task If_a_new_pool_cannot_be_had_the_old_one_starts_over()
+    {
+        // The same thirty again (a model that ignores the instruction), or no reply at all: the
+        // author still gets a broad quiz, from subjects they have had before.
+        var h = Build(reply: Pool(30));
+
+        for (var i = 0; i < 3; i++) await h.Planner.PlanAsync("General Knowledge", "English", default);
+        var fourth = await h.Planner.PlanAsync("General Knowledge", "English", default);
+
+        Assert.Equal(TopicKind.Broad, fourth!.Kind);
+        Assert.Equal(10, fourth.Subtopics.Count);
+        Assert.All(fourth.Subtopics, s => Assert.StartsWith("A", s));
+    }
+
+    [Fact]
+    public async Task One_authors_draws_do_not_use_up_anothers()
+    {
+        var cache = new MemoryCache(new MemoryCacheOptions());
+        var ana = Build(reply: Pool(30), cache: cache, userId: Guid.NewGuid());
+        var ben = Build(reply: Pool(30), cache: cache, userId: Guid.NewGuid());
+
+        for (var i = 0; i < 3; i++) await ana.Planner.PlanAsync("General Knowledge", "English", default);
+        var bens = await ben.Planner.PlanAsync("General Knowledge", "English", default);
+
+        // Ana has been through the whole pool; Ben shares it (no second call) and has all of it left.
+        Assert.Equal(10, bens!.Subtopics.Count);
+        Assert.Empty(ben.Prompts);
+    }
+
+    [Fact]
+    public async Task A_single_subject_is_never_drawn_from()
+    {
+        var h = Build(reply: """{"kind":"single","subtopics":[]}""");
+
+        var first = await h.Planner.PlanAsync("Photosynthesis", "English", default);
+        var second = await h.Planner.PlanAsync("Photosynthesis", "English", default);
+
+        Assert.Equal(TopicKind.Single, first!.Kind);
+        Assert.Equal(TopicKind.Single, second!.Kind);
+        Assert.Single(h.Prompts);
     }
 
     // ── Reading the reply ────────────────────────────────────────────────────────────────────

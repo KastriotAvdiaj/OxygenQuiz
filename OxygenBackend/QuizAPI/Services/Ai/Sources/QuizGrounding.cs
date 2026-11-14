@@ -340,7 +340,7 @@ namespace QuizAPI.Services.Ai.Sources
             var tasks = subtopics
                 .Where(s => !string.IsNullOrWhiteSpace(s))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Take(Math.Max(2, broad.SubtopicsToAsk))
+                .Take(Math.Max(2, broad.SubtopicsPerQuiz))
                 .Select(async subtopic =>
                 {
                     try

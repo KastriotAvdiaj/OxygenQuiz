@@ -100,10 +100,23 @@ namespace QuizAPI.Services.Ai.Sources
         public bool Enabled { get; set; } = true;
 
         /// <summary>
-        /// How many subtopics the model is asked for. More than <see cref="MaxSources"/> on
-        /// purpose: some won't resolve to a clear, long-enough article and are dropped.
+        /// The size of the pool the model is asked for. Much more than one quiz needs, on purpose:
+        /// each quiz is a random draw from it, which is what makes two quizzes on "General
+        /// knowledge" differ (TopicPlanner, "A pool, and a different draw each time").
         /// </summary>
-        public int SubtopicsToAsk { get; set; } = 10;
+        public int SubtopicsToAsk { get; set; } = 30;
+
+        /// <summary>
+        /// How many of the pool one quiz draws and looks up. More than <see cref="MaxSources"/>:
+        /// some won't resolve to a clear, long-enough article and are dropped.
+        /// </summary>
+        public int SubtopicsPerQuiz { get; set; } = 10;
+
+        /// <summary>
+        /// How long an author's earlier draws on a topic are remembered, so the next quiz on it
+        /// draws something else. In memory only: a restart forgets, and the draw is still random.
+        /// </summary>
+        public int UsedMemoryDays { get; set; } = 14;
 
         /// <summary>The most articles one quiz is written from.</summary>
         public int MaxSources { get; set; } = 8;
@@ -129,8 +142,8 @@ namespace QuizAPI.Services.Ai.Sources
         /// </summary>
         public int LookupBudgetSeconds { get; set; } = 15;
 
-        /// <summary>Room for the plan's answer: a kind and ten titles.</summary>
-        public int PlanMaxOutputTokens { get; set; } = 400;
+        /// <summary>Room for the plan's answer: a kind and a pool of thirty titles.</summary>
+        public int PlanMaxOutputTokens { get; set; } = 900;
 
         /// <summary>
         /// The planning call's own reasoning effort, like screenshot import's read: sorting a
@@ -139,7 +152,7 @@ namespace QuizAPI.Services.Ai.Sources
         /// </summary>
         public string? PlanReasoningEffort { get; set; } = "none";
 
-        /// <summary>How long a (language, topic) plan is kept, so asking twice plans once.</summary>
+        /// <summary>How long a (language, topic) pool is kept before the model is asked again.</summary>
         public int PlanCacheMinutes { get; set; } = 720;
     }
 

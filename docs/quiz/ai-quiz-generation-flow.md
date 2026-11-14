@@ -529,7 +529,7 @@ that ask for a *selection across* subjects, and title matching has no way to kno
 | Step | Decides | When unsure |
 |---|---|---|
 | 1. Language | as §2e | Ask, as §2e |
-| 1b. Plan (`TopicPlanner`) | One small model call: is this **one subject** or a **selection across many**? For the second, ten article titles to read | No plan — treated as one subject |
+| 1b. Plan (`TopicPlanner`) | One small model call: is this **one subject** or a **selection across many**? For the second, a pool of thirty article titles, of which each quiz draws ten | No plan — treated as one subject |
 | 2. Article(s) | **Single:** §2e, unchanged. **Broad:** every subtopic looked up in the language's first source; the clear, long-enough matches are read together | Single: ask, as §2e. Broad: **drop it, never ask** |
 
 **The model proposes, the code decides** ([ADR 0003](../adr/0003-the-model-proposes-the-code-decides.md)).
@@ -549,6 +549,24 @@ will happen most: sq.wikipedia has far fewer long articles (the proposal's §1).
 
 **An outage is the same question as for one article.** When more than half the lookups could not
 reach the source, the author gets `SourceUnavailable` and chooses to wait or to go from memory.
+
+### A pool, and a different draw for each quiz
+
+The first version asked for ten titles and cached the answer for twelve hours. Two General
+Knowledge quizzes made a day apart were written from the same eight articles (2026-11-14): a
+model asked for "ten subjects for general knowledge" names the same ten, and the cache replayed
+them even when it didn't.
+
+- **The model is asked for a pool** — `SubtopicsToAsk`, 30 — and told it is a pool, so it goes past
+  the first subjects everyone thinks of.
+- **The pool is what is cached**, per language and topic. A quiz is a **random draw** of
+  `SubtopicsPerQuiz` (10) from it, made by code. A model asked to "be random" isn't.
+- **An author's earlier draws are skipped.** What their quizzes on a topic drew is remembered for
+  `UsedMemoryDays` (14, in memory), so three quizzes use the whole pool before anything repeats.
+- **When the pool runs low, a new one is asked for**, with what the author has had listed as
+  titles to leave out. If that call can't be made or returns nothing new, the old pool starts over.
+
+So a model call is made about once every three quizzes on a topic, not once per quiz.
 
 ### The compound source
 
@@ -580,10 +598,10 @@ The plan is a model call made **before** the quota reservation, so it has its ow
 - **Not made when it couldn't be used** — nobody signed in, no generation left today, a spending
   cap reached, AI off, or `Broad:Enabled` false. Otherwise every topic typed after the last slot
   would be a small unmetered call.
-- **Cached** by (language, topic) for `PlanCacheMinutes` (12 hours), so answering grounding's
-  question and coming back, or trying a topic twice, plans once.
-- **Small** — `PlanMaxOutputTokens` 400, and its own reasoning effort (`PlanReasoningEffort`,
-  `none`), like screenshot import's read. About 500 tokens in and under 100 out.
+- **Cached** — the pool, by (language, topic), for `PlanCacheMinutes` (12 hours), so answering
+  grounding's question and coming back, or trying a topic again, costs no second call.
+- **Small** — `PlanMaxOutputTokens` 900, and its own reasoning effort (`PlanReasoningEffort`,
+  `none`), like screenshot import's read. About 600 tokens in and 300 out.
 - **Never fatal** — a provider error, a timeout or an unreadable reply is "no plan", and the topic
   is grounded as one subject, which is what happened before this existed.
 
