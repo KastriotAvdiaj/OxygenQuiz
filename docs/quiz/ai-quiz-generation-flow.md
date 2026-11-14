@@ -1072,8 +1072,9 @@ and no change to it will help, so telling the client "bad request" sends it into
 { "code": "QuotaExceeded", "message": "...", "retryAfter": "2026-08-10T00:00:00Z", "isCustomMessage": true }
 ```
 
-**With `addImages` on**, a question in the payload may carry `"imageQuery": "Flag of Kosovo"` — a
-phrase to search for, never a URL. The browser's parser keeps it only as plain text and our own
+**With `addImages` on**, a question written to be answered by looking at a picture carries
+`"imageQuery": "Flag of Kosovo"` — a phrase to search for, never a URL, and dropped by the parser
+when the question's text already names it. The browser's parser keeps it only as plain text and our own
 `POST /api/media/stock/auto` turns it into an image; see
 [`../media/media-pipeline.md`](../media/media-pipeline.md) §8. The flag is part of the request hash,
 so the same brief with and without pictures is two different requests.

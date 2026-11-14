@@ -11,7 +11,7 @@ vi.mock("@/lib/Api-client", () => ({
 
 import { QuestionType } from "@/types/question-types";
 import { queryConfig } from "@/lib/React-query";
-import { cleanImageQuery, parseAiOutput, MAX_IMAGE_QUERIES } from "../parse-ai-output";
+import { cleanImageQuery, parseAiOutput, pictureIsNamedInQuestion, MAX_IMAGE_QUERIES } from "../parse-ai-output";
 import { useAutoImages } from "../use-auto-images";
 import { AutoImageNotice } from "../components/auto-images";
 import { parseContext } from "../__fixtures__/ai-quiz.fixtures";
@@ -53,6 +53,33 @@ describe("the model's image search phrase", () => {
     // Nothing is attached by the parser: a phrase is not an image until our code finds one.
     expect(result.questions[0].question.media).toBeNull();
   });
+
+  it("is dropped when the question already names what the picture would show", () => {
+    // Decoration: the text says who or what it is, so the picture gives the player nothing to do.
+    expect(pictureIsNamedInQuestion("Marie Curie was the first woman to win a Nobel Prize.", "Marie Curie")).toBe(true);
+    expect(pictureIsNamedInQuestion("Mount Everest was most recently measured at 8,848.86 m in 2020.", "Mount Everest")).toBe(true);
+    expect(pictureIsNamedInQuestion("Në cilin vit u lind Skënderbeu?", "Skenderbeu")).toBe(true);
+    expect(pictureIsNamedInQuestion("Is Mercury the smallest planet?", "Mercury (planet)")).toBe(true);
+
+    // A picture question points at the picture and leaves the name out.
+    expect(pictureIsNamedInQuestion("Who is this scientist?", "Marie Curie")).toBe(false);
+    expect(pictureIsNamedInQuestion("Which country's flag is this?", "Flag of Kosovo")).toBe(false);
+    expect(pictureIsNamedInQuestion("Which planet is shown here?", "Mercury (planet)")).toBe(false);
+  });
+
+  it("leaves the question in the quiz when its picture is dropped", () => {
+    const result = parseAiOutput(
+      reply([
+        tf("Marie Curie was the first woman to win a Nobel Prize.", "Marie Curie"),
+        tf("The scientist shown here won two Nobel Prizes.", "Marie Curie"),
+      ]),
+      parseContext
+    );
+
+    expect(result.questions).toHaveLength(2);
+    expect(result.questions[0].imageQuery).toBeUndefined();
+    expect(result.questions[1].imageQuery).toBe("Marie Curie");
+  });
 });
 
 describe("useAutoImages", () => {
@@ -80,7 +107,7 @@ describe("useAutoImages", () => {
         : Promise.reject({ response: { status: 404 } }),
     );
     const result = parseAiOutput(
-      reply([tf("Is this the flag of Kosovo?", "Flag of Kosovo"), tf("Is the sky blue on a clear day?"), tf("Is this Atlantis?", "Atlantis")]),
+      reply([tf("Does the flag shown here belong to a Balkan country?", "Flag of Kosovo"), tf("Is the sky blue on a clear day?"), tf("Is the city shown here a real place?", "Atlantis")]),
       parseContext,
     );
 
@@ -127,7 +154,7 @@ describe("the review's note about pictures", () => {
   it("says so when pictures were on and the AI named none", () => {
     // Before, this showed nothing — and "the AI chose none" looked like a broken feature.
     render(<AutoImageNotice requested={0} notFound={[]} asked />);
-    expect(note()).toContain("the AI didn't name one for any question");
+    expect(note()).toContain("the AI wrote no question that asks about one");
     cleanup();
   });
 

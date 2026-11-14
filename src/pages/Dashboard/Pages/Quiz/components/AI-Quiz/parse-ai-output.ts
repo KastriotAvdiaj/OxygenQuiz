@@ -126,6 +126,42 @@ export const cleanImageQuery = (value: unknown): string | undefined => {
   return q;
 };
 
+const foldWords = (value: string): string[] =>
+  value
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean);
+
+/** Too small or too common to say what a picture is of. */
+const PICTURE_FILLER = new Set(["the", "and", "for"]);
+
+/**
+ * True when the question's own text already names what its picture would show — every word of the
+ * search phrase is in the question. That picture is decoration: "Marie Curie was the first woman to
+ * win a Nobel Prize." with her portrait gives the player nothing to look at. A picture question
+ * points at the picture and leaves the name out ("Who is this scientist?"), so it passes.
+ *
+ * Mirrors the picture rule in `AiPromptBuilder` (the model is told not to); this is the half code
+ * can check. It cannot see the other mistake — a picture that shows the *answer* to a question
+ * which never asks about it — because a real picture question's phrase is its answer too.
+ * A bracketed qualifier is Commons disambiguation, not part of the name: "Mercury (planet)".
+ *
+ * The cost: "Is this the flag of Kosovo?" is a fair picture question that names its subject, and
+ * it loses its picture too — left pointing at nothing until the author adds one or rewords it.
+ * The prompt asks for picture questions that never name the subject, so this should be rare, and
+ * telling the two apart would mean recognising "this" in every language a quiz is written in.
+ */
+export const pictureIsNamedInQuestion = (questionText: string, imageQuery: string): boolean => {
+  const subject = foldWords(imageQuery.replace(/\([^)]*\)/g, " ")).filter(
+    (w) => w.length >= 3 && !PICTURE_FILLER.has(w)
+  );
+  if (subject.length === 0) return false;
+  const said = new Set(foldWords(questionText));
+  return subject.every((w) => said.has(w));
+};
+
 export interface DroppedQuestion {
   index: number;
   text: string;
@@ -530,10 +566,13 @@ export const parseAiOutput = (raw: string, ctx: ParseContext): ParseResult => {
 
     if (!matched) difficultyFallbacks.push(questions.length + 1);
 
-    const imageQuery =
+    const namedQuery =
       questions.filter((q) => q.imageQuery).length < MAX_IMAGE_QUERIES
         ? cleanImageQuery(rawQuestion.imageQuery)
         : undefined;
+    // The question stays; only a picture that would be decoration goes.
+    const imageQuery =
+      namedQuery && !pictureIsNamedInQuestion(rawQuestion.text, namedQuery) ? namedQuery : undefined;
 
     questions.push({
       question: built.question,

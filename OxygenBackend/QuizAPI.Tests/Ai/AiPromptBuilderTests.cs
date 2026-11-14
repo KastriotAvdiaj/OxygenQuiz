@@ -281,8 +281,23 @@ public class AiPromptBuilderTests
 
         Assert.Contains($"\"{AiPromptBuilder.ImageQueryField}\": string", prompt); // in the shape
         Assert.Contains("Never a URL", prompt);
-        Assert.Contains($"at most {AiPromptBuilder.MaxImageQueries} questions", prompt);
+        Assert.Contains($"at most {AiPromptBuilder.MaxImageQueries}", prompt);
         Assert.Contains("must not give the answer away", prompt);
+    }
+
+    [Fact]
+    public void A_picture_belongs_to_a_question_about_the_picture_and_is_never_decoration()
+    {
+        // 2026-11-14: "Which planet is closest to the Sun?" came back with a labelled picture of
+        // Mercury, and a statement naming Marie Curie with her portrait.
+        var prompt = Builder.Build(InferredRequest() with { AddImages = true });
+
+        Assert.Contains("PICTURE QUESTION", prompt);
+        Assert.Contains("does NOT name what the picture shows", prompt);
+        Assert.Contains("never decoration", prompt);
+        Assert.Contains("can be answered without looking", prompt);
+        // The line that asked for a picture on anything visible is what produced the decoration.
+        Assert.DoesNotContain("consider every question", prompt);
     }
 
     [Fact]

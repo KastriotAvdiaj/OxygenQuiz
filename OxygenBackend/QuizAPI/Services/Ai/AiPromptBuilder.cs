@@ -303,17 +303,25 @@ namespace QuizAPI.Services.Ai
                 // The model proposes, the code decides: a phrase to search for, which our code runs
                 // against licensed sources and checks like an upload. Never a link — a model's URL
                 // is unverified, often invented, and nothing we could store or credit.
+                //
+                // A picture belongs to a *picture question* — one the player answers by looking —
+                // and to nothing else. Until 2026-11-14 the rule asked for a picture "where one
+                // helps" and, from that morning, to name one whenever a question was "about a
+                // particular thing that can be seen". The model did exactly that: "Which planet is
+                // closest to the Sun?" came back with a labelled picture of Mercury, and a statement
+                // about Marie Curie with her portrait. One gives the answer away, the other is
+                // decoration. So the rule now defines the question, with both mistakes as examples,
+                // and the parser drops a picture whose subject the question already names
+                // (`pictureIsNamedInQuestion` in parse-ai-output.ts).
                 rules.Add(
-                    $"\"{ImageQueryField}\": ONLY on questions where a picture genuinely helps — a flag, a landmark, a famous painting or building, an animal or plant, a well-known person, a map. "
-                    + $"Leave it out everywhere else; at most {MaxImageQueries} questions may have one. "
-                    // Added 2026-11-14, when no generated quiz had come back with a picture. The
-                    // cause wasn't confirmed; a model reading "optional" as "skip it" is the likely
-                    // one, and the review now says when none was named (AutoImageNotice). Not a
-                    // quota — a quiz about grammar still gets none.
-                    + "The author switched pictures on, so consider every question: when a question is about a particular thing that can be seen, name it. Leaving every question without one is right only when none of them is about such a thing. "
-                    + $"It is a short English search phrase (at most {ImageQueryMaxLength} characters) naming the exact subject as it would be titled on Wikimedia Commons, e.g. \"Flag of Kosovo\", \"Mona Lisa\", \"Eiffel Tower\". "
+                    $"\"{ImageQueryField}\" marks a PICTURE QUESTION: one the player answers by looking at the picture — \"Which planet is shown here?\", \"Which country's flag is this?\", \"Who is this scientist?\", \"In which city does this building stand?\". "
+                    + "Write such a question so that it points at the picture (\"this\", \"shown here\", said in the quiz's language) and does NOT name what the picture shows: the picture says that, the text must not. "
+                    + $"Its {ImageQueryField} names the thing shown: a short English search phrase (at most {ImageQueryMaxLength} characters) naming the exact subject as it would be titled on Wikimedia Commons, e.g. \"Flag of Kosovo\", \"Mona Lisa\", \"Eiffel Tower\". "
                     + "Never a URL, a file name or a description of a picture. "
-                    + "The picture must not give the answer away, unless the question asks the player to identify what the picture shows.");
+                    + "A picture is never decoration, and it must not give the answer away to a question that does not ask about it. "
+                    + $"Do NOT put {ImageQueryField} on a question that names its own subject or that can be answered without looking: \"Which planet is closest to the Sun?\" with a picture of Mercury hands over the answer, and \"Marie Curie was the first woman to win a Nobel Prize.\" with her portrait shows nothing the player needs — both are wrong. Rewrite such a question around the picture, or leave {ImageQueryField} out. "
+                    // Not a quota: a quiz about grammar has nothing to recognise and gets none.
+                    + $"The author switched pictures on, so where the material has things recognisable by sight — a place, a person, an animal, a flag, an artwork, an object — write some of the questions as picture questions, at most {MaxImageQueries}. Write none when nothing in the material can be recognised by sight.");
             }
 
             if (!string.IsNullOrWhiteSpace(r.ExtraInstructions))

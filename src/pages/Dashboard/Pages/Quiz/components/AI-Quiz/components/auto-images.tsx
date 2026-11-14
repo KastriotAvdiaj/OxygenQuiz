@@ -59,8 +59,8 @@ export function AutoImagesProgress({
  * Not a warning — a picture is optional — but not silent either (ADR 0005's rule for what the
  * import changed). Nothing when pictures were off.
  *
- * `asked` is the wizard's "Add pictures" switch. With it on and no question naming a picture, the
- * notice says so: until 2026-11-14 that case showed nothing, and "the AI chose none" looked the
+ * `asked` is the wizard's "Add pictures" switch. With it on and no picture question in the reply
+ * (none written, or each one's picture dropped as decoration by the parser), the notice says so: until 2026-11-14 that case showed nothing, and "the AI chose none" looked the
  * same as "the feature is broken".
  */
 export function AutoImageNotice({
@@ -81,8 +81,8 @@ export function AutoImageNotice({
       >
         <p className="flex items-center gap-2 font-medium">
           <ImageIcon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-          Pictures were on, but the AI didn't name one for any question. You can add one yourself in a
-          question.
+          Pictures were on, but the AI wrote no question that asks about one. You can add one
+          yourself in a question.
         </p>
       </div>
     );

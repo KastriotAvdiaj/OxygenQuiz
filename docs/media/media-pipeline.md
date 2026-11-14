@@ -195,20 +195,31 @@ Unsplash. It would add overlap, not coverage (proposal §3.8).
 ## 8. AI-added images
 
 The AI wizard (both paths — generated here, or the prompt copied to your own AI) has an **Add
-pictures** switch under its options, **off by default**. On, the prompt asks the model to give an
-`imageQuery` — a short search phrase such as "Flag of Kosovo" — to **only** the questions a picture
-helps (a flag, a landmark, a painting, an animal, a person, a map), at most 10, never a URL, and
-never one that gives the answer away unless the question is about identifying the picture
-(`AiPromptBuilder`, rule and shape field). Since 2026-11-14 the rule also tells the model to
-*consider* every question, because no generated quiz had come back with a picture — not a quota:
-a quiz with nothing to see still gets none — and the review says *Pictures were on, but the AI
-didn't name one for any question* when that happens, where it used to say nothing
-(`AutoImageNotice`). This is ADR 0003 applied to media: **the model proposes a
-phrase, our code decides the image.**
+pictures** switch under its options, **off by default**. On, the prompt lets the model write
+**picture questions**: ones the player answers by looking — *Which planet is shown here?*, *Whose
+flag is this?* — each carrying an `imageQuery`, a short search phrase such as "Flag of Kosovo" that
+names the thing shown. At most 10, never a URL (`AiPromptBuilder`, rule and shape field). This is
+ADR 0003 applied to media: **the model proposes a phrase, our code decides the image.**
+
+**A picture is what the question asks about, never decoration.** The first quizzes that came back
+with pictures (2026-11-14) had them on ordinary questions: *Which planet is closest to the Sun?*
+with a labelled picture of Mercury, which hands over the answer, and *Marie Curie was the first
+woman to win a Nobel Prize.* with her portrait, which shows the player nothing they need. The rule
+had asked for a picture "where one helps", and a line added that morning told the model to name one
+whenever a question was about something visible — which is what it did. The rule now defines the
+picture question instead, forbids a picture on a question that names its subject or can be answered
+without looking, and quotes both mistakes. It is not a quota: a quiz with nothing recognisable by
+sight gets no pictures, and the review then says *Pictures were on, but the AI wrote no question
+that asks about one* (`AutoImageNotice`).
 
 1. **The parser keeps a phrase, nothing else** (`cleanImageQuery` in `parse-ai-output.ts`): 2–80
    characters, and anything that looks like a link or a file name is dropped rather than searched.
-   Only the first 10 questions with one keep it.
+   Only the first 10 questions with one keep it. And a phrase whose every word is already in the
+   question's text is dropped (`pictureIsNamedInQuestion`): the question names what the picture
+   would show, so the picture is decoration. The question stays. Two limits, both left to the
+   author in the review: code cannot tell a picture that shows the *answer* to a question which
+   never asks about it (a real picture question's phrase is its answer too), and it cannot read a
+   picture, so a labelled diagram can still spell out the answer to a fair picture question.
 2. **Our server finds the picture.** `useAutoImages` sends each phrase to
    `POST /api/media/stock/auto { query }`, which searches Commons, then Pexels, and imports the best
    result whose licence and file pass — trying the next two if one fails at import. Nobody looks at
