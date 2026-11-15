@@ -18,6 +18,12 @@ namespace QuizAPI.Repositories.Interfaces
         IQueryable<Quiz> Query(bool includeDeleted = false);
 
         Task<Quiz?> GetByIdAsync(int id, CancellationToken ct = default);
+
+        /// <summary>
+        /// Which of <paramref name="among"/> this user has a session of — started counts, finished
+        /// or not. Quick play uses it to hand out a quiz the player hasn't had.
+        /// </summary>
+        Task<List<int>> GetPlayedQuizIdsAsync(Guid userId, IReadOnlyCollection<int> among, CancellationToken ct = default);
         Task<bool> ExistsAsync(int id, CancellationToken ct = default);
 
         /// <summary>

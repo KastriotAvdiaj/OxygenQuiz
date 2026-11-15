@@ -1594,10 +1594,15 @@ Deferred: a renderer (KaTeX) has to be added to every surface that shows questio
   now the default ([ADR 0041](../adr/0041-the-app-font-defaults-to-dynapuff.md)), so this is what
   every visitor sees, not only those who picked a display face.
 
-## Quick play (2026-11-12 — proposal only)
+## Quick play (2026-11-15 — built, not yet tried in a browser)
 
-- **Open proposal:** Play asks for a category and a difficulty and starts a quiz, instead of
-  opening the catalogue. → [`../proposals/quick-play.md`](../proposals/quick-play.md)
+- **P2 — Only as deep as the picked catalogue.** Quick play hands out picked, Public, Classic
+  quizzes only, and offers a category or difficulty only when one exists. With few picked quizzes
+  there are few tiles and a category is exhausted in a handful of plays. _Before reopening the
+  site:_ stock each category at each difficulty (AI generation, then **pick** the quizzes).
+  → [`../quiz/quick-play.md`](../quiz/quick-play.md), "What limits it"
+- **P3 — The results page still sends players to the catalogue.** A *Quick play again* there
+  would close the loop; not built. → `src/pages/Quiz/Sessions/components/quiz-results/quiz-results.tsx`
 
 ## Fact quizzes (2026-11-08)
 

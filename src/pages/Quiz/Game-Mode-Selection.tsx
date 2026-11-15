@@ -35,7 +35,9 @@ export function GameModeSelection() {
             meta="Instant start — no lobby"
             metaIcon={Zap}
             accent="foreground"
-            onSelect={() => navigate("/choose-quiz")}
+            // Quick play, not the catalogue: two taps to a quiz, with the full list one link
+            // away on that page (docs/quiz/quick-play.md).
+            onSelect={() => navigate("/quick-play")}
           />
           <ModeCard
             icon={UsersRound}

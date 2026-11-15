@@ -34,6 +34,14 @@ namespace QuizAPI.Repositories
         public Task<Quiz?> GetByIdAsync(int id, CancellationToken ct = default) =>
             WithRelations(_context.Quizzes.AsNoTracking()).FirstOrDefaultAsync(q => q.Id == id, ct);
 
+        public Task<List<int>> GetPlayedQuizIdsAsync(
+            Guid userId, IReadOnlyCollection<int> among, CancellationToken ct = default) =>
+            _context.QuizSessions.AsNoTracking()
+                .Where(s => s.UserId == userId && among.Contains(s.QuizId))
+                .Select(s => s.QuizId)
+                .Distinct()
+                .ToListAsync(ct);
+
         public Task<bool> ExistsAsync(int id, CancellationToken ct = default) =>
             _context.Quizzes.AsNoTracking().AnyAsync(q => q.Id == id, ct);
 

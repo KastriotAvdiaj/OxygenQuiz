@@ -236,6 +236,7 @@ else
                                QuizAPI.Services.Email.LoggingEmailSender>();
 }
 builder.Services.AddScoped<IQuizService, QuizService>();
+builder.Services.AddScoped<IQuickPlayService, QuickPlayService>();
 builder.Services.AddScoped<IQuestionService, QuestionService>();
 builder.Services.AddScoped<ITestQuestionService, TestQuestionService>();
 builder.Services.AddScoped<IAnswerOptionService, AnswerOptionService>();

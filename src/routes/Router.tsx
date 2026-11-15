@@ -32,11 +32,13 @@ import {
 } from "./dashboard-prefetch";
 import { dashboardEntryLoader } from "@/loaders/dashboardEntryLoader";
 import { quizSelectionLoader } from "@/loaders/quiz-selection.loader";
+import { quickPlayLoader } from "@/loaders/quick-play.loader";
 import {
   loadGuestQuizResults,
   loadHomeLayout,
   loadQuizResults,
   loadQuizSelection,
+  loadQuickPlay,
 } from "./route-chunks";
 import {
   guestQuizResultsLoader,
@@ -56,6 +58,9 @@ const QuizSelection = lazy(() =>
   loadQuizSelection().then((module) => ({
     default: module.QuizSelection,
   })),
+);
+const QuickPlay = lazy(() =>
+  loadQuickPlay().then((module) => ({ default: module.QuickPlay })),
 );
 const GameModeSelection = lazy(() =>
   import("@/pages/Quiz/Game-Mode-Selection").then((module) => ({
@@ -224,6 +229,16 @@ const createAppRouter = (queryClient: QueryClient) =>
             children={<MultiplayerMenu />}
           />
         </>
+      ),
+    },
+    {
+      // Quick play: a category, a difficulty, and a quiz starts (docs/quiz/quick-play.md).
+      // No auth loader — a signed-out visitor's one free quiz starts here too.
+      path: "/quick-play",
+      loader: quickPlayLoader(queryClient),
+      errorElement: <DashboardErrorElement />,
+      element: (
+        <HomeLayout headerBehavior={HeaderBehavior.DEFAULT} children={<QuickPlay />} />
       ),
     },
     {

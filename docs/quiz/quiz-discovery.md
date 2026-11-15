@@ -41,6 +41,9 @@ first switch behind a one-time notice (`catalogue-scope-switch.tsx`, sent as `sc
   width (`RESPONSIVE.md`).
 - The landing page's **Play** button also goes to `/choose-mode` (since 2026-10-06; it used to
   skip straight to `/choose-quiz`) — see [`../home/landing-page.md`](../home/landing-page.md).
+- **Single Player on `/choose-mode` no longer opens the catalogue** (2026-11-15): it opens quick
+  play ([`quick-play.md`](quick-play.md)), which starts a quiz from a category and a difficulty
+  and links here as *Browse all quizzes*.
 
 ### Opening the list on one category: `?category=<name>`
 

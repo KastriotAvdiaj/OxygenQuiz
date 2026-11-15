@@ -14,6 +14,7 @@
  */
 export const loadHomeLayout = () => import("@/layouts/layout");
 export const loadQuizSelection = () => import("@/pages/Quiz/Quiz-Selection");
+export const loadQuickPlay = () => import("@/pages/Quiz/QuickPlay/Quick-Play");
 export const loadQuizResults = () =>
   import("@/pages/Quiz/Sessions/components/quiz-results/quiz-results-route-wrapper");
 export const loadGuestQuizResults = () =>
