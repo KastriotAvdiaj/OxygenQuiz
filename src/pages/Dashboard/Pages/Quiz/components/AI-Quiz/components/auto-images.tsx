@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { ArrowRight, ImageIcon } from "lucide-react";
+import type { PictureDescription } from "./picture-description";
 import { LiftedButton } from "@/common/LiftedButton";
 
 /**
@@ -54,56 +55,10 @@ export function AutoImagesProgress({
   );
 }
 
-/**
- * On the review: which pictures came from where, and which questions asked for one and got none.
- * Not a warning — a picture is optional — but not silent either (ADR 0005's rule for what the
- * import changed). Nothing when pictures were off.
- *
- * `asked` is the wizard's "Add pictures" switch. With it on and no picture question in the reply
- * (none written, or each one's picture dropped as decoration by the parser), the notice says so: until 2026-11-14 that case showed nothing, and "the AI chose none" looked the
- * same as "the feature is broken".
- */
-export function AutoImageNotice({
-  requested,
-  notFound,
-  asked = false,
-}: {
-  requested: number;
-  notFound: number[];
-  asked?: boolean;
-}) {
-  if (requested === 0 && !asked) return null;
-  if (requested === 0) {
-    return (
-      <div
-        role="status"
-        className="mx-auto w-full max-w-[1600px] rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm"
-      >
-        <p className="flex items-center gap-2 font-medium">
-          <ImageIcon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-          Pictures were on, but the AI wrote no question that asks about one. You can add one
-          yourself in a question.
-        </p>
-      </div>
-    );
-  }
-  const added = requested - notFound.length;
-  return (
-    <div
-      role="status"
-      className="mx-auto w-full max-w-[1600px] rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm"
-    >
-      <p className="flex items-center gap-2 font-medium">
-        <ImageIcon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-        {added > 0
-          ? `Added a picture to ${added} question${added === 1 ? "" : "s"} — check each one; swap or remove it in the question.`
-          : "No pictures were found for the questions that asked for one."}
-      </p>
-      {notFound.length > 0 && added > 0 && (
-        <p className="mt-1 text-xs text-muted-foreground">
-          None found for question{notFound.length === 1 ? "" : "s"} {notFound.join(", ")}. You can add one yourself.
-        </p>
-      )}
-    </div>
-  );
-}
+/** The words behind the pictures chip, opened (`describePictures`, `ReviewChips`). */
+export const PictureDetail = ({ pictures }: { pictures: PictureDescription }) => (
+  <>
+    <p className="font-medium">{pictures.lead}</p>
+    {pictures.detail && <p className="mt-1 text-xs text-muted-foreground">{pictures.detail}</p>}
+  </>
+);

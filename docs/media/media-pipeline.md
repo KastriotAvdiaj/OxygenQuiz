@@ -210,7 +210,7 @@ whenever a question was about something visible — which is what it did. The ru
 picture question instead, forbids a picture on a question that names its subject or can be answered
 without looking, and quotes both mistakes. It is not a quota: a quiz with nothing recognisable by
 sight gets no pictures, and the review then says *Pictures were on, but the AI wrote no question
-that asks about one* (`AutoImageNotice`).
+that asks about one* (the *No picture questions* chip, `describePictures`).
 
 1. **The parser keeps a phrase, nothing else** (`cleanImageQuery` in `parse-ai-output.ts`): 2–80
    characters, and anything that looks like a link or a file name is dropped rather than searched.
@@ -231,7 +231,8 @@ that asks about one* (`AutoImageNotice`).
 3. **The review opens with the pictures in place.** Between the reply and the review a short
    "Finding pictures…" panel counts them in, with *Skip to the review*. The builder then shows each
    picture with its credit; swapping (the picker's *Search images*) or removing it is the ordinary picker.
-   A note on the review says how many were added and which questions asked and got none.
+   A chip on the review says how many were added; opened, it names the questions that asked and
+   got none (`describePictures`, `ReviewChips`).
 
 Nothing is charged until the quiz is saved, like any upload; a picture removed in the review is
 swept with the other unsaved uploads.

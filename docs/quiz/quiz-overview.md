@@ -17,7 +17,7 @@ Code: `src/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/components/ove
    go back** (red: back to the brief) and **Keep reviewing** (outline). Its own dialog rather than
    `ConfirmationDialog`, which has room for one action and sized its Cancel differently from it.
    It replaced a fact-check line and a *Start over* that discarded on the spot (2026-10-17).
-   Under it, any import notices (questions the parser dropped). A draft restored on arrival is
+   Under it, the review notices (below). A draft restored on arrival is
    announced once as a notification ("Picked up where you left off"), not a banner that stayed
    above the review (docs/quiz/quiz-draft-persistence.md).
 1. **Summary card** — every value under a label, with the names the details form uses: *Title*,
@@ -175,3 +175,23 @@ so with reduced motion on, things fade in place instead of moving.
 - `overview/quiz-overview.stories.tsx` — AI review hides answers and reveals one card; building
   shows them; Edit opens the dialog and Next moves on; Remove then Undo puts a question back in
   place; the grip's arrow keys move a question.
+
+## Review notices
+
+What sits between Back and the two cards on an AI review, in two kinds:
+
+- **A box, for what the author should act on.** Questions the parser dropped (`ImportNotices`),
+  and a source that was down so the quiz was written from memory (`SourceNote`, amber).
+- **A chip, for what is merely so** (`ReviewChips`). *12 Wikipedia articles*, *2 pictures added*,
+  *From the AI's own knowledge*: one line of small pills. Pressing one opens a panel under the
+  line with the rest — every article, linked (each link is that article's attribution); which
+  questions asked for a picture and got none — and pressing again closes it. One panel at a time.
+
+Until 2026-11-15 the second kind were boxes too: two full-width boxes on nearly every generated
+quiz, saying something routine and pushing the questions down the first screen. The rule is the
+colour schema's, applied to space: what is ordinary stays quiet, what is a state gets loud. The
+panel opens in the page (height animated, 200ms, instant under reduced motion) rather than as a
+popover, because a list of twelve links is easier read in place.
+
+The words come from `describeSource` and `describePictures`, which know nothing about how they are
+shown; stories: `Dashboard/Quiz/AiQuizWizardView` → `ReviewGrounded`.

@@ -33,8 +33,12 @@ import {
 } from "./parse-ai-output";
 import { AI_QUESTION_LIMITS, DEFAULT_QUESTION_COUNT } from "./prompt";
 import { ImportNotices } from "./components/import-notices";
-import { SourceNote } from "./components/source-note";
-import { AutoImageNotice, AutoImagesProgress } from "./components/auto-images";
+import { ImageIcon } from "lucide-react";
+import { describeSource } from "./components/source-description";
+import { SourceDetail, SourceNote } from "./components/source-note";
+import { ReviewChips, type ReviewChip } from "./components/review-chips";
+import { AutoImagesProgress, PictureDetail } from "./components/auto-images";
+import { describePictures } from "./components/picture-description";
 import { useAutoImages } from "./use-auto-images";
 import { describeDraftAge } from "../draft-notices";
 
@@ -474,6 +478,21 @@ export const useAiQuizDraft = () => {
   // ── Handoff: questions parsed, so hand the builder everything prefilled.
   // `aiImportMode` makes it submit through the atomic /quiz/ai-import endpoint
   // (docs/quiz/ai-quiz-architecture.md §7.3).
+  const source = describeSource(grounding);
+  const pictures = describePictures({
+    requested: autoImages.requested,
+    notFound: autoImages.notFound,
+    asked: addImages,
+  });
+  const reviewChips: ReviewChip[] = [
+    ...(source && !source.warn
+      ? [{ id: "source", icon: source.Icon, label: source.chip, detail: <SourceDetail source={source} /> }]
+      : []),
+    ...(pictures
+      ? [{ id: "pictures", icon: ImageIcon, label: pictures.chip, detail: <PictureDetail pictures={pictures} /> }]
+      : []),
+  ];
+
   const builderSlot: ReactNode =
     parseResult?.ok &&
     effectiveCategoryId !== null &&
@@ -513,14 +532,11 @@ export const useAiQuizDraft = () => {
           }}
           reviewNotices={
             <>
-              {/* Grounding: what the questions came from. First, because it frames the rest. */}
-              <SourceNote grounding={grounding} />
+              {/* What needs the author: a source that was down, questions that were dropped. */}
+              {source?.warn && <SourceNote grounding={grounding} />}
               <ImportNotices result={parseResult} />
-              <AutoImageNotice
-                requested={autoImages.requested}
-                notFound={autoImages.notFound}
-                asked={addImages}
-              />
+              {/* What is merely so — the articles, the pictures — as chips that open on request. */}
+              <ReviewChips items={reviewChips} />
             </>
           }
           // The quiz exists on the server now, so the reply that produced it is no longer

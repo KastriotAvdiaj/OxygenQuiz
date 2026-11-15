@@ -14,7 +14,12 @@ import {
   parse,
 } from "./__fixtures__/ai-quiz.fixtures";
 import { AiQuizWizardView } from "./ai-quiz-wizard-view";
-import { SourceNote } from "./components/source-note";
+import { ImageIcon } from "lucide-react";
+import { describeSource } from "./components/source-description";
+import { SourceDetail, SourceNote } from "./components/source-note";
+import { ReviewChips } from "./components/review-chips";
+import { PictureDetail } from "./components/auto-images";
+import { describePictures } from "./components/picture-description";
 import type { ParseResult } from "./parse-ai-output";
 import { AI_QUESTION_LIMITS, DEFAULT_QUESTION_COUNT } from "./prompt";
 
@@ -810,7 +815,23 @@ export const ReviewHandoffWithDifficultyFallbacks: Story = {
 
 // ── Grounding, in the review ──
 
-/** The review, grounded: the article is named and linked above the questions. */
+const groundedSource = describeSource({
+  status: "Grounded",
+  language: "Albanian",
+  source: {
+    provider: "wikipedia",
+    title: "Kuzhina shqiptare",
+    url: "https://sq.wikipedia.org/wiki/Kuzhina_shqiptare",
+    text: "…",
+    language: "Albanian",
+  },
+})!;
+const addedPictures = describePictures({ requested: 3, notFound: [2], asked: true })!;
+
+/**
+ * The review, grounded and with pictures: one line of chips above the questions. Press a chip for
+ * the rest — the article, linked; which question got no picture.
+ */
 export const ReviewGrounded: Story = {
   args: {
     topic: "Kuzhina tradicionale shqiptare",
@@ -819,18 +840,11 @@ export const ReviewGrounded: Story = {
       <BuilderStandIn
         result={goodResult}
         notices={
-          <SourceNote
-            grounding={{
-              status: "Grounded",
-              language: "Albanian",
-              source: {
-                provider: "wikipedia",
-                title: "Kuzhina shqiptare",
-                url: "https://sq.wikipedia.org/wiki/Kuzhina_shqiptare",
-                text: "…",
-                language: "Albanian",
-              },
-            }}
+          <ReviewChips
+            items={[
+              { id: "source", icon: groundedSource.Icon, label: groundedSource.chip, detail: <SourceDetail source={groundedSource} /> },
+              { id: "pictures", icon: ImageIcon, label: addedPictures.chip, detail: <PictureDetail pictures={addedPictures} /> },
+            ]}
           />
         }
       />

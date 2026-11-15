@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import { act, cleanup, render, renderHook, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
+import { act, cleanup, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
@@ -13,7 +13,9 @@ import { QuestionType } from "@/types/question-types";
 import { queryConfig } from "@/lib/React-query";
 import { cleanImageQuery, parseAiOutput, pictureIsNamedInQuestion, MAX_IMAGE_QUERIES } from "../parse-ai-output";
 import { useAutoImages } from "../use-auto-images";
-import { AutoImageNotice } from "../components/auto-images";
+import { describePictures } from "../components/picture-description";
+import { ReviewChips } from "../components/review-chips";
+import { ImageIcon } from "lucide-react";
 import { parseContext } from "../__fixtures__/ai-quiz.fixtures";
 
 /**
@@ -143,31 +145,60 @@ describe("useAutoImages", () => {
 });
 
 describe("the review's note about pictures", () => {
-  const note = () => screen.queryByRole("status")?.textContent ?? null;
-
   it("says nothing when pictures were off", () => {
-    render(<AutoImageNotice requested={0} notFound={[]} />);
-    expect(note()).toBeNull();
-    cleanup();
+    expect(describePictures({ requested: 0, notFound: [] })).toBeNull();
   });
 
-  it("says so when pictures were on and the AI named none", () => {
+  it("says so when pictures were on and the AI wrote no picture question", () => {
     // Before, this showed nothing — and "the AI chose none" looked like a broken feature.
-    render(<AutoImageNotice requested={0} notFound={[]} asked />);
-    expect(note()).toContain("the AI wrote no question that asks about one");
-    cleanup();
+    const note = describePictures({ requested: 0, notFound: [], asked: true });
+    expect(note?.chip).toBe("No picture questions");
+    expect(note?.lead).toContain("the AI wrote no question that asks about one");
   });
 
   it("counts what was added and names the questions that got none", () => {
-    render(<AutoImageNotice requested={3} notFound={[2]} asked />);
-    expect(note()).toContain("Added a picture to 2 questions");
-    expect(note()).toContain("None found for question 2");
-    cleanup();
+    const note = describePictures({ requested: 3, notFound: [2], asked: true });
+    expect(note?.chip).toBe("2 pictures added");
+    expect(note?.lead).toContain("Added a picture to 2 questions");
+    expect(note?.detail).toContain("None found for question 2");
+    expect(describePictures({ requested: 1, notFound: [], asked: true })?.chip).toBe("1 picture added");
   });
 
   it("says when every search came back empty", () => {
-    render(<AutoImageNotice requested={2} notFound={[1, 2]} asked />);
-    expect(note()).toContain("No pictures were found for the questions that asked for one");
+    const note = describePictures({ requested: 2, notFound: [1, 2], asked: true });
+    expect(note?.chip).toBe("No pictures found");
+    expect(note?.lead).toContain("No pictures were found for the questions that asked for one");
+  });
+});
+
+describe("ReviewChips", () => {
+  afterEach(cleanup);
+
+  const items = [
+    { id: "source", icon: ImageIcon, label: "8 Wikipedia articles", detail: <a href="https://en.wikipedia.org/wiki/Volcano">Volcano</a> },
+    { id: "pictures", icon: ImageIcon, label: "2 pictures added", detail: <p>Check each one.</p> },
+  ];
+
+  it("is one line of chips until one is opened, and nothing at all with nothing to say", () => {
+    const { container } = render(<ReviewChips items={[]} />);
+    expect(container.innerHTML).toBe("");
     cleanup();
+
+    render(<ReviewChips items={items} />);
+    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(["8 Wikipedia articles", "2 pictures added"]);
+    expect(screen.queryByRole("link")).toBeNull();
+  });
+
+  it("opens a chip's detail on a press — the article links are still one press away", async () => {
+    render(<ReviewChips items={items} />);
+    const chip = screen.getByRole("button", { name: "8 Wikipedia articles" });
+    expect(chip.getAttribute("aria-expanded")).toBe("false");
+
+    fireEvent.click(chip);
+
+    expect(chip.getAttribute("aria-expanded")).toBe("true");
+    expect((await screen.findByRole("link", { name: "Volcano" })).getAttribute("href")).toBe(
+      "https://en.wikipedia.org/wiki/Volcano",
+    );
   });
 });
