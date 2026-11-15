@@ -56,7 +56,7 @@ lands **pre-filled in the review step**, where the human confirms or changes it:
 | Title | Model suggests it. Free text — nothing to resolve. |
 | Category | Model picks from the category **names** we send. Unmatched → blank. |
 | Language | Model picks from the language **names** we send, normally matching the language the topic was typed in, and writes the questions in it. |
-| Difficulty | **Asked for**, since 2026-11-15: a slider over the instance's ratings, easiest first, starting on the middle one. The questions are written for that level and the quiz is rated with it ([ADR 0047](../adr/0047-the-wizard-asks-how-hard.md)). Still changeable in the builder. |
+| Difficulty | **Asked for**, since 2026-11-15: a slider over the instance's ratings, easiest first, starting on the middle one — drawn as a stepped meter, one rising bar per rating, with what it does in an ⓘ beside the label rather than a line under it (`DifficultySlider`). The questions are written for that level and the quiz is rated with it ([ADR 0047](../adr/0047-the-wizard-asks-how-hard.md)). Still changeable in the builder. |
 | Count, types, extra instructions, Add pictures | Defaults (Add pictures off), shown in the details form under the topic box. |
 
 **The wizard asks for what the model needs, and nothing the builder already owns.** Title,

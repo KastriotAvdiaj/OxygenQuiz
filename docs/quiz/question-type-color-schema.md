@@ -32,6 +32,28 @@ Multiple Choice reuses the app's theme `primary` so the most common type sits in
 product's own accent color; True/False and Type Answer take teal and amber to stay distinct
 without introducing a second "action" blue.
 
+## Difficulty
+
+Difficulty is the one other thing coloured by meaning, and only on the AI wizard's difficulty
+meter (`DifficultySlider`) so far. It is a **heat ramp**, from the app's own blue at the easy end
+to red at the hard end:
+
+| Position        | Tone             |
+|-----------------|------------------|
+| easiest         | `primary` (blue) |
+| next            | amber            |
+| next            | orange           |
+| hardest         | red              |
+
+The tones go **by position, not by name**: the levels are the instance's own rows, easiest first,
+and an admin may rename or add them, so `difficultyTone(index, count)` spreads the four tones over
+however many there are, with the easiest always blue and the hardest always red. The source is
+`src/pages/Dashboard/Pages/Quiz/components/difficulty-theme.ts`.
+
+Red is also the error colour above. On the meter it sits beside amber and orange and reads as
+"hottest"; anywhere a red difficulty could be taken for a validation error, don't use these tones.
+Asked for on 2026-11-15, replacing a meter that was blue at every level.
+
 ## Single source of truth
 
 All of this lives in one file:

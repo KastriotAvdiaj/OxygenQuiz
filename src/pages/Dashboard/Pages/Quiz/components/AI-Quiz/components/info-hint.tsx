@@ -23,8 +23,8 @@ export interface InfoHintProps {
  * closes on Escape or an outside click, and manages focus.
  *
  * The trigger is `h-9 w-9` rather than icon-sized, because the icon is 16px and
- * docs/RESPONSIVE.md asks ≥36px of anything you tap. The circle is what you press; the glyph
- * inside it is just the label.
+ * docs/RESPONSIVE.md asks ≥36px of anything you tap. The hover circle is only icon-sized; the
+ * target around it is invisible.
  */
 export const InfoHint = ({ label, children, className }: InfoHintProps) => (
   <Popover>
@@ -33,13 +33,16 @@ export const InfoHint = ({ label, children, className }: InfoHintProps) => (
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors",
-        "hover:bg-muted hover:text-foreground",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        "group inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors",
+        "hover:text-foreground focus-visible:outline-none",
         className
       )}
     >
-      <Info className="h-4 w-4" />
+      {/* The hover and focus circle is drawn round the icon, not the 36px target: painted on
+          the whole target it was twice the glyph's size and loomed over a small label. */}
+      <span className="inline-flex rounded-full p-1 transition-colors group-hover:bg-muted group-focus-visible:ring-2 group-focus-visible:ring-primary">
+        <Info className="h-4 w-4" />
+      </span>
     </PopoverTrigger>
     <PopoverContent
       align="start"

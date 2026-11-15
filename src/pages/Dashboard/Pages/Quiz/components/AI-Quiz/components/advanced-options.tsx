@@ -3,6 +3,7 @@ import { Switch } from "@/components/ui/switch";
 import type { QuestionType } from "@/types/question-types";
 
 import { DifficultySlider, type DifficultyLevel } from "./difficulty-slider";
+import { InfoHint } from "./info-hint";
 import { QuestionCountStepper } from "./question-count-stepper";
 import { QuestionTypeOptions } from "./question-type-options";
 
@@ -102,9 +103,17 @@ export const AdvancedOptions = ({
 
       {onDifficultyChange && difficultyLevels.length > 1 && (
         <div>
-          <label htmlFor="ai-difficulty" className="block text-sm font-medium text-foreground">
-            Difficulty
-          </label>
+          {/* The why lives in the ⓘ, not under the slider — the wizard stays one control per
+              field. `-my-2 -ml-1.5` keep the 36px tap target from pushing the row taller or
+              the ⓘ away from its label. */}
+          <div className="flex items-center gap-1">
+            <label htmlFor="ai-difficulty" className="text-sm font-medium text-foreground">
+              Difficulty
+            </label>
+            <InfoHint label="About difficulty" className="-my-2 -ml-1.5">
+              The questions are written for this level, and the quiz is rated with it.
+            </InfoHint>
+          </div>
           <DifficultySlider levels={difficultyLevels} valueId={difficultyId} onChange={onDifficultyChange} />
         </div>
       )}
