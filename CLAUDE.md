@@ -47,6 +47,10 @@ Full version, including the two failure modes this project has actually hit:
   options in development and 2 in production until 2026-11-08.
 - **Reset a component with `key`, not an Effect on a prop.** Remounting is one line and
   can't get the ordering wrong.
+- **A `useBlocker` exists only while it can block.** React Router consults just the blocker
+  registered last, so an always-mounted `useBlocker(false)` silently disables every other
+  guard — the account overlay did this to the quiz builder's leave prompt until 2026-11-15.
+  Render the guard in a component mounted with the work. See `use-navigation-guard.ts`.
 - **Server state is React Query.** Never `useEffect` + `fetch`. Caching, invalidation and
   request de-duplication are already solved and already wired up.
 
@@ -104,7 +108,10 @@ Full version, including the two failure modes this project has actually hit:
   (`components/ui/button`) is for dense tooling only: table row actions, icon-only toggles,
   the admin dashboard's controls. One exception: an empty state's own hint action (*Add a
   question* under an empty question list) is a link-styled `<button>` — muted, primary on hover —
-  because the page's real button is already beside it. Pick the colour by the action's rank:
+  because the page's real button is already beside it. Another: a **copy-to-clipboard** control
+  inside instructions (*Copy the format* in Paste questions) is a flat `Button variant="outline"`,
+  like a code block's copy button — lifted, it competes with the dialog's real action. Its
+  *Copied* state turns back after ~2s. Pick the colour by the action's rank:
   - **Primary** (the one thing to do here): default blue, or the screen's own accent (a quiz's
     `--face` on the start modal).
   - **Secondary** (a real alternative beside the primary): **muted** —

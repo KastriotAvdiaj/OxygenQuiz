@@ -42,6 +42,15 @@ interface UseNavigationGuardReturn {
  * lobby?", and that confirming only let the URL change through — the player stayed in the
  * lobby with the panel open, and every click inside the panel asked again (2026-10-11).
  *
+ * <b>One blocker at a time.</b> React Router asks only the blocker registered *last*
+ * (`@remix-run/router`: "A router only supports one blocker at a time") — any other is never
+ * consulted, and nothing fails. So a component calls `useBlocker` (or this hook) only while
+ * it could actually block: mount the guard with the work, not always-on with a `false`. The
+ * account overlay broke that rule — an always-mounted `useBlocker(isOpen && isDirty)`
+ * registered after the page on a fresh mount, and leaving a half-built quiz then warned nobody
+ * (2026-11-15; `SettingsLeaveGuard` in AccountOverlay.tsx). Effects run children-first, so
+ * the shell's overlay, rendered after the `<Outlet />`, registers after the page.
+ *
  * @param shouldBlock - Whether navigation should currently be blocked.
  */
 export const useNavigationGuard = (

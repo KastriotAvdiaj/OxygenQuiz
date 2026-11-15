@@ -20,7 +20,10 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/utils/cn";
 import { useUser, useLogout } from "@/lib/Auth";
-import { useSettingsForm } from "@/pages/UserRelated/SettingsPage/useSettingsForm";
+import {
+  useSettingsForm,
+  type SettingsFormApi,
+} from "@/pages/UserRelated/SettingsPage/useSettingsForm";
 import { useAccountOverlay } from "./use-account-overlay";
 import {
   ACCOUNT_OVERLAY_SECTIONS,
@@ -187,15 +190,8 @@ export const AccountOverlay = () => {
   const isSettingsSection = SETTINGS_SECTIONS.includes(activeSection);
   const showSaveBar = isOpen && isSettingsSection && settings.isDirty;
 
-  // Block navigation (including closing the overlay) while the settings draft is dirty.
-  // This is exactly why the overlay is URL-driven: close is a navigation, so the same
-  // guard that protected the old standalone page still applies here, unchanged.
-  //
-  // Gated on `isOpen` as a fuse. This hook is mounted on every route, so a draft that
-  // reads dirty while the overlay is shut would block every link in the app and answer
-  // each click with an unsaved-changes dialog for a form the user never opened. A dirty
-  // draft can only be reached through the overlay, so nothing legitimate is lost.
-  const blocker = useBlocker(isOpen && settings.isDirty);
+  // The leave guard for a dirty settings draft is `SettingsLeaveGuard`, rendered below only
+  // while the overlay is open — never a `useBlocker` here. See that component for why.
 
   // Hard exits (tab close / refresh) get the browser's own generic prompt.
   useEffect(() => {
@@ -215,12 +211,14 @@ export const AccountOverlay = () => {
   // and the lock survives its own dialog: the page looks normal and nothing on it can be
   // clicked. Clearing it once neither dialog is open costs nothing when Radix got the
   // ordering right; the query guards against stealing the lock from someone else's dialog.
+  // Keyed on `isOpen` alone: the guard dialog can only be open while the overlay is (it
+  // unmounts with it), so "the overlay just closed" is the moment both are gone.
   useEffect(() => {
-    if (isOpen || blocker.state === "blocked") return;
+    if (isOpen) return;
     if (document.querySelector('[role="dialog"][data-state="open"]')) return;
     if (document.body.style.pointerEvents === "none")
       document.body.style.pointerEvents = "";
-  }, [isOpen, blocker.state]);
+  }, [isOpen]);
 
   // Signing out mid-edit shouldn't trip the unsaved-changes guard.
   const handleLogout = () => {
@@ -398,50 +396,73 @@ export const AccountOverlay = () => {
         </DialogPrimitive.Portal>
       </DialogPrimitive.Root>
 
-      {/* Leave guard: shown when a navigation (including closing) is blocked. */}
-      <Dialog
-        open={blocker.state === "blocked"}
-        onOpenChange={(open) => {
-          if (!open) blocker.reset?.();
-        }}
-      >
-        <DialogContent className="max-w-[85vw] sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Unsaved changes</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            You've made changes to your settings that haven't been saved yet.
-            Save them before leaving, or discard them?
-          </p>
-          <DialogFooter className="gap-2 sm:gap-0 mt-4">
-            <LiftedButton
-              size="sm"
-              className="flex-1 sm:flex-none bg-muted-foreground dark:bg-muted"
-              liftColor="muted"
-              onClick={() => blocker.reset?.()}
-            >
-              Stay here
-            </LiftedButton>
-            <LiftedButton
-              className="bg-red-600 hover:bg-red-600 py-1 text-white sm:flex-none"
-              liftColor="red-700"
-              onClick={() => {
-                settings.discard();
-                blocker.proceed?.();
-              }}
-            >
-              Discard & leave
-            </LiftedButton>
-            <LiftedButton
-              className="text-white text-sm py-1"
-              isPending={settings.isSaving}
-              onClick={() => settings.save(() => blocker.proceed?.())}
-            >
-              Save & leave
-            </LiftedButton>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SettingsLeaveGuard settings={settings} />
     </>
+  );
+};
+
+/**
+ * Blocks navigation — closing the overlay included — while the settings draft is dirty, and
+ * asks Stay / Discard / Save. Close is a navigation, which is why the overlay is URL-driven:
+ * the guard that protected the old standalone page still applies.
+ *
+ * <b>Mounted only while the overlay is open, never as an always-on hook.</b> React Router
+ * consults one blocker per navigation — the one registered *last* (`@remix-run/router`,
+ * "A router only supports one blocker at a time"). The overlay is mounted by both shells on
+ * every route, after the `<Outlet />`, and this used to be `useBlocker(isOpen && isDirty)` in
+ * the overlay itself: a blocker that always existed and almost always said "let it through".
+ * Whenever the shell mounted together with a page that guards its own exit — the quiz
+ * builder opened from the public site, or after a reload — the overlay's registered last and
+ * the page's guard was never asked: leaving a half-built quiz warned nobody (2026-11-15). Now
+ * a closed overlay holds no blocker at all, and while it is open, it is the one that should
+ * answer. See `src/hooks/use-navigation-guard.ts`, "One blocker at a time".
+ */
+const SettingsLeaveGuard = ({ settings }: { settings: SettingsFormApi }) => {
+  const blocker = useBlocker(settings.isDirty);
+
+  return (
+    <Dialog
+      open={blocker.state === "blocked"}
+      onOpenChange={(open) => {
+        if (!open) blocker.reset?.();
+      }}
+    >
+      <DialogContent className="max-w-[85vw] sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Unsaved changes</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">
+          You've made changes to your settings that haven't been saved yet.
+          Save them before leaving, or discard them?
+        </p>
+        <DialogFooter className="gap-2 sm:gap-0 mt-4">
+          <LiftedButton
+            size="sm"
+            className="flex-1 sm:flex-none bg-muted-foreground dark:bg-muted"
+            liftColor="muted"
+            onClick={() => blocker.reset?.()}
+          >
+            Stay here
+          </LiftedButton>
+          <LiftedButton
+            className="bg-red-600 hover:bg-red-600 py-1 text-white sm:flex-none"
+            liftColor="red-700"
+            onClick={() => {
+              settings.discard();
+              blocker.proceed?.();
+            }}
+          >
+            Discard & leave
+          </LiftedButton>
+          <LiftedButton
+            className="text-white text-sm py-1"
+            isPending={settings.isSaving}
+            onClick={() => settings.save(() => blocker.proceed?.())}
+          >
+            Save & leave
+          </LiftedButton>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

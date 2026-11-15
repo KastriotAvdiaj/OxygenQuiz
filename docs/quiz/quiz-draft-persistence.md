@@ -161,6 +161,12 @@ none. One gap: a change made inside the 400ms debounce hasn't been written yet, 
 that window reads as the last successful save. The redirect after a successful create calls
 `allowNavigation()` so the guard doesn't stop it. An untouched builder never prompts.
 
+Until 2026-11-15 the in-app half of that guard was silently off whenever the builder mounted
+together with the dashboard shell — opened from the public site, or after a reload. The shell's
+account overlay held an always-on `useBlocker` that registered after the builder's, and React
+Router asks only the last one. The overlay now holds a blocker only while it is open
+(`SettingsLeaveGuard`); see `use-navigation-guard.ts`, "One blocker at a time".
+
 **AI wizard:** hydrate first, then say so, per
 [ADR 0009](../adr/0009-a-restored-draft-is-announced-not-asked-about.md). Since 2026-10-17 the
 saying is an info **notification** ("Picked up where you left off — your drafted questions from
