@@ -1,5 +1,3 @@
-import { AlertTriangle } from "lucide-react";
-
 import type { ParseResult } from "../parse-ai-output";
 
 export interface ImportNoticesProps {
@@ -23,6 +21,12 @@ export interface ImportNoticesProps {
  *
  * Renders nothing when nothing went wrong, which is the common case — so the cost of it being
  * undismissable is zero on the quizzes where there is nothing to say.
+ *
+ * <b>Behind a chip since 2026-11-15</b> (`ReviewChips`, red, first in the row, labelled with the
+ * count — `describeImport`). It was a red box above the review; the author asked for it to sit
+ * with the other notices. Still nothing to dismiss: the chip is there for as long as the questions
+ * are, and the reasons are one press away. What that gives up is the reasons being read without a
+ * press — the count on the chip says something went wrong, this says what.
  */
 export const ImportNotices = ({ result }: ImportNoticesProps) => {
   const hasNotices =
@@ -31,14 +35,8 @@ export const ImportNotices = ({ result }: ImportNoticesProps) => {
   if (!hasNotices) return null;
 
   return (
-    <div
-      role="status"
-      className="mx-auto w-full max-w-[1600px] rounded-lg border-2 border-destructive/40 bg-destructive/5 px-4 py-3"
-    >
-      <p className="flex items-center gap-2 text-sm font-medium">
-        <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
-        Some of what came back could not be used.
-      </p>
+    <>
+      <p className="text-sm font-medium">Some of what came back could not be used.</p>
 
       {/* Listed individually with reasons, never as a count. A count tells the user something
           went wrong without telling them what, which is the worst of both — they cannot judge
@@ -58,6 +56,6 @@ export const ImportNotices = ({ result }: ImportNoticesProps) => {
           </li>
         )}
       </ul>
-    </div>
+    </>
   );
 };

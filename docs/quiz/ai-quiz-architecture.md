@@ -226,6 +226,10 @@ These are the properties that make the feature safe. Every change should preserv
 > On **2026-10-17** `ImportNote` went too — its fact-check line and *Start over* were replaced by a
 > Back button on the review (`review-back-button.tsx`, which asks before discarding). The
 > exception report, `ImportNotices`, is unchanged and still renders above the quiz overview.
+>
+> On **2026-11-15** the report moved behind a red chip in the review's one line of notices
+> (*1 question skipped*; `ReviewChips`, [`quiz-overview.md`](quiz-overview.md), "Review notices").
+> Same component and same words, still nothing to dismiss — the reasons are now one press away.
 
 
 | Failure | Where caught | Behaviour |

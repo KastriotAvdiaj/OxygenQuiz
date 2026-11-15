@@ -178,20 +178,28 @@ so with reduced motion on, things fade in place instead of moving.
 
 ## Review notices
 
-What sits between Back and the two cards on an AI review, in two kinds:
+What sits between Back and the two cards on an AI review: **one line of chips** (`ReviewChips`).
+Pressing a chip opens a panel under the line with the rest, and pressing again closes it. One
+panel at a time.
 
-- **A box, for what the author should act on.** Questions the parser dropped (`ImportNotices`),
-  and a source that was down so the quiz was written from memory (`SourceNote`, amber).
-- **A chip, for what is merely so** (`ReviewChips`). *12 Wikipedia articles*, *2 pictures added*,
-  *From the AI's own knowledge*: one line of small pills. Pressing one opens a panel under the
-  line with the rest — every article, linked (each link is that article's attribution); which
-  questions asked for a picture and got none — and pressing again closes it. One panel at a time.
+- **Red, first: what the parser dropped or changed** — *1 question skipped* (`describeImport`).
+  Opened, it is the import report: each skipped question with its reason (`ImportNotices`).
+- **Amber: a source was down** — *Written from memory — source was down*.
+- **Plain: what is merely so** — *12 Wikipedia articles* (opened: every article, linked — each
+  link is that article's attribution), *2 pictures added* (opened: which questions asked for one
+  and got none), *From the AI's own knowledge*.
 
-Until 2026-11-15 the second kind were boxes too: two full-width boxes on nearly every generated
-quiz, saying something routine and pushing the questions down the first screen. The rule is the
-colour schema's, applied to space: what is ordinary stays quiet, what is a state gets loud. The
-panel opens in the page (height animated, 200ms, instant under reduced motion) rather than as a
-popover, because a list of twelve links is easier read in place.
+Until 2026-11-15 each of these was a full-width box. Two of them appear on nearly every generated
+quiz and say something routine, so the first screen lost a fifth of its height to "all is as
+usual". The rule is the colour schema's, applied to space: what is ordinary stays quiet, and a
+state is told apart by colour and by coming first — not by size. The panel opens in the page
+(height animated, 200ms, instant under reduced motion) rather than as a popover, because a list
+of twelve links is easier read in place.
 
-The words come from `describeSource` and `describePictures`, which know nothing about how they are
+**What the import report gave up.** As a box its reasons were read without a press; as a chip the
+count is on the line and the reasons are behind it. [ADR 0005](../adr/0005-the-import-report-is-not-a-notice-you-can-turn-off.md)
+still holds — there is nothing to dismiss and no setting, and the chip stays for as long as the
+questions do.
+
+The words come from `describeSource`, `describePictures` and `describeImport`, which know nothing about how they are
 shown; stories: `Dashboard/Quiz/AiQuizWizardView` → `ReviewGrounded`.

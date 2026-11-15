@@ -9,8 +9,7 @@ const CHECK = "Check the answers before you publish.";
 
 /**
  * Where a grounded Topic quiz came from. `describeSource` works out the words; on the review they
- * sit behind a chip (`ReviewChips`) unless a source was down, which is the one case that stays a
- * box (`SourceNote`) — see "Where it is shown" below.
+ * sit behind a chip (`ReviewChips`) — see "Where it is shown" below.
  *
  * The cases:
  * - **Built from facts** — a Wikidata fact pack, linked to the query its facts came from.
@@ -27,8 +26,8 @@ const CHECK = "Check the answers before you publish.";
  *
  * **Where it is shown.** Until 2026-11-15 every case was a full-width box above the review, and
  * so was the picture note: two boxes on nearly every quiz, saying something routine, pushing the
- * questions down. Routine information is now a chip that opens on request; only the amber case —
- * something the author should act on — keeps the box.
+ * questions down. Every case is now a chip that opens on request; the amber case — a source was
+ * down — is an amber chip (`warn`), so it still stands out from the routine ones.
  *
  * Nothing to dismiss, like the import report: it describes the questions on screen, and goes
  * when they do.
@@ -51,7 +50,7 @@ export const describeSource = (grounding: AiGrounding | null): SourceDescription
 
   let lead: ReactNode;
   let detail: string;
-  let chip = "From the AI's own knowledge";
+  let chip = warn ? "Written from memory — source was down" : "From the AI's own knowledge";
   const parts = grounding.status === "Grounded" ? (grounding.source?.parts ?? []) : [];
   if (grounding.status === "Grounded" && grounding.source && parts.length > 1) {
     lead = (

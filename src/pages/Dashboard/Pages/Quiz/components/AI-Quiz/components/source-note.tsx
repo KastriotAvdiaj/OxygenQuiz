@@ -21,7 +21,10 @@ export const SourceDetail = ({ source }: { source: SourceDescription }) => (
   </>
 );
 
-/** The box: on the review only when a source was down (`warn`); stories show every case. */
+/**
+ * The same words as a box. Not on the review any more — there every case is a chip
+ * (`ReviewChips`) — but the stories show each case's wording at full length through it.
+ */
 export const SourceNote = ({ grounding }: SourceNoteProps) => {
   const source = describeSource(grounding);
   if (!source) return null;
