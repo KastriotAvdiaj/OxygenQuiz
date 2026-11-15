@@ -9,7 +9,7 @@ import {
   QuestionSettings,
   DEFAULT_QUESTION_SETTINGS,
 } from "../Create-Quiz-Form/types";
-import { snapToTimeLimit } from "../Create-Quiz-Form/constants";
+import { snapToTimeLimit, TIME_LIMIT_VALUES } from "../Create-Quiz-Form/constants";
 import { AI_QUESTION_LIMITS } from "./prompt";
 import { EXPLANATION_MAX_LENGTH } from "@/common/question-explanation";
 import {
@@ -309,10 +309,32 @@ const resolveDifficultyId = (
   return hit ? { id: hit.id, matched: true } : { id: fallbackId, matched: false };
 };
 
+/**
+ * The least time a question may be given: long enough to read it and its options, then answer.
+ *
+ * Mirrors the time rule in `AiPromptBuilder` (20 seconds or more for an ordinary question, 10–15
+ * only for a short true/false). Models gave 10–15 seconds to nearly everything until 2026-11-15,
+ * four-option questions included, and a player was still reading when the clock ran out. The
+ * model's own number stands whenever it is longer; this only raises one that is too short.
+ *
+ * About 2.5 words a second — slower than silent reading, because a player reads a question
+ * carefully and often not in their first language — plus 6 seconds to decide. Rounded *up* to a
+ * limit the builder can show.
+ */
+export const readingFloorSeconds = (type: QuestionType, words: number): number => {
+  const least = type === QuestionType.TrueFalse ? 10 : 20;
+  const wanted = Math.max(least, Math.ceil(words / 2.5) + 6);
+  return TIME_LIMIT_VALUES.find((value) => value >= wanted) ?? Math.max(...TIME_LIMIT_VALUES);
+};
+
+const countWords = (...texts: (string | undefined)[]): number =>
+  texts.reduce((sum, text) => sum + (text?.trim().split(/\s+/).filter(Boolean).length ?? 0), 0);
+
 const resolveSettings = (
   pointSystem: string | null | undefined,
   timeLimit: number | null | undefined,
-  order: number
+  order: number,
+  floorSeconds = 0
 ): QuestionSettings => {
   const ps = VALID_POINT_SYSTEMS.find(
     (p) => p.toLowerCase() === (pointSystem ?? "").trim().toLowerCase()
@@ -336,6 +358,7 @@ const resolveSettings = (
     );
     seconds = snapToTimeLimit(seconds);
   }
+  seconds = Math.max(seconds, floorSeconds);
 
   return {
     pointSystem: ps ?? DEFAULT_QUESTION_SETTINGS.pointSystem,
@@ -579,7 +602,11 @@ export const parseAiOutput = (raw: string, ctx: ParseContext): ParseResult => {
       settings: resolveSettings(
         rawQuestion.pointSystem,
         rawQuestion.timeLimitInSeconds,
-        questions.length
+        questions.length,
+        readingFloorSeconds(
+          rawQuestion.type,
+          countWords(rawQuestion.text, ...(rawQuestion.answerOptions ?? []).map((o) => o.text))
+        )
       ),
       ...(imageQuery ? { imageQuery } : {}),
     });

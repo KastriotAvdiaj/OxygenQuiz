@@ -229,8 +229,9 @@ namespace QuizAPI.Services.Ai.Sources
             "broad": the topic asks for a selection ACROSS many separate subjects, so no one article answers it. Examples: "General knowledge", "History's most significant events", "Famous scientists", "World capitals", "90s music", "Science trivia". An article ABOUT the phrase itself (the article "General knowledge") is not what the author wants.
 
             For "broad", list exactly {{count}} subtopics:
-            - each is the exact title of a well-known {{language}} Wikipedia article about one concrete subject — a thing, never a list, a category or a field ("French Revolution", not "List of revolutions" or "European history");
-            - together they cover the topic fairly and with variety; for general knowledge spread them over different fields (science, history, geography, arts, nature, technology, sport);
+            - each is the exact title of a well-known {{language}} Wikipedia article — a real article, never a list page or a category ("Revolution", not "List of revolutions");
+            - make each subject as WIDE as the topic allows, so that many different questions can come from it: the kind of thing rather than one famous example of it — "Volcano" rather than "Mount Vesuvius", "Mountain" rather than "Mount Everest", "Plant" rather than "Photosynthesis", "Renaissance" rather than "Mona Lisa", "Olympic Games" rather than one athlete. Name a single person, place, work or event only when the topic itself asks for those ("Famous scientists", "World capitals"), or for a few that are subjects in their own right;
+            - together they cover the topic fairly and with variety; for general knowledge spread them evenly over many different fields — science, medicine, space, history, geography, nature, technology, inventions, literature, art, music, film, architecture, mythology, religion, language, food, sport, economics, everyday life — with no field taking more than a few;
             - pick subjects with long, established articles and lasting facts — nothing about current events, living office-holders or records that change;
             - write every title in {{language}}, spelt as that edition of Wikipedia spells it;
             - no duplicates, and no two that overlap heavily;

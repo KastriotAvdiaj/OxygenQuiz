@@ -94,7 +94,7 @@ namespace QuizAPI.Services.Ai.Sources
         /// <summary>
         /// On whenever grounding is. Off, every topic is one subject again — the behaviour before
         /// 2026-11-12. <b>Switch it off on a vendor with a small per-minute token allowance</b>
-        /// (Groq's free tier): eight article openings are about 20,000 characters of prompt, three
+        /// (Groq's free tier): twelve article excerpts are about 20,000 characters of prompt, three
         /// times what <see cref="SourceOptions.MaxSourceChars"/> was sized to fit there.
         /// </summary>
         public bool Enabled { get; set; } = true;
@@ -102,15 +102,17 @@ namespace QuizAPI.Services.Ai.Sources
         /// <summary>
         /// The size of the pool the model is asked for. Much more than one quiz needs, on purpose:
         /// each quiz is a random draw from it, which is what makes two quizzes on "General
-        /// knowledge" differ (TopicPlanner, "A pool, and a different draw each time").
+        /// knowledge" differ (TopicPlanner, "A pool, and a different draw each time"). 30 until
+        /// 2026-11-15: three quizzes emptied it, and the model's first thirty are the subjects
+        /// everyone names first.
         /// </summary>
-        public int SubtopicsToAsk { get; set; } = 30;
+        public int SubtopicsToAsk { get; set; } = 60;
 
         /// <summary>
         /// How many of the pool one quiz draws and looks up. More than <see cref="MaxSources"/>:
         /// some won't resolve to a clear, long-enough article and are dropped.
         /// </summary>
-        public int SubtopicsPerQuiz { get; set; } = 10;
+        public int SubtopicsPerQuiz { get; set; } = 14;
 
         /// <summary>
         /// How long an author's earlier draws on a topic are remembered, so the next quiz on it
@@ -118,8 +120,11 @@ namespace QuizAPI.Services.Ai.Sources
         /// </summary>
         public int UsedMemoryDays { get; set; } = 14;
 
-        /// <summary>The most articles one quiz is written from.</summary>
-        public int MaxSources { get; set; } = 8;
+        /// <summary>
+        /// The most articles one quiz is written from. 12 since 2026-11-15 (8 before): a
+        /// ten-question quiz then takes about one question from each, not two or three from a few.
+        /// </summary>
+        public int MaxSources { get; set; } = 12;
 
         /// <summary>
         /// Fewer resolved articles than this and the quiz is written from memory and says so. Two
@@ -128,13 +133,14 @@ namespace QuizAPI.Services.Ai.Sources
         public int MinSources { get; set; } = 3;
 
         /// <summary>
-        /// The opening of each article, cut at a paragraph. 2,500 characters is the lead and the
-        /// first section or two — the densest part — and eight of them stay near 5,000 tokens.
+        /// How much of each article is read: its first paragraph and a stretch from a random place
+        /// in the rest (<c>QuizGrounding.Excerpt</c>). Twelve of them stay near 5,000 tokens —
+        /// what eight openings of 2,500 cost before.
         /// </summary>
-        public int MaxCharsPerSource { get; set; } = 2_500;
+        public int MaxCharsPerSource { get; set; } = 1_800;
 
         /// <summary>How many lookups run at once. Wikimedia answers a burst with HTTP 429.</summary>
-        public int LookupConcurrency { get; set; } = 3;
+        public int LookupConcurrency { get; set; } = 4;
 
         /// <summary>
         /// The whole set of lookups gets this long; what hasn't answered by then is left out. The
@@ -142,8 +148,8 @@ namespace QuizAPI.Services.Ai.Sources
         /// </summary>
         public int LookupBudgetSeconds { get; set; } = 15;
 
-        /// <summary>Room for the plan's answer: a kind and a pool of thirty titles.</summary>
-        public int PlanMaxOutputTokens { get; set; } = 900;
+        /// <summary>Room for the plan's answer: a kind and a pool of sixty titles.</summary>
+        public int PlanMaxOutputTokens { get; set; } = 1_800;
 
         /// <summary>
         /// The planning call's own reasoning effort, like screenshot import's read: sorting a

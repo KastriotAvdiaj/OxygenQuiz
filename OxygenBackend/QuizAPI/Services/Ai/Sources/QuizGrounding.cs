@@ -160,13 +160,18 @@ namespace QuizAPI.Services.Ai.Sources
         /// every topic is one subject, as before 2026-11-12.</param>
         public QuizGrounding(
             IEnumerable<IQuizSourceProvider> providers, IOptions<SourceOptions> options,
-            IWikidataFacts? facts = null, ITopicPlanner? planner = null)
+            IWikidataFacts? facts = null, ITopicPlanner? planner = null,
+            // For tests: a seeded excerpt. The container has no Random registered, so this is null there.
+            Random? random = null)
         {
             _providers = providers.ToList();
             _options = options.Value;
             _facts = facts;
             _planner = planner;
+            _random = random ?? Random.Shared;
         }
+
+        private readonly Random _random;
 
         /// <summary>
         /// A Wikipedia article with the facts Wikidata holds about its subject added below it — the
@@ -295,7 +300,7 @@ namespace QuizAPI.Services.Ai.Sources
                 if (parts.Count >= Math.Max(2, broad.MaxSources)) break;
                 // Two subtopics can redirect to one article ("WWII", "Second World War").
                 if (parts.Any(p => string.Equals(p.Part.Title, lookup.Title, StringComparison.OrdinalIgnoreCase))) continue;
-                var text = Opening(lookup.Text!, broad.MaxCharsPerSource);
+                var text = Excerpt(lookup.Text!, broad.MaxCharsPerSource, _random);
                 if (text.Length == 0) continue;
                 parts.Add((new GroundedSourcePart(provider.Name, lookup.Title!, lookup.Url), text));
             }
@@ -366,6 +371,56 @@ namespace QuizAPI.Services.Ai.Sources
                 .ToList();
 
             return await Task.WhenAll(tasks);
+        }
+
+        /// <summary>
+        /// What one article gives a broad quiz: its first paragraph, which says what the subject
+        /// is, and then whole paragraphs from <b>a random place</b> in the rest.
+        ///
+        /// <para>Until 2026-11-15 this was the article's opening, every time. The opening of
+        /// "Mount Everest" holds the same few facts on every read, so a second quiz that drew it
+        /// asked what the first one had. A different stretch each time is what lets a subject come
+        /// round again without its questions doing so — and what makes a wide article ("Mountain")
+        /// worth drawing at all.</para>
+        ///
+        /// <para>Whole paragraphs, in the article's order, and never a heading line: a quote the
+        /// model copies has to be a whole sentence of what it was shown. A text that already fits
+        /// is returned as it is.</para>
+        /// </summary>
+        internal static string Excerpt(string text, int maxChars, Random random)
+        {
+            text = text.Trim();
+            if (maxChars <= 0 || text.Length <= maxChars) return text;
+
+            var paragraphs = text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                // "== History ==": a section heading in Wikipedia's plain text, not a sentence.
+                .Where(p => !(p.StartsWith("==", StringComparison.Ordinal) && p.EndsWith("==", StringComparison.Ordinal)))
+                .ToList();
+            if (paragraphs.Count < 3) return Opening(text, maxChars);
+
+            var lead = Opening(paragraphs[0], maxChars / 3);
+            var budget = maxChars - lead.Length;
+            var start = 1 + random.Next(paragraphs.Count - 1);
+
+            var taken = new List<string>();
+            for (var i = start; i < paragraphs.Count && paragraphs[i].Length + 1 <= budget; i++)
+            {
+                taken.Add(paragraphs[i]);
+                budget -= paragraphs[i].Length + 1;
+            }
+            // Started near the end, or on a paragraph too long to fit: fill from the ones before it.
+            for (var i = start - 1; i >= 1 && paragraphs[i].Length + 1 <= budget; i--)
+            {
+                taken.Insert(0, paragraphs[i]);
+                budget -= paragraphs[i].Length + 1;
+            }
+            if (taken.Count == 0)
+            {
+                var part = Opening(paragraphs[start], budget - 1);
+                if (part.Length > 0) taken.Add(part);
+            }
+
+            return string.Join("\n", taken.Prepend(lead).Where(p => p.Length > 0));
         }
 
         /// <summary>

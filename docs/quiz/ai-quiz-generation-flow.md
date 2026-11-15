@@ -557,22 +557,43 @@ Knowledge quizzes made a day apart were written from the same eight articles (20
 model asked for "ten subjects for general knowledge" names the same ten, and the cache replayed
 them even when it didn't.
 
-- **The model is asked for a pool** — `SubtopicsToAsk`, 30 — and told it is a pool, so it goes past
+- **The model is asked for a pool** — `SubtopicsToAsk`, 60 — and told it is a pool, so it goes past
   the first subjects everyone thinks of.
 - **The pool is what is cached**, per language and topic. A quiz is a **random draw** of
-  `SubtopicsPerQuiz` (10) from it, made by code. A model asked to "be random" isn't.
+  `SubtopicsPerQuiz` (14) from it, made by code. A model asked to "be random" isn't.
 - **An author's earlier draws are skipped.** What their quizzes on a topic drew is remembered for
-  `UsedMemoryDays` (14, in memory), so three quizzes use the whole pool before anything repeats.
+  `UsedMemoryDays` (14, in memory), so four quizzes use the whole pool before anything repeats.
+  In memory only: restarting the API forgets both the pool and what was drawn.
 - **When the pool runs low, a new one is asked for**, with what the author has had listed as
   titles to leave out. If that call can't be made or returns nothing new, the old pool starts over.
 
-So a model call is made about once every three quizzes on a topic, not once per quiz.
+So a model call is made about once every four quizzes on a topic, not once per quiz.
+
+### Wide subjects, and a different stretch of each
+
+The pool was 30 until 2026-11-15, and it was asked for as "one concrete subject" each. That gave
+*Mount Everest*, *Photosynthesis*, *Marie Curie*, *Hamlet* — and a quiz that drew one read its
+opening, which holds the same few facts on every read. A second quiz on the subject asked what
+the first had. Three changes, together:
+
+- **The subjects are asked for wide** — "the kind of thing rather than one famous example":
+  *Mountain* rather than *Mount Everest*, *Plant* rather than *Photosynthesis*. A single person,
+  place or work is named only when the topic itself asks for those (*Famous scientists*). And
+  general knowledge is spread over a longer list of fields, with none taking more than a few.
+- **More articles, less of each** — `MaxSources` 12 (was 8) at `MaxCharsPerSource` 1,800 (was
+  2,500), so the prompt is the size it was and a ten-question quiz takes about one question from
+  each article.
+- **A different stretch each time** — `QuizGrounding.Excerpt`: the article's first paragraph, which
+  says what the subject is, then whole paragraphs from a **random place** in the rest. Never a
+  heading line and never part of a paragraph, because a `sourceQuote` has to be a whole sentence
+  of what the model was shown. The stretch is taken from what the source provider returns, which
+  is the first `MaxSourceChars` (6,000) of the article — not from the whole article.
 
 ### The compound source
 
 A broad topic's articles travel as **one** `GroundedSource` with `Parts`:
 
-- `Text` is every article's opening (`MaxCharsPerSource`, 2,500, cut at a paragraph or a sentence)
+- `Text` is an excerpt of every article (`MaxCharsPerSource`, 1,800 — see above)
   under a marker line — `[S1] Solar System`, `[S2] French Revolution`, …
 - `Title` is the author's topic and `Url` is null. `Parts` holds each article's provider, title
   and URL, in the order they appear in the text.
@@ -584,8 +605,8 @@ path needed a second code path. What the prompt adds for a compound source is th
 use as many articles as possible, at most ⌈questions ÷ articles⌉ + 1 from any one, never mention
 the markers. Without it a model writes most of the quiz from the first article it reads.
 
-**The review names every article**, each linked (`SourceNote`, story
-`GroundedOnSeveralArticles`). Same two jobs as the single link: the author sees what the quiz
+**The review names every article**, each linked — behind the *N Wikipedia articles* chip
+(`ReviewChips`; [`quiz-overview.md`](quiz-overview.md), "Review notices"). Same two jobs as the single link: the author sees what the quiz
 covers, and each link is that article's CC BY-SA attribution.
 
 ### What the plan costs, and who pays
@@ -600,8 +621,8 @@ The plan is a model call made **before** the quota reservation, so it has its ow
   would be a small unmetered call.
 - **Cached** — the pool, by (language, topic), for `PlanCacheMinutes` (12 hours), so answering
   grounding's question and coming back, or trying a topic again, costs no second call.
-- **Small** — `PlanMaxOutputTokens` 900, and its own reasoning effort (`PlanReasoningEffort`,
-  `none`), like screenshot import's read. About 600 tokens in and 300 out.
+- **Small** — `PlanMaxOutputTokens` 1,800, and its own reasoning effort (`PlanReasoningEffort`,
+  `none`), like screenshot import's read. About 800 tokens in and 600 out.
 - **Never fatal** — a provider error, a timeout or an unreadable reply is "no plan", and the topic
   is grounded as one subject, which is what happened before this existed.
 

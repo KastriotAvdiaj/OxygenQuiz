@@ -132,7 +132,7 @@ public class AiGenerationServiceGroundingTests
 
         Assert.True(outcome.Success);
         var prompt = Assert.Single(h.Prompts);
-        Assert.Contains("the openings of 2 Wikipedia articles", prompt);
+        Assert.Contains("excerpts from 2 Wikipedia articles", prompt);
         Assert.Contains("[S2] Amazon River", prompt);
         Assert.Contains($"\"{AiPromptBuilder.SourceQuoteField}\": string", prompt);
 

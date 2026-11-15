@@ -151,9 +151,9 @@ namespace QuizAPI.Services.Ai
             sb.AppendLine(isTopic
                 ? $"You are a quiz-generation engine. Produce EXACTLY {request.QuestionCount} quiz question(s) about the SUBJECT given at the end of this message."
                 : grounding is { IsCompound: true }
-                    // A broad topic (§2f): several article openings in one text. Still "based ONLY
+                    // A broad topic (§2f): excerpts of several articles in one text. Still "based ONLY
                     // on it" with a quote per question, so nothing downstream tells it from one article.
-                    ? $"You are a quiz-generation engine. The author asked for a quiz about \"{request.Topic?.Trim()}\". Read the SOURCE MATERIAL at the end of this message — the openings of {grounding.Parts.Count} {SourceName(grounding.Provider)} articles, each under a marker line such as \"[S1] Title\" — and produce EXACTLY {request.QuestionCount} quiz question(s) for that quiz based ONLY on it."
+                    ? $"You are a quiz-generation engine. The author asked for a quiz about \"{request.Topic?.Trim()}\". Read the SOURCE MATERIAL at the end of this message — excerpts from {grounding.Parts.Count} {SourceName(grounding.Provider)} articles, each under a marker line such as \"[S1] Title\" — and produce EXACTLY {request.QuestionCount} quiz question(s) for that quiz based ONLY on it."
                 : grounding is not null
                     ? $"You are a quiz-generation engine. The author asked for a quiz about \"{request.Topic?.Trim()}\". Read the SOURCE MATERIAL at the end of this message — the opening of the {SourceName(grounding.Provider)} article \"{grounding.Title}\"{(grounding.WikidataFacts > 0 ? ", followed by facts about the same subject from Wikidata" : "")} — and produce EXACTLY {request.QuestionCount} quiz question(s) about that subject based ONLY on it."
                     : $"You are a quiz-generation engine. Read the SOURCE MATERIAL at the end of this message and produce EXACTLY {request.QuestionCount} quiz question(s) based ONLY on it.");
@@ -218,7 +218,15 @@ namespace QuizAPI.Services.Ai
 
             rules.Add($"\"timeLimitInSeconds\" MUST be exactly one of these numbers: {string.Join(", ", AllowedTimeLimits)}. Do not use any other number, and do not write it as a string.");
 
-            rules.Add("Scale \"pointSystem\" and \"timeLimitInSeconds\" with how hard the question is, so the quiz ramps up: easier recall questions should be \"Standard\" with a short time limit, while harder reasoning or synthesis questions should be \"Double\" or \"Quadruple\" with more time.");
+            // "A short time limit" for easy questions is what this said until 2026-11-15, and the
+            // model took it at its word: 10–15 seconds on nearly everything, including four-option
+            // questions a player could barely finish reading. The time is for reading first, then
+            // for thinking; the parser holds the same floor (`readingFloorSeconds`).
+            rules.Add("Scale \"pointSystem\" with how hard the question is, so the quiz ramps up: easier recall questions should be \"Standard\", harder reasoning or synthesis questions \"Double\" or \"Quadruple\".");
+            rules.Add("\"timeLimitInSeconds\" must leave time to READ the question and every option, and then to think. "
+                      + "Use 20 or 30 for an ordinary question, 45 or more when the question or its options are long or the answer has to be worked out or typed. "
+                      + "Use 10 or 15 ONLY for a short, simple true/false statement. "
+                      + "Never 5, unless the author's additional instructions ask for a speed quiz. When unsure, give more time rather than less.");
 
             // Language instruction, when the user already made the choice for us.
             if (!askForLanguage && !string.IsNullOrWhiteSpace(r.LanguageName))

@@ -286,6 +286,18 @@ public class AiPromptBuilderTests
     }
 
     [Fact]
+    public void A_question_gets_time_to_be_read_and_a_short_limit_is_for_a_simple_true_false_only()
+    {
+        // Until 2026-11-15 the rule asked for "a short time limit" on easy questions, and nearly
+        // every question came back with 10 or 15 seconds.
+        var prompt = Builder.Build(InferredRequest());
+
+        Assert.Contains("time to READ the question and every option", prompt);
+        Assert.Contains("Use 10 or 15 ONLY for a short, simple true/false statement", prompt);
+        Assert.DoesNotContain("short time limit", prompt);
+    }
+
+    [Fact]
     public void A_picture_belongs_to_a_question_about_the_picture_and_is_never_decoration()
     {
         // 2026-11-14: "Which planet is closest to the Sun?" came back with a labelled picture of
@@ -342,7 +354,7 @@ public class AiPromptBuilderTests
     {
         var prompt = Builder.Build(BroadRequest());
 
-        Assert.Contains("the openings of 4 Wikipedia articles", prompt);
+        Assert.Contains("excerpts from 4 Wikipedia articles", prompt);
         Assert.Contains("a quiz about \"General Knowledge\"", prompt);
         Assert.Contains("based ONLY on it", prompt);
         // Same contract as one article, so the parser's quote check needs no second path.

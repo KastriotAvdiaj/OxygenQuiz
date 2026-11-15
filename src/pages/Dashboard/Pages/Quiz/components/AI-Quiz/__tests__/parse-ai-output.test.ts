@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { QuestionType } from "@/types/question-types";
 import { TIME_LIMIT_VALUES } from "../../Create-Quiz-Form/constants";
-import { parseAiOutput } from "../parse-ai-output";
+import { parseAiOutput, readingFloorSeconds } from "../parse-ai-output";
 import { parseContext } from "../__fixtures__/ai-quiz.fixtures";
 
 /**
@@ -154,6 +154,32 @@ describe("parseAiOutput", () => {
     expect(limits).toHaveLength(3);
     expect(limits[0]).toBe(20);
     for (const seconds of limits) expect(TIME_LIMIT_VALUES).toContain(seconds);
+  });
+
+  it("gives a question time to be read, whatever the model said", () => {
+    const longOptions = [
+      { text: "It is the largest hot desert in the whole of the world.", isCorrect: true },
+      { text: "It is the largest desert overall in the whole of the world.", isCorrect: false },
+      { text: "It is the second-largest desert overall in the world.", isCorrect: false },
+      { text: "It is the smallest hot desert in the whole of the world.", isCorrect: false },
+    ];
+    const result = parseAiOutput(
+      reply([
+        { ...mc, timeLimitInSeconds: 10 },
+        { ...mc, text: "What distinction does the Sahara hold among deserts?", answerOptions: longOptions, timeLimitInSeconds: 10 },
+        { type: QuestionType.TrueFalse, text: "Water boils at 100 °C at sea level.", difficulty: "Easy", correctAnswer: true, timeLimitInSeconds: 10 },
+        { ...mc, text: `${mc.text} (again)`, timeLimitInSeconds: 60 },
+      ]),
+      parseContext,
+    );
+
+    // Short multiple choice: never under 20. Long options: more. A short true/false keeps its 10.
+    // A longer limit from the model is left alone.
+    expect(result.questions.map((q) => q.settings.timeLimitInSeconds)).toEqual([20, 30, 10, 60]);
+
+    expect(readingFloorSeconds(QuestionType.TrueFalse, 8)).toBe(10);
+    expect(readingFloorSeconds(QuestionType.TrueFalse, 30)).toBe(20);
+    expect(readingFloorSeconds(QuestionType.MultipleChoice, 5000)).toBe(120);
   });
 
   it("maps difficulty by name only, falling back to the quiz's own", () => {

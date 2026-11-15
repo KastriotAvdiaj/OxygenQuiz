@@ -66,7 +66,8 @@ public class QuizGroundingBroadTests
     {
         var source = Source();
 
-        var result = await Grounding(source, Planner(BroadPlan())).GroundAsync("General Knowledge", NoAnswers, default);
+        var result = await Grounding(source, Planner(BroadPlan()), o => o.Broad.MaxSources = 8)
+            .GroundAsync("General Knowledge", NoAnswers, default);
 
         Assert.Equal(GroundingStatus.Grounded, result.Status);
         Assert.False(result.NeedsChoice);
@@ -171,19 +172,18 @@ public class QuizGroundingBroadTests
     }
 
     [Fact]
-    public async Task Each_article_is_cut_to_its_share_at_a_paragraph()
+    public async Task Each_article_is_cut_to_its_share_in_whole_paragraphs()
     {
-        var first = new string('a', 900) + ".";
-        var second = new string('b', 900) + ".";
-        var third = new string('c', 900) + ".";
-        var source = Source(topic => SourceLookup.Selected(topic, null, $"{first}\n\n{second}\n\n{third}", 5000));
+        var source = Source(topic => SourceLookup.Selected(topic, null, LongArticle(), 5000));
 
-        var result = await Grounding(source, Planner(BroadPlan("One", "Two", "Three")), o => o.Broad.MaxCharsPerSource = 2000)
+        var result = await Grounding(source, Planner(BroadPlan("One", "Two", "Three")), o => o.Broad.MaxCharsPerSource = 1000)
             .GroundAsync("General Knowledge", NoAnswers, default);
 
-        var text = result.Source!.Text;
-        Assert.Contains(second, text);
-        Assert.DoesNotContain("c", text.Replace("[S", string.Empty));
+        var paragraphs = LongArticle().Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        var lines = result.Source!.Text.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Where(l => !l.StartsWith("[S", StringComparison.Ordinal)).ToList();
+        Assert.All(lines, line => Assert.Contains(line, paragraphs));
+        Assert.Equal(3, lines.Count(l => l == paragraphs[0])); // each article's own first paragraph
     }
 
     // ── When nothing is planned ──────────────────────────────────────────────────────────────
@@ -285,6 +285,48 @@ public class QuizGroundingBroadTests
 
         planner.Verify(p => p.PlanAsync("General Knowledge", "English", author, It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    // ── Excerpt ──────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>A lead and ten 300-character paragraphs, with a section heading among them.</summary>
+    private static string LongArticle() =>
+        "The subject is a thing.\n"
+        + string.Join("\n", Enumerable.Range(1, 10).Select(i =>
+            (i == 4 ? "== History ==\n" : string.Empty) + $"Paragraph {i} " + new string((char)('a' + i), 280) + "."));
+
+    [Fact]
+    public void An_excerpt_is_the_first_paragraph_and_whole_paragraphs_from_somewhere_in_the_rest()
+    {
+        var article = LongArticle();
+        var paragraphs = article.Split('\n');
+
+        var excerpt = QuizGrounding.Excerpt(article, 1000, new Random(1)).Split('\n');
+
+        Assert.Equal("The subject is a thing.", excerpt[0]);
+        Assert.True(excerpt.Length >= 3);
+        Assert.All(excerpt, line => Assert.Contains(line, paragraphs));
+        Assert.DoesNotContain(excerpt, line => line.StartsWith("==", StringComparison.Ordinal));
+        Assert.True(string.Join("\n", excerpt).Length <= 1000);
+        // In the article's order, and next to each other: a stretch, not a scatter.
+        var positions = excerpt.Skip(1).Select(line => Array.IndexOf(paragraphs, line)).ToList();
+        Assert.Equal(positions.OrderBy(x => x), positions);
+    }
+
+    [Fact]
+    public void Two_reads_of_one_article_give_different_stretches()
+    {
+        var article = LongArticle();
+
+        var reads = Enumerable.Range(0, 12).Select(seed => QuizGrounding.Excerpt(article, 1000, new Random(seed))).Distinct();
+
+        // The opening alone was the same text every time, which is what made a second quiz on a
+        // subject ask what the first one had.
+        Assert.True(reads.Count() >= 3);
+    }
+
+    [Fact]
+    public void An_article_that_fits_is_read_whole() =>
+        Assert.Equal("Short. Article.", QuizGrounding.Excerpt("  Short. Article.  ", 2500, new Random(1)));
 
     // ── Opening ──────────────────────────────────────────────────────────────────────────────
 

@@ -147,6 +147,17 @@ dropdown also injects an unrecognised value as its own option, because the promp
 only guard the AI door — data transfer and direct API calls can still write any value in
 `[0, 2000]`.
 
+**Time is for reading first.** The rule used to say easy questions get "a short time limit", and
+the model gave 10–15 seconds to nearly everything, four-option questions included (2026-11-15).
+The prompt now asks for 20 or 30 seconds on an ordinary question, 45 or more when the question or
+its options are long or the answer has to be worked out or typed, and 10–15 only for a short,
+simple true/false; never 5 unless the author's instructions ask for a speed quiz. The parser holds
+the same line (`readingFloorSeconds`): a limit is raised — never lowered — to at least 20 seconds
+(10 for true/false), or to the time it takes to read the question and its options at about 2.5
+words a second plus 6 seconds to decide, rounded up to an allowed value. That floor applies to a
+pasted reply too, and a speed quiz asked for in the instructions still gets it; the author can
+shorten a limit in the builder.
+
 ---
 
 ## 3. End-to-end UX flow
@@ -266,8 +277,10 @@ Output rules — follow precisely:
 - For "difficulty" you MUST pick from exactly this list: {DIFFICULTY_NAMES}.
   Do NOT invent difficulty names. Do NOT output categories or languages at all.
 - "timeLimitInSeconds" MUST be exactly one of: 5, 10, 15, 20, 30, 45, 60, 90, 120.
-- Scale "pointSystem" and "timeLimitInSeconds" with the question's difficulty, so harder
-  questions are worth more and allow more time.
+- Scale "pointSystem" with the question's difficulty, so harder questions are worth more.
+- "timeLimitInSeconds" must leave time to read the question and every option: 20 or 30 for
+  an ordinary question, 45 or more for a long or worked-out one, 10 or 15 only for a short,
+  simple true/false.
 - Each MultipleChoice question needs 2–4 options and at least one isCorrect:true.
 
 SOURCE MATERIAL:
@@ -316,7 +329,8 @@ import — a partial, correct quiz is better than an all-or-nothing failure.
   `difficultyId`, and flag it.
 - `pointSystem` → must be one of `Standard` / `Double` / `Quadruple`, else `Standard`.
 - `timeLimitInSeconds` → bound to 5–300, then snap to the nearest `TIME_LIMIT_OPTIONS`
-  entry; missing or non-numeric falls back to the `DEFAULT_QUESTION_SETTINGS` value (10).
+  entry; missing or non-numeric falls back to the `DEFAULT_QUESTION_SETTINGS` value (10). Then
+  raised to the reading floor (`readingFloorSeconds`, §2c) when it is shorter.
   The prompt asks for one of those values outright — the snap is the backstop, since the
   per-question dropdown renders blank on anything it can't match.
 

@@ -80,6 +80,10 @@ public class TopicPlannerTests
         var source = new SourceOptions { Enabled = true };
         source.Broad.Enabled = broadEnabled;
         source.Broad.PlanReasoningEffort = effort;
+        // Pinned, so these tests are about the draw and not about today's defaults.
+        source.Broad.SubtopicsToAsk = 30;
+        source.Broad.SubtopicsPerQuiz = 10;
+        source.Broad.PlanMaxOutputTokens = 900;
 
         var planner = new TopicPlanner(
             model.Object, usages.Object, quota.Object,
@@ -236,6 +240,19 @@ public class TopicPlannerTests
     }
 
     // ── A pool, and a different draw each time ───────────────────────────────────────────────
+
+    [Fact]
+    public void The_pool_is_asked_for_as_wide_subjects_not_single_famous_examples()
+    {
+        // 2026-11-15: pools of "Mount Everest" and "Photosynthesis" gave every quiz that drew
+        // them the same handful of facts.
+        var prompt = TopicPlanner.BuildPrompt("General knowledge", "English", 60);
+
+        Assert.Contains("exactly 60 subtopics", prompt);
+        Assert.Contains("as WIDE as the topic allows", prompt);
+        Assert.Contains("\"Mountain\" rather than \"Mount Everest\"", prompt);
+        Assert.Contains("only when the topic itself asks for those", prompt);
+    }
 
     [Fact]
     public async Task The_model_is_asked_for_a_pool_and_a_quiz_draws_part_of_it()
