@@ -217,6 +217,9 @@ export const AiQuizWizard = () => {
       onExtraInstructionsChange={draft.setExtraInstructions}
       addImages={draft.addImages}
       onAddImagesChange={draft.setAddImages}
+      difficultyLevels={draft.difficultyLevels}
+      difficultyId={draft.targetDifficultyId}
+      onDifficultyChange={draft.setDifficultyId}
       onGenerate={handleGenerate}
       isGenerating={generation.isPending}
       generationStage={generation.stage}

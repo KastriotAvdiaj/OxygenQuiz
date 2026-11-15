@@ -288,6 +288,13 @@ namespace QuizAPI.Services.Ai
                 CategoryNames = CleanNames(request.CategoryNames),
             };
 
+            // Only a level this request itself lists, spelt as the list spells it.
+            normalised = normalised with
+            {
+                TargetDifficulty = normalised.DifficultyNames.FirstOrDefault(n =>
+                    string.Equals(n, request.TargetDifficulty?.Trim(), StringComparison.OrdinalIgnoreCase)),
+            };
+
             return normalised.Mode == AiGenerationMode.Source
                 ? PinToSourceLanguage(normalised)
                 : normalised;
@@ -454,7 +461,8 @@ namespace QuizAPI.Services.Ai
                 r.Grounding?.Title ?? string.Empty,
                 // A broad topic's title is the topic itself; its articles are what was read.
                 string.Join('|', r.Grounding?.Parts.Select(p => p.Title) ?? Array.Empty<string>()),
-                r.AddImages);
+                r.AddImages,
+                r.TargetDifficulty ?? string.Empty);
 
             return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(material))).ToLowerInvariant();
         }

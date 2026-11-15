@@ -56,7 +56,7 @@ lands **pre-filled in the review step**, where the human confirms or changes it:
 | Title | Model suggests it. Free text — nothing to resolve. |
 | Category | Model picks from the category **names** we send. Unmatched → blank. |
 | Language | Model picks from the language **names** we send, normally matching the language the topic was typed in, and writes the questions in it. |
-| Difficulty | The median-weighted rating. Not asked for at all; changed in the builder. |
+| Difficulty | **Asked for**, since 2026-11-15: a slider over the instance's ratings, easiest first, starting on the middle one. The questions are written for that level and the quiz is rated with it ([ADR 0047](../adr/0047-the-wizard-asks-how-hard.md)). Still changeable in the builder. |
 | Count, types, extra instructions, Add pictures | Defaults (Add pictures off), shown in the details form under the topic box. |
 
 **The wizard asks for what the model needs, and nothing the builder already owns.** Title,
@@ -66,6 +66,16 @@ screen — so the wizard was collecting them once with no questions on screen to
 again with them. What is left is the topic, how many questions, which types, and any extra
 steer. See [ADR 0014](../adr/0014-the-wizard-asks-for-the-brief-not-the-quiz.md) for why that
 does not reopen the hidden-defaults problem ADR 0001 was written about.
+
+**Difficulty came back, because it is brief and not filing.** With nothing asked, the model had
+no level to aim at and the quiz was rated with the middle row of the difficulty table: an easy
+general-knowledge quiz was labelled *Hard* (2026-11-15). How hard to make it is something the
+model needs before it writes, like the count and the types. The slider's level travels as
+`targetDifficulty` — a name, one of `difficultyNames`, which are sent easiest first — and the
+prompt aims at it: most questions at the level, a few one step either side, with the two ends
+described by who could answer (what most adults know without studying the subject; what only
+someone who has studied it would). The rating is therefore what was **asked for**, not something
+measured: read the questions before trusting it.
 
 What remains is **visible, not hidden**. The form has been an inline accordion, a centred dialog
 and a right-hand drawer, and every version traded one problem for another: the accordion
@@ -755,7 +765,7 @@ always wins:
 ```
 effectiveCategoryId = userPick ?? resolve(suggestedCategoryName)
 effectiveLanguageId = userPick ?? resolve(suggestedLanguageName)
-effectiveDifficultyId = userPick ?? middle-weighted difficulty
+effectiveDifficultyId = sliderPick ?? middle rating (the lower of two middles)
 effectiveTitle        = userTitle || suggestedTitle || topic
 ```
 
@@ -1074,7 +1084,8 @@ and no change to it will help, so telling the client "bad request" sends it into
   "languageName": null,                  // omit to let the model choose
   "languageNames": ["English", "Albanian", "German"],
   "categoryNames": ["History", "Science", "Sport"],
-  "difficultyNames": ["Easy", "Medium", "Hard"],
+  "difficultyNames": ["Easy", "Medium", "Hard"],   // easiest first
+  "targetDifficulty": "Medium",          // the slider; must be one of difficultyNames, else ignored
   "questionCount": 10,
   "allowedTypes": ["MultipleChoice", "TrueFalse"],
   "extraInstructions": null,

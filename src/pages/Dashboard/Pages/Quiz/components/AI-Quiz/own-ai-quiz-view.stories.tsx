@@ -70,6 +70,13 @@ const meta = {
     onQuestionCountChange: fn(),
     onToggleType: fn(),
     onExtraInstructionsChange: fn(),
+    difficultyLevels: [
+      { id: 1, label: "Easy" },
+      { id: 2, label: "Medium" },
+      { id: 3, label: "Hard" },
+    ],
+    difficultyId: 2,
+    onDifficultyChange: fn(),
     onCopyPrompt: fn(),
     onAiResponseChange: fn(),
     onImport: fn(),

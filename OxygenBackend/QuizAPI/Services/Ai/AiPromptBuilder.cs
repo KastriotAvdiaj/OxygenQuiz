@@ -214,6 +214,21 @@ namespace QuizAPI.Services.Ai
 
             rules.Add($"\"difficulty\" MUST be exactly one of: {difficultyList}. Do not invent difficulty names, do not translate them, do not use any other value.");
 
+            if (!string.IsNullOrWhiteSpace(r.TargetDifficulty))
+            {
+                // The author's slider. Without it nothing said how hard to make the quiz, each
+                // question's rating was the model's whim, and the quiz's own label came from
+                // nowhere. The anchors are what make a name mean something: "Hard" alone is
+                // relative to nothing, and a model left to it calls a capital-city question hard.
+                var target = r.TargetDifficulty.Trim();
+                rules.Add(
+                    $"The difficulty names above are listed from EASIEST to HARDEST. The author asked for a quiz at the \"{target}\" level. "
+                    + $"Write the questions FOR that level: most of them should truly be \"{target}\", a few may sit one level either side so the quiz has some range, and none further away than that. "
+                    + "Judge a level by who could answer: the easiest is what most adults know without having studied the subject; the hardest is what only someone who has studied or followed the subject closely would know — a detail, an exact figure, a less famous name, a comparison that has to be worked out; the levels in between are even steps from one to the other. "
+                    + "Make a question harder by asking for deeper or less widely known knowledge and by making every wrong option plausible — never by wording it obscurely or asking about trivia nobody could be expected to know. "
+                    + "Then rate each question honestly by what it actually asks, not by the level that was requested.");
+            }
+
             rules.Add("Do NOT put a category or a language on an individual question. Those are quiz-level fields only, and any you add to a question will be ignored.");
 
             rules.Add($"\"timeLimitInSeconds\" MUST be exactly one of these numbers: {string.Join(", ", AllowedTimeLimits)}. Do not use any other number, and do not write it as a string.");

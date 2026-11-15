@@ -24,6 +24,7 @@ import type { ParseResult } from "./parse-ai-output";
 
 
 import { AdvancedOptions } from "./components/advanced-options";
+import type { DifficultyLevel } from "./components/difficulty-slider";
 import { ConfirmDetailsCard } from "./components/confirm-details-card";
 import { GenerateErrorPanel } from "./components/generate-error-panel";
 import { GeneratingOverlay } from "./components/generating-overlay";
@@ -109,6 +110,10 @@ export interface AiQuizWizardViewProps {
   onExtraInstructionsChange: (value: string) => void;
   addImages?: boolean;
   onAddImagesChange?: (value: boolean) => void;
+  /** The difficulty slider: the instance's ratings (easiest first) and the one aimed at. */
+  difficultyLevels?: DifficultyLevel[];
+  difficultyId?: number | null;
+  onDifficultyChange?: (id: number) => void;
 
   // ── Generation ───────────────────────────────────────────────────────────────
   onGenerate: () => void;
@@ -207,6 +212,9 @@ export const AiQuizWizardView = ({
   onExtraInstructionsChange,
   addImages,
   onAddImagesChange,
+  difficultyLevels,
+  difficultyId,
+  onDifficultyChange,
   onGenerate,
   isGenerating,
   generationStage = "Queued",
@@ -516,6 +524,9 @@ export const AiQuizWizardView = ({
                 onExtraInstructionsChange={onExtraInstructionsChange}
                 addImages={addImages}
                 onAddImagesChange={onAddImagesChange}
+                difficultyLevels={difficultyLevels}
+                difficultyId={difficultyId}
+                onDifficultyChange={onDifficultyChange}
               />
             </div>
 

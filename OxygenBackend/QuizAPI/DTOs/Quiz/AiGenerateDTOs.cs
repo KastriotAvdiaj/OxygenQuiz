@@ -90,6 +90,13 @@ namespace QuizAPI.DTOs.Quiz
         public bool AddImages { get; set; }
 
         /// <summary>
+        /// The level the author asked for, by name — one of <see cref="DifficultyNames"/>, which
+        /// then arrive ordered from easiest to hardest. See <see cref="AiGenerationRequest.TargetDifficulty"/>.
+        /// </summary>
+        [MaxLength(100)]
+        public string? TargetDifficulty { get; set; }
+
+        /// <summary>
         /// Maps to the service contract. Returns null when <see cref="Mode"/> is not a known mode,
         /// which the controller turns into a 400.
         /// </summary>
@@ -117,6 +124,7 @@ namespace QuizAPI.DTOs.Quiz
                 SourceAcceptFromMemory = SourceAcceptFromMemory,
                 Ground = Ground,
                 AddImages = AddImages,
+                TargetDifficulty = TargetDifficulty,
             };
         }
     }

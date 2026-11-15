@@ -23,6 +23,7 @@ import type { ParseResult } from "./parse-ai-output";
 
 
 import { AdvancedOptions } from "./components/advanced-options";
+import type { DifficultyLevel } from "./components/difficulty-slider";
 import { ConfirmDetailsCard } from "./components/confirm-details-card";
 import { GenerationInput } from "./components/generation-input";
 import { InfoHint } from "./components/info-hint";
@@ -69,6 +70,10 @@ export interface OwnAiQuizViewProps {
   onExtraInstructionsChange: (value: string) => void;
   addImages?: boolean;
   onAddImagesChange?: (value: boolean) => void;
+  /** The difficulty slider: the instance's ratings (easiest first) and the one aimed at. */
+  difficultyLevels?: DifficultyLevel[];
+  difficultyId?: number | null;
+  onDifficultyChange?: (id: number) => void;
 
   // ── The round trip ───────────────────────────────────────────────────────────
   onCopyPrompt: () => void;
@@ -134,6 +139,9 @@ export const OwnAiQuizView = ({
   onExtraInstructionsChange,
   addImages,
   onAddImagesChange,
+  difficultyLevels,
+  difficultyId,
+  onDifficultyChange,
   onCopyPrompt,
   copied,
   isCopying,
@@ -310,6 +318,9 @@ export const OwnAiQuizView = ({
                 onExtraInstructionsChange={onExtraInstructionsChange}
                 addImages={addImages}
                 onAddImagesChange={onAddImagesChange}
+                difficultyLevels={difficultyLevels}
+                difficultyId={difficultyId}
+                onDifficultyChange={onDifficultyChange}
               />
             </div>
 

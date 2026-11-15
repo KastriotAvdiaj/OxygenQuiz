@@ -139,6 +139,11 @@ export interface AiGenerateInput {
   extraInstructions?: string;
   /** "Add images": the model may give questions an image search phrase (docs/media/media-pipeline.md). */
   addImages?: boolean;
+  /**
+   * The difficulty slider's level, by name: one of `difficultyNames`, which are sent easiest
+   * first. The questions are written for it (docs/adr/0047-the-wizard-asks-how-hard.md).
+   */
+  targetDifficulty?: string;
 }
 
 export interface AiGenerateResult {

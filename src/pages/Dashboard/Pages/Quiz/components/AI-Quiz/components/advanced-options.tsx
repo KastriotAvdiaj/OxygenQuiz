@@ -2,6 +2,7 @@ import { Label, Textarea } from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
 import type { QuestionType } from "@/types/question-types";
 
+import { DifficultySlider, type DifficultyLevel } from "./difficulty-slider";
 import { QuestionCountStepper } from "./question-count-stepper";
 import { QuestionTypeOptions } from "./question-type-options";
 
@@ -18,6 +19,11 @@ export interface AdvancedOptionsProps {
    *  handler is passed; off by default. */
   addImages?: boolean;
   onAddImagesChange?: (value: boolean) => void;
+  /** How hard to make it: the instance's ratings, easiest first, and the one aimed at. The slider
+   *  shows when a handler is passed and there are at least two levels. */
+  difficultyLevels?: DifficultyLevel[];
+  difficultyId?: number | null;
+  onDifficultyChange?: (id: number) => void;
 }
 
 /**
@@ -41,8 +47,13 @@ export interface AdvancedOptionsProps {
  * always proposes the category and language, and `ConfirmDetailsCard` is what asks when a
  * proposal doesn't resolve. That card stops being an edge case and becomes a normal step —
  * which is the honest place for the question, because by then there are questions on screen to
- * file. Difficulty is not asked for at all; `useAiQuizDraft` gives the quiz the median rating
- * and the builder is where it gets changed. See docs/quiz/ai-quiz-generation-flow.md §1a.
+ * file. See docs/quiz/ai-quiz-generation-flow.md §1a.
+ *
+ * <b>Difficulty came back, as a slider (2026-11-15).</b> It was removed with the others and the
+ * quiz was given the middle rating, which nothing had measured: an easy quiz came out labelled
+ * "Hard". Unlike title or category, how hard to make it is something the model needs *before* it
+ * writes — it is brief, not filing — so it is asked here, and the answer is both what the
+ * questions are written for and what the quiz is rated (docs/adr/0047-the-wizard-asks-how-hard.md).
  *
  * <b>Everything here is optional.</b> The topic above is the one thing worth filling in; the
  * section header says so once rather than every placeholder repeating it.
@@ -61,6 +72,9 @@ export const AdvancedOptions = ({
   onExtraInstructionsChange,
   addImages = false,
   onAddImagesChange,
+  difficultyLevels = [],
+  difficultyId = null,
+  onDifficultyChange,
 }: AdvancedOptionsProps) => (
   <section aria-label="Quiz details">
     {/* One column. The `md:grid-cols-2` split existed to keep two columns' worth of fields
@@ -85,6 +99,15 @@ export const AdvancedOptions = ({
           onChange={onQuestionCountChange}
         />
       </div>
+
+      {onDifficultyChange && difficultyLevels.length > 1 && (
+        <div>
+          <label htmlFor="ai-difficulty" className="block text-sm font-medium text-foreground">
+            Difficulty
+          </label>
+          <DifficultySlider levels={difficultyLevels} valueId={difficultyId} onChange={onDifficultyChange} />
+        </div>
+      )}
 
       <div>
         <span className="block text-sm font-medium text-foreground">

@@ -286,6 +286,24 @@ public class AiPromptBuilderTests
     }
 
     [Fact]
+    public void A_level_the_author_chose_is_what_the_questions_are_written_for()
+    {
+        // 2026-11-15: nothing said how hard to make a quiz, and an easy one was labelled "Hard".
+        var prompt = Builder.Build(SourceRequest() with { TargetDifficulty = "Hard" });
+
+        Assert.Contains("listed from EASIEST to HARDEST", prompt);
+        Assert.Contains("a quiz at the \"Hard\" level", prompt);
+        Assert.Contains("most of them should truly be \"Hard\"", prompt);
+        // A name alone is relative to nothing; the anchors say who could answer.
+        Assert.Contains("what most adults know without having studied the subject", prompt);
+        Assert.Contains("rate each question honestly", prompt);
+    }
+
+    [Fact]
+    public void With_no_level_chosen_the_prompt_aims_at_none() =>
+        Assert.DoesNotContain("EASIEST to HARDEST", Builder.Build(SourceRequest()));
+
+    [Fact]
     public void A_question_gets_time_to_be_read_and_a_short_limit_is_for_a_simple_true_false_only()
     {
         // Until 2026-11-15 the rule asked for "a short time limit" on easy questions, and nearly

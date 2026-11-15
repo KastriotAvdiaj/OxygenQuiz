@@ -213,6 +213,22 @@ namespace QuizAPI.Services.Ai
         /// the browser resolves it through our own Commons/Pexels import.
         /// </summary>
         public bool AddImages { get; init; }
+
+        /// <summary>
+        /// The level the author chose on the wizard's difficulty slider, as one of
+        /// <see cref="DifficultyNames"/> — or null, and then the model is given no level to aim at.
+        ///
+        /// <para>Until 2026-11-15 nothing was asked: the model rated each question as it pleased
+        /// and the quiz was labelled with the middle of the lookup table, whatever was in it — an
+        /// easy quiz came out labelled "Hard". With a level, the prompt aims the questions at it
+        /// and the quiz carries the same name, so the label is what was asked for
+        /// (docs/adr/0047-the-wizard-asks-how-hard.md).</para>
+        ///
+        /// <para>A name, like every other lookup at this boundary, and only one the request itself
+        /// lists: anything else is dropped in normalisation. When it is set the client sends
+        /// <see cref="DifficultyNames"/> ordered easiest to hardest, which the prompt then says.</para>
+        /// </summary>
+        public string? TargetDifficulty { get; init; }
     }
 
     /// <summary>Token counts as reported by the provider, for cost accounting.</summary>

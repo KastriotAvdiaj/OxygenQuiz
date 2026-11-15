@@ -15,6 +15,9 @@ import { cleanImageQuery, parseAiOutput, pictureIsNamedInQuestion, MAX_IMAGE_QUE
 import { useAutoImages } from "../use-auto-images";
 import { describePictures } from "../components/picture-description";
 import { ReviewChips } from "../components/review-chips";
+import { ImportNotices } from "../components/import-notices";
+import { describeImport } from "../components/import-description";
+import { DifficultySlider } from "../components/difficulty-slider";
 import { ImageIcon } from "lucide-react";
 import { parseContext } from "../__fixtures__/ai-quiz.fixtures";
 
@@ -200,5 +203,60 @@ describe("ReviewChips", () => {
     expect((await screen.findByRole("link", { name: "Volcano" })).getAttribute("href")).toBe(
       "https://en.wikipedia.org/wiki/Volcano",
     );
+  });
+
+  it("puts what the parser dropped in the same row, by count, with the reasons a press away", async () => {
+    const result = parseAiOutput(
+      reply([tf("Is the sky blue on a clear day?"), { type: QuestionType.TrueFalse, text: "No answer given here." }]),
+      parseContext,
+    );
+    const label = describeImport(result);
+    expect(label).toBe("1 question skipped");
+    expect(describeImport(parseAiOutput(reply([tf("Is the sky blue on a clear day?")]), parseContext))).toBeNull();
+
+    render(
+      <ReviewChips
+        items={[{ id: "import", icon: ImageIcon, label: label!, tone: "problem", detail: <ImportNotices result={result} /> }]}
+      />,
+    );
+    expect(screen.queryByText(/could not be used/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "1 question skipped" }));
+    expect((await screen.findByText(/could not be used/)).textContent).toContain("Some of what came back");
+    expect(screen.getByRole("status").textContent).toContain("Skipped question 2");
+  });
+});
+
+describe("DifficultySlider", () => {
+  afterEach(cleanup);
+
+  const levels = [
+    { id: 11, label: "Easy" },
+    { id: 12, label: "Medium" },
+    { id: 13, label: "Hard" },
+  ];
+
+  it("is a slider with one stop per level, saying the level's name", () => {
+    render(<DifficultySlider levels={levels} valueId={12} onChange={() => {}} />);
+    const slider = screen.getByRole("slider");
+
+    expect(slider.getAttribute("max")).toBe("2");
+    expect((slider as HTMLInputElement).value).toBe("1");
+    expect(slider.getAttribute("aria-valuetext")).toBe("Medium");
+  });
+
+  it("reports the level it was moved to, by id", () => {
+    const onChange = vi.fn();
+    render(<DifficultySlider levels={levels} valueId={12} onChange={onChange} />);
+
+    fireEvent.change(screen.getByRole("slider"), { target: { value: "2" } });
+    expect(onChange).toHaveBeenLastCalledWith(13);
+    // The names under the track are a shortcut to the same thing.
+    fireEvent.click(screen.getByText("Easy"));
+    expect(onChange).toHaveBeenLastCalledWith(11);
+  });
+
+  it("is nothing when there is nothing to choose between", () => {
+    const { container } = render(<DifficultySlider levels={levels.slice(0, 1)} valueId={11} onChange={() => {}} />);
+    expect(container.innerHTML).toBe("");
   });
 });

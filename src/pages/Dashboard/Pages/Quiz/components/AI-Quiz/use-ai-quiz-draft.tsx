@@ -33,9 +33,10 @@ import {
 } from "./parse-ai-output";
 import { AI_QUESTION_LIMITS, DEFAULT_QUESTION_COUNT } from "./prompt";
 import { ImportNotices } from "./components/import-notices";
-import { ImageIcon } from "lucide-react";
+import { describeImport } from "./components/import-description";
+import { AlertTriangle, ImageIcon } from "lucide-react";
 import { describeSource } from "./components/source-description";
-import { SourceDetail, SourceNote } from "./components/source-note";
+import { SourceDetail } from "./components/source-note";
 import { ReviewChips, type ReviewChip } from "./components/review-chips";
 import { AutoImagesProgress, PictureDetail } from "./components/auto-images";
 import { describePictures } from "./components/picture-description";
@@ -232,20 +233,29 @@ export const useAiQuizDraft = () => {
   const { categories, difficulties, languages } = queryData;
 
   /**
-   * The quiz's overall difficulty when the user didn't pick one. Prefers a mid-weighted
-   * level over "first in the list", since the list is user-defined and its first entry
-   * carries no meaning. Per-question difficulty is chosen by the model regardless; this is
-   * the quiz's rating and the fallback for anything unrecognised.
+   * The ratings a quiz can be aimed at, easiest first — the difficulty slider's stops, and the
+   * order `difficultyNames` is sent in, which the prompt relies on when a level is aimed at.
+   *
+   * Unspecified is not a rating, so it is not a candidate. It is seeded with weight 0, which
+   * sorts it first — with a small lookup table it could win the middle outright and hand the
+   * quiz a difficulty that silently blocks publishing (`EnsurePublishableAsync`).
    */
-  const defaultDifficultyId = useMemo(() => {
-    // Unspecified is not a rating, so it is not a candidate. It is seeded with weight 0, which
-    // sorts it first — with a small lookup table it can win the median outright and hand the
-    // quiz a difficulty that silently blocks publishing (`EnsurePublishableAsync`).
-    const ratings = difficulties.filter((d) => !isUnspecifiedLookup(d.level));
-    if (ratings.length === 0) return null;
-    const sorted = [...ratings].sort((a, b) => a.weight - b.weight);
-    return sorted[Math.floor(sorted.length / 2)].id;
-  }, [difficulties]);
+  const ratings = useMemo(
+    () =>
+      difficulties
+        .filter((d) => !isUnspecifiedLookup(d.level))
+        .sort((a, b) => a.weight - b.weight),
+    [difficulties],
+  );
+  const difficultyLevels = useMemo(() => ratings.map((d) => ({ id: d.id, label: d.level })), [ratings]);
+
+  /**
+   * Where the slider starts: the middle rating, the lower one when there are two middles — an
+   * unmoved slider should not ask for the harder half. Until 2026-11-15 this (taking the upper
+   * middle) was the quiz's rating outright, with nothing aimed at it: four ratings made every
+   * generated quiz "Hard", whatever its questions were.
+   */
+  const defaultDifficultyId = ratings.length === 0 ? null : ratings[Math.floor((ratings.length - 1) / 2)].id;
 
   /** The quiz-level fields the model returned, read from the payload whichever path it came by. */
   const suggestions = useMemo(
@@ -284,7 +294,9 @@ export const useAiQuizDraft = () => {
   // state mirroring state has to be kept in sync forever and is always a render behind.
   const effectiveCategoryId = categoryId ?? suggestedCategoryId;
   const effectiveLanguageId = languageId ?? suggestedLanguageId;
-  const effectiveDifficultyId = difficultyId ?? defaultDifficultyId;
+  // A stored pick that is no longer a rating (deleted, or renamed to Unspecified) is no pick.
+  const effectiveDifficultyId =
+    difficultyId !== null && ratings.some((d) => d.id === difficultyId) ? difficultyId : defaultDifficultyId;
   const effectiveTitle = title.trim() || suggestions?.title?.trim() || topic.trim();
 
   /** Every id the questions need is known, so they can be built. */
@@ -403,9 +415,10 @@ export const useAiQuizDraft = () => {
     // Difficulty is the one lookup a *question* may legally hold as Unspecified, but the model
     // is being asked to rate difficulty — a shrug is not one of the answers, and it would cost
     // the quiz its publishability.
-    difficultyNames: difficulties
-      .filter((d) => !isUnspecifiedLookup(d.level))
-      .map((d) => d.level),
+    // Easiest first: the prompt says so when a level is aimed at.
+    difficultyNames: ratings.map((d) => d.level),
+    // The slider's level — what the questions are written for, and the quiz's own rating.
+    targetDifficulty: ratings.find((d) => d.id === effectiveDifficultyId)?.level,
     questionCount,
     allowedTypes,
     extraInstructions: extraInstructions.trim() || undefined,
@@ -484,9 +497,20 @@ export const useAiQuizDraft = () => {
     notFound: autoImages.notFound,
     asked: addImages,
   });
+  const importLabel = parseResult?.ok ? describeImport(parseResult) : null;
+  // What needs a look comes first and is coloured; the rest is merely so.
   const reviewChips: ReviewChip[] = [
-    ...(source && !source.warn
-      ? [{ id: "source", icon: source.Icon, label: source.chip, detail: <SourceDetail source={source} /> }]
+    ...(importLabel && parseResult
+      ? [{ id: "import", icon: AlertTriangle, label: importLabel, tone: "problem" as const, detail: <ImportNotices result={parseResult} /> }]
+      : []),
+    ...(source
+      ? [{
+          id: "source",
+          icon: source.Icon,
+          label: source.chip,
+          tone: source.warn ? ("caution" as const) : undefined,
+          detail: <SourceDetail source={source} />,
+        }]
       : []),
     ...(pictures
       ? [{ id: "pictures", icon: ImageIcon, label: pictures.chip, detail: <PictureDetail pictures={pictures} /> }]
@@ -532,10 +556,8 @@ export const useAiQuizDraft = () => {
           }}
           reviewNotices={
             <>
-              {/* What needs the author: a source that was down, questions that were dropped. */}
-              {source?.warn && <SourceNote grounding={grounding} />}
-              <ImportNotices result={parseResult} />
-              {/* What is merely so — the articles, the pictures — as chips that open on request. */}
+              {/* One line of chips, each opening on request: what the parser dropped, what the
+                  quiz was written from, the pictures. */}
               <ReviewChips items={reviewChips} />
             </>
           }
@@ -584,6 +606,9 @@ export const useAiQuizDraft = () => {
     setLanguageId,
     difficultyId,
     setDifficultyId,
+    /** The difficulty slider: its stops, and where it stands (the author's pick, or the middle). */
+    difficultyLevels,
+    targetDifficultyId: effectiveDifficultyId,
     questionCount,
     setQuestionCount: handleQuestionCountChange,
     allowedTypes,
