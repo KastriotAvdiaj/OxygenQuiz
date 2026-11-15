@@ -5,7 +5,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/utils/cn";
 
 export interface InfoHintProps {
-  /** Announced to screen readers, and shown as the native title on hover. */
+  /**
+   * Announced to screen readers. Not also a `title`: the browser showed it as its own grey
+   * tooltip on hover, a second, different popup before ours opened on click (removed 2026-11-15).
+   */
   label: string;
   children: ReactNode;
   className?: string;
@@ -31,7 +34,6 @@ export const InfoHint = ({ label, children, className }: InfoHintProps) => (
     <PopoverTrigger
       type="button"
       aria-label={label}
-      title={label}
       className={cn(
         "group inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors",
         "hover:text-foreground focus-visible:outline-none",

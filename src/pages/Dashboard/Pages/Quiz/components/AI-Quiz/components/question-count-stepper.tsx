@@ -13,14 +13,22 @@ export interface QuestionCountStepperProps {
 }
 
 const STEP_BUTTON_CLASSES =
-  // h-9 w-9 is the ≥36px touch target from docs/RESPONSIVE.md; round, per the design.
-  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border " +
-  "text-foreground transition-colors hover:border-primary hover:bg-primary/10 " +
+  // h-9 w-9 is the ≥36px touch target from docs/RESPONSIVE.md; round, per the design. No border:
+  // the pill around them is the frame, and on hover a button lifts out of it onto the page colour.
+  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full " +
+  "text-foreground transition-colors hover:bg-background hover:text-primary " +
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background " +
   "disabled:pointer-events-none disabled:opacity-40";
 
 /**
- * How many questions to ask for: the count on the left, − and + on the right.
+ * How many questions to ask for: − count +, grouped in one soft pill, with the unit beside it.
+ *
+ * <b>Grouped, not spread.</b> It was the count at the left edge and − / + at the right, held
+ * together by a border. Without the border (removed 2026-11-15: it drew more attention than the
+ * field is worth) the two ends read as unrelated things floating in an empty band — the one field
+ * on the wizard whose parts didn't touch. Grouped, it is one control again, the usual shape of a
+ * quantity stepper, and the pill (`bg-muted`, the wizard's input fill, no border) is quieter than
+ * the frame was.
  *
  * <b>Not a number input.</b> The old `type="number"` accepted anything and then had to defend
  * itself — a NaN guard for the empty box mid-edit, a min/max the browser only enforces on
@@ -45,25 +53,8 @@ export const QuestionCountStepper = ({
   };
 
   return (
-    // The frame matches a selected question-type card below (`border-foreground/40`), not the
-    // bright default border, so the row sits in the form instead of boxing itself off.
-    <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-foreground/40 bg-card/40 px-4 py-2 short:mt-1.5 short:py-1">
-      {/* aria-live: pressing − / + changes text elsewhere in the row, which a screen reader
-          would otherwise never hear. The buttons' own labels stay static. */}
-      <p aria-live="polite" className="flex items-baseline gap-2">
-        {/* The count carries the primary colour, the unit doesn't: this row's one piece of
-            information is the number, and tinting the word next to it would flatten that
-            back out (docs/quiz/question-type-color-schema.md — colour encodes meaning). */}
-        {/* text-4xl: twice the old text-lg — the number is what this row is for (2026-10-26). */}
-        <span className="text-4xl font-bold leading-none tabular-nums text-primary short:text-3xl">
-          {value}
-        </span>
-        <span className="text-xs text-muted-foreground">
-          {value === 1 ? "question" : "questions"}
-        </span>
-      </p>
-
-      <div className="flex items-center gap-2">
+    <div className="mt-2 flex items-center gap-3 short:mt-1.5">
+      <div className="inline-flex items-center gap-1 rounded-full bg-muted p-1">
         <button
           type="button"
           onClick={step(-1)}
@@ -71,8 +62,19 @@ export const QuestionCountStepper = ({
           aria-label="One question fewer"
           className={cn(STEP_BUTTON_CLASSES)}
         >
-          <Minus className="h-4 w-4" />
+          <Minus className="h-4 w-4" aria-hidden="true" />
         </button>
+        {/* aria-live: pressing − / + changes this number, which a screen reader would
+            otherwise never hear. The buttons' own labels stay static. The count carries the
+            primary colour and the unit beside the pill doesn't: the number is this field's one
+            piece of information (docs/quiz/question-type-color-schema.md — colour encodes
+            meaning). min-w keeps the pill from changing width between 9 and 10. */}
+        <span
+          aria-live="polite"
+          className="min-w-[2.5ch] text-center text-3xl font-bold leading-none tabular-nums text-primary short:text-2xl"
+        >
+          {value}
+        </span>
         <button
           type="button"
           onClick={step(1)}
@@ -80,9 +82,12 @@ export const QuestionCountStepper = ({
           aria-label="One question more"
           className={cn(STEP_BUTTON_CLASSES)}
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
+      <span className="text-sm text-muted-foreground">
+        {value === 1 ? "question" : "questions"}
+      </span>
     </div>
   );
 };

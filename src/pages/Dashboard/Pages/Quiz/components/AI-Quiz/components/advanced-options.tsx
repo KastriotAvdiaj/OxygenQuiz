@@ -107,14 +107,22 @@ export const AdvancedOptions = ({
               field. `-my-2 -ml-1.5` keep the 36px tap target from pushing the row taller or
               the ⓘ away from its label. */}
           <div className="flex items-center gap-1">
-            <label htmlFor="ai-difficulty" className="text-sm font-medium text-foreground">
+            <label
+              htmlFor="ai-difficulty"
+              className="text-sm font-medium text-foreground"
+            >
               Difficulty
             </label>
             <InfoHint label="About difficulty" className="-my-2 -ml-1.5">
-              The questions are written for this level, and the quiz is rated with it.
+              The questions are written for this level, and the quiz is rated
+              with it.
             </InfoHint>
           </div>
-          <DifficultySlider levels={difficultyLevels} valueId={difficultyId} onChange={onDifficultyChange} />
+          <DifficultySlider
+            levels={difficultyLevels}
+            valueId={difficultyId}
+            onChange={onDifficultyChange}
+          />
         </div>
       )}
 
@@ -151,9 +159,13 @@ export const AdvancedOptions = ({
             <Label htmlFor="ai-add-images" className="text-sm font-medium">
               Add pictures
             </Label>
-            <p id="ai-add-images-hint" className="mt-1 text-xs text-muted-foreground">
-              Questions a picture helps — a flag, a landmark, a painting — get one from free image
-              libraries, with its credit. You check each one in the review.
+            <p
+              id="ai-add-images-hint"
+              className="mt-1 text-xs text-muted-foreground"
+            >
+              Questions a picture helps — a flag, a landmark, a painting — get
+              one from free image libraries, with its credit. You check each one
+              in the review.
             </p>
           </div>
           <Switch
