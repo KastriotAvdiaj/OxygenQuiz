@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check, Trash2, X } from "lucide-react";
 
 import { LiftedButton } from "@/common/LiftedButton";
 import { cn } from "@/utils/cn";
@@ -25,7 +25,7 @@ export interface ReviewBackButtonProps {
 }
 
 /** One height and text size for all three footer buttons (widths fit their labels), so none reads as more important by accident. */
-const FOOTER_BUTTON = "w-full justify-center whitespace-nowrap";
+const FOOTER_BUTTON = "flex w-full items-center justify-center gap-2 whitespace-nowrap";
 
 /**
  * Back from the AI review to the brief — the same chip as the wizard's Back above its form.
@@ -90,6 +90,7 @@ export const ReviewBackButton = ({
                 setOpen(false);
               }}
             >
+              <Check className="h-3.5 w-3.5" aria-hidden="true" />
               Save as draft &amp; leave
             </LiftedButton>
             <LiftedButton
@@ -103,6 +104,7 @@ export const ReviewBackButton = ({
                 onDiscard();
               }}
             >
+              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
               Discard &amp; go back
             </LiftedButton>
             <LiftedButton
@@ -116,6 +118,7 @@ export const ReviewBackButton = ({
               )}
               onClick={() => setOpen(false)}
             >
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
               Keep reviewing
             </LiftedButton>
           </div>

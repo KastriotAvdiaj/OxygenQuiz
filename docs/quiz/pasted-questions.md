@@ -17,8 +17,16 @@ Admins, SuperAdmins and Teachers ([`ai-quiz-two-paths.md`](./ai-quiz-two-paths.m
   because the overview's bottom bar has room for one button beside Publish
   ([ADR 0026](../adr/0026-the-quiz-overview.md)).
 
-Both open one dialog (`components/paste-questions/`): three steps — **copy the format**, write or
-ask for questions in your AI under it, **paste the whole reply** — and *Add questions*.
+Both open one dialog (`components/paste-questions/`): three steps — **copy the format**, ask your
+AI for questions under it, **paste the whole reply** — and *Add questions*. Step 2 leads with
+asking for new questions; an author who already has a rough list can still write it under the
+format and the AI tidies it, but the dialog doesn't spell that out (2026-11-15: it used to lead
+with it, which made the usual case read as the exception).
+
+*Copy the format* is a flat outline button, not a `LiftedButton` — a utility inside the steps, like
+a code block's copy button, which would otherwise compete with *Add questions*. After a copy it
+reads *Copied* for two seconds (`COPIED_FOR_MS`) and turns back, so copying again — the author lost
+the clipboard, or is starting a second batch — is visibly a second copy.
 
 ## What it does
 

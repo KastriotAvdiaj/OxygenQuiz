@@ -1,6 +1,14 @@
-import { AlertTriangle, Check, ClipboardPaste, Copy, Plus, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  ClipboardPaste,
+  Copy,
+  Plus,
+  X,
+} from "lucide-react";
 
 import { LiftedButton } from "@/common/LiftedButton";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -53,7 +61,7 @@ export const PasteQuestionsView = ({
           Paste questions
         </DialogTitle>
         <DialogDescription>
-          Write or polish questions with your own AI, then paste them here.
+          Have your own AI write the questions, then paste them here.
         </DialogDescription>
       </DialogHeader>
 
@@ -61,28 +69,38 @@ export const PasteQuestionsView = ({
         <li className="flex gap-3">
           <StepNumber n={1} />
           <div className="min-w-0 flex-1">
-            <p>Copy the format and paste it into your AI — ChatGPT, Gemini, any of them.</p>
-            <LiftedButton
+            <p>
+              Copy the format and paste it into your AI — ChatGPT, Gemini, any
+              of them.
+            </p>
+            {/* A flat outline button, not a LiftedButton: copying is a utility inside the
+                instructions, like a code block's copy button — lifted, it competed with *Add
+                questions*, the dialog's one real action (CLAUDE.md, "User-facing buttons").
+                *Copied* turns back after a moment (COPIED_FOR_MS), so a second copy reads as
+                one. */}
+            <Button
               type="button"
+              variant="outline"
               size="sm"
-              outerClassName="mt-2"
-              className="flex items-center gap-1.5 bg-muted text-foreground"
-              liftColor="muted-foreground"
+              className="mt-2 gap-1.5 text-sm"
               onClick={onCopyFormat}
             >
               {copied ? (
-                <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                <Check className="h-3.5 w-3.5 text-green-600 dark:text-green-500" aria-hidden="true" />
               ) : (
                 <Copy className="h-3.5 w-3.5" aria-hidden="true" />
               )}
-              {copied ? "Copied" : "Copy the format"}
-            </LiftedButton>
+              <span aria-live="polite">{copied ? "Copied" : "Copy the format"}</span>
+            </Button>
             {formatToCopyByHand !== null && (
               <div className="mt-2">
                 <p className="mb-1.5 flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-500">
-                  <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
-                  Your browser wouldn't let us reach the clipboard. Select the format and copy it
-                  yourself.
+                  <AlertTriangle
+                    className="mt-0.5 h-3 w-3 shrink-0"
+                    aria-hidden="true"
+                  />
+                  Your browser wouldn't let us reach the clipboard. Select the
+                  format and copy it yourself.
                 </p>
                 <Textarea
                   readOnly
@@ -99,8 +117,8 @@ export const PasteQuestionsView = ({
         <li className="flex gap-3">
           <StepNumber n={2} />
           <p className="min-w-0 flex-1">
-            Under it, write your questions — a rough list is fine — or ask for new ones: "10
-            questions about the Roman Empire". Up to {MAX_PASTED_QUESTIONS} at a time.
+            Under it, ask for the questions you want — "10 questions about
+            the Roman Empire". Up to {MAX_PASTED_QUESTIONS} at a time.
           </p>
         </li>
         <li className="flex gap-3">
@@ -116,14 +134,20 @@ export const PasteQuestionsView = ({
               onChange={(e) => onTextChange(e.target.value)}
               aria-label="The AI's reply"
               aria-invalid={error !== null}
-              aria-describedby={error !== null ? "paste-questions-error" : undefined}
+              aria-describedby={
+                error !== null ? "paste-questions-error" : undefined
+              }
             />
           </div>
         </li>
       </ol>
 
       {error !== null && (
-        <div id="paste-questions-error" className="mt-1 text-sm text-destructive" role="alert">
+        <div
+          id="paste-questions-error"
+          className="mt-1 text-sm text-destructive"
+          role="alert"
+        >
           <p>{error}</p>
           {dropped.length > 0 && (
             <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-xs">
@@ -138,8 +162,8 @@ export const PasteQuestionsView = ({
       )}
 
       <p className="text-xs text-muted-foreground">
-        They're added as new questions, only for you, marked <em>Pasted — check</em>. Look each one
-        over before you save the quiz.
+        They're added as new questions, only for you, marked{" "}
+        <em>Pasted — check</em>. Look each one over before you save the quiz.
       </p>
 
       <div className="mt-1 flex flex-wrap justify-end gap-3">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ClipboardPaste } from "lucide-react";
 
 import { LiftedButton } from "@/common/LiftedButton";
@@ -9,6 +9,9 @@ import { UnspecifiedIds } from "../../constants";
 import { useQuiz } from "../../Quiz-questions-context";
 import { buildPasteFormat, MAX_PASTE_CHARS, MAX_PASTED_QUESTIONS } from "./paste-format";
 import { PasteQuestionsView } from "./paste-questions-view";
+
+/** How long *Copied* shows before the button reads *Copy the format* again. */
+export const COPIED_FOR_MS = 2000;
 
 /**
  * Paste questions, beside *Add a question* in the builder (docs/quiz/pasted-questions.md). Open to
@@ -41,12 +44,16 @@ export const PasteQuestions = ({
   const [error, setError] = useState<string | null>(null);
   const [dropped, setDropped] = useState<DroppedQuestion[]>([]);
   const [copied, setCopied] = useState(false);
+  // The timer that turns *Copied* back, so a second copy restarts it and closing clears it.
+  const copiedTimer = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => () => clearTimeout(copiedTimer.current), []);
   const [formatToCopyByHand, setFormatToCopyByHand] = useState<string | null>(null);
 
   const reset = () => {
     setText("");
     setError(null);
     setDropped([]);
+    clearTimeout(copiedTimer.current);
     setCopied(false);
     setFormatToCopyByHand(null);
   };
@@ -61,6 +68,8 @@ export const PasteQuestions = ({
     try {
       await navigator.clipboard.writeText(format);
       setCopied(true);
+      clearTimeout(copiedTimer.current);
+      copiedTimer.current = setTimeout(() => setCopied(false), COPIED_FOR_MS);
       setFormatToCopyByHand(null);
     } catch {
       // No clipboard outside a secure context, or the browser refused: show it instead.
