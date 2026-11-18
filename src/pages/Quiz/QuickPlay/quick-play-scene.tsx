@@ -1,47 +1,17 @@
 import type { ReactNode } from "react";
 
 /**
- * Quick play's backdrop: two ranges of mountains, with the signpost standing on a hill in front
- * (`QuickPlayHill`). Nothing else: a sun, stars and a forest were drawn and taken out the same
- * evening (2026-11-18) — the post is the picture, and they competed with it.
+ * Quick play's scenery: the page's own background and a hill for the signpost to stand in
+ * (`QuickPlayHill`). The post is the picture.
  *
- * <b>Two colours and the wood.</b> The page's own background, the primary at a few strengths for
- * the land, and the wood of the boards and pole (`quick-play-view.tsx`) as the one accent. The
- * first version (2026-11-18) was a pink dusk with violet mountains; the app is black, white and
- * its blue everywhere else, and the scene was the only place that wasn't. Theme tokens only, so
- * light and dark come for free (docs/quiz/quick-play.md, "The signpost").
- *
- * Everything here is decoration — `aria-hidden`, no pointer events. The sky is the page's own
- * background (`QUICK_PLAY_SKY`), so it fills however tall the signpost grows; the mountains are a
- * fixed-height band along the bottom, so they keep their size on a phone and on a wide screen.
+ * A sun, stars, a forest and two mountain ranges were drawn and taken out again on 2026-11-18:
+ * they competed with the post, and the mountains, scaled to cover a wide screen, lost their peaks
+ * and read as a flat ridge. Theme tokens only, so light and dark follow the theme
+ * (docs/quiz/quick-play.md, "The signpost").
  */
 
 /** The sky, as classes for the page root: the page's own background, a breath of primary at the horizon. */
 export const QUICK_PLAY_SKY = "bg-gradient-to-b from-background via-background to-primary/5";
-
-export const QuickPlayBackdrop = () => (
-  <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
-    <svg
-      className="absolute inset-x-0 bottom-0 h-[19rem] w-full sm:h-[24rem]"
-      viewBox="0 0 1440 400"
-      preserveAspectRatio="xMidYMax slice"
-    >
-      <path
-        className="fill-primary/10"
-        d="M0 200 L110 135 L200 175 L330 68 L440 155 L560 100 L690 190 L820 82 L950 165 L1080 50 L1200 145 L1320 92 L1440 160 L1440 400 L0 400 Z"
-      />
-      <path
-        className="fill-primary/20"
-        d="M0 268 L95 212 L190 248 L315 164 L420 236 L540 186 L640 250 L765 172 L880 246 L1005 196 L1120 256 L1245 186 L1345 238 L1440 208 L1440 400 L0 400 Z"
-      />
-      {/* A lighter face on each peak, on its lit side. */}
-      <path
-        className="fill-background/50"
-        d="M315 164 L340 180 L326 200 L300 190 Z M765 172 L790 188 L774 208 L748 196 Z M1245 186 L1268 200 L1254 218 L1230 208 Z"
-      />
-    </svg>
-  </div>
-);
 
 /**
  * The hill the signpost stands on, in the page's flow under the boards, so the pole can run down

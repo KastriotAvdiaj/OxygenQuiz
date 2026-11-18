@@ -6,7 +6,7 @@ import { ArrowLeft, ArrowRight, Loader2, RefreshCw, RotateCcw } from "lucide-rea
 import { LiftedButton } from "@/common/LiftedButton";
 import { cn } from "@/utils/cn";
 
-import { QUICK_PLAY_SKY, QuickPlayBackdrop, QuickPlayHill } from "./quick-play-scene";
+import { QUICK_PLAY_SKY, QuickPlayHill } from "./quick-play-scene";
 import type { QuickPlayTile } from "./quick-play-model";
 
 export interface QuickPlayViewProps {
@@ -78,7 +78,6 @@ export const QuickPlayView = ({
 
   return (
     <div className={cn("relative isolate flex flex-1 flex-col overflow-hidden", QUICK_PLAY_SKY)}>
-      <QuickPlayBackdrop />
 
       <div className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 pt-6 sm:pt-10">
         {/* Not `initial={false}`: that is inherited by every motion element inside, and the post

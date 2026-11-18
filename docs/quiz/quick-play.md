@@ -45,17 +45,16 @@ play exists to remove — and tiles of uneven width wrapped wherever they fit, w
 read. A signpost says *pick a direction and go*; both steps become the same object asked twice,
 and one board per line gives the page a top-to-bottom order.
 
-- **The scene** is drawn for the app in flat shapes: two mountain ranges and the hill — the post
-  is the picture. (A sun or moon, stars and a forested ridge were drawn the same evening and
-  taken out: they competed with it.) **Two colours and the wood:** the page's
-  own background, the primary at a few strengths for the land (10% and 20% for the mountains, solid
-  for the hill), and the wood of the boards and pole as the one accent — no category colours, not even as
+- **The scene** is the post on a hill, and nothing else — the post is the picture. (A sun or
+  moon, stars, a forest and two mountain ranges were drawn the same evening and taken out: they
+  competed with the post, and the mountains, scaled to cover a wide screen, lost their peaks and
+  read as a flat ridge.) **Two colours and the wood:** the page's own background, the primary
+  for the hill, and the wood of the boards and pole as the one accent — no category colours, not even as
   pins. Theme tokens only, so light and dark follow the theme. The first version that evening
   was a pink dusk with violet mountains and a coloured pin per board; it was the one place in
   the app that wasn't black, white and blue, and it was taken back the same day.
-  The sky is the page's background, so it fills however tall the post grows; the mountains are a
-  fixed band along the bottom, so they keep their size on any screen; the hill is in the page's
-  flow under the boards, so the post always stands in it.
+  The hill is in the page's flow under the boards, so the post always stands in it however
+  many boards it carries.
 - **A board** points away from the post, alternating sides, hung a few degrees off true
   (never the same tilt twice in a row). Its point is a `clip-path` and its raised edge a
   `drop-shadow` on a wrapper — a drop-shadow follows the clipped shape — so it lifts on hover and
