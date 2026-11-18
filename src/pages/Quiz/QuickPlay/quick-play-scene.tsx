@@ -1,23 +1,22 @@
 import type { ReactNode } from "react";
 
 /**
- * Quick play's backdrop: a dusk sky, a low sun, two ranges of mountains and a forested ridge,
- * with the signpost standing on a hill in front (`QuickPlayHill`). At night (dark theme) the same
- * scene with a moon and stars.
+ * Quick play's backdrop: a sun, two ranges of mountains and a forested ridge, with the signpost
+ * standing on a hill in front (`QuickPlayHill`). In the dark theme, stars as well.
  *
- * Drawn for this app, not traced: flat shapes in palette colours, the boards and the pole in
- * `quick-play-view.tsx` carrying the wood. Every colour is a complete Tailwind class with its dark
- * counterpart beside it, so the scene follows the theme like the rest of the page
- * (docs/quiz/quick-play.md, "The signpost").
+ * <b>Two colours and the wood.</b> The page's own background, the primary at a few strengths for
+ * the land, and the wood of the boards and pole (`quick-play-view.tsx`) as the one accent. The
+ * first version (2026-11-18) was a pink dusk with violet mountains; the app is black, white and
+ * its blue everywhere else, and the scene was the only place that wasn't. Theme tokens only, so
+ * light and dark come for free (docs/quiz/quick-play.md, "The signpost").
  *
  * Everything here is decoration — `aria-hidden`, no pointer events. The sky is the page's own
  * background (`QUICK_PLAY_SKY`), so it fills however tall the signpost grows; the mountains are a
  * fixed-height band along the bottom, so they keep their size on a phone and on a wide screen.
  */
 
-/** The sky, as classes for the page root: it has to be the root's background to fill its height. */
-export const QUICK_PLAY_SKY =
-  "bg-gradient-to-b from-rose-300 via-rose-200 to-orange-100 dark:from-indigo-950 dark:via-indigo-900 dark:to-violet-900";
+/** The sky, as classes for the page root: the page's own background, a breath of primary at the horizon. */
+export const QUICK_PLAY_SKY = "bg-gradient-to-b from-background via-background to-primary/5";
 
 /** A layered pine, centred on `x`, standing on `base`. */
 const pine = (x: number, base: number, h: number) => {
@@ -57,12 +56,12 @@ export const QuickPlayBackdrop = () => (
     {/* Stars, at night only. */}
     <svg className="absolute inset-x-0 top-0 hidden h-[60%] w-full dark:block" preserveAspectRatio="none" viewBox="0 0 100 100">
       {STARS.map(([x, y, r]) => (
-        <circle key={`${x}-${y}`} cx={x} cy={y} r={r * 0.35} className="fill-white/80" />
+        <circle key={`${x}-${y}`} cx={x} cy={y} r={r * 0.35} className="fill-foreground/50" />
       ))}
     </svg>
 
-    {/* The sun at dusk, the moon at night. */}
-    <div className="absolute right-[8%] top-16 h-14 w-14 rounded-full bg-orange-50 opacity-90 shadow-[0_0_70px_28px_var(--color-orange-100)] sm:right-[14%] sm:top-20 sm:h-20 sm:w-20 dark:bg-amber-50 dark:shadow-[0_0_60px_14px_var(--color-indigo-400)]" />
+    {/* The sun by day, the moon at night: the same disc. */}
+    <div className="absolute right-[8%] top-16 h-14 w-14 rounded-full bg-primary/10 shadow-[0_0_60px_24px_hsl(var(--primary)/0.08)] sm:right-[14%] sm:top-20 sm:h-20 sm:w-20" />
 
     <svg
       className="absolute inset-x-0 bottom-0 h-[19rem] w-full sm:h-[24rem]"
@@ -70,19 +69,19 @@ export const QuickPlayBackdrop = () => (
       preserveAspectRatio="xMidYMax slice"
     >
       <path
-        className="fill-rose-400/60 dark:fill-violet-950/80"
+        className="fill-primary/10"
         d="M0 200 L110 135 L200 175 L330 68 L440 155 L560 100 L690 190 L820 82 L950 165 L1080 50 L1200 145 L1320 92 L1440 160 L1440 400 L0 400 Z"
       />
       <path
-        className="fill-indigo-400 dark:fill-indigo-950"
+        className="fill-primary/20"
         d="M0 268 L95 212 L190 248 L315 164 L420 236 L540 186 L640 250 L765 172 L880 246 L1005 196 L1120 256 L1245 186 L1345 238 L1440 208 L1440 400 L0 400 Z"
       />
       {/* A lighter face on each peak, the side the sun is on. */}
       <path
-        className="fill-white/25 dark:fill-white/5"
+        className="fill-background/50"
         d="M315 164 L340 180 L326 200 L300 190 Z M765 172 L790 188 L774 208 L748 196 Z M1245 186 L1268 200 L1254 218 L1230 208 Z"
       />
-      <path className="fill-indigo-800 dark:fill-slate-900" d={`${FOREST.ground} ${FOREST.trees}`} />
+      <path className="fill-primary/40" d={`${FOREST.ground} ${FOREST.trees}`} />
     </svg>
   </div>
 );
@@ -101,7 +100,7 @@ export const QuickPlayHill = ({ children }: { children?: ReactNode }) => (
       aria-hidden="true"
     >
       <path
-        className="fill-indigo-950 dark:fill-slate-950"
+        className="fill-primary"
         d="M0 120 C 260 96, 470 70, 620 46 C 680 36, 760 36, 820 46 C 970 70, 1180 96, 1440 120 L1440 200 L0 200 Z"
       />
     </svg>

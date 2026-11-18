@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Loader2, RefreshCw, RotateCcw } from "lucide-react";
@@ -138,7 +138,6 @@ export const QuickPlayView = ({
                   label="Any difficulty"
                   ariaLabel="Any difficulty"
                   hint="?"
-                  tack={selected.color}
                   autoFocus
                   disabled={busy}
                   pending={pending === "any"}
@@ -152,7 +151,6 @@ export const QuickPlayView = ({
                       label={level.label}
                       sub={quizzes(level.count)}
                       ariaLabel={`${level.label}, ${quizzes(level.count)}`}
-                      tack={selected.color}
                       disabled={busy}
                       pending={pending === level.id}
                       onClick={() => onPlay(level.id)}
@@ -193,7 +191,6 @@ export const QuickPlayView = ({
                       sub={quizzes(tile.count)}
                       hint={tile.id === "any" ? "?" : undefined}
                       ariaLabel={`${tile.name}, ${quizzes(tile.count)}`}
-                      tack={tile.color}
                       onClick={() => onSelect(tile.id)}
                     />
                   ))}
@@ -207,7 +204,7 @@ export const QuickPlayView = ({
       <QuickPlayHill>
         <Link
           to="/choose-quiz"
-          className="group flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium text-white/85 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+          className="group flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium text-primary-foreground/85 transition-colors hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground/70"
         >
           Rather choose yourself? Browse all quizzes
           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
@@ -243,12 +240,10 @@ interface BoardProps {
   label: string;
   /** A second, smaller line (the quiz count). */
   sub?: string;
-  /** A big glyph painted on the board instead of the colour tack ("?" on the surprise boards). */
+  /** A big glyph painted on the board, before the words ("?" on the surprise boards). */
   hint?: string;
   /** What a screen reader hears, when the visible words aren't enough. */
   ariaLabel?: string;
-  /** The category's colour, as a pin in the board. */
-  tack?: string;
   onClick: () => void;
   disabled?: boolean;
   pending?: boolean;
@@ -256,14 +251,15 @@ interface BoardProps {
 }
 
 /**
- * One board: pointed away from the post, alternating sides, wood-grained, with the category's
- * colour as a pin. It hangs from its end at the post, so it swings in from there.
+ * One board: pointed away from the post, alternating sides, wood-grained. It hangs from its end at
+ * the post, so it swings in from there. No category colour on it: the wood is the scene's one
+ * accent (see `quick-play-scene.tsx`).
  *
  * The point is a `clip-path`, and the raised edge a `drop-shadow` on a wrapper around it — a
  * drop-shadow follows the clipped shape where a box-shadow would draw a rectangle. Hover lifts the
  * board and its edge; pressing drops it, as a lifted button does.
  */
-const Board = ({ index, label, sub, hint, ariaLabel, tack, onClick, disabled, pending, autoFocus }: BoardProps) => {
+const Board = ({ index, label, sub, hint, ariaLabel, onClick, disabled, pending, autoFocus }: BoardProps) => {
   const reduceMotion = useReducedMotion();
   const right = index % 2 === 0;
   const tilt = TILTS[index % TILTS.length];
@@ -321,13 +317,7 @@ const Board = ({ index, label, sub, hint, ariaLabel, tack, onClick, disabled, pe
                 <span className="shrink-0 font-quiz text-2xl font-black leading-none text-amber-900" aria-hidden="true">
                   {hint}
                 </span>
-              ) : (
-                <span
-                  className="h-3.5 w-3.5 shrink-0 rounded-full bg-[var(--tack)] ring-2 ring-amber-900/30"
-                  style={{ "--tack": tack ?? "var(--color-primary)" } as CSSProperties}
-                  aria-hidden="true"
-                />
-              )}
+              ) : null}
               <span className="min-w-0">
                 <span className="block break-words font-quiz text-sm font-bold leading-tight tracking-wide sm:text-base">
                   {label}

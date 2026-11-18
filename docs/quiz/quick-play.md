@@ -27,7 +27,7 @@ Everything else that links to `/choose-quiz` (results, the 404 page, the stats p
 over `quick-play-scene.tsx`.
 
 1. **Where to?** A signpost with one board per category that has a quiz to hand out, the
-   fullest first, each with its quiz count and its category's colour as a pin. On top, when more
+   fullest first, each with its quiz count. On top, when more
    than one category has quizzes, *Surprise me* — any category, marked with a **?**.
 2. **How hard?** The same post, re-boarded: *Any difficulty* (**?**) and one board per
    difficulty **that category has quizzes at**, easiest first, with its count. A category with
@@ -45,9 +45,13 @@ play exists to remove — and tiles of uneven width wrapped wherever they fit, w
 read. A signpost says *pick a direction and go*; both steps become the same object asked twice,
 and one board per line gives the page a top-to-bottom order.
 
-- **The scene** is drawn for the app in flat palette colours: a dusk sky with a low sun, two
-  mountain ranges and a forested ridge; in the dark theme the same scene at night, with a moon
-  and stars. Every colour is a literal class with its `dark:` pair, so it follows the theme.
+- **The scene** is drawn for the app in flat shapes: a sun, two mountain ranges, a forested
+  ridge and the hill; stars as well in the dark theme. **Two colours and the wood:** the page's
+  own background, the primary at a few strengths for the land (10%, 20%, 40%, and solid for the
+  hill), and the wood of the boards and pole as the one accent — no category colours, not even as
+  pins. Theme tokens only, so light and dark follow the theme. The first version that evening
+  was a pink dusk with violet mountains and a coloured pin per board; it was the one place in
+  the app that wasn't black, white and blue, and it was taken back the same day.
   The sky is the page's background, so it fills however tall the post grows; the mountains are a
   fixed band along the bottom, so they keep their size on any screen; the hill is in the page's
   flow under the boards, so the post always stands in it.
