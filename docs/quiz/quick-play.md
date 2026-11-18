@@ -45,10 +45,11 @@ play exists to remove — and tiles of uneven width wrapped wherever they fit, w
 read. A signpost says *pick a direction and go*; both steps become the same object asked twice,
 and one board per line gives the page a top-to-bottom order.
 
-- **The scene** is drawn for the app in flat shapes: a sun, two mountain ranges, a forested
-  ridge and the hill; stars as well in the dark theme. **Two colours and the wood:** the page's
-  own background, the primary at a few strengths for the land (10%, 20%, 40%, and solid for the
-  hill), and the wood of the boards and pole as the one accent — no category colours, not even as
+- **The scene** is drawn for the app in flat shapes: two mountain ranges and the hill — the post
+  is the picture. (A sun or moon, stars and a forested ridge were drawn the same evening and
+  taken out: they competed with it.) **Two colours and the wood:** the page's
+  own background, the primary at a few strengths for the land (10% and 20% for the mountains, solid
+  for the hill), and the wood of the boards and pole as the one accent — no category colours, not even as
   pins. Theme tokens only, so light and dark follow the theme. The first version that evening
   was a pink dusk with violet mountains and a coloured pin per board; it was the one place in
   the app that wasn't black, white and blue, and it was taken back the same day.
@@ -61,9 +62,12 @@ and one board per line gives the page a top-to-bottom order.
   drops when pressed like a `LiftedButton`, and its focus outline (four more drop-shadows) follows
   the point. Plain `<button>`s, not `LiftedButton`s: they are the drawing's own pieces. The page's
   real actions (*Try again*, *Play one again*) are `LiftedButton`s.
-- **Motion:** each step's boards swing in from the post, staggered down it (first settled by
-  ~300ms, the ninth and later by ~550ms); the steps cross-fade. Under reduced motion the boards
-  only fade, already at their tilt.
+- **Motion:** on each step, including the first load, the post rises out of the hill (220ms)
+  and the boards swing on from it as it finishes, staggered down it (first settled by ~400ms,
+  the ninth and later by ~650ms); the steps cross-fade. Under reduced motion the post and boards
+  only fade, the boards already at their tilt. The step switcher is not `initial={false}` —
+  framer-motion passes that down to every motion element inside, which is how the first load
+  came to have no entrance at all.
 - **A long post** — a dozen categories — makes a tall page that scrolls; there is no second post
   and no paging. Worth revisiting past about fifteen categories.
 

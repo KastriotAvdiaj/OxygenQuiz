@@ -81,7 +81,9 @@ export const QuickPlayView = ({
       <QuickPlayBackdrop />
 
       <div className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 pt-6 sm:pt-10">
-        <AnimatePresence mode="wait" initial={false}>
+        {/* Not `initial={false}`: that is inherited by every motion element inside, and the post
+            and its boards then arrived without their entrance on the first load (2026-11-18). */}
+        <AnimatePresence mode="wait">
           {selected ? (
             <motion.section key="level" {...step} aria-labelledby="quick-play-title" className="flex flex-1 flex-col">
               <button type="button" onClick={() => onSelect(null)} className={backClass}>
@@ -219,17 +221,28 @@ export const QuickPlayView = ({
  * hill (`QuickPlayHill`, drawn after this) covers its foot — so it stands in the ground however
  * many boards it carries.
  */
-const Signpost = ({ children }: { children: ReactNode }) => (
-  <div className="relative mt-8 flex-1 pb-24 sm:mt-10 sm:pb-28">
-    <div
-      className="absolute bottom-0 left-1/2 top-1 w-3.5 -translate-x-1/2 rounded-t-md bg-amber-800 bg-[linear-gradient(90deg,transparent_0_35%,var(--color-amber-700)_35%_45%,transparent_45%)] sm:w-4 dark:bg-amber-900"
-      aria-hidden="true"
-    >
-      <div className="absolute -left-1 -right-1 -top-1.5 h-2.5 rounded-sm bg-amber-900 dark:bg-amber-950" />
+const Signpost = ({ children }: { children: ReactNode }) => {
+  const reduceMotion = useReducedMotion();
+  return (
+    <div className="relative mt-8 flex-1 pb-24 sm:mt-10 sm:pb-28">
+      {/* The post rises out of the hill first; the boards swing on once it is up (`BOARD_DELAY`). */}
+      <motion.div
+        className="absolute bottom-0 left-1/2 top-1 w-3.5 -translate-x-1/2 rounded-t-md bg-amber-800 bg-[linear-gradient(90deg,transparent_0_35%,var(--color-amber-700)_35%_45%,transparent_45%)] sm:w-4 dark:bg-amber-900"
+        style={{ originY: 1 }}
+        initial={reduceMotion ? { opacity: 0 } : { scaleY: 0 }}
+        animate={reduceMotion ? { opacity: 1 } : { scaleY: 1 }}
+        transition={{ duration: reduceMotion ? 0.15 : 0.22, ease: "easeOut" }}
+        aria-hidden="true"
+      >
+        <div className="absolute -left-1 -right-1 -top-1.5 h-2.5 rounded-sm bg-amber-900 dark:bg-amber-950" />
+      </motion.div>
+      <ul className="relative space-y-3 sm:space-y-4">{children}</ul>
     </div>
-    <ul className="relative space-y-3 sm:space-y-4">{children}</ul>
-  </div>
-);
+  );
+};
+
+/** When the first board starts to swing: as the post finishes rising. */
+const BOARD_DELAY = 0.1;
 
 /** Each board hangs a little off true, by its place on the post — never the same for two in a row. */
 const TILTS = [-3, 2.5, -1.5, 3, -2.5, 1.5, -2, 2];
@@ -276,7 +289,7 @@ const Board = ({ index, label, sub, hint, ariaLabel, onClick, disabled, pending,
         animate={{ opacity: 1, rotate: tilt }}
         transition={{
           duration: reduceMotion ? 0.15 : 0.3,
-          delay: reduceMotion ? 0 : Math.min(index, 8) * 0.03,
+          delay: reduceMotion ? 0 : BOARD_DELAY + Math.min(index, 8) * 0.03,
           ease: [0.34, 1.4, 0.64, 1],
         }}
       >
