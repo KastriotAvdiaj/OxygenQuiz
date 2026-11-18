@@ -36,7 +36,8 @@ the user's own fonts.
     state.
   - An **"or"** divider, then the same button **a size down** (`SecondaryButton`: `p-1` frame,
     `text-sm`/`sm:text-base`), each with an icon:
-    - **Host a lobby** → `/multiplayer-menu`, in **muted greys** (`bg-muted` face,
+    - **Play together** (*Host a lobby* until 2026-11-18 — "lobby" is our word, not the
+      visitor's, and the screen is also where a friend's code is entered) → `/multiplayer-menu`, in **muted greys** (`bg-muted` face,
       `muted-foreground` edge). Multiplayer needs an account — guests get one singleplayer quiz
       and no multiplayer ([`../auth/guest-play.md`](../auth/guest-play.md)).
     - **Create a quiz**, in **green** (`quiz-success` face and edge), opens the same
@@ -141,7 +142,7 @@ for the first 140ms, so a fast answer shows nothing; a slow API shows "Signing y
 |---|---|
 | `src/pages/Home/Home.tsx` | Composition: the pitch on the page background |
 | `src/pages/Home/hero/pitch.tsx` | Headline, subtitle, actions |
-| `src/pages/Home/hero/hero-actions.tsx` | Play / or / Host a lobby / Create a quiz + "With AI" bubble |
+| `src/pages/Home/hero/hero-actions.tsx` | Play / or / Play together / Create a quiz + "With AI" bubble |
 | `src/pages/Home/hero/line-globe.tsx` | The line globe (d3-geo, lazy); its data comes from `src/components/globe/land.ts` |
 | `src/pages/Home/hero/globe-connections.ts` | The city-to-city arcs on it |
 | `src/pages/Home/use-landing-intro.ts` | `INTRO` timings, `riseIn`, reduced-motion check |

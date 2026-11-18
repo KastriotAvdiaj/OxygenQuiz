@@ -7,14 +7,18 @@ import { useAiAvailable } from "@/pages/Dashboard/Pages/Quiz/ai-access";
 import { cn } from "@/utils/cn";
 
 /**
- * The hero's actions: **Play** as the one big button, an "or", then **Host a lobby** and
+ * The hero's actions: **Play** as the one big button, an "or", then **Play together** and
  * **Create a quiz** (with a "With AI" speech bubble over its corner, for those who may use AI —
  * ai-access.ts).
  *
  * All three are the old landing page's "Explore" `LiftedButton` (square face, a frame of edge
  * around it — docs/home/landing-page.md): Play big and in the theme blue, the two secondaries
- * the same button a size down, Host a lobby in muted greys and Create a quiz in green. Size and
+ * the same button a size down, Play together in muted greys and Create a quiz in green. Size and
  * colour carry the hierarchy.
+ *
+ * *Play together* was *Host a lobby* until 2026-11-18: "lobby" is our word for the room, not the
+ * visitor's, and hosting is only half of it — the same screen is where a friend's code is entered.
+ * The same length as *Create a quiz*, so the row still fits a phone.
  */
 export function HeroActions() {
   return (
@@ -33,7 +37,7 @@ export function HeroActions() {
             liftColor="muted-foreground"
           >
             <Users className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
-            Host a lobby
+            Play together
           </SecondaryButton>
         </Link>
 

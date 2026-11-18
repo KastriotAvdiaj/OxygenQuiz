@@ -115,8 +115,8 @@ Full version, including the two failure modes this project has actually hit:
   - **Primary** (the one thing to do here): default blue, or the screen's own accent (a quiz's
     `--face` on the start modal).
   - **Secondary** (a real alternative beside the primary): **muted** —
-    `className="bg-muted text-foreground"` with `liftColor="muted-foreground"`, as *Host a
-    lobby* on the home hero and *Host for a class* in the quiz start modal. `LiftedButton` gives
+    `className="bg-muted text-foreground"` with `liftColor="muted-foreground"`, as *Play
+    together* on the home hero and *Host for a class* in the quiz start modal. `LiftedButton` gives
     that lift a `border-foreground/20` hairline itself — don't add one. Never a second
     coloured button: two loud buttons side by side means neither is the obvious one.
   - **Cancel / back out**: a lifted outline — `bg-background border border-foreground/30
