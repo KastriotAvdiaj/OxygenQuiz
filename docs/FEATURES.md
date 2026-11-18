@@ -31,7 +31,7 @@ Teachers only, while it is tested. **Not shipped** = built in part, not reachabl
 | Answer order shuffled | Live | Options are reordered every time a question is served, so positions can't be memorised. | [ADR 0006](adr/0006-answer-order-is-shuffled-at-serve-time.md) |
 | Resume an unfinished quiz | Live | Reopening a quiz with a session in progress offers Resume or Start fresh; abandoned sessions are swept in the background. | [session-resume-screen.md](quiz/session-resume-screen.md), [session-lifecycle.md](quiz/session-lifecycle.md) |
 | Results and review | Live | Score breakdown, then a question-by-question review of what you answered. | [quiz-grading.md](quiz/quiz-grading.md) |
-| Quick play | Built 2026-11-15, not yet tried in a browser | Single Player asks two things — a category and how hard — and starts a quiz the server picks from the picked catalogue, never one the player has already had without saying so; the full list is one link away. | [quick-play.md](quiz/quick-play.md) |
+| Quick play | Built 2026-11-15, not yet tried against a live API | Single Player asks two things on an illustrated signpost — a category and how hard — and starts a quiz the server picks from the picked catalogue, never one the player has already had without saying so; the full list is one link away. | [quick-play.md](quiz/quick-play.md) |
 | Guest play | Live (guests) | One free solo quiz per browser without an account; the result is shown once and nothing is stored. | [guest-play.md](auth/guest-play.md) |
 | Stats and history | Live | Aggregate play stats and a filterable history of past sessions, bucketed in the viewer's timezone. | [user-stats-history.md](quiz/user-stats-history.md) |
 

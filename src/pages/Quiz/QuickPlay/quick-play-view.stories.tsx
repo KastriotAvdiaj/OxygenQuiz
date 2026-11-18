@@ -19,14 +19,17 @@ const tiles: QuickPlayTile[] = [
   { id: 14, name: "Film & TV", color: "#fde047", count: 1, levels: levels.slice(2) },
 ];
 
-/** `/quick-play` — docs/quiz/quick-play.md. Two steps: a category, then how hard. */
+/** `/quick-play` — docs/quiz/quick-play.md. Two steps on one signpost: a category, then how hard. */
 const meta = {
   title: "Quiz/QuickPlayView",
   component: QuickPlayView,
+  parameters: { layout: "fullscreen" },
   decorators: [
     (Story) => (
       <MemoryRouter>
-        <Story />
+        <div className="flex min-h-screen flex-col">
+          <Story />
+        </div>
       </MemoryRouter>
     ),
   ],
@@ -43,8 +46,24 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Step one. Check the pale yellow tile: its letter must still read. */
+/** Step one: one board per category on the post. Check it in light (dusk) and dark (night). */
 export const Categories: Story = {};
+
+/** A long post: twelve categories. The post grows, the hill stays under its foot. */
+export const ManyCategories: Story = {
+  args: {
+    tiles: [
+      ...tiles,
+      ...["Music", "Art", "Sport", "Food & Drink", "Nature", "Technology"].map((name, i) => ({
+        id: 20 + i,
+        name,
+        color: ["#db2777", "#0891b2", "#ea580c", "#65a30d", "#0d9488", "#4f46e5"][i],
+        count: 3,
+        levels,
+      })),
+    ],
+  },
+};
 
 /** Step two, in the category's colour. */
 export const HowHard: Story = { args: { selectedId: 12 } };

@@ -23,18 +23,47 @@ Everything else that links to `/choose-quiz` (results, the 404 page, the stats p
 
 ## What a player sees
 
-`src/pages/Quiz/QuickPlay/` — `QuickPlay` (queries and the pick) over `QuickPlayView`.
+`src/pages/Quiz/QuickPlay/` — `QuickPlay` (queries and the pick) over `QuickPlayView`, drawn
+over `quick-play-scene.tsx`.
 
-1. **Pick a category.** One tile per category that has a quiz to hand out, the fullest first,
-   each in its category's colour with its quiz count. First, when more than one category has
-   quizzes, *Surprise me* — any category.
-2. **How hard?** *Any difficulty* (the primary button, in the category's colour) and one muted
-   button per difficulty **that category has quizzes at**, easiest first, with its count. A
-   category with one difficulty shows only *Any difficulty*. The tap starts the quiz.
+1. **Where to?** A signpost with one board per category that has a quiz to hand out, the
+   fullest first, each with its quiz count and its category's colour as a pin. On top, when more
+   than one category has quizzes, *Surprise me* — any category, marked with a **?**.
+2. **How hard?** The same post, re-boarded: *Any difficulty* (**?**) and one board per
+   difficulty **that category has quizzes at**, easiest first, with its count. A category with
+   one difficulty shows only *Any difficulty*. That press starts the quiz.
 
-Nothing is offered unless a quiz stands behind it, so the two taps can't end on an empty result.
-The two steps swap in place rather than the difficulties opening under the grid: on a phone that
-row would open below a screenful of tiles, out of sight of the tap that opened it.
+Nothing is offered unless a quiz stands behind it, so the two presses can't end on an empty
+result. *Rather choose yourself? Browse all quizzes* sits on the hill under the post, on both
+steps.
+
+### The signpost
+
+Since 2026-11-18; the first version (2026-11-15) was a grid of category cards. A grid of cards is
+what the catalogue already is, so a visitor met *another list to choose from* — the step quick
+play exists to remove — and tiles of uneven width wrapped wherever they fit, with no order to
+read. A signpost says *pick a direction and go*; both steps become the same object asked twice,
+and one board per line gives the page a top-to-bottom order.
+
+- **The scene** is drawn for the app in flat palette colours: a dusk sky with a low sun, two
+  mountain ranges and a forested ridge; in the dark theme the same scene at night, with a moon
+  and stars. Every colour is a literal class with its `dark:` pair, so it follows the theme.
+  The sky is the page's background, so it fills however tall the post grows; the mountains are a
+  fixed band along the bottom, so they keep their size on any screen; the hill is in the page's
+  flow under the boards, so the post always stands in it.
+- **A board** points away from the post, alternating sides, hung a few degrees off true
+  (never the same tilt twice in a row). Its point is a `clip-path` and its raised edge a
+  `drop-shadow` on a wrapper — a drop-shadow follows the clipped shape — so it lifts on hover and
+  drops when pressed like a `LiftedButton`, and its focus outline (four more drop-shadows) follows
+  the point. Plain `<button>`s, not `LiftedButton`s: they are the drawing's own pieces. The page's
+  real actions (*Try again*, *Play one again*) are `LiftedButton`s.
+- **Motion:** each step's boards swing in from the post, staggered down it (first settled by
+  ~300ms, the ninth and later by ~550ms); the steps cross-fade. Under reduced motion the boards
+  only fade, already at their tilt.
+- **A long post** — a dozen categories — makes a tall page that scrolls; there is no second post
+  and no paging. Worth revisiting past about fifteen categories.
+
+Stories: `Quiz/QuickPlayView` (`Categories`, `ManyCategories`, `HowHard`, …) — check both themes.
 
 **When the player has had them all** the page says so — *You've played every quiz here* — and
 offers *Play one again* or the full list. It never repeats silently.

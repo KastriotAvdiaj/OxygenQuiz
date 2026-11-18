@@ -90,11 +90,17 @@ describe("QuickPlayView", () => {
     return handlers;
   };
 
-  it("starts on the categories, with the full list one link away", () => {
+  it("starts on the categories, one board each, with the full list one link away", () => {
     const { onSelect } = show();
 
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Pick a category");
-    expect(screen.getByRole("link", { name: "Browse all quizzes" }).getAttribute("href")).toBe("/choose-quiz");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Where to?");
+    // Fullest first, the surprise board on top, each saying how many quizzes it has.
+    expect(screen.getAllByRole("listitem").map((li) => li.querySelector("button")?.getAttribute("aria-label"))).toEqual([
+      "Surprise me, 8 quizzes",
+      "History, 5 quizzes",
+      "Geography, 3 quizzes",
+    ]);
+    expect(screen.getByRole("link", { name: /Browse all quizzes/ }).getAttribute("href")).toBe("/choose-quiz");
     fireEvent.click(screen.getByRole("button", { name: /Geography/ }));
     expect(onSelect).toHaveBeenCalledWith(1);
   });
@@ -115,7 +121,10 @@ describe("QuickPlayView", () => {
   it("shows only Any difficulty when the category has one level", () => {
     show({ selectedId: 2 });
 
-    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(["Change category", "Any difficulty"]);
+    expect(screen.getAllByRole("button").map((b) => b.getAttribute("aria-label") ?? b.textContent)).toEqual([
+      "Change category",
+      "Any difficulty",
+    ]);
   });
 
   it("says so when the player has had every quiz, and offers a repeat or the full list", () => {
@@ -124,13 +133,14 @@ describe("QuickPlayView", () => {
     expect(screen.getByRole("status").textContent).toContain("You've played every quiz here.");
     fireEvent.click(screen.getByRole("button", { name: /Play one again/ }));
     expect(onPlayAgain).toHaveBeenCalled();
-    expect(screen.getByRole("link", { name: /Browse all quizzes/ }).getAttribute("href")).toBe("/choose-quiz");
+    expect(screen.getAllByRole("link", { name: /Browse all quizzes/ })[0].getAttribute("href")).toBe("/choose-quiz");
   });
 
   it("holds every button while a quiz is being fetched", () => {
     show({ selectedId: 1, pending: 30 });
 
     expect(screen.getByRole("button", { name: /Any difficulty/ }).hasAttribute("disabled")).toBe(true);
+    expect(screen.getByRole("button", { name: "Hard, 1 quiz" }).getAttribute("aria-busy")).toBe("true");
   });
 
   it("says when there is nothing to quick play, and when the categories could not be loaded", () => {
